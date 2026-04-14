@@ -6,3 +6,5 @@ storage/*.sqlite
 storage/tmp
 storage/artifacts/validation
 .omx/
+
+storage/artifacts/sessions
