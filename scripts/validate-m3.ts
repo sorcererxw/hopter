@@ -2,34 +2,17 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { chromium, devices } from "playwright";
-import { Database } from "bun:sqlite";
 import { createApp } from "../src/server/bootstrap/create-app.ts";
 import { loadConfig } from "../src/server/config/load-config.ts";
-import { runMigrations } from "../src/server/db/migrate.ts";
 import { AuthSessionRepository } from "../src/server/repositories/auth-session-repository.ts";
 import { ProjectRepository } from "../src/server/repositories/project-repository.ts";
 import { SessionRepository } from "../src/server/repositories/session-repository.ts";
 import { AuthService } from "../src/server/services/auth-service.ts";
+import { BackendSessionService } from "../src/server/services/backend-session-service.ts";
+import { BindingService } from "../src/server/services/binding-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
-import { ProjectService } from "../src/server/services/project-service.ts";
-import { SessionService } from "../src/server/services/session-service.ts";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
-
-async function waitFor(
-  fn: () => Promise<boolean>,
-  timeoutMs = 120_000,
-  intervalMs = 1_000,
-): Promise<void> {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (await fn()) {
-      return;
-    }
-    await Bun.sleep(intervalMs);
-  }
-  throw new Error(`Condition was not met within ${timeoutMs}ms`);
-}
 
 async function main(): Promise<void> {
   const run = createValidationRun("m3");
@@ -39,38 +22,61 @@ async function main(): Promise<void> {
   const repoPath = path.join(tempRoot, "repo");
   mkdirSync(path.join(repoPath, ".git"), { recursive: true });
 
-  const dbPath = path.join(tempRoot, "orchd.sqlite");
-  const db = new Database(dbPath, { create: true });
-  runMigrations(db, path.resolve(process.cwd(), "src/server/db/migrations"));
-
   const config = loadConfig({
     cwd: process.cwd(),
     env: {
       ...process.env,
       ORCHD_STORAGE_DIR: tempRoot,
-      ORCHD_DB_PATH: dbPath,
       ORCHD_ARTIFACTS_DIR: path.join(tempRoot, "artifacts"),
       ORCHD_AUTH_PASSWORD: "",
       ORCHD_PORT: "8790",
     },
   });
 
-  const projectRepository = new ProjectRepository(db);
-  const sessionRepository = new SessionRepository(db);
-  const authRepository = new AuthSessionRepository(db);
+  const projectRepository = new ProjectRepository();
+  const sessionRepository = new SessionRepository();
+  const authRepository = new AuthSessionRepository();
   const codexDetectionService = new CodexDetectionService(config.codex.minVersion);
-  const projectService = new ProjectService(projectRepository);
+  const bindingService = new BindingService(projectRepository);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService);
-  const sessionService = new SessionService(config, projectRepository, sessionRepository);
+  const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository);
   const app = createApp({
     config,
     authService,
-    projectService,
-    sessionService,
+    bindingService,
+    backendSessionService,
     codexDetectionService,
     hostHealthService,
   });
+
+  const now = new Date().toISOString();
+  const bindingId = crypto.randomUUID();
+  const sessionId = crypto.randomUUID();
+  projectRepository.create({
+    id: bindingId,
+    name: "m3-repo",
+    repoPath,
+    hostId: config.server.hostId,
+    defaultBackend: "codex",
+    createdAt: now,
+    updatedAt: now,
+  });
+  sessionRepository.create({
+    id: sessionId,
+    projectId: bindingId,
+    backend: "codex",
+    backendSessionId: "thread-m3",
+    title: "Dashboard proof session",
+    status: "running",
+    lastSummary: "SUMMARY_OK",
+    attentionReason: null,
+    degraded: false,
+    lastEventAt: now,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await backendSessionService.injectPendingApprovalForValidation(sessionId);
 
   const server = Bun.serve({
     hostname: config.server.host,
@@ -78,39 +84,6 @@ async function main(): Promise<void> {
     fetch: app.fetch,
   });
   const baseUrl = `http://${server.hostname}:${server.port}`;
-
-  const createProjectResponse = await fetch(`${baseUrl}/api/projects`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      name: "m3-repo",
-      repoPath,
-      defaultBackend: "codex",
-    }),
-  });
-  const projectPayload = await createProjectResponse.json() as { data: { project: { id: string } } };
-  const projectId = projectPayload.data.project.id;
-  run.writeJson("setup/project.json", projectPayload);
-
-  const createSessionResponse = await fetch(`${baseUrl}/api/projects/${projectId}/sessions`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      title: "Dashboard proof session",
-      prompt: 'Reply with the exact text "SUMMARY_OK" and do not use any tools.',
-    }),
-  });
-  const sessionPayload = await createSessionResponse.json() as { data: { session: { id: string } } };
-  const sessionId = sessionPayload.data.session.id;
-  run.writeJson("setup/session.json", sessionPayload);
-
-  await waitFor(async () => {
-    const response = await fetch(`${baseUrl}/api/sessions/${sessionId}`);
-    const payload = await response.json() as { data: { latestSummary: string | null } };
-    return payload.data.latestSummary?.includes("SUMMARY_OK") ?? false;
-  });
-
-  await sessionService.injectPendingApprovalForValidation(sessionId);
 
   const browser = await chromium.launch();
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 1024 } });
@@ -120,20 +93,20 @@ async function main(): Promise<void> {
   await desktopDashboard.goto(baseUrl, { waitUntil: "networkidle" });
   await desktopDashboard.screenshot({ path: path.join(run.rootDir, "screenshots/dashboard-desktop.png"), fullPage: true });
   run.writeJson("assertions/dashboard-desktop.json", {
-    hostStatus: await desktopDashboard.getByRole("heading", { name: "Attention now" }).isVisible(),
-    projects: await desktopDashboard.getByRole("heading", { name: "Projects" }).isVisible(),
+    attentionNow: await desktopDashboard.getByRole("heading", { name: "Attention now" }).isVisible(),
+    bindings: await desktopDashboard.getByRole("heading", { name: "Bindings" }).isVisible(),
   });
 
-  const desktopProject = await desktop.newPage();
-  await desktopProject.goto(`${baseUrl}/projects/${projectId}`, { waitUntil: "networkidle" });
-  await desktopProject.screenshot({ path: path.join(run.rootDir, "screenshots/project-desktop.png"), fullPage: true });
+  const desktopBinding = await desktop.newPage();
+  await desktopBinding.goto(`${baseUrl}/bindings/${bindingId}`, { waitUntil: "networkidle" });
+  await desktopBinding.screenshot({ path: path.join(run.rootDir, "screenshots/binding-desktop.png"), fullPage: true });
 
   const desktopSession = await desktop.newPage();
-  await desktopSession.goto(`${baseUrl}/sessions/${sessionId}`, { waitUntil: "networkidle" });
+  await desktopSession.goto(`${baseUrl}/backend-sessions/${sessionId}`, { waitUntil: "networkidle" });
   await desktopSession.screenshot({ path: path.join(run.rootDir, "screenshots/session-desktop.png"), fullPage: true });
 
   const mobileSession = await mobile.newPage();
-  await mobileSession.goto(`${baseUrl}/sessions/${sessionId}`, { waitUntil: "networkidle" });
+  await mobileSession.goto(`${baseUrl}/backend-sessions/${sessionId}`, { waitUntil: "networkidle" });
   await mobileSession.screenshot({ path: path.join(run.rootDir, "screenshots/session-mobile.png"), fullPage: true });
 
   run.writeJson("assertions/session.json", {
@@ -145,14 +118,14 @@ async function main(): Promise<void> {
   });
 
   await browser.close();
-  await sessionService.shutdown();
+  await backendSessionService.shutdown();
   server.stop(true);
 
   run.writeJson("summary.json", {
     runId: run.runId,
     screenshotEvidence: [
       "screenshots/dashboard-desktop.png",
-      "screenshots/project-desktop.png",
+      "screenshots/binding-desktop.png",
       "screenshots/session-desktop.png",
       "screenshots/session-mobile.png",
     ],

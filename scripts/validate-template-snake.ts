@@ -77,7 +77,7 @@ async function maybeLogin(page: Awaited<ReturnType<ReturnType<typeof chromium.la
   }
 
   await passwordField.fill(AUTH_PASSWORD);
-  await page.getByRole("button", { name: /log in/i }).click();
+  await page.getByRole("button", { name: /sign in|log in/i }).click();
   await page.waitForLoadState("networkidle");
 }
 

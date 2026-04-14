@@ -2,14 +2,12 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
-import { Database } from "bun:sqlite";
 import { loadConfig } from "../src/server/config/load-config.ts";
-import { runMigrations } from "../src/server/db/migrate.ts";
 import { ProjectRepository } from "../src/server/repositories/project-repository.ts";
 import { SessionRepository } from "../src/server/repositories/session-repository.ts";
 import { AuthSessionRepository } from "../src/server/repositories/auth-session-repository.ts";
-import { ProjectService } from "../src/server/services/project-service.ts";
-import { SessionService } from "../src/server/services/session-service.ts";
+import { BindingService } from "../src/server/services/binding-service.ts";
+import { BackendSessionService } from "../src/server/services/backend-session-service.ts";
 import { AuthService } from "../src/server/services/auth-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
@@ -25,17 +23,12 @@ async function main(): Promise<void> {
   const repoPath = path.join(tempRoot, "repo");
   mkdirSync(path.join(repoPath, ".git"), { recursive: true });
 
-  const dbPath = path.join(tempRoot, "orchd.sqlite");
-  const db = new Database(dbPath, { create: true });
-  runMigrations(db, path.resolve(process.cwd(), "src/server/db/migrations"));
-
   const eventHub = new EventHub();
   const config = loadConfig({
     cwd: process.cwd(),
     env: {
       ...process.env,
       ORCHD_STORAGE_DIR: tempRoot,
-      ORCHD_DB_PATH: dbPath,
       ORCHD_ARTIFACTS_DIR: path.join(tempRoot, "artifacts"),
       ORCHD_AUTH_PASSWORD: "secret-pass",
       ORCHD_PORT: "8791",
@@ -44,14 +37,14 @@ async function main(): Promise<void> {
     },
   });
 
-  const projectRepository = new ProjectRepository(db);
-  const sessionRepository = new SessionRepository(db);
-  const authRepository = new AuthSessionRepository(db);
+  const projectRepository = new ProjectRepository();
+  const sessionRepository = new SessionRepository();
+  const authRepository = new AuthSessionRepository();
   const codexDetectionService = new CodexDetectionService(config.codex.minVersion);
-  const projectService = new ProjectService(projectRepository, eventHub);
+  const bindingService = new BindingService(projectRepository, eventHub);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService, eventHub);
-  const sessionService = new SessionService(config, projectRepository, sessionRepository, eventHub);
+  const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository, eventHub);
 
   const projectId = crypto.randomUUID();
   const sessionId = crypto.randomUUID();
@@ -73,22 +66,20 @@ async function main(): Promise<void> {
     backend: "codex",
     backendSessionId: "missing-thread",
     title: "Recovered session",
-    status: "running",
+    status: "degraded",
     lastSummary: "Pre-restart summary",
-    attentionReason: null,
-    degraded: false,
+    attentionReason: "live_attachment_lost",
+    degraded: true,
     lastEventAt: now,
     createdAt: now,
     updatedAt: now,
   });
 
-  await sessionService.recoverPersistedSessions();
-
   const { fetch: appFetch, websocket } = createFetchHandler({
     config,
     authService,
-    projectService,
-    sessionService,
+    bindingService,
+    backendSessionService,
     codexDetectionService,
     hostHealthService,
     eventHub,
@@ -102,10 +93,10 @@ async function main(): Promise<void> {
   });
   const baseUrl = `http://${server.hostname}:${server.port}`;
 
-  const anonymousProjects = await fetch(`${baseUrl}/api/projects`);
-  run.writeJson("auth/anonymous-projects.json", {
-    status: anonymousProjects.status,
-    body: await anonymousProjects.json(),
+  const anonymousBindings = await fetch(`${baseUrl}/api/bindings`);
+  run.writeJson("auth/anonymous-bindings.json", {
+    status: anonymousBindings.status,
+    body: await anonymousBindings.json(),
   });
 
   const badLogin = await fetch(`${baseUrl}/api/auth/login`, {
@@ -138,7 +129,7 @@ async function main(): Promise<void> {
     body: await authMe.json(),
   });
 
-  const degradedSession = await fetch(`${baseUrl}/api/sessions/${sessionId}`, {
+  const degradedSession = await fetch(`${baseUrl}/api/backend-sessions/${sessionId}`, {
     headers: { cookie: loginCookie },
   });
   run.writeJson("recovery/session-degraded.json", {
@@ -171,14 +162,14 @@ async function main(): Promise<void> {
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.waitForLoadState("networkidle");
   await page.screenshot({ path: path.join(run.rootDir, "screenshots/dashboard-authenticated.png"), fullPage: true });
-  await page.goto(`${baseUrl}/sessions/${sessionId}`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/backend-sessions/${sessionId}`, { waitUntil: "networkidle" });
   await page.screenshot({ path: path.join(run.rootDir, "screenshots/session-degraded.png"), fullPage: true });
   await browser.close();
 
   run.writeJson("summary.json", {
     runId: run.runId,
     authEvidence: [
-      "auth/anonymous-projects.json",
+      "auth/anonymous-bindings.json",
       "auth/login-failure.json",
       "auth/login-success.json",
       "auth/me-authenticated.json",
@@ -191,7 +182,7 @@ async function main(): Promise<void> {
     ],
   });
 
-  await sessionService.shutdown();
+  await backendSessionService.shutdown();
   server.stop(true);
   writeFileSync(path.resolve(process.cwd(), "storage/artifacts/validation/latest-m4.txt"), `${run.rootDir}\n`);
   console.log(`M4 validation evidence: ${run.rootDir}`);
