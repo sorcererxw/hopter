@@ -2,6 +2,16 @@
 
 Bun-first, Codex-first remote control plane for local coding agents.
 
+## Start here
+
+Choose the shortest path that answers your question:
+
+- understand the repo and where to drill down: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+- understand the product wedge and UX: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md), [`docs/product/DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/DESIGN_DOC.md)
+- understand system contracts: [`docs/specs/ARCHITECTURE_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ARCHITECTURE_MEMO.md), [`docs/specs/COMMUNICATION_AND_UX_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/COMMUNICATION_AND_UX_SPEC.md), [`docs/specs/ENGINEERING_SPEC_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md)
+- understand validation and evidence flow: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- build, validate, or ship locally: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md), [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md), [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
+
 ## Current scope
 
 This repo currently contains:
@@ -34,6 +44,7 @@ Server defaults:
 
 ```bash
 bun run test
+bun run validate:docs
 bun run validate:m0
 bun run validate:m1
 bun run validate:m2
@@ -70,9 +81,11 @@ storage/
 
 `storage/artifacts/validation/<run-id>/` is the canonical evidence bundle root for milestone validation.
 
-## Docs
+## Documentation paths
 
-- `docs/DEPLOYMENT.md`
-- `docs/CONTRIBUTING.md`
-- `docs/RELEASE_CHECKLIST.md`
-- `docs/ALPHA_READINESS_SUMMARY.md`
+- progressive-disclosure map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+- validation/evidence harness: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
+- deployment notes: [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md)
+- release gate: [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
+- current readiness snapshot: [`docs/operations/ALPHA_READINESS_SUMMARY.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/ALPHA_READINESS_SUMMARY.md)

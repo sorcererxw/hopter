@@ -1,5 +1,12 @@
 # Contributing
 
+## Documentation paths
+
+Use the docs progressively instead of reading every spec front to back:
+
+- repo/doc map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+- validation/evidence guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+
 ## Architectural guardrails
 
 - Codex is the source of truth for session content/history/approval semantics.
@@ -24,6 +31,7 @@ bun run build:web
 Validation commands:
 
 ```bash
+bun run validate:docs
 bun run validate:m0
 bun run validate:m1
 bun run validate:m2
@@ -39,6 +47,8 @@ bun run validate:m5
 - `src/shared/*` — shared contracts/domain
 - `scripts/*` — milestone validation and release helpers
 - `storage/artifacts/validation/*` — evidence bundles
+- `docs/README.md` — progressive-disclosure doc index
+- `docs/VALIDATION_HARNESS.md` — validation and evidence on-ramp
 
 ## Definition of done
 

@@ -1,5 +1,7 @@
 # Alpha Readiness Summary
 
+For the validation/evidence map behind this summary, see [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md).
+
 Current validation evidence roots:
 
 - M0: `storage/artifacts/validation/m0_2026-04-14T09-17-42-553Z`

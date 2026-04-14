@@ -26,7 +26,7 @@ The target is a serious personal alpha that can move toward OSS release.
 - no native iOS app in v1
 
 Validation is part of implementation.
-Each milestone must produce evidence compatible with `VALIDATION_PROGRAM_V1.md`.
+Each milestone must produce evidence compatible with `docs/validation/VALIDATION_PROGRAM_V1.md`.
 
 ## Milestone Overview
 

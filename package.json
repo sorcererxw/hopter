@@ -10,6 +10,7 @@
     "build:web": "bun src/web/app/build.ts",
     "build": "bun run build:web",
     "test": "bun test",
+    "validate:docs": "bun scripts/validate-docs.ts",
     "validate:m0": "bun scripts/validate-m0.ts",
     "validate:m1": "bun scripts/validate-m1.ts",
     "validate:m2": "bun scripts/validate-m2.ts",

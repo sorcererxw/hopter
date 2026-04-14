@@ -20,7 +20,7 @@ It must prove:
 
 Companion file:
 
-- `PRD_ACCEPTANCE_MATRIX_V1.md` is the initial requirement-to-evidence matrix for v1
+- `docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md` is the initial requirement-to-evidence matrix for v1
 
 ## Why this is necessary
 
@@ -44,10 +44,10 @@ PRD intent -> acceptance criteria -> automated checks -> manual evidence -> rele
 
 When deciding whether a feature is complete, the agent should evaluate in this order:
 
-1. product intent and wedge from `DESIGN_DOC.md`
-2. communication and interaction rules from `COMMUNICATION_AND_UX_SPEC.md`
-3. engineering contract from `ENGINEERING_SPEC_V1.md`
-4. milestone and ticket acceptance from `TASK_BREAKDOWN_V1.md`
+1. product intent and wedge from `docs/product/DESIGN_DOC.md`
+2. communication and interaction rules from `docs/specs/COMMUNICATION_AND_UX_SPEC.md`
+3. engineering contract from `docs/specs/ENGINEERING_SPEC_V1.md`
+4. milestone and ticket acceptance from `docs/planning/TASK_BREAKDOWN_V1.md`
 5. local code and tests
 
 This avoids a common failure mode where code matches a ticket but misses the product.

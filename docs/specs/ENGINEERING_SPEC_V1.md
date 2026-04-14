@@ -20,9 +20,9 @@ It is written to support ticket breakdown and early implementation.
 
 Companion documents:
 
-- `COMMUNICATION_AND_UX_SPEC.md` for Codex communication policy and UI hierarchy
-- `TASK_BREAKDOWN_V1.md` for milestone and ticket sequencing
-- `VALIDATION_PROGRAM_V1.md` for PRD-driven self-verification and release gates
+- `docs/specs/COMMUNICATION_AND_UX_SPEC.md` for Codex communication policy and UI hierarchy
+- `docs/planning/TASK_BREAKDOWN_V1.md` for milestone and ticket sequencing
+- `docs/validation/VALIDATION_PROGRAM_V1.md` for PRD-driven self-verification and release gates
 
 Working name:
 

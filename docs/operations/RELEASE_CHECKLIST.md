@@ -8,6 +8,7 @@
 
 ## Validation
 
+- `bun run validate:docs`
 - `bun run validate:m0`
 - `bun run validate:m1`
 - `bun run validate:m2`
@@ -17,10 +18,11 @@
 
 ## Review package
 
+- inspect [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md) if the evidence chain changed
 - inspect `storage/artifacts/validation/latest-m5.txt`
 - inspect `bundle/evidence-index.json`
-- inspect `PRD_ACCEPTANCE_MATRIX_V1.md`
-- verify alpha readiness against `VALIDATION_PROGRAM_V1.md`
+- inspect `docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md`
+- verify alpha readiness against `docs/validation/VALIDATION_PROGRAM_V1.md`
 
 ## Ship gates
 

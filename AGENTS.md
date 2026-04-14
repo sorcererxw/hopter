@@ -119,14 +119,16 @@ No evidence, no pass.
 
 Start here, in this order:
 
-1. [PRODUCT_MEMO.md](/Users/sorcererxw/repo/sorcererxw/codeshell/PRODUCT_MEMO.md)
-2. [DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/DESIGN_DOC.md)
-3. [ARCHITECTURE_MEMO.md](/Users/sorcererxw/repo/sorcererxw/codeshell/ARCHITECTURE_MEMO.md)
-4. [COMMUNICATION_AND_UX_SPEC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/COMMUNICATION_AND_UX_SPEC.md)
-5. [ENGINEERING_SPEC_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/ENGINEERING_SPEC_V1.md)
-6. [TASK_BREAKDOWN_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/TASK_BREAKDOWN_V1.md)
-7. [VALIDATION_PROGRAM_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/VALIDATION_PROGRAM_V1.md)
-8. [PRD_ACCEPTANCE_MATRIX_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/PRD_ACCEPTANCE_MATRIX_V1.md)
+0. [docs/README.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+1. [docs/product/PRODUCT_MEMO.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
+2. [docs/product/DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/DESIGN_DOC.md)
+3. [docs/specs/ARCHITECTURE_MEMO.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ARCHITECTURE_MEMO.md)
+4. [docs/specs/COMMUNICATION_AND_UX_SPEC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/COMMUNICATION_AND_UX_SPEC.md)
+5. [docs/specs/ENGINEERING_SPEC_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md)
+6. [docs/planning/TASK_BREAKDOWN_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TASK_BREAKDOWN_V1.md)
+7. [docs/validation/VALIDATION_PROGRAM_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/VALIDATION_PROGRAM_V1.md)
+8. [docs/VALIDATION_HARNESS.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+9. [docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md)
 
 ## Immediate next step
 
@@ -150,7 +152,7 @@ Recommended first tasks:
 
 ## Suggested first deliverable
 
-Create `M0_SPIKE_SPEC.md` and then implement the first spike.
+Create `docs/validation/M0_SPIKE_SPEC.md` and then implement the first spike.
 
 That spec should define:
 
