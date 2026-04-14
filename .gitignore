@@ -1,0 +1,8 @@
+node_modules
+bun.lock
+dist
+web-dist
+storage/*.sqlite
+storage/tmp
+storage/artifacts/validation
+.omx/

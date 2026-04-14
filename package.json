@@ -1,0 +1,27 @@
+{
+  "name": "orchd",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server/bootstrap/index.ts",
+    "start": "bun src/server/bootstrap/index.ts",
+    "build:web": "bun src/web/app/build.ts",
+    "build": "bun run build:web",
+    "test": "bun test",
+    "validate:m0": "bun scripts/validate-m0.ts",
+    "validate:m1": "bun scripts/validate-m1.ts",
+    "validate:m2": "bun scripts/validate-m2.ts",
+    "validate:m3": "bun scripts/validate-m3.ts",
+    "validate:m4": "bun scripts/validate-m4.ts",
+    "validate:m5": "bun scripts/validate-m5.ts"
+  },
+  "dependencies": {
+    "cookie": "^1.0.2",
+    "hono": "^4.9.2",
+    "playwright": "^1.59.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  }
+}
