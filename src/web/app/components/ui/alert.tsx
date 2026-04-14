@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 const alertVariants = cva("relative w-full rounded-2xl border p-4", {
   variants: {
     variant: {
-      default: "border-border bg-card/80 text-card-foreground",
-      warning: "border-amber-400/25 bg-amber-400/10 text-amber-50",
-      destructive: "border-red-400/25 bg-red-500/10 text-red-50",
+      default: "border-border bg-card text-card-foreground",
+      warning: "border-signal-waiting/35 bg-signal-waiting/12 text-card-foreground",
+      destructive: "border-signal-failed/35 bg-signal-failed/12 text-card-foreground",
+      success: "border-signal-complete/35 bg-signal-complete/12 text-card-foreground",
     },
   },
   defaultVariants: {
