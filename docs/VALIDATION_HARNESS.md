@@ -57,9 +57,12 @@ Only drop into the scripts when you are changing how evidence is gathered.
 - `scripts/validate-m3.ts`
 - `scripts/validate-m4.ts`
 - `scripts/validate-m5.ts`
+- `scripts/validate-template-snake.ts`
 - `scripts/validate-docs.ts`
 
 These scripts are the executable harness. They are responsible for producing reviewable artifacts, not just console output.
+
+`scripts/validate-template-snake.ts` is the product-template smoke test for the primary UX promise: browser project creation, browser session launch, browser approval handling, and Codex producing a working browser Snake game from chat input alone.
 
 ### 4. Evidence storage
 
@@ -74,6 +77,7 @@ storage/artifacts/validation/
   latest-m3.txt
   latest-m4.txt
   latest-m5.txt
+  latest-template-snake.txt
   <run-id>/
 ```
 

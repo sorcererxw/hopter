@@ -16,7 +16,8 @@
     "validate:m2": "bun scripts/validate-m2.ts",
     "validate:m3": "bun scripts/validate-m3.ts",
     "validate:m4": "bun scripts/validate-m4.ts",
-    "validate:m5": "bun scripts/validate-m5.ts"
+    "validate:m5": "bun scripts/validate-m5.ts",
+    "validate:template-snake": "bun scripts/validate-template-snake.ts"
   },
   "dependencies": {
     "cookie": "^1.0.2",

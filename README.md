@@ -51,7 +51,10 @@ bun run validate:m2
 bun run validate:m3
 bun run validate:m4
 bun run validate:m5
+bun run validate:template-snake
 ```
+
+`validate:template-snake` is the repeatable browser template flow: create a project binding, start a Codex-backed session from the web UI, approve required actions, and verify the generated single-file Snake game with screenshot evidence.
 
 ## Environment
 
@@ -76,6 +79,7 @@ storage/
   orchd.sqlite
   artifacts/
     validation/
+      latest-template-snake.txt
       <run-id>/
 ```
 

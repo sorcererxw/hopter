@@ -38,7 +38,10 @@ bun run validate:m2
 bun run validate:m3
 bun run validate:m4
 bun run validate:m5
+bun run validate:template-snake
 ```
+
+Use `bun run validate:template-snake` when you need a product-facing browser smoke test that proves the app can create a project and drive Codex to deliver a small web artifact end to end.
 
 ## Repository shape
 
