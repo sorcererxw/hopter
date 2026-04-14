@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { ArtifactList } from "@/components/orchd/artifact-list";
@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import type { ArtifactDetail, SessionDetail } from "@/lib/contracts";
 import { usePolling, useRealtimeVersion } from "@/lib/hooks";
+import { toUserFacingError } from "@/lib/utils";
+import { resolveSelectedArtifactId } from "@/lib/view-state";
 
 export function BackendSessionDetailRoute() {
   const { handleId = "" } = useParams();
@@ -25,26 +27,54 @@ export function BackendSessionDetailRoute() {
   );
   const [artifactDetail, setArtifactDetail] = useState<ArtifactDetail | null>(null);
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null);
+  const [artifactLoading, setArtifactLoading] = useState(false);
+  const [artifactError, setArtifactError] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const artifactRequestVersion = useRef(0);
 
   useEffect(() => {
     if (!detail?.artifacts?.length) {
       setArtifactDetail(null);
       setSelectedArtifactId(null);
+      setArtifactError(null);
+      setArtifactLoading(false);
       return;
     }
 
-    const firstId = detail.artifacts[0]?.id ?? null;
-    setSelectedArtifactId((current) => current ?? firstId);
+    setSelectedArtifactId((current) => resolveSelectedArtifactId(detail.artifacts.map((artifact) => artifact.id), current));
   }, [detail?.artifacts?.map((artifact) => artifact.id).join(",")]);
 
   useEffect(() => {
     if (!selectedArtifactId) {
+      setArtifactLoading(false);
+      setArtifactError(null);
       return;
     }
 
-    void api.get<ArtifactDetail>(`/api/artifacts/${selectedArtifactId}`).then(setArtifactDetail).catch(() => setArtifactDetail(null));
+    const requestVersion = artifactRequestVersion.current + 1;
+    artifactRequestVersion.current = requestVersion;
+    setArtifactLoading(true);
+    setArtifactError(null);
+    setArtifactDetail(null);
+
+    void api
+      .get<ArtifactDetail>(`/api/artifacts/${selectedArtifactId}`)
+      .then((nextDetail) => {
+        if (artifactRequestVersion.current !== requestVersion) {
+          return;
+        }
+        setArtifactDetail(nextDetail);
+        setArtifactLoading(false);
+      })
+      .catch((nextError) => {
+        if (artifactRequestVersion.current !== requestVersion) {
+          return;
+        }
+        setArtifactDetail(null);
+        setArtifactError(toUserFacingError("Could not load the selected artifact", nextError));
+        setArtifactLoading(false);
+      });
   }, [selectedArtifactId]);
 
   if (loading && !detail) {
@@ -61,7 +91,7 @@ export function BackendSessionDetailRoute() {
     return (
       <Card className="mx-auto w-full max-w-3xl">
         <CardContent className="p-6">
-          <p className="text-sm text-red-200">{error}</p>
+          <p className="text-sm text-foreground">{toUserFacingError("Could not load this backend session", new Error(error))}</p>
         </CardContent>
       </Card>
     );
@@ -84,7 +114,7 @@ export function BackendSessionDetailRoute() {
           try {
             await api.post(`/api/backend-sessions/${handleId}/approve`, { decision: "approve", note: null });
           } catch (approveError) {
-            setActionError(approveError instanceof Error ? approveError.message : String(approveError));
+            setActionError(toUserFacingError("Could not approve this request", approveError));
           }
         }}
         onReject={async () => {
@@ -92,7 +122,7 @@ export function BackendSessionDetailRoute() {
           try {
             await api.post(`/api/backend-sessions/${handleId}/approve`, { decision: "reject", note: null });
           } catch (rejectError) {
-            setActionError(rejectError instanceof Error ? rejectError.message : String(rejectError));
+            setActionError(toUserFacingError("Could not reject this request", rejectError));
           }
         }}
       />
@@ -100,13 +130,14 @@ export function BackendSessionDetailRoute() {
         input={input}
         onInputChange={setInput}
         error={actionError}
+        stickyOnMobile={Boolean(detail.attention)}
         onSubmit={async () => {
           setActionError(null);
           try {
             await api.post(`/api/backend-sessions/${handleId}/input`, { text: input });
             setInput("");
           } catch (inputError) {
-            setActionError(inputError instanceof Error ? inputError.message : String(inputError));
+            setActionError(toUserFacingError("Could not send your input", inputError));
           }
         }}
         onInterrupt={async () => {
@@ -114,7 +145,7 @@ export function BackendSessionDetailRoute() {
           try {
             await api.post(`/api/backend-sessions/${handleId}/interrupt`, { mode: "interrupt" });
           } catch (interruptError) {
-            setActionError(interruptError instanceof Error ? interruptError.message : String(interruptError));
+            setActionError(toUserFacingError("Could not interrupt the session", interruptError));
           }
         }}
       />
@@ -122,12 +153,11 @@ export function BackendSessionDetailRoute() {
         <ArtifactList
           artifacts={detail.artifacts}
           selectedArtifactId={selectedArtifactId}
-          onSelect={async (artifactId) => {
+          onSelect={(artifactId) => {
             setSelectedArtifactId(artifactId);
-            setArtifactDetail(await api.get<ArtifactDetail>(`/api/artifacts/${artifactId}`));
           }}
         />
-        <ArtifactViewer artifactDetail={artifactDetail} />
+        <ArtifactViewer artifactDetail={artifactDetail} loading={artifactLoading} error={artifactError} />
       </div>
       <TimelinePanel />
       <TerminalDrawer />

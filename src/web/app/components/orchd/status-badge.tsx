@@ -1,14 +1,17 @@
 import { Badge } from "@/components/ui/badge";
+import type { BadgeProps } from "@/components/ui/badge";
 
-export function StatusBadge({ status }: { status: string }) {
+export function getStatusBadgeVariant(status: string): NonNullable<BadgeProps["variant"]> {
   const normalized = status.toLowerCase();
-  const variant = normalized === "running" || normalized === "healthy" || normalized === "completed"
+  return ["running", "healthy", "completed"].includes(normalized)
     ? "success"
-    : normalized === "waiting_approval" || normalized === "degraded"
+    : ["waiting_approval", "waiting_input", "degraded", "reconnecting"].includes(normalized)
       ? "warning"
-      : normalized === "failed" || normalized === "error"
+      : ["failed", "error"].includes(normalized)
         ? "destructive"
         : "outline";
+}
 
-  return <Badge variant={variant}>{status.replaceAll("_", " ")}</Badge>;
+export function StatusBadge({ status }: { status: string }) {
+  return <Badge variant={getStatusBadgeVariant(status)}>{status.replaceAll("_", " ")}</Badge>;
 }

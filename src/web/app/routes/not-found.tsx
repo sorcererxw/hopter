@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import { EmptyState } from "@/components/orchd/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -12,9 +13,15 @@ export function NotFoundRoute() {
           <CardTitle>Page not found.</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button asChild>
-            <Link to="/">Return to dashboard</Link>
-          </Button>
+          <EmptyState
+            title="That route does not exist"
+            description="Jump back to the dashboard to get back to the control plane."
+            action={(
+              <Button asChild>
+                <Link to="/">Return to dashboard</Link>
+              </Button>
+            )}
+          />
         </CardContent>
       </Card>
     </main>

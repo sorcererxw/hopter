@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export function PageHero({
   eyebrow,
@@ -16,16 +18,21 @@ export function PageHero({
   actions?: ReactNode;
 }) {
   return (
-    <Card className="bg-[linear-gradient(180deg,rgba(30,41,59,0.98),rgba(15,23,42,0.92))]">
+    <Card>
       <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">{eyebrow}</p>
+          <Badge variant="secondary" className="w-fit tracking-[0.12em]">{eyebrow}</Badge>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">{title}</h1>
           {description ? <p className="max-w-3xl text-sm text-muted-foreground md:text-base">{description}</p> : null}
         </div>
         {status ? <div className="shrink-0">{status}</div> : null}
       </CardHeader>
-      {actions ? <CardContent className="pt-0">{actions}</CardContent> : null}
+      {actions ? (
+        <>
+          <Separator />
+          <CardContent className="pt-6">{actions}</CardContent>
+        </>
+      ) : null}
     </Card>
   );
 }

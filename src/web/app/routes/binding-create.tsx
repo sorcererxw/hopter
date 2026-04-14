@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { EmptyState } from "@/components/orchd/empty-state";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import type { ProjectBindingView } from "@/lib/contracts";
+import { toUserFacingError } from "@/lib/utils";
 
 export function BindingCreateRoute() {
   const navigate = useNavigate();
@@ -19,7 +22,8 @@ export function BindingCreateRoute() {
   return (
     <Card className="mx-auto w-full max-w-3xl">
       <CardHeader>
-        <CardDescription>Binding</CardDescription>
+        <Badge variant="secondary" className="w-fit tracking-[0.14em]">Binding</Badge>
+        <CardDescription>Connect one local repo</CardDescription>
         <CardTitle>Create binding</CardTitle>
         <p className="text-sm text-muted-foreground">Bind one local repo path to the thin control plane. <code>orchd</code> stores the binding, not the repo contents.</p>
       </CardHeader>
@@ -38,7 +42,7 @@ export function BindingCreateRoute() {
               });
               navigate(`/bindings/${result.binding.id}`);
             } catch (submissionError) {
-              setError(submissionError instanceof Error ? submissionError.message : String(submissionError));
+              setError(toUserFacingError("Could not create the binding", submissionError));
             } finally {
               setSubmitting(false);
             }
@@ -66,6 +70,14 @@ export function BindingCreateRoute() {
             </Alert>
           ) : null}
         </form>
+        {!error ? (
+          <div className="pt-4">
+            <EmptyState
+              title="What happens next"
+              description="After the binding is created, you land on the binding detail page and can start a Codex-backed backend session right away."
+            />
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

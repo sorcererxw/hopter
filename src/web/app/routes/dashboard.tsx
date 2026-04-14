@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { ConnectionBanner } from "@/components/orchd/connection-banner";
 import { EmptyState } from "@/components/orchd/empty-state";
 import { PageHero } from "@/components/orchd/page-hero";
+import { SelectableSurface } from "@/components/orchd/selectable-surface";
 import { StatusBadge } from "@/components/orchd/status-badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import type { BackendSessionView, HostStatus, ProjectBindingView } from "@/lib/contracts";
 import { usePolling, useRealtimeVersion } from "@/lib/hooks";
+import { toUserFacingError } from "@/lib/utils";
 
 export function DashboardRoute() {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ export function DashboardRoute() {
   const { data: host } = usePolling(() => api.get<HostStatus>("/api/host/status"), [realtime.version]);
   const { data: bindings } = usePolling(() => api.get<{ items: ProjectBindingView[] }>("/api/bindings"), [realtime.version]);
   const [sessionGroups, setSessionGroups] = useState<Array<{ binding: ProjectBindingView; sessions: BackendSessionView[] }>>([]);
+  const [partialFetchError, setPartialFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bindings?.items) {
@@ -26,14 +30,26 @@ export function DashboardRoute() {
 
     let cancelled = false;
     void Promise.all(
-      bindings.items.map(async (binding) => ({
-        binding,
-        sessions: (await api.get<{ items: BackendSessionView[] }>(`/api/bindings/${binding.id}/backend-sessions`)).items,
-      })),
-    ).then((groups) => {
-      if (!cancelled) {
-        setSessionGroups(groups);
+      bindings.items.map(async (binding) => {
+        try {
+          const response = await api.get<{ items: BackendSessionView[] }>(`/api/bindings/${binding.id}/backend-sessions`);
+          return { binding, sessions: response.items, failed: false };
+        } catch (error) {
+          return { binding, sessions: [], failed: true, error };
+        }
+      }),
+    ).then((results) => {
+      if (cancelled) {
+        return;
       }
+
+      const failedCount = results.filter((result) => result.failed).length;
+      setSessionGroups(results.map(({ binding, sessions }) => ({ binding, sessions })));
+      setPartialFetchError(
+        failedCount > 0
+          ? toUserFacingError("Some binding activity could not be refreshed", results.find((result) => result.failed)?.error)
+          : null,
+      );
     });
 
     return () => {
@@ -66,6 +82,15 @@ export function DashboardRoute() {
         />
       </div>
 
+      {partialFetchError ? (
+        <div className="xl:col-span-2">
+          <Alert variant="warning">
+            <AlertTitle>Partial dashboard refresh</AlertTitle>
+            <AlertDescription>{partialFetchError}</AlertDescription>
+          </Alert>
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Attention now</CardTitle>
@@ -77,19 +102,13 @@ export function DashboardRoute() {
             <div className="space-y-4">
               {attentionSessions.map((session, index) => (
                 <div key={session.id} className="space-y-4">
-                  <Button
-                    variant="ghost"
-                    className="h-auto w-full justify-start rounded-2xl border border-border/70 bg-background/35 px-4 py-4 text-left hover:bg-accent/40"
-                    onClick={() => navigate(`/backend-sessions/${session.id}`)}
-                  >
-                    <div className="grid gap-2">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-sm font-semibold text-foreground">{session.title ?? session.bindingName}</span>
-                        <StatusBadge status={session.status} />
-                      </div>
-                      <span className="text-sm text-muted-foreground">{session.attentionReason}</span>
-                    </div>
-                  </Button>
+                  <SelectableSurface
+                    title={session.title ?? session.bindingName}
+                    description={session.attentionReason ?? "Needs your input."}
+                    meta={<span>{session.bindingName}</span>}
+                    aside={<StatusBadge status={session.status} />}
+                    onSelect={() => navigate(`/backend-sessions/${session.id}`)}
+                  />
                   {index < attentionSessions.length - 1 ? <Separator /> : null}
                 </div>
               ))}
@@ -109,19 +128,13 @@ export function DashboardRoute() {
             <div className="space-y-4">
               {runningSessions.map((session, index) => (
                 <div key={session.id} className="space-y-4">
-                  <Button
-                    variant="ghost"
-                    className="h-auto w-full justify-start rounded-2xl border border-border/70 bg-background/35 px-4 py-4 text-left hover:bg-accent/40"
-                    onClick={() => navigate(`/backend-sessions/${session.id}`)}
-                  >
-                    <div className="grid gap-2">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="text-sm font-semibold text-foreground">{session.title ?? session.bindingName}</span>
-                        <StatusBadge status={session.status} />
-                      </div>
-                      <span className="text-sm text-muted-foreground">{session.lastSummary ?? session.status}</span>
-                    </div>
-                  </Button>
+                  <SelectableSurface
+                    title={session.title ?? session.bindingName}
+                    description={session.lastSummary ?? session.status}
+                    meta={<span>{session.bindingName}</span>}
+                    aside={<StatusBadge status={session.status} />}
+                    onSelect={() => navigate(`/backend-sessions/${session.id}`)}
+                  />
                   {index < runningSessions.length - 1 ? <Separator /> : null}
                 </div>
               ))}
@@ -141,17 +154,13 @@ export function DashboardRoute() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {bindings.items.map((binding) => (
-                <Button
+                <SelectableSurface
                   key={binding.id}
-                  variant="ghost"
-                  className="h-auto justify-start rounded-3xl border border-border/70 bg-background/35 px-5 py-5 text-left hover:bg-accent/40"
-                  onClick={() => navigate(`/bindings/${binding.id}`)}
-                >
-                  <div className="grid gap-2">
-                    <span className="text-base font-semibold text-foreground">{binding.name}</span>
-                    <span className="text-sm text-muted-foreground">{binding.repoPath}</span>
-                  </div>
-                </Button>
+                  title={binding.name}
+                  description={binding.repoPath}
+                  onSelect={() => navigate(`/bindings/${binding.id}`)}
+                  className="px-5 py-5"
+                />
               ))}
             </div>
           )}

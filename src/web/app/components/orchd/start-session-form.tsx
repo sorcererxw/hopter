@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import type { BackendSessionView } from "@/lib/contracts";
+import { toUserFacingError } from "@/lib/utils";
 
 export function StartSessionForm({ bindingId, navigate }: { bindingId: string; navigate: (path: string) => void }) {
   const [title, setTitle] = useState("");
@@ -34,7 +35,7 @@ export function StartSessionForm({ bindingId, navigate }: { bindingId: string; n
               });
               navigate(`/backend-sessions/${result.handle.id}`);
             } catch (submissionError) {
-              setError(submissionError instanceof Error ? submissionError.message : String(submissionError));
+              setError(toUserFacingError("Could not start the backend session", submissionError));
             } finally {
               setSubmitting(false);
             }
@@ -56,7 +57,7 @@ export function StartSessionForm({ bindingId, navigate }: { bindingId: string; n
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button disabled={submitting}>{submitting ? "Starting…" : "Start backend session"}</Button>
-            {error ? <p className="text-sm text-red-200">{error}</p> : null}
+            {error ? <p className="text-sm text-foreground">{error}</p> : null}
           </div>
         </form>
       </CardContent>

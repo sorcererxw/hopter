@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function TerminalDrawer() {
   return (
-    <Card className="opacity-85">
+    <Card className="border-dashed bg-muted/30">
       <CardHeader>
         <CardTitle>Terminal drawer</CardTitle>
       </CardHeader>

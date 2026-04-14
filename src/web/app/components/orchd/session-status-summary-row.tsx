@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export function SessionStatusSummaryRow({ degraded, latestSummary }: { degraded: boolean; latestSummary: string | null }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
+      <Card className={degraded ? "border-signal-degraded/40" : undefined}>
         <CardHeader>
           <CardTitle>Status</CardTitle>
         </CardHeader>

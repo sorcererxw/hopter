@@ -35,7 +35,7 @@ export function AttentionPanel({
         <Button onClick={() => void onApprove()}>Approve</Button>
         <Button variant="secondary" onClick={() => void onReject()}>Reject</Button>
       </div>
-      {error ? <p className="text-sm text-red-100">{error}</p> : null}
+      {error ? <p className="text-sm text-foreground">{error}</p> : null}
     </Alert>
   );
 }
