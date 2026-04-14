@@ -10,14 +10,15 @@ Choose the shortest path that answers your question:
 - understand the product wedge and UX: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md), [`docs/product/DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/DESIGN_DOC.md)
 - understand system contracts: [`docs/specs/ARCHITECTURE_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ARCHITECTURE_MEMO.md), [`docs/specs/COMMUNICATION_AND_UX_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/COMMUNICATION_AND_UX_SPEC.md), [`docs/specs/ENGINEERING_SPEC_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md)
 - understand validation and evidence flow: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- understand the web UI system and route shape: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 - build, validate, or ship locally: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md), [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md), [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
 
 ## Current scope
 
 This repo currently contains:
 
-- M0 feasibility spikes for Bun + Codex app-server
-- M1 gateway foundation: config, DB bootstrap, host/backends APIs, project CRUD
+- Bun + Hono gateway runtime for Codex-backed local control-plane sessions
+- React Router browser shell backed by shadcn-style primitives under `src/web/app/components/ui`
 - validation scripts that write evidence under `storage/artifacts/validation/`
 
 It intentionally preserves the architectural boundary from the product docs:
@@ -43,6 +44,8 @@ Server defaults:
 ## Useful commands
 
 ```bash
+bun run build:web
+bun run ui:add -- button
 bun run test
 bun run validate:docs
 bun run validate:m0
@@ -54,7 +57,7 @@ bun run validate:m5
 bun run validate:template-snake
 ```
 
-`validate:template-snake` is the repeatable browser template flow: create a project binding, start a Codex-backed session from the web UI, approve required actions, and verify the generated single-file Snake game with screenshot evidence.
+`validate:template-snake` is the repeatable browser template flow: create a binding, start a Codex-backed session from the web UI, approve required actions, and verify the generated single-file Snake game with screenshot evidence.
 
 ## Environment
 
@@ -89,6 +92,7 @@ storage/
 
 - progressive-disclosure map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
 - validation/evidence harness: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- UI rules and shadcn workflow: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 - contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
 - deployment notes: [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md)
 - release gate: [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)

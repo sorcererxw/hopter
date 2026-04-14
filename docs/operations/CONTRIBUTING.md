@@ -6,6 +6,7 @@ Use the docs progressively instead of reading every spec front to back:
 
 - repo/doc map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
 - validation/evidence guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- UI system rules: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 
 ## Architectural guardrails
 
@@ -47,7 +48,22 @@ bun run validate:m5
 bun run validate:template-snake
 ```
 
-Use `bun run validate:template-snake` when you need a product-facing browser smoke test that proves the app can create a project and drive Codex to deliver a small web artifact end to end.
+Use `bun run validate:template-snake` when you need a product-facing browser smoke test that proves the app can create a binding and drive Codex to deliver a small web artifact end to end.
+
+## UI system workflow
+
+Add new primitive UI only through the shadcn CLI flow:
+
+```bash
+bunx --bun shadcn@latest add button
+```
+
+Rules:
+
+- do not hand-write a second primitive layer outside `src/web/app/components/ui`
+- put orchd-specific meaning in `src/web/app/components/orchd`
+- prefer token and wrapper changes before page-local one-off styles
+- keep the React Router route tree thin, route files should compose product components instead of growing into 700-line blobs again
 
 ## Repository shape
 
