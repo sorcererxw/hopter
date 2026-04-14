@@ -55,7 +55,7 @@ Use `bun run validate:template-snake` when you need a product-facing browser smo
 Add new primitive UI only through the shadcn CLI flow:
 
 ```bash
-bunx --bun shadcn@latest add button
+bun run ui:add -- button
 ```
 
 Rules:
@@ -64,6 +64,15 @@ Rules:
 - put orchd-specific meaning in `src/web/app/components/orchd`
 - prefer token and wrapper changes before page-local one-off styles
 - keep the React Router route tree thin, route files should compose product components instead of growing into 700-line blobs again
+
+Contributor fast path for UI work:
+
+1. read `README.md`
+2. read `docs/operations/UI_SYSTEM_RULES.md`
+3. run `bun install`
+4. run `bun run build:web` or `bun run dev:lan`
+5. if a new primitive is truly needed, run `bun run ui:add -- <component>`
+6. update the relevant browser validation and record the evidence path
 
 ## Repository shape
 

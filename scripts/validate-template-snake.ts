@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium, devices } from "playwright";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -122,6 +122,29 @@ async function readOptionalText(
   return null;
 }
 
+async function focusButtonByKeyboard(
+  page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>,
+  buttonName: RegExp,
+  attempts = 12,
+): Promise<boolean> {
+  for (let index = 0; index < attempts; index += 1) {
+    await page.keyboard.press("Tab");
+    const focusedMatches = await page.evaluate((pattern) => {
+      const active = document.activeElement as HTMLElement | null;
+      if (!active) {
+        return false;
+      }
+      const text = active.innerText || active.textContent || "";
+      return new RegExp(pattern, "i").test(text);
+    }, buttonName.source);
+    if (focusedMatches) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function main(): Promise<void> {
   const run = createValidationRun("template_snake");
   const repoPath = createTempRepo();
@@ -142,6 +165,7 @@ async function main(): Promise<void> {
     "screenshots/orchd/02-binding-created.png",
     "screenshots/orchd/03-session-created.png",
   ];
+  let mobileApprovalEvidence: Record<string, boolean> | null = null;
 
   try {
     await page.goto(`${DEFAULT_BASE_URL}/bindings/new`, { waitUntil: "networkidle" });
@@ -179,6 +203,24 @@ async function main(): Promise<void> {
         await approveButton.first().waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
       }
       if (await approveButton.count()) {
+        const mobileApprovalContext = await browser.newContext({ ...devices["iPhone 13"] });
+        const mobileApprovalPage = await mobileApprovalContext.newPage();
+        await mobileApprovalPage.goto(`${DEFAULT_BASE_URL}/backend-sessions/${sessionId}`, { waitUntil: "domcontentloaded" });
+        await mobileApprovalPage.waitForTimeout(2_000);
+        await captureScreenshot(mobileApprovalPage, run, "screenshots/orchd/04-mobile-before-approval.png");
+        const sendInputButton = mobileApprovalPage.getByRole("button", { name: /Send input/i });
+        const approveButtonMobile = mobileApprovalPage.getByRole("button", { name: /^Approve$/ });
+        await mobileApprovalPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await mobileApprovalPage.waitForTimeout(500);
+        mobileApprovalEvidence = {
+          sendInputVisibleBeforeScroll: await sendInputButton.isVisible(),
+          approveVisibleBeforeScroll: await approveButtonMobile.isVisible(),
+          sendInputVisibleAfterScroll: await sendInputButton.isVisible(),
+          approveVisibleAfterScroll: await approveButtonMobile.isVisible(),
+        };
+        run.writeJson("orchd/mobile-before-approval.json", mobileApprovalEvidence);
+        await mobileApprovalContext.close();
+        evidence.push("screenshots/orchd/04-mobile-before-approval.png", "orchd/mobile-before-approval.json");
         await captureScreenshot(page, run, "screenshots/orchd/04-session-before-approval.png");
         await approveButton.click();
         approvals += 1;
@@ -227,10 +269,51 @@ async function main(): Promise<void> {
     }
 
     if (finalStatus !== "completed") {
+      const statusGraceDeadline = Date.now() + 60_000;
+      while (Date.now() < statusGraceDeadline) {
+        await refreshPage(page);
+        const detail = await readJson<SessionDetailPayload>(`${DEFAULT_BASE_URL}/api/backend-sessions/${sessionId}`);
+        finalStatus = detail.data.handle.status;
+        finalSummary = detail.data.latestSummary ?? finalSummary;
+        if (finalStatus === "completed") {
+          run.writeJson("session-detail.json", detail);
+          await captureScreenshot(page, run, "screenshots/orchd/06-session-completed.png");
+          break;
+        }
+        await sleep(3_000);
+      }
+    }
+
+    if (finalStatus !== "completed") {
       throw new Error(`Backend session did not reach completed status (status=${finalStatus})`);
     }
 
     cpSync(path.join(repoPath, "index.html"), path.join(run.rootDir, "repo-snapshot", "index.html"));
+
+    await page.goto(`${DEFAULT_BASE_URL}/`, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(2_000);
+    await captureScreenshot(page, run, "screenshots/orchd/07-dashboard-overview.png");
+    run.writeJson("orchd/dashboard-overview.json", {
+      attentionHeadingVisible: await page.getByRole("heading", { name: "Attention now" }).isVisible(),
+      runningHeadingVisible: await page.getByRole("heading", { name: "Running sessions" }).isVisible(),
+      bindingsHeadingVisible: await page.getByRole("heading", { name: "Bindings" }).isVisible(),
+    });
+    evidence.push("screenshots/orchd/07-dashboard-overview.png", "orchd/dashboard-overview.json");
+
+    const mobileContext = await browser.newContext({ ...devices["iPhone 13"] });
+    const mobilePage = await mobileContext.newPage();
+    await mobilePage.goto(`${DEFAULT_BASE_URL}/backend-sessions/${sessionId}`, { waitUntil: "domcontentloaded" });
+    await mobilePage.waitForTimeout(2_000);
+    await captureScreenshot(mobilePage, run, "screenshots/orchd/08-session-mobile-detail.png");
+    const mobileKeyboardActionReachable = await focusButtonByKeyboard(mobilePage, /Send input/i, 10);
+    run.writeJson("orchd/mobile-session-detail.json", {
+      actionBarVisible: await mobilePage.getByRole("button", { name: /Send input/i }).isVisible(),
+      artifactHeadingVisible: await mobilePage.getByRole("heading", { name: "Artifacts" }).isVisible(),
+      attentionVisible: await mobilePage.getByRole("heading", { name: "Attention" }).isVisible(),
+      keyboardActionReachable: mobileKeyboardActionReachable,
+    });
+    await mobileContext.close();
+    evidence.push("screenshots/orchd/08-session-mobile-detail.png", "orchd/mobile-session-detail.json");
 
     const gamePage = await context.newPage();
     const gameErrors: string[] = [];
@@ -308,6 +391,7 @@ async function main(): Promise<void> {
         sessionCreateViaBrowser: true,
         approvalHandledViaBrowser: approvals > 0,
         codexCompletedViaChatInput: true,
+        mobileActionBarCheckedDuringApproval: mobileApprovalEvidence !== null,
       },
     });
 

@@ -18,7 +18,7 @@ src/web/app/styles/               # theme tokens and shared web styles
 1. New primitive components must enter the repo through the shadcn CLI flow:
 
    ```bash
-   bunx --bun shadcn@latest add <component>
+   bun run ui:add -- <component>
    ```
 
 2. Do not hand-roll a second primitive library. No custom one-off `Button`, `Card`, `Input`, `Badge`, `Dialog`, `Tabs`, `Sheet`, `Tooltip`, or `ScrollArea` clones outside `components/ui`.
@@ -47,7 +47,7 @@ That order is the product. Terminal is secondary. Attention is first-class. Arti
 
 ## Workflow
 
-1. Need a new primitive, run `bunx --bun shadcn@latest add <component>`.
+1. Need a new primitive, run `bun run ui:add -- <component>`.
 2. If the product needs extra semantics, wrap it in `components/orchd`.
 3. Update screenshots or validation when the change affects a primary surface.
 4. Keep the Bun-first build and static `web-dist` contract intact unless a spec change explicitly says otherwise.
