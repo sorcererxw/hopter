@@ -1,0 +1,1 @@
+The game file is in place. I’m doing one cleanup pass for restart behavior, then a local syntax check on the inline script so I can finish with something defensible.

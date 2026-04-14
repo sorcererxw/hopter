@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { Hono } from "hono";
 import { fail, ok } from "../../../shared/contracts/api.ts";
-import type { SessionService } from "../../services/session-service.ts";
+import type { BackendSessionService } from "../../services/backend-session-service.ts";
 import { AppError } from "../../services/errors.ts";
 
-export function createArtifactRoutes(sessionService: SessionService): Hono {
+export function createArtifactRoutes(sessionService: BackendSessionService): Hono {
   const app = new Hono();
 
   app.get("/artifacts/:artifactId", async (c) => {

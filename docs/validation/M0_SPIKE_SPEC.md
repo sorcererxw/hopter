@@ -17,7 +17,7 @@ Prove the highest-risk technical assumptions for `orchd` before the full gateway
 This spike must preserve the core architecture:
 
 - Codex remains the source of truth for session content, history, approvals, and artifact semantics
-- `orchd` stores only control-plane metadata and validation evidence
+- `orchd` keeps only ephemeral control-plane metadata and durable validation evidence
 - the browser never talks to Codex directly
 - the gateway is the only Codex client
 

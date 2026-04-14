@@ -1,0 +1,114 @@
+{
+  "artifacts": [
+    {
+      "id": "3f9f8323-829e-4068-8739-c99779176028",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/3f9f8323-829e-4068-8739-c99779176028.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 194,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:29.616Z"
+    },
+    {
+      "id": "25853a66-dc28-4306-ae76-5711fdd6b88f",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,220p' /Users/sorcererxw/.codex/skills/autopilot/SKILL.md\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/25853a66-dc28-4306-ae76-5711fdd6b88f.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 10166,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:20.533Z"
+    },
+    {
+      "id": "13f1cf03-e8a8-43cd-9b82-e66004948c78",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,200p' README.md\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/13f1cf03-e8a8-43cd-9b82-e66004948c78.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 13,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:20.524Z"
+    },
+    {
+      "id": "5c8f4a10-5f84-4678-9b4c-85a9bd45fa76",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/5c8f4a10-5f84-4678-9b4c-85a9bd45fa76.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 205,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:20.291Z"
+    },
+    {
+      "id": "665901f7-73ec-405a-94d5-4ddcf8c7de12",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc 'ls -la'",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/665901f7-73ec-405a-94d5-4ddcf8c7de12.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 351,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:10.629Z"
+    },
+    {
+      "id": "ace4768d-2ceb-4670-a2fa-0f058bd6e897",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,220p' /Users/sorcererxw/.agents/skills/using-superpowers/SKILL.md\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/ace4768d-2ceb-4670-a2fa-0f058bd6e897.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 5421,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:10.617Z"
+    },
+    {
+      "id": "085c487c-a3b7-4112-b155-db726be4f240",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/085c487c-a3b7-4112-b155-db726be4f240.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 172,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:42:10.410Z"
+    },
+    {
+      "id": "44c892b3-cd13-4431-a6fd-a947786a6f15",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"pwd && rg --files -g 'AGENTS.md' -g 'index.html' -g 'package.json' -g 'vite.config.*' -g '.omx/**'\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/44c892b3-cd13-4431-a6fd-a947786a6f15.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 90,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:41:54.940Z"
+    },
+    {
+      "id": "ef4796c1-42d5-4095-b444-a87d28e56aea",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/ef4796c1-42d5-4095-b444-a87d28e56aea.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 169,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:41:54.706Z"
+    },
+    {
+      "id": "78415e39-226d-4b60-b4ed-f2256d26d787",
+      "sessionId": "f6e9b0b7-1c46-4c50-8358-320fd580866f",
+      "kind": "raw_trace",
+      "label": "Raw app-server transcript",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/f6e9b0b7-1c46-4c50-8358-320fd580866f/raw-events.jsonl",
+      "contentType": "application/x-ndjson",
+      "sizeBytes": 494,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:41:32.083Z"
+    }
+  ]
+}

@@ -1,5 +1,4 @@
 import { existsSync, mkdirSync } from "node:fs";
-import path from "node:path";
 import type { AppConfig } from "../config/types.ts";
 import type { CodexDetectionService } from "./codex-detection-service.ts";
 import type { EventHub } from "../ws/event-hub.ts";
@@ -15,7 +14,6 @@ export type HostStatus = {
     reason: string | null;
   };
   storage: {
-    db: "healthy" | "missing_parent";
     artifacts: "healthy" | "missing";
   };
   accessMode: AppConfig["server"]["accessMode"];
@@ -31,15 +29,13 @@ export class HostHealthService {
   async getStatus(): Promise<HostStatus> {
     mkdirSync(this.config.storage.rootDir, { recursive: true });
     mkdirSync(this.config.storage.artifactsDir, { recursive: true });
-    mkdirSync(path.dirname(this.config.storage.dbPath), { recursive: true });
 
     const codex = await this.codexDetectionService.detect();
-    const dbParentExists = existsSync(path.dirname(this.config.storage.dbPath));
     const artifactsExist = existsSync(this.config.storage.artifactsDir);
 
-    const status: HostStatus["status"] = codex.compatible && dbParentExists && artifactsExist
+    const status: HostStatus["status"] = codex.compatible && artifactsExist
       ? "healthy"
-      : codex.detected || dbParentExists || artifactsExist
+      : codex.detected || artifactsExist
       ? "degraded"
       : "unhealthy";
 
@@ -54,7 +50,6 @@ export class HostHealthService {
         reason: codex.reason,
       },
       storage: {
-        db: dbParentExists ? "healthy" : "missing_parent",
         artifacts: artifactsExist ? "healthy" : "missing",
       },
       accessMode: this.config.server.accessMode,

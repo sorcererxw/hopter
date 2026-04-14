@@ -10,7 +10,6 @@ export type AppConfig = {
   };
   storage: {
     rootDir: string;
-    dbPath: string;
     artifactsDir: string;
     validationDir: string;
     webDistDir: string;

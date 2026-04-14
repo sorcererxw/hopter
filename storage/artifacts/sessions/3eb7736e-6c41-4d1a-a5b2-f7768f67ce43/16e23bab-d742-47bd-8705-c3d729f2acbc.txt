@@ -1,0 +1,1 @@
+Using `using-superpowers` discipline and loading workspace instructions first. I’m checking repo conventions, OMX memory/state, and the current file layout before I write the single-file game.

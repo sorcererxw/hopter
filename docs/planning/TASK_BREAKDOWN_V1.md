@@ -33,7 +33,7 @@ Each milestone must produce evidence compatible with `docs/validation/VALIDATION
 | Milestone | Goal | PD |
 |---|---|---:|
 | M0 | prove Bun + Codex feasibility | 4-6 |
-| M1 | gateway foundation and minimal control-plane persistence | 6-8 |
+| M1 | gateway foundation and minimal control-plane state model | 6-8 |
 | M2 | Codex session loop | 8-10 |
 | M3 | browser control plane | 8-10 |
 | M4 | hardening and remote trustworthiness | 6-8 |
@@ -251,19 +251,19 @@ Depends on:
 
 - T101
 
-### T103: Database bootstrap and migrations
+### T103: In-memory repository bootstrap
 
 Scope:
 
-- initialize `bun:sqlite`
-- add migration runner
-- define first migration set
+- define in-memory repositories for projects, sessions, auth sessions, and terminal sessions
+- wire repository lifecycle to Bun process startup
+- make restart semantics explicit and discardable
 
 Acceptance:
 
-- DB file is created automatically
-- migrations run idempotently
-- startup fails loudly on broken migration state
+- repositories initialize on boot without filesystem or database dependencies
+- runtime state is empty after process restart
+- startup does not imply hidden recovery of Codex session truth
 
 Estimate:
 
@@ -273,16 +273,16 @@ Depends on:
 
 - T101
 
-### T104: Base schema
+### T104: Base control-plane model
 
 Scope:
 
-- create `projects`, `sessions`, `auth_sessions`, `terminal_sessions`
+- define runtime shapes for `projects`, `sessions`, `auth_sessions`, `terminal_sessions`
 
 Acceptance:
 
-- schema matches engineering spec
-- indexes exist for primary query paths
+- runtime store behavior matches engineering spec
+- primary query paths are covered by repository tests
 
 Estimate:
 
@@ -381,10 +381,10 @@ Depends on:
 
 Scope:
 
-- `GET /api/projects`
-- `POST /api/projects`
-- `GET /api/projects/:projectId`
-- `PATCH /api/projects/:projectId`
+- `GET /api/bindings`
+- `POST /api/bindings`
+- `GET /api/bindings/:bindingId`
+- `PATCH /api/bindings/:bindingId`
 
 Acceptance:
 
@@ -540,10 +540,10 @@ Depends on:
 
 Scope:
 
-- `GET /api/projects/:projectId/sessions`
-- `POST /api/projects/:projectId/sessions`
-- `GET /api/sessions/:sessionId`
-- `POST /api/sessions/:sessionId/attach`
+- `GET /api/bindings/:bindingId/backend-sessions`
+- `POST /api/bindings/:bindingId/backend-sessions`
+- `GET /api/backend-sessions/:handleId`
+- `POST /api/backend-sessions/:handleId/attach`
 
 Acceptance:
 
@@ -565,9 +565,9 @@ Depends on:
 
 Scope:
 
-- `POST /api/sessions/:sessionId/input`
-- `POST /api/sessions/:sessionId/approve`
-- `POST /api/sessions/:sessionId/interrupt`
+- `POST /api/backend-sessions/:handleId/input`
+- `POST /api/backend-sessions/:handleId/approve`
+- `POST /api/backend-sessions/:handleId/interrupt`
 
 Acceptance:
 
@@ -991,18 +991,18 @@ Depends on:
 - T203
 - T306
 
-### T404: Gateway restart recovery
+### T404: Gateway restart truthfulness
 
 Scope:
 
-- boot-time session ref recovery
-- attempt attach for known sessions when possible
-- downgrade to degraded when not possible
+- boot-time empty-state behavior
+- truthful handling when prior gateway-local session refs are gone
+- artifact retention across restart
 
 Acceptance:
 
-- restart does not erase session history
-- restart recovery is predictable
+- restart does not fabricate restored session control state
+- restart behavior is predictable
 
 Estimate:
 
@@ -1270,7 +1270,7 @@ These tickets determine whether the product is real or still a demo:
 
 1. T003 Codex create-session spike
 2. T005 Bun terminal viability spike
-3. T103 database bootstrap and migrations
+3. T103 in-memory repository bootstrap
 4. T201 Codex adapter core
 5. T202 session service
 6. T203 raw event ingestion
@@ -1278,7 +1278,7 @@ These tickets determine whether the product is real or still a demo:
 8. T306 WebSocket client and subscription model
 9. T307 session detail page shell
 10. T403 degraded-state model
-11. T404 gateway restart recovery
+11. T404 gateway restart truthfulness
 12. T503 E2E smoke flow
 13. T507 PRD acceptance matrix and evidence bundle
 

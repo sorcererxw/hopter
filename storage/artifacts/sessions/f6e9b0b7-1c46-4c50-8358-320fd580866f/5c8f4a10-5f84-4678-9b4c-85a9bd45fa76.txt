@@ -1,0 +1,1 @@
+I’ve loaded the session-start skill guidance. There’s no saved project memory beyond an empty `.omx`, so I’m checking for repo-level `AGENTS.md` files and then I’ll write the game in one HTML file.

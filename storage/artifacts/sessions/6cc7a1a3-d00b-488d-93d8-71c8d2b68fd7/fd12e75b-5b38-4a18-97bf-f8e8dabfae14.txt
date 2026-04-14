@@ -1,0 +1,1 @@
+I’m at the edit step now. The file will stay fully self-contained: one HTML document with inline CSS and JS, no assets, and no extra files besides the game entrypoint.

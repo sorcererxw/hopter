@@ -1,0 +1,1 @@
+There’s no repo-local `AGENTS.md` file beyond the prompt guidance, and the repo is basically empty aside from `README.md`. I’m reading the startup skill and the existing repo stub, then I’ll add `index.html`.

@@ -69,7 +69,7 @@ This is the most pragmatic stack for the first build:
 - Bun
 - Hono for HTTP API
 - WebSocket support
-- `bun:sqlite` for metadata
+- in-memory control-plane repositories
 - filesystem-backed artifact storage
 - Bun process / terminal primitives for Codex and shell sessions
 
@@ -316,27 +316,27 @@ The phone should be optimized for:
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/projects` | list projects |
-| `POST` | `/api/projects` | create project |
-| `GET` | `/api/projects/:projectId` | project detail |
-| `PATCH` | `/api/projects/:projectId` | update settings |
+| `GET` | `/api/bindings` | list bindings |
+| `POST` | `/api/bindings` | create binding |
+| `GET` | `/api/bindings/:bindingId` | binding detail |
+| `PATCH` | `/api/bindings/:bindingId` | update binding settings |
 
 ### Sessions
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/projects/:projectId/sessions` | list project sessions |
-| `POST` | `/api/projects/:projectId/sessions` | create new session |
-| `GET` | `/api/sessions/:sessionId` | session detail |
-| `POST` | `/api/sessions/:sessionId/input` | send steer / follow-up |
-| `POST` | `/api/sessions/:sessionId/approve` | respond to pending gate |
-| `POST` | `/api/sessions/:sessionId/interrupt` | interrupt or stop |
+| `GET` | `/api/bindings/:bindingId/backend-sessions` | list backend sessions for a binding |
+| `POST` | `/api/bindings/:bindingId/backend-sessions` | create new backend session |
+| `GET` | `/api/backend-sessions/:handleId` | backend session detail |
+| `POST` | `/api/backend-sessions/:handleId/input` | send steer / follow-up |
+| `POST` | `/api/backend-sessions/:handleId/approve` | respond to pending gate |
+| `POST` | `/api/backend-sessions/:handleId/interrupt` | interrupt or stop |
 
 ### Artifacts
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/api/sessions/:sessionId/artifacts` | list artifacts for session |
+| `GET` | `/api/backend-sessions/:handleId/artifacts` | list artifacts for backend session |
 | `GET` | `/api/artifacts/:artifactId` | fetch one artifact |
 
 ### Streaming
@@ -411,11 +411,11 @@ Deliverable:
 - **PD:** 3-5
 - **Code:** 800-1,500 LOC
 
-## Epic 2: Core gateway and persistence
+## Epic 2: Core gateway and control-plane state
 
 Tasks:
 
-1. `bun:sqlite` schema for projects, sessions, events, artifacts, auth sessions
+1. in-memory repositories for projects, sessions, auth sessions, and terminal sessions
 2. filesystem artifact storage layout
 3. repository layer
 4. host health service
@@ -423,7 +423,7 @@ Tasks:
 
 Deliverable:
 
-- gateway process with persistence and health endpoints
+- gateway process with runtime-state and health endpoints
 
 ### Estimate
 
@@ -452,19 +452,19 @@ Deliverable:
 - **PD:** 8-12
 - **Code:** 1,800-3,000 LOC
 
-## Epic 4: Session persistence and rehydration
+## Epic 4: Session continuity and reconnect semantics
 
 Tasks:
 
-1. event persistence
+1. raw event artifact capture
 2. session summary derivation
 3. degraded-state model
-4. gateway restart recovery
+4. gateway restart truthfulness
 5. browser reconnect semantics
 
 Deliverable:
 
-- reliable session detail page after disconnect/reload/restart
+- reliable session detail page after disconnect/reload, with honest empty-state after restart
 
 ### Estimate
 
@@ -662,12 +662,12 @@ Estimate:
 
 Outcome:
 
-- server, persistence, health, projects API
+- server, runtime-state, health, projects API
 
 Deliverables:
 
 - single-process Bun app skeleton
-- DB schema
+- repository behavior
 - host status
 - project CRUD
 
@@ -783,7 +783,7 @@ gantt
 The true critical path is:
 
 1. Codex spike
-2. persistence backbone
+2. control-plane state backbone
 3. Codex adapter
 4. session detail page
 5. reconnect/degraded handling
@@ -809,7 +809,7 @@ Expected:
 
 Good split:
 
-- Engineer A: gateway + Codex adapter + persistence
+- Engineer A: gateway + Codex adapter + control-plane state
 - Engineer B: web UI + auth + UX states
 
 Expected:
@@ -894,7 +894,7 @@ Mitigation:
 
 ### M1 exit
 
-- can persist projects and session refs
+- can hold project and session refs in memory while the gateway process is alive
 - host health API works
 
 ### M2 exit

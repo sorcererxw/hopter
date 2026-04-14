@@ -1,0 +1,1 @@
+There’s no on-disk `AGENTS.md` under this repo, so the scoped instructions in your message are the ones that apply here. I’m pulling in the startup skill and the current `.gitignore`, then I’ll write `index.html` in one pass.

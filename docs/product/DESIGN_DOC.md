@@ -28,7 +28,7 @@ It is not the right answer for remote agent workflow.
 The user does not want to edit code on a phone. The user wants:
 
 - the same agent
-- the same project context
+- the same repo or workspace context
 - the same workflow
 - on their own machine
 - from any device
@@ -43,7 +43,7 @@ The coolest version of this product is not "mobile coding".
 
 It is:
 
-**One agent, one project context, one workflow, continuous across devices.**
+**One agent, one repo context, one workflow, continuous across devices.**
 
 The wow moment is not that a phone can send a prompt.
 
@@ -52,7 +52,7 @@ The wow moment is:
 - I start a coding session on my home machine
 - I leave the house
 - I open my phone and see the same session
-- the same agent is still working in the same project context
+- the same agent is still working in the same repo context
 - I approve the next step
 - later I sit down at a different computer and resume the same session again
 
@@ -155,7 +155,7 @@ Why it is attractive:
 Why it is insufficient:
 
 - it underestimates the server/gateway layer
-- it ignores project organization and remote access
+- it ignores binding organization and remote access
 - it risks becoming a shallow chat shell instead of a real control plane
 
 The product has to do more than render messages.
@@ -168,7 +168,7 @@ Why it works:
 
 - keeps execution on the user's own machine
 - preserves existing backend intelligence
-- creates a real product surface around projects and sessions
+- creates a real product surface around bindings and backend sessions
 - works from browser first
 - gives a clean path to future relay and native app layers
 - keeps future backend expansion cheap
@@ -183,9 +183,9 @@ Key decisions:
 
 - The product is a control plane, not a new agent.
 - The user's machine remains the source of execution truth.
-- Projects are the main container.
-- Sessions live inside projects.
-- A top-level dashboard exists as an attention layer across projects.
+- Bindings are the main container.
+- Backend sessions live inside bindings.
+- A top-level dashboard exists as an attention layer across bindings.
 - v1 backend is Codex.
 - The adapter framework exists from day one.
 - Future integrations include Claude Code and OpenCode.
@@ -224,8 +224,8 @@ Runs on:
 Responsibilities:
 
 - connect to installed coding agent backends
-- manage project definitions
-- create and resume sessions
+- manage binding definitions
+- create and resume backend sessions
 - expose structured events to the web UI
 - handle authentication and optional remote access
 
@@ -240,9 +240,9 @@ Accessible from:
 
 Responsibilities:
 
-- list projects
-- show sessions within projects
-- start a session
+- list bindings
+- show backend sessions within bindings
+- start a backend session
 - display plan/progress/checkpoints
 - support attach/resume across devices
 
@@ -262,11 +262,11 @@ This is the smallest version that the primary user would genuinely use:
 
 1. User installs the gateway server on a home machine.
 2. The gateway detects Codex and connects to it.
-3. The user adds one project by selecting a repo.
+3. The user adds one binding by selecting a repo.
 4. The user opens the web UI from another device.
-5. The user starts a session from that project.
-6. The session runs on the home machine using the existing local environment.
-7. The user can continue interacting with that session remotely from any browser.
+5. The user starts a backend session from that binding.
+6. The backend session runs on the home machine using the existing local environment.
+7. The user can continue interacting with that backend session remotely from any browser.
 
 That is enough.
 
@@ -292,9 +292,9 @@ If this loop works reliably, the product is already useful.
 
 The adapter layer should be intentionally thin:
 
-- project binding
-- session creation
-- session resume/attach
+- binding creation
+- backend session creation
+- backend session resume/attach
 - event stream
 - user input/response
 - approval handling
@@ -312,7 +312,7 @@ SSH solves command access.
 This product solves:
 
 - continuity of work context
-- project-aware session organization
+- binding-aware backend session organization
 - remote visibility into what the agent is doing
 - browser-first interaction from weak devices
 - approval and control without terminal friction
@@ -330,7 +330,7 @@ The open source product should fully support:
 - self-hosted gateway
 - web UI
 - Codex integration
-- project and session organization
+- binding and backend session organization
 - local-only access
 - self-managed reverse-proxy access
 - Docker deployment
@@ -365,10 +365,10 @@ v1 is successful if one real user can:
 
 - run the gateway on their own machine
 - connect Codex
-- add a project
+- add a binding
 - leave that machine
 - open a browser on another device
-- continue the same project session remotely
+- continue the same backend session remotely
 - and prefer this flow over SSH for the same use case
 
 The first success metric is not growth.
@@ -379,7 +379,7 @@ It is repeated personal use.
 1. Review this design doc for strategic and UX gaps.
 2. Turn it into a technical architecture memo.
 3. Define the adapter framework around Codex-first integration.
-4. Build the minimal gateway plus web loop for one project and one backend.
+4. Build the minimal gateway plus web loop for one binding and one backend.
 
 ## What I noticed about how you think
 
@@ -424,7 +424,7 @@ This is where SSH is weak:
 - bad mobile ergonomics
 - poor visibility into agent state
 - poor approval flow
-- no project/session organization
+- no binding/backend-session organization
 - no productized cross-device continuity
 
 ### What "same context" means in v1
@@ -434,7 +434,7 @@ The original doc was too fuzzy here.
 For v1, "same context" means these things survive across devices:
 
 - backend session identity
-- project binding
+- binding
 - repo binding
 - worktree or branch reference
 - conversation history relevant to that session
@@ -454,7 +454,7 @@ This sharpens the promise and keeps it honest.
 
 The remote UX was underspecified. v1 should support these actions and no more:
 
-- start a new session from a project
+- start a new backend session from a binding
 - view current plan or current checkpoint
 - approve or reject a pending gate
 - send a short steer or clarification reply
@@ -505,7 +505,7 @@ No public exposure by default.
 
 #### v1 security rules
 
-- per-project allowlist, not "all repos on this machine"
+- per-binding allowlist, not "all repos on this machine"
 - backend actions only, no generic remote shell
 - explicit remote session auth
 - short-lived browser sessions
@@ -548,18 +548,18 @@ The better sequencing is:
 
 This keeps future backend expansion cheap without pretending the general framework is understood before the first backend works.
 
-### Project versus session
+### Binding versus backend session
 
-Projects still remain the main container.
+Bindings remain the main control-plane container.
 
-That said, the outside voice is right that forcing heavy project setup before value is a mistake.
+That said, the outside voice is right that forcing heavy binding setup before value is a mistake.
 
 So the revised rule is:
 
-- projects are the durable organizational model
-- the first-run flow is optimized for starting one session fast
-- project creation happens as lightly as possible during repo selection
-- dashboard views should foreground active sessions and pending attention
+- bindings are the durable organizational model inside the UI
+- the first-run flow is optimized for starting one backend session fast
+- binding creation happens as lightly as possible during repo selection
+- dashboard views should foreground active backend sessions and pending attention
 
 ### Distribution path
 
@@ -589,19 +589,19 @@ v1 should track:
 If the user can only see three things on a weak device, they should be:
 
 1. what needs attention now
-2. what session is currently moving the project
-3. how to jump back into a project quickly
+2. what backend session is currently moving the repo
+3. how to jump back into a binding quickly
 
 ### Screen hierarchy
 
 ```text
 HOME / DASHBOARD
 ├── Needs Attention
-├── Running Sessions
+├── Running Backend Sessions
 ├── Recently Finished
-└── Projects
-    └── Project Detail
-        ├── Sessions
+└── Bindings
+    └── Binding Detail
+        ├── Backend Sessions
         ├── Queue / Draft Ideas
         ├── Branches / Worktrees
         └── Settings
@@ -618,11 +618,11 @@ Phone / Browser
    │
    ├── Dashboard
    │     ├── Open pending approval
-   │     └── Jump into running session
+   │     └── Jump into running backend session
    │
-   └── Project
-         ├── Start session
-         ├── Resume session
+   └── Binding
+         ├── Start backend session
+         ├── Resume backend session
          └── Inspect prior artifacts
 ```
 
@@ -631,9 +631,9 @@ Phone / Browser
 ```text
 FEATURE                    | LOADING                       | EMPTY                                  | ERROR                                      | SUCCESS                             | PARTIAL
 ---------------------------|-------------------------------|----------------------------------------|--------------------------------------------|-------------------------------------|---------------------------------------------
-Dashboard                  | Show host/session sync status | "No sessions yet" + start-session CTA  | Gateway unreachable / backend offline      | Attention queue visible             | Some projects load, one host degraded
-Project list               | Skeleton project rows         | "No projects yet" + add-repo CTA       | Repo scan or permission failure            | Projects listed                     | Project metadata visible, status stale
-Session detail             | Timeline skeleton             | "No events yet" for new session        | Session lost / event stream broken         | Plan, checkpoints, artifacts shown  | Old history available, live attach failed
+Dashboard                  | Show host/session sync status | "No backend sessions yet" + start-session CTA | Gateway unreachable / backend offline | Attention queue visible             | Some bindings load, one host degraded
+Binding list               | Skeleton binding rows         | "No bindings yet" + add-repo CTA       | Repo scan or permission failure            | Bindings listed                     | Binding metadata visible, status stale
+Backend session detail     | Timeline skeleton             | "No events yet" for new backend session | Session lost / event stream broken       | Plan, checkpoints, artifacts shown  | Old history available, live attach failed
 Pending approval           | Loading current gate          | "Nothing waiting on you"               | Approval submit failed                     | Approval accepted and timeline moves| Gate visible, but backend health degraded
 Artifact panel             | Loading summaries/screenshots | "No artifacts yet"                     | Artifact fetch failed                      | Tests/logs/screenshots visible      | Summary visible, file-level artifact missing
 Remote attach/resume       | Reconnecting state            | "No resumable sessions"                | Session cannot be reattached               | Session live and controllable       | Read-only fallback after failed attach
@@ -669,14 +669,14 @@ The plan needs explicit mobile intent.
 
 - phone first for session monitoring and approval
 - tablet and desktop allow denser timelines and richer artifacts
-- project and session summaries must be readable without horizontal scrolling
+- binding and backend session summaries must be readable without horizontal scrolling
 - action buttons must stay fixed or easy to reach on mobile for pending approvals
 
 ### Accessibility rules
 
 - 44px minimum touch targets
 - keyboard navigation for all core actions in browser UI
-- landmarks for dashboard, project nav, session timeline, artifact panel
+- landmarks for dashboard, binding nav, backend session timeline, artifact panel
 - approval dialogs fully screen-reader navigable
 - session status never conveyed by color alone
 
@@ -693,7 +693,7 @@ BROWSER / PWA  <------HTTPS/WS------->  GATEWAY SERVER  <------->  CODEX BACKEND
    |                                          |                         |
    |                                          |                         |
    |                                          v                         v
-   |                                  Project/session store       Session / turn / events
+   |                                  Binding/session store      Session / turn / events
    |                                          |                         |
    |                                          v                         |
    +--------------------Artifacts, checkpoints, approvals--------------+
@@ -779,10 +779,10 @@ Codex correctly pushed on these points:
 - the adapter framework should not be over-generalized before the Codex loop is proven
 - the exact v1 jobs that beat SSH needed to be named
 
-Codex also challenged the project-first structure. Current judgment:
+Codex also challenged the binding-first structure. Current judgment:
 
-- keep projects as the durable container
-- but optimize first-run for fast session value, not heavy project administration
+- keep bindings as the durable container
+- but optimize first-run for fast backend-session value, not heavy binding administration
 
 That remains the right compromise.
 
@@ -794,7 +794,7 @@ That remains the right compromise.
 | 2 | CEO | Define exact day-1 jobs where this beats SSH | Mechanical | Specificity | The product wins only on concrete remote agent tasks | Generic "remote development" framing |
 | 3 | Eng | Replace "general adapter framework first" with "Codex seam first, extract later" | User Challenge | Pragmatism | Premature abstraction would slow the only loop that matters | Overbuilt multi-backend abstraction |
 | 4 | Eng | Make security/trust model part of the product definition | Mechanical | Completeness | Browser-exposed host software without a trust model is not shippable | Deferring security to implementation |
-| 5 | Design | Keep projects as the organizational model, but foreground attention and fast session resume in UX | Taste | User empathy | This preserves long-term structure without making first-run feel heavy | Session-only top level |
+| 5 | Design | Keep bindings as the organizational model, but foreground attention and fast backend-session resume in UX | Taste | User empathy | This preserves long-term structure without making first-run feel heavy | Session-only top level |
 | 6 | DX | Keep browser-first for v1, but define approval/steer as the primary mobile jobs | Mechanical | Constraint worship | Phone UX should optimize for the highest-frequency useful tasks | Deep mobile editing |
 
 ## Completion Summary
@@ -809,7 +809,7 @@ That remains the right compromise.
 | Eng Review           | Security, reliability, adapter timing fixed  |
 | DX Review            | v1 actions and install path sharpened         |
 | Outside voice        | Ran via Codex                                |
-| Cross-model tension  | 1 meaningful tension: project-first vs session-first |
+| Cross-model tension  | 1 meaningful tension: binding-first vs session-first |
 | NOT in scope         | written                                      |
 | What already exists  | written                                      |
 | Dream state delta    | written                                      |
@@ -825,5 +825,5 @@ Two decisions still deserve explicit approval before this becomes the working pl
 1. **Adapter sequencing**
    - recommendation: keep a narrow Codex-first seam, do not build a generalized adapter framework first
 
-2. **Project/session UX balance**
-   - recommendation: keep projects as the durable model, but make first-run and mobile use feel session-first and attention-first
+2. **Binding/backend-session UX balance**
+   - recommendation: keep bindings as the durable model, but make first-run and mobile use feel backend-session-first and attention-first

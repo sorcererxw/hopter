@@ -1,0 +1,1 @@
+There’s no repo-local `AGENTS.md` on disk beyond the instructions you already provided, so I’m taking those as the active workspace rules. Now I’m pulling OMX project memory and mode state, then I’ll build the single-file game.

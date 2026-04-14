@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/server/bootstrap/index.ts",
+    "dev:lan": "ORCHD_HOST=0.0.0.0 bun --watch src/server/bootstrap/index.ts",
     "start": "bun src/server/bootstrap/index.ts",
+    "start:lan": "ORCHD_HOST=0.0.0.0 bun src/server/bootstrap/index.ts",
     "build:web": "bun src/web/app/build.ts",
     "build": "bun run build:web",
     "test": "bun test",

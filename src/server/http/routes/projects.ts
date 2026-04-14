@@ -1,22 +1,22 @@
 import { Hono } from "hono";
 import { fail, ok } from "../../../shared/contracts/api.ts";
-import type { ProjectService } from "../../services/project-service.ts";
+import type { BindingService } from "../../services/binding-service.ts";
 import type { CodexDetectionService } from "../../services/codex-detection-service.ts";
 import type { AppConfig } from "../../config/types.ts";
 import { AppError } from "../../services/errors.ts";
 
-export function createProjectRoutes(
-  projectService: ProjectService,
+export function createBindingRoutes(
+  bindingService: BindingService,
   codexDetectionService: CodexDetectionService,
   config: AppConfig,
 ): Hono {
   const app = new Hono();
 
-  app.get("/projects", (c) => {
-    return c.json(ok({ items: projectService.list() }));
+  app.get("/bindings", (c) => {
+    return c.json(ok({ items: bindingService.list() }));
   });
 
-  app.post("/projects", async (c) => {
+  app.post("/bindings", async (c) => {
     try {
       const body = await c.req.json<{
         name?: string;
@@ -25,10 +25,10 @@ export function createProjectRoutes(
       }>();
 
       if (!body.name || !body.repoPath || !body.defaultBackend) {
-        return c.json(fail("INVALID_PROJECT_BODY", "name, repoPath, and defaultBackend are required"), 400);
+        return c.json(fail("INVALID_BINDING_BODY", "name, repoPath, and defaultBackend are required"), 400);
       }
 
-      const project = projectService.create({
+      const binding = bindingService.create({
         name: body.name,
         repoPath: body.repoPath,
         defaultBackend: body.defaultBackend,
@@ -36,7 +36,7 @@ export function createProjectRoutes(
         allowlist: config.projects.allowlist,
       });
 
-      return c.json(ok({ project }), 201);
+      return c.json(ok({ binding }), 201);
     } catch (error) {
       if (error instanceof AppError) {
         return c.json(fail(error.code, error.message), error.status);
@@ -46,13 +46,13 @@ export function createProjectRoutes(
     }
   });
 
-  app.get("/projects/:projectId", async (c) => {
+  app.get("/bindings/:bindingId", async (c) => {
     try {
-      const project = projectService.get(c.req.param("projectId"));
+      const binding = bindingService.get(c.req.param("bindingId"));
       const codex = await codexDetectionService.detect();
       return c.json(ok({
-        project,
-        health: projectService.health(project, codex),
+        binding,
+        health: bindingService.health(binding, codex),
       }));
     } catch (error) {
       if (error instanceof AppError) {
@@ -63,15 +63,15 @@ export function createProjectRoutes(
     }
   });
 
-  app.patch("/projects/:projectId", async (c) => {
+  app.patch("/bindings/:bindingId", async (c) => {
     try {
       const body = await c.req.json<{
         name?: string;
         defaultBackend?: string;
       }>();
 
-      const project = projectService.update(c.req.param("projectId"), body);
-      return c.json(ok({ project }));
+      const binding = bindingService.update(c.req.param("bindingId"), body);
+      return c.json(ok({ binding }));
     } catch (error) {
       if (error instanceof AppError) {
         return c.json(fail(error.code, error.message), error.status);

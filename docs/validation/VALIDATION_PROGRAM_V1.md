@@ -258,7 +258,7 @@ The final validation program should include these categories.
 
 - API response shapes
 - websocket event shapes
-- DB migration checks
+- in-memory repository behavior checks
 - status transition correctness
 
 ## C. Integration tests
@@ -347,7 +347,7 @@ Validates:
 Validates:
 
 - does the code behave correctly?
-- do contracts and persistence hold?
+- do contracts and runtime-state boundaries hold?
 - are regressions caught?
 
 Both are required.
@@ -362,7 +362,7 @@ Both are required.
 
 ## M1
 
-- migration tests
+- repository behavior tests
 - host status screenshots
 - project CRUD verification
 
@@ -382,7 +382,7 @@ Both are required.
 ## M4
 
 - degraded-state proof
-- restart recovery proof
+- restart empty-state truthfulness proof
 - auth and reverse-proxy verification
 
 ## M5

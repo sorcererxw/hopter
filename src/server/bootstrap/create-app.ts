@@ -7,20 +7,20 @@ import type { AppConfig } from "../config/types.ts";
 import type { AuthService } from "../services/auth-service.ts";
 import type { CodexDetectionService } from "../services/codex-detection-service.ts";
 import type { HostHealthService } from "../services/host-health-service.ts";
-import type { ProjectService } from "../services/project-service.ts";
-import type { SessionService } from "../services/session-service.ts";
+import type { BindingService } from "../services/binding-service.ts";
+import type { BackendSessionService } from "../services/backend-session-service.ts";
 import { createAuthMiddleware } from "../http/middleware/auth.ts";
 import { createAuthRoutes } from "../http/routes/auth.ts";
 import { createHostRoutes } from "../http/routes/host.ts";
-import { createProjectRoutes } from "../http/routes/projects.ts";
-import { createSessionRoutes } from "../http/routes/sessions.ts";
+import { createBindingRoutes } from "../http/routes/projects.ts";
+import { createBackendSessionRoutes } from "../http/routes/sessions.ts";
 import { createArtifactRoutes } from "../http/routes/artifacts.ts";
 
 type CreateAppOptions = {
   config: AppConfig;
   authService: AuthService;
-  projectService: ProjectService;
-  sessionService: SessionService;
+  bindingService: BindingService;
+  backendSessionService: BackendSessionService;
   codexDetectionService: CodexDetectionService;
   hostHealthService: HostHealthService;
 };
@@ -54,6 +54,7 @@ async function serveStaticAsset(config: AppConfig, requestPath: string): Promise
       return new Response(indexBody, {
         headers: {
           "content-type": "text/html; charset=utf-8",
+          "cache-control": "no-store",
         },
       });
     }
@@ -65,6 +66,7 @@ async function serveStaticAsset(config: AppConfig, requestPath: string): Promise
   return new Response(body, {
     headers: {
       "content-type": CONTENT_TYPES[path.extname(assetPath)] ?? "application/octet-stream",
+      "cache-control": "no-store",
     },
   });
 }
@@ -82,9 +84,9 @@ export function createApp(options: CreateAppOptions): Hono {
     ),
   );
   app.route("/api", createHostRoutes(options.hostHealthService, options.codexDetectionService));
-  app.route("/api", createProjectRoutes(options.projectService, options.codexDetectionService, options.config));
-  app.route("/api", createSessionRoutes(options.sessionService));
-  app.route("/api", createArtifactRoutes(options.sessionService));
+  app.route("/api", createBindingRoutes(options.bindingService, options.codexDetectionService, options.config));
+  app.route("/api", createBackendSessionRoutes(options.backendSessionService));
+  app.route("/api", createArtifactRoutes(options.backendSessionService));
 
   app.notFound(async (c) => {
     if (c.req.path.startsWith("/api/")) {

@@ -1,101 +1,47 @@
-import type { Database } from "bun:sqlite";
-import type { Project } from "../../shared/domain/project.ts";
-
-type ProjectRow = {
-  id: string;
-  name: string;
-  repo_path: string;
-  host_id: string;
-  default_backend: string;
-  created_at: string;
-  updated_at: string;
-};
-
-function mapProject(row: ProjectRow): Project {
-  return {
-    id: row.id,
-    name: row.name,
-    repoPath: row.repo_path,
-    hostId: row.host_id,
-    defaultBackend: row.default_backend,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
+import type { ProjectBinding } from "../../shared/domain/project.ts";
 
 export class ProjectRepository {
-  constructor(private readonly db: Database) {}
+  private readonly projects = new Map<string, ProjectBinding>();
 
-  list(): Project[] {
-    const rows = this.db
-      .query("SELECT * FROM projects ORDER BY created_at DESC")
-      .all() as ProjectRow[];
-
-    return rows.map(mapProject);
+  list(): ProjectBinding[] {
+    return [...this.projects.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
-  getById(id: string): Project | null {
-    const row = this.db
-      .query("SELECT * FROM projects WHERE id = ?")
-      .get(id) as ProjectRow | null;
-
-    return row ? mapProject(row) : null;
+  getById(id: string): ProjectBinding | null {
+    return this.projects.get(id) ?? null;
   }
 
-  getByRepoPath(repoPath: string): Project | null {
-    const row = this.db
-      .query("SELECT * FROM projects WHERE repo_path = ?")
-      .get(repoPath) as ProjectRow | null;
+  getByRepoPath(repoPath: string): ProjectBinding | null {
+    for (const project of this.projects.values()) {
+      if (project.repoPath === repoPath) {
+        return project;
+      }
+    }
 
-    return row ? mapProject(row) : null;
+    return null;
   }
 
-  create(project: Project): Project {
-    this.db
-      .query(`
-        INSERT INTO projects (
-          id,
-          name,
-          repo_path,
-          host_id,
-          default_backend,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-      `)
-      .run(
-        project.id,
-        project.name,
-        project.repoPath,
-        project.hostId,
-        project.defaultBackend,
-        project.createdAt,
-        project.updatedAt,
-      );
-
+  create(project: ProjectBinding): ProjectBinding {
+    this.projects.set(project.id, project);
     return project;
   }
 
-  update(id: string, fields: Partial<Pick<Project, "name" | "defaultBackend" | "updatedAt">>): Project | null {
+  update(
+    id: string,
+    fields: Partial<Pick<ProjectBinding, "name" | "defaultBackend" | "updatedAt">>,
+  ): ProjectBinding | null {
     const current = this.getById(id);
     if (!current) {
       return null;
     }
 
-    const next: Project = {
+    const next: ProjectBinding = {
       ...current,
       ...fields,
       updatedAt: fields.updatedAt ?? current.updatedAt,
     };
 
-    this.db
-      .query(`
-        UPDATE projects
-        SET name = ?, default_backend = ?, updated_at = ?
-        WHERE id = ?
-      `)
-      .run(next.name, next.defaultBackend, next.updatedAt, id);
-
+    this.projects.set(id, next);
     return next;
   }
 }

@@ -1,0 +1,1 @@
+The inline JavaScript parses cleanly. `git diff` is empty because this is a brand-new untracked file, so I’m checking status once to confirm the repo change surface stays exactly where it should.

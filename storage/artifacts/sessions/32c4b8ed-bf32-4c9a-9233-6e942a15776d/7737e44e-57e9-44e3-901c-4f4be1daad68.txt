@@ -1,0 +1,1 @@
+I’m writing the game now as one HTML file with inline CSS and JS: canvas board, keyboard controls, score, restart flow, and a layout that scales with the viewport.

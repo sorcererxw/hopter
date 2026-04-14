@@ -1,18 +1,18 @@
 import { Hono } from "hono";
 import { fail, ok } from "../../../shared/contracts/api.ts";
-import type { SessionService } from "../../services/session-service.ts";
+import type { BackendSessionService } from "../../services/backend-session-service.ts";
 import { AppError } from "../../services/errors.ts";
 
-export function createSessionRoutes(sessionService: SessionService): Hono {
+export function createBackendSessionRoutes(sessionService: BackendSessionService): Hono {
   const app = new Hono();
 
-  app.get("/projects/:projectId/sessions", (c) => {
+  app.get("/bindings/:bindingId/backend-sessions", (c) => {
     return c.json(ok({
-      items: sessionService.listByProjectId(c.req.param("projectId")),
+      items: sessionService.listByProjectId(c.req.param("bindingId")),
     }));
   });
 
-  app.post("/projects/:projectId/sessions", async (c) => {
+  app.post("/bindings/:bindingId/backend-sessions", async (c) => {
     try {
       const body = await c.req.json<{
         title?: string | null;
@@ -20,15 +20,15 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
       }>();
 
       if (!body.prompt || body.prompt.trim() === "") {
-        return c.json(fail("INVALID_SESSION_BODY", "prompt is required"), 400);
+        return c.json(fail("INVALID_BACKEND_SESSION_BODY", "prompt is required"), 400);
       }
 
-      const session = await sessionService.createSession(c.req.param("projectId"), {
+      const handle = await sessionService.createSession(c.req.param("bindingId"), {
         title: body.title ?? null,
         prompt: body.prompt,
       });
 
-      return c.json(ok({ session }), 201);
+      return c.json(ok({ handle }), 201);
     } catch (error) {
       if (error instanceof AppError) {
         return c.json(fail(error.code, error.message), error.status);
@@ -38,10 +38,16 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.get("/sessions/:sessionId", async (c) => {
+  app.get("/backend-sessions/:handleId", async (c) => {
     try {
-      const detail = await sessionService.getDetail(c.req.param("sessionId"));
-      return c.json(ok(detail));
+      const detail = await sessionService.getDetail(c.req.param("handleId"));
+      return c.json(ok({
+        handle: detail.session,
+        attention: detail.attention,
+        latestSummary: detail.latestSummary,
+        artifacts: detail.artifacts,
+        terminal: detail.terminal,
+      }));
     } catch (error) {
       if (error instanceof AppError) {
         return c.json(fail(error.code, error.message), error.status);
@@ -51,9 +57,9 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.post("/sessions/:sessionId/attach", async (c) => {
+  app.post("/backend-sessions/:handleId/attach", async (c) => {
     try {
-      const attached = await sessionService.attach(c.req.param("sessionId"));
+      const attached = await sessionService.attach(c.req.param("handleId"));
       return c.json(ok(attached));
     } catch (error) {
       if (error instanceof AppError) {
@@ -64,14 +70,14 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.post("/sessions/:sessionId/input", async (c) => {
+  app.post("/backend-sessions/:handleId/input", async (c) => {
     try {
       const body = await c.req.json<{ text?: string }>();
       if (!body.text || body.text.trim() === "") {
-        return c.json(fail("INVALID_SESSION_INPUT", "text is required"), 400);
+        return c.json(fail("INVALID_HANDLE_INPUT", "text is required"), 400);
       }
 
-      const result = await sessionService.input(c.req.param("sessionId"), body.text);
+      const result = await sessionService.input(c.req.param("handleId"), body.text);
       return c.json(ok(result));
     } catch (error) {
       if (error instanceof AppError) {
@@ -82,14 +88,14 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.post("/sessions/:sessionId/approve", async (c) => {
+  app.post("/backend-sessions/:handleId/approve", async (c) => {
     try {
       const body = await c.req.json<{ decision?: "approve" | "reject"; note?: string | null }>();
       if (body.decision !== "approve" && body.decision !== "reject") {
         return c.json(fail("INVALID_APPROVAL_DECISION", "decision must be approve or reject"), 400);
       }
 
-      const result = await sessionService.approve(c.req.param("sessionId"), body.decision);
+      const result = await sessionService.approve(c.req.param("handleId"), body.decision);
       return c.json(ok(result));
     } catch (error) {
       if (error instanceof AppError) {
@@ -100,14 +106,14 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.post("/sessions/:sessionId/interrupt", async (c) => {
+  app.post("/backend-sessions/:handleId/interrupt", async (c) => {
     try {
       const body = await c.req.json<{ mode?: "interrupt" | "stop" }>();
       if (body.mode !== "interrupt" && body.mode !== "stop") {
         return c.json(fail("INVALID_INTERRUPT_MODE", "mode must be interrupt or stop"), 400);
       }
 
-      const result = await sessionService.interrupt(c.req.param("sessionId"));
+      const result = await sessionService.interrupt(c.req.param("handleId"));
       return c.json(ok({ ...result, mode: body.mode }));
     } catch (error) {
       if (error instanceof AppError) {
@@ -118,9 +124,9 @@ export function createSessionRoutes(sessionService: SessionService): Hono {
     }
   });
 
-  app.get("/sessions/:sessionId/artifacts", (c) => {
+  app.get("/backend-sessions/:handleId/artifacts", (c) => {
     try {
-      const items = sessionService.listArtifacts(c.req.param("sessionId"));
+      const items = sessionService.listArtifacts(c.req.param("handleId"));
       return c.json(ok({ items }));
     } catch (error) {
       if (error instanceof AppError) {

@@ -1,0 +1,15 @@
+{
+  "artifacts": [
+    {
+      "id": "609b45b9-f7a6-4d5b-bfda-d6ba0f348248",
+      "sessionId": "8d4ac0e2-629c-48d3-9e73-68dfbff5ea83",
+      "kind": "raw_trace",
+      "label": "Raw app-server transcript",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/8d4ac0e2-629c-48d3-9e73-68dfbff5ea83/raw-events.jsonl",
+      "contentType": "application/x-ndjson",
+      "sizeBytes": 494,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:52:40.783Z"
+    }
+  ]
+}

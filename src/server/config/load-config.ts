@@ -92,11 +92,6 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     env.ORCHD_STORAGE_DIR?.trim() || "storage",
   );
 
-  const dbPath = path.resolve(
-    cwd,
-    env.ORCHD_DB_PATH?.trim() || path.join(storageRoot, "orchd.sqlite"),
-  );
-
   const artifactsDir = path.resolve(
     cwd,
     env.ORCHD_ARTIFACTS_DIR?.trim() || path.join(storageRoot, "artifacts"),
@@ -115,7 +110,6 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     },
     storage: {
       rootDir: storageRoot,
-      dbPath,
       artifactsDir,
       validationDir: path.join(artifactsDir, "validation"),
       webDistDir,

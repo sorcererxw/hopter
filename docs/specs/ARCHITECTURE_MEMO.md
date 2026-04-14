@@ -19,12 +19,12 @@ It does not attempt to define a general agent platform.
 ## Architecture Principles
 
 1. **Codex remains the execution and reasoning engine.**
-2. **The gateway owns remote access, organization, persistence, and UI-facing state.**
+2. **The gateway owns remote access, organization, ephemeral control-plane state, and UI-facing state.**
 3. **The browser is never the source of truth for session state.**
 4. **The first backend is Codex.** Future backends are allowed, but they do not drive v1 complexity.
 5. **The adapter seam should be real but narrow.** We extract only what the Codex loop proves we need.
 6. **The v1 runtime is Bun-first.** We do not design the core around Node-only infrastructure unless Bun forces it.
-7. **The v1 product ships as a single-process monolith.** One Bun process owns API, WebSocket, persistence, PTY/process control, and static asset serving.
+7. **The v1 product ships as a single-process monolith.** One Bun process owns API, WebSocket, in-memory control-plane state, PTY/process control, and static asset serving.
 8. **Platform variance should be pushed downward.** Use third-party libraries for cross-platform behavior where reasonable, but keep gateway core logic behind stable local interfaces.
 9. **Codex remains the source of truth for session content.** The gateway may store lightweight control-plane references and validation evidence, but it should not build a heavy shadow copy of session history, plans, or artifacts.
 
@@ -61,7 +61,7 @@ The gateway is a **single Bun process** with these responsibilities:
 - serve HTTP API
 - serve WebSocket updates
 - serve built frontend assets
-- persist minimal control-plane metadata
+- keep minimal control-plane state in memory
 - manage external Codex processes
 - manage terminal sessions
 
@@ -131,9 +131,9 @@ The browser remains a separate client, but the product is operationally one serv
 - TypeScript
 - Hono on Bun
 
-### Persistence
+### State retention
 
-- `bun:sqlite` for metadata
+- in-memory repositories for project/session/auth/terminal state
 - filesystem-backed artifact storage
 
 ### Process and terminal control
@@ -156,7 +156,7 @@ Minimum interfaces worth isolating:
 - `ProcessRunner`
 - `TerminalDriver`
 - `ArtifactStore`
-- `Database`
+- `StateStore`
 - `SessionTransport`
 
 This gives us one escape hatch if Bun runtime behavior differs from what a specific dependency expects.
@@ -197,13 +197,13 @@ For v1, session truth is split intentionally:
 - **Gateway owns:** project bindings, lightweight session references, connection state, UI attention state, auth state, validation evidence
 
 The gateway should not try to become a second durable session store.
-If a local cache exists for performance or debugging, it must be treated as discardable.
+Its project/session/auth/terminal indexes should remain discardable runtime state.
 
 The data model is project-first, but the UI should foreground active sessions.
 
 ### Project
 
-Represents a durable container for:
+Represents a gateway-known container for:
 
 - repo path
 - host identity
@@ -393,7 +393,7 @@ It is only the minimum UI contract the gateway needs.
 ### Source of truth
 
 - Codex backend session identity is the execution identity.
-- Gateway persistence is the UI rehydration identity.
+- Gateway runtime state is the current UI index while the process is alive.
 - Browser holds no authoritative state.
 
 ### Reconnect model
@@ -401,42 +401,35 @@ It is only the minimum UI contract the gateway needs.
 If the browser disconnects:
 
 - session continues if backend continues
-- browser resubscribes and reloads from gateway persistence
+- browser resubscribes and reloads from gateway HTTP state
 
 If the gateway restarts:
 
-- gateway restores project/session index from local persistence
-- tries to reattach to active backend sessions
-- marks any uncertain session as `degraded`
+- gateway starts with an empty in-memory control-plane index
+- it must not fabricate restored project/session/auth state from stale local mirrors
+- validation artifacts remain available from filesystem storage
 
-If backend reattach fails:
+## State retention
 
-- session remains visible as historical state
-- live control is disabled
-- user sees explicit degraded messaging
-
-## Persistence
-
-V1 persistence should be local and boring.
+V1 runtime state should be local and discardable.
 
 Recommended:
 
-- SQLite for metadata
+- in-memory stores for project/session/auth/terminal state
 - filesystem-backed artifact storage
 
 Why:
 
-- easy local deploy
-- good enough for one-user self-hosted product
-- easy to inspect and back up
+- keeps Codex as the only durable session truth
+- avoids building a second history mirror
+- makes restart semantics honest instead of speculative
 
-### Tables / logical stores
+### Logical stores
 
 - projects
 - sessions
-- events
 - artifacts
-- auth_sessions
+- auth sessions
 
 ## Auth and Access Control
 
@@ -481,19 +474,19 @@ The API should be small and boring.
 ### REST
 
 ```text
-GET    /api/projects
-POST   /api/projects
-GET    /api/projects/:projectId
+GET    /api/bindings
+POST   /api/bindings
+GET    /api/bindings/:bindingId
 
-GET    /api/projects/:projectId/sessions
-POST   /api/projects/:projectId/sessions
+GET    /api/bindings/:bindingId/backend-sessions
+POST   /api/bindings/:bindingId/backend-sessions
 
-GET    /api/sessions/:sessionId
-POST   /api/sessions/:sessionId/input
-POST   /api/sessions/:sessionId/approve
-POST   /api/sessions/:sessionId/interrupt
+GET    /api/backend-sessions/:handleId
+POST   /api/backend-sessions/:handleId/input
+POST   /api/backend-sessions/:handleId/approve
+POST   /api/backend-sessions/:handleId/interrupt
 
-GET    /api/sessions/:sessionId/artifacts
+GET    /api/backend-sessions/:handleId/artifacts
 GET    /api/artifacts/:artifactId
 
 GET    /api/host/status
@@ -648,7 +641,7 @@ Useful counters:
 ### Phase 1: Codex-only backbone
 
 - local gateway process
-- SQLite + filesystem persistence
+- in-memory control-plane stores + filesystem artifacts
 - Codex detection + compatibility check
 - project create/list
 - session create/list/detail
@@ -659,7 +652,7 @@ Useful counters:
 - approve/respond/interrupt actions
 - artifact indexing
 - degraded-state handling
-- reconnect and session rehydration
+- reconnect and clean restart semantics
 
 ### Phase 3: Access hardening
 
@@ -689,7 +682,7 @@ These are the things most likely to blow up v1 if allowed in early:
 ## Open Questions
 
 1. Can Codex sessions be adopted if they were started outside the gateway, or only if created by the gateway?
-2. What exact Codex app-server fields should be persisted versus derived?
+2. What exact Codex app-server fields should be kept in memory versus derived on demand?
 3. Which artifacts are cheap enough to store eagerly, and which should be fetched lazily?
 4. Should the host ship first as:
    - background server + web UI

@@ -1,0 +1,1 @@
+I’ve confirmed the repo is essentially empty aside from `README.md`, `.gitignore`, and local OMX state. Next I’m checking the mandatory session skill guidance, then I’ll write the single-file game.

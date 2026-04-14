@@ -2,43 +2,38 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { Database } from "bun:sqlite";
 import { createApp } from "../src/server/bootstrap/create-app.ts";
 import { loadConfig } from "../src/server/config/load-config.ts";
-import { runMigrations } from "../src/server/db/migrate.ts";
 import { AuthSessionRepository } from "../src/server/repositories/auth-session-repository.ts";
 import { ProjectRepository } from "../src/server/repositories/project-repository.ts";
 import { SessionRepository } from "../src/server/repositories/session-repository.ts";
 import { AuthService } from "../src/server/services/auth-service.ts";
+import { BackendSessionService } from "../src/server/services/backend-session-service.ts";
+import { BindingService } from "../src/server/services/binding-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
-import { ProjectService } from "../src/server/services/project-service.ts";
-import { SessionService } from "../src/server/services/session-service.ts";
 
 function makeTestApp() {
   const root = mkdtempSync(path.join(tmpdir(), "orchd-app-"));
-  const db = new Database(path.join(root, "orchd.sqlite"), { create: true });
-  runMigrations(db, path.resolve(process.cwd(), "src/server/db/migrations"));
 
   const config = loadConfig({
     cwd: process.cwd(),
     env: {
       ...process.env,
       ORCHD_STORAGE_DIR: root,
-      ORCHD_DB_PATH: path.join(root, "orchd.sqlite"),
       ORCHD_ARTIFACTS_DIR: path.join(root, "artifacts"),
       ORCHD_AUTH_PASSWORD: "",
     },
   });
 
-  const projectRepository = new ProjectRepository(db);
-  const sessionRepository = new SessionRepository(db);
-  const authRepository = new AuthSessionRepository(db);
+  const projectRepository = new ProjectRepository();
+  const sessionRepository = new SessionRepository();
+  const authRepository = new AuthSessionRepository();
   const codexDetectionService = new CodexDetectionService(config.codex.minVersion);
-  const projectService = new ProjectService(projectRepository);
+  const bindingService = new BindingService(projectRepository);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService);
-  const sessionService = new SessionService(config, projectRepository, sessionRepository);
+  const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository);
 
   return {
     root,
@@ -46,8 +41,8 @@ function makeTestApp() {
     app: createApp({
       config,
       authService,
-      projectService,
-      sessionService,
+      bindingService,
+      backendSessionService,
       codexDetectionService,
       hostHealthService,
     }),
@@ -62,6 +57,7 @@ describe("http app", () => {
     const hostPayload = await host.json();
     expect(hostPayload.ok).toBe(true);
     expect(hostPayload.data.hostId).toBe("host_local");
+    expect(hostPayload.data.storage.artifacts).toBe("healthy");
 
     const backends = await app.request("http://local/api/backends");
     const backendsPayload = await backends.json();
@@ -69,12 +65,12 @@ describe("http app", () => {
     expect(Array.isArray(backendsPayload.data)).toBe(true);
   });
 
-  test("creates, lists, and reads projects", async () => {
+  test("creates, lists, and reads bindings", async () => {
     const { app, root } = makeTestApp();
     const repoPath = path.join(root, "repo");
     mkdirSync(path.join(repoPath, ".git"), { recursive: true });
 
-    const created = await app.request("http://local/api/projects", {
+    const created = await app.request("http://local/api/bindings", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -87,15 +83,15 @@ describe("http app", () => {
     expect(created.status).toBe(201);
     const createdPayload = await created.json();
     expect(createdPayload.ok).toBe(true);
-    const projectId = createdPayload.data.project.id;
+    const bindingId = createdPayload.data.binding.id;
 
-    const listed = await app.request("http://local/api/projects");
+    const listed = await app.request("http://local/api/bindings");
     const listedPayload = await listed.json();
     expect(listedPayload.data.items).toHaveLength(1);
 
-    const detail = await app.request(`http://local/api/projects/${projectId}`);
+    const detail = await app.request(`http://local/api/bindings/${bindingId}`);
     const detailPayload = await detail.json();
-    expect(detailPayload.data.project.repoPath).toBe(repoPath);
+    expect(detailPayload.data.binding.repoPath).toBe(repoPath);
     expect(detailPayload.data.health.status).toBeDefined();
   });
 

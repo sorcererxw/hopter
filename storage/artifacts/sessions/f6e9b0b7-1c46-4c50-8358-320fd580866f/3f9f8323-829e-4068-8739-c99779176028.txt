@@ -1,0 +1,1 @@
+I have enough context. I’m creating a single-file `index.html` with inline HTML/CSS/JS: responsive board sizing, keyboard controls, live score, a clear game-over overlay, and a restart button.

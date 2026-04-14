@@ -1,0 +1,1 @@
+I didn’t get the workspace metadata from the first pass. I’m reading the governing `AGENTS.md`, the startup skill, and any local OMX memory now.

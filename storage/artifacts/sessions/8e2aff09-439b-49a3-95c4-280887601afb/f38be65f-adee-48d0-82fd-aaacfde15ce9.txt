@@ -1,0 +1,1 @@
+The file is in place. I’m doing a quick verification pass now: checking the diff and compiling the embedded JavaScript for syntax so I don’t leave you with a broken HTML shell.

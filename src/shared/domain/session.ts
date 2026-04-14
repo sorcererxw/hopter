@@ -1,4 +1,4 @@
-export type SessionRef = {
+export type BackendSessionHandle = {
   id: string;
   projectId: string;
   backend: string;
@@ -12,3 +12,5 @@ export type SessionRef = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type SessionRef = BackendSessionHandle;

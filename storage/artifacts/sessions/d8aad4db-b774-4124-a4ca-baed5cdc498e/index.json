@@ -1,0 +1,191 @@
+{
+  "artifacts": [
+    {
+      "id": "5e76186d-d4ad-4804-8480-a9aea5554f07",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "final_message",
+      "label": "Final response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/5e76186d-d4ad-4804-8480-a9aea5554f07.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 1019,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:47.312Z"
+    },
+    {
+      "id": "20a2970a-c6da-4f98-aab1-b62a64960f77",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"nl -ba index.html | sed -n '221,520p'\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/20a2970a-c6da-4f98-aab1-b62a64960f77.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 10351,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:32.762Z"
+    },
+    {
+      "id": "f54caae1-6974-4104-8b69-0874a50010c0",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"nl -ba index.html | sed -n '1,220p'\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/f54caae1-6974-4104-8b69-0874a50010c0.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 6294,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:32.716Z"
+    },
+    {
+      "id": "80ee617f-7550-4b07-b0a0-1eb424f8bb94",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/80ee617f-7550-4b07-b0a0-1eb424f8bb94.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 192,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:32.515Z"
+    },
+    {
+      "id": "8ff8a782-699f-4571-82e4-1fc73990e6a9",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"node - <<'NODE'\nconst fs = require('fs');\nconst html = fs.readFileSync('index.html', 'utf8');\nconst match = html.match(/<script>([\\\\s\\\\S]*)<\\\\/script>/);\nif (\"'!match) throw new Error('\"'No inline script found');\nnew Function(match[1]);\nconsole.log('Inline script syntax OK');\nNODE\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/8ff8a782-699f-4571-82e4-1fc73990e6a9.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 24,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:23.536Z"
+    },
+    {
+      "id": "873a665f-a630-477c-a13e-e95cc00574b1",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,260p' index.html\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/873a665f-a630-477c-a13e-e95cc00574b1.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 5373,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:19.219Z"
+    },
+    {
+      "id": "4ff097a3-3f6d-43cd-8043-6a6a13ae3722",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/4ff097a3-3f6d-43cd-8043-6a6a13ae3722.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 193,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:59:07.212Z"
+    },
+    {
+      "id": "61fd5629-3550-40fb-b742-387dd1b71a4a",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/61fd5629-3550-40fb-b742-387dd1b71a4a.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 237,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:57:50.840Z"
+    },
+    {
+      "id": "61ecc2c2-df9a-4bed-944b-ab2211fb0128",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc 'ls -la .omx'",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/61ecc2c2-df9a-4bed-944b-ab2211fb0128.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 224,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:57:38.052Z"
+    },
+    {
+      "id": "97a596e1-5ec2-4c20-ac6f-0412e984fcc8",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,120p' README.md\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/97a596e1-5ec2-4c20-ac6f-0412e984fcc8.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 13,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:57:37.942Z"
+    },
+    {
+      "id": "873c93e8-6733-4c99-aabf-b030db4a3222",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc \"sed -n '1,220p' /Users/sorcererxw/.agents/skills/using-superpowers/SKILL.md\"",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/873c93e8-6733-4c99-aabf-b030db4a3222.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 5421,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:57:37.933Z"
+    },
+    {
+      "id": "b6662e2b-0650-4ef0-8bd1-2c3dd8006bc7",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/b6662e2b-0650-4ef0-8bd1-2c3dd8006bc7.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 214,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:57:37.693Z"
+    },
+    {
+      "id": "04fae3c9-6cea-4041-ba9b-be10c74a1ab1",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc 'ls -la'",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/04fae3c9-6cea-4041-ba9b-be10c74a1ab1.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 351,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:56:58.990Z"
+    },
+    {
+      "id": "b0914000-921f-419a-b859-dec688a9ccef",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "command_output",
+      "label": "Command output: /bin/zsh -lc pwd",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/b0914000-921f-419a-b859-dec688a9ccef.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 90,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:56:58.927Z"
+    },
+    {
+      "id": "8192e3c9-6465-47fb-a210-5d00557a2988",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/8192e3c9-6465-47fb-a210-5d00557a2988.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 183,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:56:58.724Z"
+    },
+    {
+      "id": "394e5a6b-2abd-46c3-a5b1-10dce4db0449",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "agent_message",
+      "label": "Agent response",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/394e5a6b-2abd-46c3-a5b1-10dce4db0449.txt",
+      "contentType": "text/plain; charset=utf-8",
+      "sizeBytes": 149,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:56:49.701Z"
+    },
+    {
+      "id": "de6d45c4-3671-4ede-a5a2-fabaac555ead",
+      "sessionId": "d8aad4db-b774-4124-a4ca-baed5cdc498e",
+      "kind": "raw_trace",
+      "label": "Raw app-server transcript",
+      "path": "/Users/sorcererxw/repo/sorcererxw/codeshell/storage/artifacts/sessions/d8aad4db-b774-4124-a4ca-baed5cdc498e/raw-events.jsonl",
+      "contentType": "application/x-ndjson",
+      "sizeBytes": 494,
+      "inlineContent": true,
+      "createdAt": "2026-04-14T14:56:30.302Z"
+    }
+  ]
+}

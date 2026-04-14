@@ -5,8 +5,8 @@ import type { AppConfig } from "../config/types.ts";
 import type { AuthService } from "../services/auth-service.ts";
 import type { CodexDetectionService } from "../services/codex-detection-service.ts";
 import type { HostHealthService } from "../services/host-health-service.ts";
-import type { ProjectService } from "../services/project-service.ts";
-import type { SessionService } from "../services/session-service.ts";
+import type { BindingService } from "../services/binding-service.ts";
+import type { BackendSessionService } from "../services/backend-session-service.ts";
 import type { EventHub } from "../ws/event-hub.ts";
 
 export type WsData = {
@@ -16,8 +16,8 @@ export type WsData = {
 type Options = {
   config: AppConfig;
   authService: AuthService;
-  projectService: ProjectService;
-  sessionService: SessionService;
+  bindingService: BindingService;
+  backendSessionService: BackendSessionService;
   codexDetectionService: CodexDetectionService;
   hostHealthService: HostHealthService;
   eventHub: EventHub;
@@ -27,8 +27,8 @@ export function createFetchHandler(options: Options) {
   const app = createApp({
     config: options.config,
     authService: options.authService,
-    projectService: options.projectService,
-    sessionService: options.sessionService,
+    bindingService: options.bindingService,
+    backendSessionService: options.backendSessionService,
     codexDetectionService: options.codexDetectionService,
     hostHealthService: options.hostHealthService,
   });

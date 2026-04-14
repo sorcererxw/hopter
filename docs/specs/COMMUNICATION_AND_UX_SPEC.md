@@ -252,7 +252,6 @@ This needs a strict v1 boundary.
 ### v1 must support
 
 - attach or resume for sessions created by the gateway
-- restart recovery for gateway-known sessions
 
 ### v1 may support later
 
@@ -265,9 +264,9 @@ Reason:
 
 The recovery model should therefore be:
 
-- recover gateway-known session references
+- keep browser reconnect honest while the gateway process is alive
 - ask Codex for live truth when reconnecting
-- avoid pretending the gateway has a full historical replica
+- after gateway restart, avoid pretending the gateway has a recovered historical replica
 
 ## Artifact Strategy
 

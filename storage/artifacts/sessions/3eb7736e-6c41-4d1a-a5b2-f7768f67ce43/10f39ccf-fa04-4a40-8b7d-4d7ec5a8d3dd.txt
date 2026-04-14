@@ -1,0 +1,1 @@
+The game file is in place. I’m doing a quick verification pass now: syntax-checking the inline script and reviewing the diff so I can give you a clean summary rather than just assuming the HTML is sound.

@@ -1,14 +1,13 @@
 import { mkdirSync } from "node:fs";
 import { loadConfig } from "../config/load-config.ts";
-import { openDatabase } from "../db/database.ts";
 import { ProjectRepository } from "../repositories/project-repository.ts";
 import { AuthSessionRepository } from "../repositories/auth-session-repository.ts";
 import { SessionRepository } from "../repositories/session-repository.ts";
-import { ProjectService } from "../services/project-service.ts";
+import { BindingService } from "../services/binding-service.ts";
 import { CodexDetectionService } from "../services/codex-detection-service.ts";
 import { HostHealthService } from "../services/host-health-service.ts";
 import { AuthService } from "../services/auth-service.ts";
-import { SessionService } from "../services/session-service.ts";
+import { BackendSessionService } from "../services/backend-session-service.ts";
 import { EventHub } from "../ws/event-hub.ts";
 import { createFetchHandler } from "./create-fetch-handler.ts";
 
@@ -18,23 +17,20 @@ const eventHub = new EventHub();
 mkdirSync(config.storage.rootDir, { recursive: true });
 mkdirSync(config.storage.artifactsDir, { recursive: true });
 
-const db = openDatabase(config);
-const projectRepository = new ProjectRepository(db);
-const sessionRepository = new SessionRepository(db);
-const authSessionRepository = new AuthSessionRepository(db);
+const projectRepository = new ProjectRepository();
+const sessionRepository = new SessionRepository();
+const authSessionRepository = new AuthSessionRepository();
 const codexDetectionService = new CodexDetectionService(config.codex.minVersion);
-const projectService = new ProjectService(projectRepository, eventHub);
+const bindingService = new BindingService(projectRepository, eventHub);
 const authService = new AuthService(authSessionRepository, config.auth.password, config.auth.sessionTtlDays);
 const hostHealthService = new HostHealthService(config, codexDetectionService, eventHub);
-const sessionService = new SessionService(config, projectRepository, sessionRepository, eventHub);
-
-await sessionService.recoverPersistedSessions();
+const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository, eventHub);
 
 const { fetch, websocket } = createFetchHandler({
   config,
   authService,
-  projectService,
-  sessionService,
+  bindingService,
+  backendSessionService,
   codexDetectionService,
   hostHealthService,
   eventHub,
@@ -48,3 +44,6 @@ const server = Bun.serve({
 });
 
 console.log(`orchd listening on http://${server.hostname}:${server.port}`);
+if (config.server.host === "127.0.0.1" || config.server.host === "localhost") {
+  console.log("LAN access is disabled on this process. Use ORCHD_HOST=0.0.0.0 or `bun run dev:lan`.");
+}

@@ -10,7 +10,7 @@ This document fixes:
 - runtime module boundaries
 - HTTP API contract
 - WebSocket event contract
-- SQLite schema
+- control-plane state model
 - artifact storage layout
 - page/component boundaries
 - main request and event flows
@@ -72,7 +72,7 @@ Bun Gateway Process
   +--> Host health service
   +--> Terminal service
   +--> Codex adapter
-  +--> bun:sqlite
+  +--> in-memory repositories
   +--> local filesystem storage
 ```
 
@@ -88,7 +88,6 @@ The repo should stay flat and product-oriented, not split into fake packages too
   /server
     /bootstrap
     /config
-    /db
     /http
       /routes
       /middleware
@@ -137,7 +136,7 @@ The repo should stay flat and product-oriented, not split into fake packages too
 Owns process startup:
 
 - load config
-- open database
+- initialize in-memory repositories
 - initialize services
 - mount HTTP routes
 - mount WebSocket handler
@@ -153,19 +152,9 @@ Owns:
 - artifact storage path config
 - auth config
 
-### `/src/server/db`
-
-Owns:
-
-- `bun:sqlite` connection
-- migrations
-- transaction helpers
-
-No business logic.
-
 ### `/src/server/repositories`
 
-Owns raw persistence operations:
+Owns raw state operations:
 
 - projects
 - sessions
@@ -354,8 +343,8 @@ Error:
 {
   "ok": false,
   "error": {
-    "code": "PROJECT_NOT_FOUND",
-    "message": "Project does not exist"
+    "code": "BINDING_NOT_FOUND",
+    "message": "Binding does not exist"
   }
 }
 ```
@@ -468,7 +457,7 @@ Response:
 
 ## Project APIs
 
-### `GET /api/projects`
+### `GET /api/bindings`
 
 Response:
 
@@ -481,7 +470,7 @@ Response:
 }
 ```
 
-### `POST /api/projects`
+### `POST /api/bindings`
 
 Request:
 
@@ -499,7 +488,7 @@ Response:
 {
   "ok": true,
   "data": {
-    "project": {}
+    "binding": {}
   }
 }
 ```
@@ -510,7 +499,7 @@ Validation:
 - path must be inside allowlist rules if allowlist is enabled
 - duplicate `repoPath` rejected
 
-### `GET /api/projects/:projectId`
+### `GET /api/bindings/:bindingId`
 
 Response:
 
@@ -518,7 +507,7 @@ Response:
 {
   "ok": true,
   "data": {
-    "project": {},
+    "binding": {},
     "health": {
       "status": "healthy"
     }
@@ -526,7 +515,7 @@ Response:
 }
 ```
 
-### `PATCH /api/projects/:projectId`
+### `PATCH /api/bindings/:bindingId`
 
 Request:
 
@@ -538,7 +527,7 @@ Request:
 
 ## Session APIs
 
-### `GET /api/projects/:projectId/sessions`
+### `GET /api/bindings/:bindingId/backend-sessions`
 
 Response:
 
@@ -551,7 +540,7 @@ Response:
 }
 ```
 
-### `POST /api/projects/:projectId/sessions`
+### `POST /api/bindings/:bindingId/backend-sessions`
 
 Request:
 
@@ -568,18 +557,18 @@ Response:
 {
   "ok": true,
   "data": {
-    "session": {}
+    "handle": {}
   }
 }
 ```
 
 Behavior:
 
-- creates gateway session record first
+- creates gateway session handle first
 - launches backend session second
 - marks session `degraded` if launch succeeds partially but gateway cannot maintain live attachment
 
-### `GET /api/sessions/:sessionId`
+### `GET /api/backend-sessions/:handleId`
 
 Response:
 
@@ -587,7 +576,7 @@ Response:
 {
   "ok": true,
   "data": {
-    "session": {},
+    "handle": {},
     "attention": null,
     "latestSummary": null,
     "artifacts": [],
@@ -598,7 +587,7 @@ Response:
 }
 ```
 
-### `POST /api/sessions/:sessionId/input`
+### `POST /api/backend-sessions/:handleId/input`
 
 Request:
 
@@ -608,7 +597,7 @@ Request:
 }
 ```
 
-### `POST /api/sessions/:sessionId/approve`
+### `POST /api/backend-sessions/:handleId/approve`
 
 Request:
 
@@ -624,7 +613,7 @@ Allowed `decision` values:
 - `approve`
 - `reject`
 
-### `POST /api/sessions/:sessionId/interrupt`
+### `POST /api/backend-sessions/:handleId/interrupt`
 
 Request:
 
@@ -639,7 +628,7 @@ Allowed `mode` values:
 - `interrupt`
 - `stop`
 
-### `POST /api/sessions/:sessionId/attach`
+### `POST /api/backend-sessions/:handleId/attach`
 
 Purpose:
 
@@ -658,7 +647,7 @@ Response:
 
 ## Artifact APIs
 
-### `GET /api/sessions/:sessionId/artifacts`
+### `GET /api/backend-sessions/:handleId/artifacts`
 
 Response:
 
@@ -865,93 +854,17 @@ HTTP remains the recovery path.
 }
 ```
 
-## SQLite Schema
-
-The exact migration format can vary.
-The logical schema should look like this.
+## In-Memory Control-Plane Stores
 
 Important boundary:
 
-- v1 should not persist full session content or full session event history as a gateway-owned database concern
-- if transient caches are introduced later, they must be explicitly discardable
-
-### `projects`
-
-```sql
-CREATE TABLE projects (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  repo_path TEXT NOT NULL UNIQUE,
-  host_id TEXT NOT NULL,
-  default_backend TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-```
-
-### `sessions`
-
-```sql
-CREATE TABLE sessions (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL,
-  backend TEXT NOT NULL,
-  backend_session_id TEXT,
-  title TEXT,
-  status TEXT NOT NULL,
-  last_summary TEXT,
-  attention_reason TEXT,
-  degraded INTEGER NOT NULL DEFAULT 0,
-  last_event_at TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY (project_id) REFERENCES projects(id)
-);
-
-CREATE INDEX idx_sessions_project_id ON sessions(project_id);
-CREATE INDEX idx_sessions_status ON sessions(status);
-```
-
-### `auth_sessions`
-
-```sql
-CREATE TABLE auth_sessions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  token_hash TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX idx_auth_sessions_token_hash ON auth_sessions(token_hash);
-```
-
-### `terminal_sessions`
-
-```sql
-CREATE TABLE terminal_sessions (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL,
-  cwd TEXT NOT NULL,
-  shell TEXT NOT NULL,
-  status TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  closed_at TEXT,
-  FOREIGN KEY (project_id) REFERENCES projects(id)
-);
-
-CREATE INDEX idx_terminal_sessions_project_id ON terminal_sessions(project_id);
-```
-
-### Optional later tables, not v1 blockers
-
-- `project_settings`
-- `backend_compatibility_cache`
-- `validation_runs`
+- v1 should not persist full session content or full session event history as a gateway-owned store
+- project/session/auth/terminal state is process-local and discardable
+- validation artifacts remain durable on the filesystem
 
 ## Artifact Storage Layout
 
-Store locally generated validation evidence outside the database.
+Store locally generated validation evidence outside the runtime stores.
 Do not treat gateway-local files as the source of truth for Codex session content.
 
 ```text
@@ -976,9 +889,9 @@ Rules:
 /
   /login
   /dashboard
-  /projects/new
-  /projects/:projectId
-  /sessions/:sessionId
+  /bindings/new
+  /bindings/:bindingId
+  /backend-sessions/:handleId
   /settings
 ```
 
@@ -993,9 +906,9 @@ createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard" /> },
       { path: "dashboard", element: <DashboardPage /> },
-      { path: "projects/new", element: <ProjectCreatePage /> },
-      { path: "projects/:projectId", element: <ProjectDetailPage /> },
-      { path: "sessions/:sessionId", element: <SessionDetailPage /> },
+      { path: "bindings/new", element: <BindingCreatePage /> },
+      { path: "bindings/:bindingId", element: <BindingDetailPage /> },
+      { path: "backend-sessions/:handleId", element: <BackendSessionDetailPage /> },
       { path: "settings", element: <SettingsPage /> }
     ]
   }
@@ -1021,7 +934,7 @@ Suggested breakdown:
 - `AttentionList`
 - `RunningSessionsList`
 - `RecentSessionsList`
-- `EmptyProjectsState`
+- `EmptyBindingsState`
 
 ### `ProjectCreatePage`
 
@@ -1106,11 +1019,11 @@ Suggested query keys:
 ["auth", "me"]
 ["host", "status"]
 ["backends"]
-["projects"]
-["project", projectId]
-["project", projectId, "sessions"]
-["session", sessionId]
-["session", sessionId, "artifacts"]
+["bindings"]
+["binding", bindingId]
+["binding", bindingId, "backendSessions"]
+["backendSession", handleId]
+["backendSession", handleId, "artifacts"]
 ["artifact", artifactId]
 ```
 
@@ -1133,19 +1046,19 @@ Do not make the frontend depend on event ordering for correctness.
 
 ## Main Flows
 
-### Flow 1: Create project
+### Flow 1: Create binding
 
-1. user submits create-project form
+1. user submits create-binding form
 2. API validates repo path
-3. service writes `projects` row
-4. response returns created project
-5. frontend invalidates `["projects"]`
-6. frontend navigates to `/projects/:projectId`
+3. service writes in-memory project entry
+4. response returns created binding
+5. frontend invalidates `["bindings"]`
+6. frontend navigates to `/bindings/:bindingId`
 
 ### Flow 2: Create session
 
 1. user submits prompt
-2. gateway creates session row with provisional status
+2. gateway creates in-memory session entry with provisional status
 3. Codex adapter launches backend session
 4. gateway stores backend session id
 5. gateway emits `session.created`
@@ -1155,7 +1068,7 @@ Do not make the frontend depend on event ordering for correctness.
 ### Flow 3: Approval required
 
 1. Codex emits event that maps to approval-needed
-2. gateway persists raw event
+2. gateway appends raw event transcript to artifact storage
 3. gateway updates session status + attention reason
 4. gateway emits `session.attention.required`
 5. frontend surfaces action card
@@ -1173,15 +1086,14 @@ Do not make the frontend depend on event ordering for correctness.
 5. frontend refetches current page queries
 6. UI returns to live state if host/session healthy
 
-### Flow 5: Gateway restart recovery
+### Flow 5: Gateway restart truthfulness
 
 1. gateway boots
-2. reads session rows from DB
-3. marks live-but-unconfirmed sessions as degraded
-4. attempts attach when possible
-5. emits updated status after attach success/failure
+2. starts with empty in-memory project/session/auth/terminal stores
+3. serves validation artifacts that already exist on disk
+4. requires new project/session creation or explicit future re-adoption flows
 
-This avoids lying about live attachment.
+This avoids lying about restored live attachment.
 
 ## Error and Degraded State Policy
 

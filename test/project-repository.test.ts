@@ -1,15 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { Database } from "bun:sqlite";
-import { runMigrations } from "../src/server/db/migrate.ts";
+import { AuthSessionRepository } from "../src/server/repositories/auth-session-repository.ts";
 import { ProjectRepository } from "../src/server/repositories/project-repository.ts";
 import { SessionRepository } from "../src/server/repositories/session-repository.ts";
+import { TerminalSessionRepository } from "../src/server/repositories/terminal-session-repository.ts";
 
 describe("repositories", () => {
   test("project repository create/list/update", () => {
-    const db = new Database(":memory:");
-    runMigrations(db, `${process.cwd()}/src/server/db/migrations`);
-
-    const repository = new ProjectRepository(db);
+    const repository = new ProjectRepository();
     repository.create({
       id: "project-1",
       name: "orchd",
@@ -31,15 +28,7 @@ describe("repositories", () => {
   });
 
   test("session repository create/list/update", () => {
-    const db = new Database(":memory:");
-    runMigrations(db, `${process.cwd()}/src/server/db/migrations`);
-
-    db.query(`
-      INSERT INTO projects (id, name, repo_path, host_id, default_backend, created_at, updated_at)
-      VALUES ('project-1', 'orchd', '/tmp/orchd', 'host_local', 'codex', '2026-04-14T00:00:00.000Z', '2026-04-14T00:00:00.000Z')
-    `).run();
-
-    const repository = new SessionRepository(db);
+    const repository = new SessionRepository();
     repository.create({
       id: "session-1",
       projectId: "project-1",
@@ -65,5 +54,44 @@ describe("repositories", () => {
     });
 
     expect(repository.listByProjectId("project-1")[0]?.status).toBe("completed");
+  });
+
+  test("auth repository expires and deletes sessions in memory", () => {
+    const repository = new AuthSessionRepository();
+    repository.create({
+      id: "auth-1",
+      userId: "local-user",
+      tokenHash: "token-1",
+      createdAt: "2026-04-14T00:00:00.000Z",
+      expiresAt: "2026-04-14T01:00:00.000Z",
+    });
+
+    expect(repository.getByTokenHash("token-1")?.id).toBe("auth-1");
+    repository.deleteExpired("2026-04-14T02:00:00.000Z");
+    expect(repository.getByTokenHash("token-1")).toBeNull();
+  });
+
+  test("terminal repository stays in memory and filters by project", () => {
+    const repository = new TerminalSessionRepository();
+    repository.create({
+      id: "terminal-1",
+      projectId: "project-1",
+      cwd: "/tmp/orchd",
+      shell: "/bin/zsh",
+      status: "open",
+      createdAt: "2026-04-14T00:00:00.000Z",
+      closedAt: null,
+    });
+    repository.create({
+      id: "terminal-2",
+      projectId: "project-2",
+      cwd: "/tmp/other",
+      shell: "/bin/zsh",
+      status: "open",
+      createdAt: "2026-04-14T00:01:00.000Z",
+      closedAt: null,
+    });
+
+    expect(repository.listByProjectId("project-1").map((session) => session.id)).toEqual(["terminal-1"]);
   });
 });

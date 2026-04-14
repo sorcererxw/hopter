@@ -23,13 +23,12 @@ type HostStatus = {
     reason: string | null;
   };
   storage: {
-    db: string;
     artifacts: string;
   };
   accessMode: string;
 };
 
-type Project = {
+type ProjectBindingView = {
   id: string;
   name: string;
   repoPath: string;
@@ -37,7 +36,7 @@ type Project = {
 };
 
 type ProjectDetail = {
-  project: Project;
+  binding: ProjectBindingView;
   health: {
     status: string;
     repoExists: boolean;
@@ -45,7 +44,7 @@ type ProjectDetail = {
   };
 };
 
-type Session = {
+type BackendSessionView = {
   id: string;
   projectId: string;
   title: string | null;
@@ -57,7 +56,7 @@ type Session = {
 };
 
 type SessionDetail = {
-  session: Session;
+  handle: BackendSessionView;
   attention: {
     reason: string;
     headline: string;
@@ -250,7 +249,7 @@ function Shell(props: {
         </div>
         <nav className="sidebar-nav">
           <Link to="/" navigate={props.navigate}>Dashboard</Link>
-          <Link to="/projects/new" navigate={props.navigate}>Create project</Link>
+          <Link to="/bindings/new" navigate={props.navigate}>Create binding</Link>
           <Link to="/settings" navigate={props.navigate}>Settings</Link>
         </nav>
         <div className="sidebar-footer">
@@ -314,8 +313,13 @@ function LoginPage(props: { onLoggedIn: () => Promise<void> }) {
 function DashboardPage(props: { navigate: (path: string) => void }) {
   const realtime = useRealtimeVersion();
   const { data: host } = usePolling(() => api.get<HostStatus>("/api/host/status"), [realtime.version]);
-  const { data: projects } = usePolling(() => api.get<{ items: Project[] }>("/api/projects"), [realtime.version]);
-  const [sessionGroups, setSessionGroups] = useState<Array<{ project: Project; sessions: Session[] }>>([]);
+  const { data: projects } = usePolling(
+    () => api.get<{ items: ProjectBindingView[] }>("/api/bindings"),
+    [realtime.version],
+  );
+  const [sessionGroups, setSessionGroups] = useState<
+    Array<{ project: ProjectBindingView; sessions: BackendSessionView[] }>
+  >([]);
 
   useEffect(() => {
     if (!projects?.items) return;
@@ -323,7 +327,7 @@ function DashboardPage(props: { navigate: (path: string) => void }) {
     void Promise.all(
       projects.items.map(async (project) => ({
         project,
-        sessions: (await api.get<{ items: Session[] }>(`/api/projects/${project.id}/sessions`)).items,
+        sessions: (await api.get<{ items: BackendSessionView[] }>(`/api/bindings/${project.id}/backend-sessions`)).items,
       })),
     ).then((groups) => {
       if (!cancelled) {
@@ -360,7 +364,7 @@ function DashboardPage(props: { navigate: (path: string) => void }) {
           <ul className="stack-list">
             {attentionSessions.map((session) => (
               <li key={session.id}>
-                <button className="list-button" onClick={() => props.navigate(`/sessions/${session.id}`)}>
+                <button className="list-button" onClick={() => props.navigate(`/backend-sessions/${session.id}`)}>
                   <strong>{session.title ?? session.projectName}</strong>
                   <span>{session.attentionReason}</span>
                 </button>
@@ -375,7 +379,7 @@ function DashboardPage(props: { navigate: (path: string) => void }) {
           <ul className="stack-list">
             {runningSessions.map((session) => (
               <li key={session.id}>
-                <button className="list-button" onClick={() => props.navigate(`/sessions/${session.id}`)}>
+                <button className="list-button" onClick={() => props.navigate(`/backend-sessions/${session.id}`)}>
                   <strong>{session.title ?? session.projectName}</strong>
                   <span>{session.lastSummary ?? session.status}</span>
                 </button>
@@ -386,14 +390,14 @@ function DashboardPage(props: { navigate: (path: string) => void }) {
       </article>
       <article className="card full-width">
         <div className="section-header">
-          <h3>Projects</h3>
-          <button className="button secondary" onClick={() => props.navigate("/projects/new")}>Add project</button>
+          <h3>Bindings</h3>
+          <button className="button secondary" onClick={() => props.navigate("/bindings/new")}>Add binding</button>
         </div>
-        {!projects?.items?.length ? <p className="muted">No projects yet. Create one from a local repo path.</p> : (
+        {!projects?.items?.length ? <p className="muted">No bindings yet. Add one from a local repo path.</p> : (
           <ul className="project-grid">
             {projects.items.map((project) => (
               <li key={project.id} className="project-card">
-                <button className="project-link" onClick={() => props.navigate(`/projects/${project.id}`)}>
+                <button className="project-link" onClick={() => props.navigate(`/bindings/${project.id}`)}>
                   <strong>{project.name}</strong>
                   <span>{project.repoPath}</span>
                 </button>
@@ -406,7 +410,7 @@ function DashboardPage(props: { navigate: (path: string) => void }) {
   );
 }
 
-function ProjectCreatePage(props: { navigate: (path: string) => void }) {
+function BindingCreatePage(props: { navigate: (path: string) => void }) {
   const [name, setName] = useState("");
   const [repoPath, setRepoPath] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -414,8 +418,8 @@ function ProjectCreatePage(props: { navigate: (path: string) => void }) {
 
   return (
     <section className="card page-card">
-      <p className="eyebrow">Project</p>
-      <h2>Create project</h2>
+      <p className="eyebrow">Binding</p>
+      <h2>Create binding</h2>
       <p>Bind one local repo path to the thin control plane. `orchd` stores the binding, not the repo contents.</p>
       <form
         className="form-stack"
@@ -424,12 +428,12 @@ function ProjectCreatePage(props: { navigate: (path: string) => void }) {
           setSubmitting(true);
           setError(null);
           try {
-            const result = await api.post<{ project: Project }>("/api/projects", {
+            const result = await api.post<{ binding: ProjectBindingView }>("/api/bindings", {
               name,
               repoPath,
               defaultBackend: "codex",
             });
-            props.navigate(`/projects/${result.project.id}`);
+            props.navigate(`/bindings/${result.binding.id}`);
           } catch (submissionError) {
             setError(submissionError instanceof Error ? submissionError.message : String(submissionError));
           } finally {
@@ -449,17 +453,23 @@ function ProjectCreatePage(props: { navigate: (path: string) => void }) {
           <span>Backend</span>
           <input value="codex" disabled />
         </label>
-        <button className="button primary" disabled={submitting}>{submitting ? "Creating…" : "Create project"}</button>
+        <button className="button primary" disabled={submitting}>{submitting ? "Creating…" : "Create binding"}</button>
         {error ? <p className="error-text">{error}</p> : null}
       </form>
     </section>
   );
 }
 
-function ProjectDetailPage(props: { projectId: string; navigate: (path: string) => void }) {
+function BindingDetailPage(props: { bindingId: string; navigate: (path: string) => void }) {
   const realtime = useRealtimeVersion();
-  const { data: project } = usePolling(() => api.get<ProjectDetail>(`/api/projects/${props.projectId}`), [props.projectId, realtime.version]);
-  const { data: sessions } = usePolling(() => api.get<{ items: Session[] }>(`/api/projects/${props.projectId}/sessions`), [props.projectId, realtime.version]);
+  const { data: project } = usePolling(
+    () => api.get<ProjectDetail>(`/api/bindings/${props.bindingId}`),
+    [props.bindingId, realtime.version],
+  );
+  const { data: sessions } = usePolling(
+    () => api.get<{ items: BackendSessionView[] }>(`/api/bindings/${props.bindingId}/backend-sessions`),
+    [props.bindingId, realtime.version],
+  );
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -468,14 +478,14 @@ function ProjectDetailPage(props: { projectId: string; navigate: (path: string) 
     <section className="page-grid">
       {realtime.connectionState !== "live" ? <div className="connection-banner full-width">Realtime {realtime.connectionState}. HTTP refetch is active.</div> : null}
       <article className="card hero-card">
-        <p className="eyebrow">Project</p>
-        <h2>{project?.project.name ?? "Loading…"}</h2>
-        <p>{project?.project.repoPath}</p>
+        <p className="eyebrow">Binding</p>
+        <h2>{project?.binding.name ?? "Loading…"}</h2>
+        <p>{project?.binding.repoPath}</p>
         <span className={`status-pill ${project?.health.status ?? "idle"}`}>{project?.health.status ?? "…"}</span>
       </article>
       <article className="card full-width">
         <div className="section-header">
-          <h3>Start session</h3>
+          <h3>Start backend session</h3>
         </div>
         <form
           className="form-stack"
@@ -483,8 +493,11 @@ function ProjectDetailPage(props: { projectId: string; navigate: (path: string) 
             event.preventDefault();
             setError(null);
             try {
-              const result = await api.post<{ session: Session }>(`/api/projects/${props.projectId}/sessions`, { title, prompt });
-              props.navigate(`/sessions/${result.session.id}`);
+              const result = await api.post<{ handle: BackendSessionView }>(
+                `/api/bindings/${props.bindingId}/backend-sessions`,
+                { title, prompt },
+              );
+              props.navigate(`/backend-sessions/${result.handle.id}`);
             } catch (submissionError) {
               setError(submissionError instanceof Error ? submissionError.message : String(submissionError));
             }
@@ -498,17 +511,17 @@ function ProjectDetailPage(props: { projectId: string; navigate: (path: string) 
             <span>Prompt</span>
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={5} placeholder="Trace the reconnect path and harden degraded-state handling." />
           </label>
-          <button className="button primary">Start session</button>
+          <button className="button primary">Start backend session</button>
           {error ? <p className="error-text">{error}</p> : null}
         </form>
       </article>
       <article className="card full-width">
-        <h3>Sessions</h3>
-        {!sessions?.items?.length ? <p className="muted">No sessions yet.</p> : (
+        <h3>Backend sessions</h3>
+        {!sessions?.items?.length ? <p className="muted">No backend sessions yet.</p> : (
           <ul className="stack-list">
             {sessions.items.map((session) => (
               <li key={session.id}>
-                <button className="list-button" onClick={() => props.navigate(`/sessions/${session.id}`)}>
+                <button className="list-button" onClick={() => props.navigate(`/backend-sessions/${session.id}`)}>
                   <strong>{session.title ?? session.id}</strong>
                   <span>{session.status} · {session.lastSummary ?? "No summary yet"}</span>
                 </button>
@@ -521,9 +534,13 @@ function ProjectDetailPage(props: { projectId: string; navigate: (path: string) 
   );
 }
 
-function SessionDetailPage(props: { sessionId: string }) {
+function BackendSessionDetailPage(props: { handleId: string }) {
   const realtime = useRealtimeVersion();
-  const { data: detail, error, loading } = usePolling(() => api.get<SessionDetail>(`/api/sessions/${props.sessionId}`), [props.sessionId, realtime.version], 4_000);
+  const { data: detail, error, loading } = usePolling(
+    () => api.get<SessionDetail>(`/api/backend-sessions/${props.handleId}`),
+    [props.handleId, realtime.version],
+    4_000,
+  );
   const [artifactDetail, setArtifactDetail] = useState<ArtifactDetail | null>(null);
   const [input, setInput] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -538,7 +555,7 @@ function SessionDetailPage(props: { sessionId: string }) {
   }, [detail?.artifacts?.map((artifact) => artifact.id).join(",")]);
 
   if (loading && !detail) {
-    return <section className="card page-card"><p>Loading session…</p></section>;
+    return <section className="card page-card"><p>Loading backend session…</p></section>;
   }
 
   if (error) {
@@ -551,19 +568,19 @@ function SessionDetailPage(props: { sessionId: string }) {
 
   return (
     <section className="session-layout">
-      {realtime.connectionState !== "live" ? <div className="connection-banner full-width">Session is reconnecting. Visible state may be stale until HTTP refetch succeeds.</div> : null}
+      {realtime.connectionState !== "live" ? <div className="connection-banner full-width">Backend session is reconnecting. Visible state may be stale until HTTP refetch succeeds.</div> : null}
       <article className="card session-hero">
         <div className="session-topline">
-          <p className="eyebrow">Session</p>
-          <span className={`status-pill ${detail.session.status}`}>{detail.session.status}</span>
+          <p className="eyebrow">Backend session</p>
+          <span className={`status-pill ${detail.handle.status}`}>{detail.handle.status}</span>
         </div>
-        <h2>{detail.session.title ?? detail.session.id}</h2>
-        <p className="muted">Backend thread {detail.session.backendSessionId ?? "pending"}</p>
+        <h2>{detail.handle.title ?? detail.handle.id}</h2>
+        <p className="muted">Backend thread {detail.handle.backendSessionId ?? "pending"}</p>
       </article>
 
       <article className="card">
         <h3>Status</h3>
-        <p>{detail.session.degraded ? "Degraded: live attachment truth is reduced." : "Live session state is current."}</p>
+        <p>{detail.handle.degraded ? "Degraded: live attachment truth is reduced." : "Live session state is current."}</p>
       </article>
 
       <article className="card">
@@ -581,7 +598,7 @@ function SessionDetailPage(props: { sessionId: string }) {
               <button className="button primary" onClick={async () => {
                 setActionError(null);
                 try {
-                  await api.post(`/api/sessions/${props.sessionId}/approve`, { decision: "approve", note: null });
+                  await api.post(`/api/backend-sessions/${props.handleId}/approve`, { decision: "approve", note: null });
                 } catch (approveError) {
                   setActionError(approveError instanceof Error ? approveError.message : String(approveError));
                 }
@@ -589,7 +606,7 @@ function SessionDetailPage(props: { sessionId: string }) {
               <button className="button secondary" onClick={async () => {
                 setActionError(null);
                 try {
-                  await api.post(`/api/sessions/${props.sessionId}/approve`, { decision: "reject", note: null });
+                  await api.post(`/api/backend-sessions/${props.handleId}/approve`, { decision: "reject", note: null });
                 } catch (rejectError) {
                   setActionError(rejectError instanceof Error ? rejectError.message : String(rejectError));
                 }
@@ -605,7 +622,7 @@ function SessionDetailPage(props: { sessionId: string }) {
           event.preventDefault();
           setActionError(null);
           try {
-            await api.post(`/api/sessions/${props.sessionId}/input`, { text: input });
+            await api.post(`/api/backend-sessions/${props.handleId}/input`, { text: input });
             setInput("");
           } catch (inputError) {
             setActionError(inputError instanceof Error ? inputError.message : String(inputError));
@@ -620,7 +637,7 @@ function SessionDetailPage(props: { sessionId: string }) {
               onClick={async () => {
                 setActionError(null);
                 try {
-                  await api.post(`/api/sessions/${props.sessionId}/interrupt`, { mode: "interrupt" });
+                  await api.post(`/api/backend-sessions/${props.handleId}/interrupt`, { mode: "interrupt" });
                 } catch (interruptError) {
                   setActionError(interruptError instanceof Error ? interruptError.message : String(interruptError));
                 }
@@ -712,12 +729,12 @@ function App() {
   let page: React.ReactNode;
   if (pathname === "/") {
     page = <DashboardPage navigate={navigate} />;
-  } else if (pathname === "/projects/new") {
-    page = <ProjectCreatePage navigate={navigate} />;
-  } else if (pathname.startsWith("/projects/")) {
-    page = <ProjectDetailPage projectId={pathname.split("/")[2]!} navigate={navigate} />;
-  } else if (pathname.startsWith("/sessions/")) {
-    page = <SessionDetailPage sessionId={pathname.split("/")[2]!} />;
+  } else if (pathname === "/bindings/new") {
+    page = <BindingCreatePage navigate={navigate} />;
+  } else if (pathname.startsWith("/bindings/")) {
+    page = <BindingDetailPage bindingId={pathname.split("/")[2]!} navigate={navigate} />;
+  } else if (pathname.startsWith("/backend-sessions/")) {
+    page = <BackendSessionDetailPage handleId={pathname.split("/")[2]!} />;
   } else if (pathname === "/settings") {
     page = <SettingsPage />;
   } else {

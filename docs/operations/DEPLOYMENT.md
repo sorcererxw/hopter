@@ -16,6 +16,20 @@ Defaults:
 - port: `8787`
 - access mode: `local_only`
 
+For LAN testing from another device on the same network:
+
+```bash
+bun run dev:lan
+```
+
+or:
+
+```bash
+ORCHD_HOST=0.0.0.0 bun run start
+```
+
+That makes the gateway listen on all interfaces, so `http://<your-lan-ip>:8787` can work.
+
 ## Long-running process
 
 For a persistent local host process, run `bun run start` under:

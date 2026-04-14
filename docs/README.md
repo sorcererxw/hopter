@@ -47,7 +47,7 @@ Read this layer when deciding whether a feature belongs in the product at all.
 
 - [`docs/specs/ARCHITECTURE_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ARCHITECTURE_MEMO.md): source-of-truth split and system boundaries
 - [`docs/specs/COMMUNICATION_AND_UX_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/COMMUNICATION_AND_UX_SPEC.md): transport, event, and UX truthfulness rules
-- [`docs/specs/ENGINEERING_SPEC_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md): concrete contracts, persistence, API, and implementation requirements
+- [`docs/specs/ENGINEERING_SPEC_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md): concrete contracts, runtime-state boundaries, API, and implementation requirements
 
 Read this layer when changing protocols, schemas, or ownership boundaries.
 

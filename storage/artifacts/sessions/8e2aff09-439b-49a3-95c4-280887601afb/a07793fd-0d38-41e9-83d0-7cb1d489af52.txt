@@ -1,0 +1,25 @@
+102:    canvas {
+198:        <span class="label">Score</span>
+201:      <div class="hint">Use the arrow keys to move. Press Enter or the button to restart after game over.</div>
+206:        <canvas id="game" aria-label="Snake game board"></canvas>
+209:            <h1>Game Over</h1>
+211:            <p class="final-score" id="finalScore">Final score: 0</p>
+212:            <button id="restart" type="button">Restart</button>
+220:    const canvas = document.getElementById("game");
+223:    const finalScoreEl = document.getElementById("finalScore");
+224:    const restartButton = document.getElementById("restart");
+226:    const ctx = canvas.getContext("2d");
+250:      canvas.width = Math.floor(boardSize * ratio);
+251:      canvas.height = Math.floor(boardSize * ratio);
+252:      canvas.style.width = boardSize + "px";
+253:      canvas.style.height = boardSize + "px";
+259:    function updateScore() {
+261:      finalScoreEl.textContent = "Final score: " + score;
+291:      updateScore();
+299:      updateScore();
+300:      restartButton.focus();
+315:        ArrowUp: { x: 0, y: -1 },
+366:        updateScore();
+463:      window.requestAnimationFrame(loop);
+468:    restartButton.addEventListener("click", resetGame);
+472:    window.requestAnimationFrame(loop);

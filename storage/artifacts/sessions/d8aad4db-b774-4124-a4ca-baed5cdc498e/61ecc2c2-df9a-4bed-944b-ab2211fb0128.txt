@@ -1,0 +1,5 @@
+total 0
+drwxr-xr-x  4 sorcererxw  staff  128 Apr 14 22:56 .
+drwxr-xr-x  6 sorcererxw  staff  192 Apr 14 22:56 ..
+drwxr-xr-x  3 sorcererxw  staff   96 Apr 14 22:56 logs
+drwxr-xr-x  3 sorcererxw  staff   96 Apr 14 22:56 state

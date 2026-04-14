@@ -28,6 +28,12 @@ bun test
 bun run build:web
 ```
 
+LAN testing:
+
+```bash
+bun run dev:lan
+```
+
 Validation commands:
 
 ```bash

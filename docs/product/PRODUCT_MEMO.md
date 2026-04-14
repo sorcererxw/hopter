@@ -37,7 +37,7 @@ It is a control plane with a thin adapter layer:
 - The gateway connects to one or more existing coding agent backends.
 - The gateway exposes a web UI.
 - The user can access the UI from phone, work laptop, tablet, or desktop browser.
-- The user manages projects and sessions, not terminals.
+- The user manages bindings and backend sessions, not terminals.
 
 ## Core product principles
 
@@ -51,8 +51,8 @@ It is a control plane with a thin adapter layer:
 
 - Self-hosted gateway server running on the user's own machine
 - Browser-first UI, mobile-friendly
-- Project-based organization
-- Sessions nested under projects
+- Binding-based organization
+- Backend sessions nested under bindings
 - Codex as the primary backend
 - Adapter framework that keeps future backend integrations cheap
 - Remote access options:
@@ -67,27 +67,27 @@ It is a control plane with a thin adapter layer:
 - Replacing backend-specific agent logic
 - Native iOS app
 - Team permissions, SSO, enterprise policy, org-level audit features
-- Autonomous project-level backlog selection
+- Autonomous binding-level backlog selection
 
 ## User experience model
 
 ### Primary information architecture
 
 - Workspace
-  - Projects
-    - Sessions
+  - Bindings
+    - Backend sessions
 
 ### Top-level navigation
 
 The product should support both:
 
-1. Project-first navigation
-   - users enter a project, then inspect or start sessions
+1. Binding-first navigation
+   - users enter a binding, then inspect or start backend sessions
 
 2. Attention-first overview
-   - users see what currently needs action across all projects
+   - users see what currently needs action across all bindings
 
-The core container is still the project. The dashboard is a cross-project attention layer, not the primary data model.
+The core container is the binding. The dashboard is a cross-binding attention layer, not the primary data model.
 
 ## Delivery model
 
@@ -102,8 +102,8 @@ Runs on:
 Responsibilities:
 
 - discover and connect to installed agent backends
-- manage project configuration
-- create and resume sessions
+- manage binding configuration
+- create and resume backend sessions
 - expose structured events to the web UI
 - handle auth and optional remote exposure
 
@@ -118,7 +118,7 @@ Accessible from:
 
 Responsibilities:
 
-- create sessions
+- create backend sessions
 - inspect plans and progress
 - surface approval points
 - display session checkpoints and artifacts
@@ -176,9 +176,9 @@ That is acceptable as long as the control plane contract stays small.
 
 The adapter framework should abstract only the minimum common surface the control plane needs:
 
-- project binding
-- session creation
-- session attach/resume
+- binding creation
+- backend session creation
+- backend session attach/resume
 - event stream
 - user input / response
 - approval handling
@@ -195,8 +195,8 @@ The control plane is an organizer.
 
 The product is not just a skin because it also owns:
 
-- project organization
-- remote session access
+- binding organization
+- remote backend session access
 - backend attachment and discovery
 - cross-device resume
 - remote auth and exposure
@@ -214,15 +214,15 @@ That path is wrong for the product:
 - turns a strong product wedge into an infrastructure rewrite
 
 The value is not in replacing agent intelligence.
-The value is in making existing agent workflows remote, visible, project-aware, and phone-usable.
+The value is in making existing agent workflows remote, visible, binding-aware, and phone-usable.
 
 ## Ideal v1 experience
 
 1. User installs the gateway on their own machine.
 2. The gateway detects Codex and offers to connect it.
-3. The user adds one project by selecting a repo.
+3. The user adds one binding by selecting a repo.
 4. The user opens the web UI from another device.
-5. The user starts a session from that project.
+5. The user starts a backend session from that binding.
 6. The backend plans and works using the user's existing machine environment.
 7. The UI makes the process understandable and controllable without requiring terminal access.
 
@@ -234,7 +234,7 @@ It competes on:
 
 - best remote control plane for real local agent environments
 - best plan-first remote coding workflow
-- best cross-device continuity for coding sessions
+- best cross-device continuity for coding backend sessions
 
 ## Future expansion
 

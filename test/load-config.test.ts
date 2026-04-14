@@ -11,7 +11,7 @@ describe("loadConfig", () => {
     expect(config.server.port).toBe(8787);
     expect(config.server.host).toBe("127.0.0.1");
     expect(config.server.accessMode).toBe("local_only");
-    expect(config.storage.dbPath).toContain("/tmp/orchd-config/storage/orchd.sqlite");
+    expect(config.storage.artifactsDir).toContain("/tmp/orchd-config/storage/artifacts");
   });
 
   test("fails fast on invalid port", () => {
@@ -19,5 +19,13 @@ describe("loadConfig", () => {
       loadConfig({
         env: { ORCHD_PORT: "0" },
       })).toThrow("Invalid integer config for ORCHD_PORT");
+  });
+
+  test("accepts explicit LAN host override", () => {
+    const config = loadConfig({
+      env: { ORCHD_HOST: "0.0.0.0" },
+    });
+
+    expect(config.server.host).toBe("0.0.0.0");
   });
 });

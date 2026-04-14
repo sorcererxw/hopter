@@ -1,0 +1,1 @@
+The repo is basically empty except for `.gitignore`, so this will be a clean single-file build. The generic resource endpoints aren’t exposed here, so I’m switching to the explicit OMX memory/state tools and reading the actual `AGENTS.md` files from disk.

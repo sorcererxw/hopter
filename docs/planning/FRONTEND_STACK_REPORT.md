@@ -378,7 +378,7 @@ For this project, the right call is:
 - Bun
 - TypeScript
 - WebSocket
-- `bun:sqlite`
+- in-memory control-plane repositories
 - filesystem artifacts
 - Codex adapter
 - Bun terminal/process primitives
@@ -411,7 +411,7 @@ That means:
 Practical implications:
 
 - prefer Hono on Bun rather than a Node-first server stack
-- prefer `bun:sqlite` rather than a Node-native SQLite dependency by default
+- prefer in-memory control-plane repositories rather than introducing a local metadata database by default
 - prefer Bun terminal/process primitives rather than assuming `node-pty` is the foundation
 
 This does not change the frontend recommendation.
