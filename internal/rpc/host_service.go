@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
 
@@ -54,6 +55,58 @@ func (s *HostService) ListBackends(_ context.Context, _ *connect.Request[orchdv1
 			Version:    backend.Version,
 			Reason:     backend.Reason,
 		})
+	}
+	return connect.NewResponse(response), nil
+}
+
+func (s *HostService) ListDirectoryRoots(_ context.Context, _ *connect.Request[orchdv1.ListDirectoryRootsRequest]) (*connect.Response[orchdv1.ListDirectoryRootsResponse], error) {
+	roots, err := s.workspace.ListDirectoryRoots()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("list directory roots: %w", err))
+	}
+
+	response := &orchdv1.ListDirectoryRootsResponse{
+		Roots: make([]*orchdv1.DirectoryRoot, 0, len(roots)),
+	}
+	for _, root := range roots {
+		response.Roots = append(response.Roots, directoryRootToProto(root))
+	}
+	return connect.NewResponse(response), nil
+}
+
+func (s *HostService) ListDirectory(_ context.Context, req *connect.Request[orchdv1.ListDirectoryRequest]) (*connect.Response[orchdv1.ListDirectoryResponse], error) {
+	listing, err := s.workspace.ListDirectory(req.Msg.GetPath())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	return connect.NewResponse(&orchdv1.ListDirectoryResponse{
+		Listing: directoryListingToProto(listing),
+	}), nil
+}
+
+func (s *HostService) GetPathMetadata(_ context.Context, req *connect.Request[orchdv1.GetPathMetadataRequest]) (*connect.Response[orchdv1.GetPathMetadataResponse], error) {
+	metadata, err := s.workspace.GetPathMetadata(req.Msg.GetPath())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	return connect.NewResponse(&orchdv1.GetPathMetadataResponse{
+		Metadata: pathMetadataToProto(metadata),
+	}), nil
+}
+
+func (s *HostService) ListRecentRepos(_ context.Context, req *connect.Request[orchdv1.ListRecentReposRequest]) (*connect.Response[orchdv1.ListRecentReposResponse], error) {
+	repos, err := s.workspace.ListRecentRepos(req.Msg.GetLimit())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("list recent repos: %w", err))
+	}
+
+	response := &orchdv1.ListRecentReposResponse{
+		Repos: make([]*orchdv1.PathMetadata, 0, len(repos)),
+	}
+	for _, repo := range repos {
+		response.Repos = append(response.Repos, pathMetadataToProto(repo))
 	}
 	return connect.NewResponse(response), nil
 }

@@ -334,6 +334,662 @@ func (x *ListBackendsResponse) GetBackends() []*BackendStatus {
 	return nil
 }
 
+type DirectoryRoot struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Label         string                 `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectoryRoot) Reset() {
+	*x = DirectoryRoot{}
+	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectoryRoot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectoryRoot) ProtoMessage() {}
+
+func (x *DirectoryRoot) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectoryRoot.ProtoReflect.Descriptor instead.
+func (*DirectoryRoot) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DirectoryRoot) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *DirectoryRoot) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *DirectoryRoot) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+type DirectoryEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	IsDirectory   bool                   `protobuf:"varint,3,opt,name=is_directory,json=isDirectory,proto3" json:"is_directory,omitempty"`
+	IsRepo        bool                   `protobuf:"varint,4,opt,name=is_repo,json=isRepo,proto3" json:"is_repo,omitempty"`
+	HasChildren   bool                   `protobuf:"varint,5,opt,name=has_children,json=hasChildren,proto3" json:"has_children,omitempty"`
+	IsAllowed     bool                   `protobuf:"varint,6,opt,name=is_allowed,json=isAllowed,proto3" json:"is_allowed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectoryEntry) Reset() {
+	*x = DirectoryEntry{}
+	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectoryEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectoryEntry) ProtoMessage() {}
+
+func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectoryEntry.ProtoReflect.Descriptor instead.
+func (*DirectoryEntry) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DirectoryEntry) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *DirectoryEntry) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *DirectoryEntry) GetIsDirectory() bool {
+	if x != nil {
+		return x.IsDirectory
+	}
+	return false
+}
+
+func (x *DirectoryEntry) GetIsRepo() bool {
+	if x != nil {
+		return x.IsRepo
+	}
+	return false
+}
+
+func (x *DirectoryEntry) GetHasChildren() bool {
+	if x != nil {
+		return x.HasChildren
+	}
+	return false
+}
+
+func (x *DirectoryEntry) GetIsAllowed() bool {
+	if x != nil {
+		return x.IsAllowed
+	}
+	return false
+}
+
+type DirectoryListing struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CurrentPath   string                 `protobuf:"bytes,1,opt,name=current_path,json=currentPath,proto3" json:"current_path,omitempty"`
+	ParentPath    string                 `protobuf:"bytes,2,opt,name=parent_path,json=parentPath,proto3" json:"parent_path,omitempty"`
+	Entries       []*DirectoryEntry      `protobuf:"bytes,3,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectoryListing) Reset() {
+	*x = DirectoryListing{}
+	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectoryListing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectoryListing) ProtoMessage() {}
+
+func (x *DirectoryListing) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectoryListing.ProtoReflect.Descriptor instead.
+func (*DirectoryListing) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DirectoryListing) GetCurrentPath() string {
+	if x != nil {
+		return x.CurrentPath
+	}
+	return ""
+}
+
+func (x *DirectoryListing) GetParentPath() string {
+	if x != nil {
+		return x.ParentPath
+	}
+	return ""
+}
+
+func (x *DirectoryListing) GetEntries() []*DirectoryEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type PathMetadata struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Path                string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	CanonicalPath       string                 `protobuf:"bytes,2,opt,name=canonical_path,json=canonicalPath,proto3" json:"canonical_path,omitempty"`
+	Basename            string                 `protobuf:"bytes,3,opt,name=basename,proto3" json:"basename,omitempty"`
+	IsDirectory         bool                   `protobuf:"varint,4,opt,name=is_directory,json=isDirectory,proto3" json:"is_directory,omitempty"`
+	IsRepo              bool                   `protobuf:"varint,5,opt,name=is_repo,json=isRepo,proto3" json:"is_repo,omitempty"`
+	IsAllowed           bool                   `protobuf:"varint,6,opt,name=is_allowed,json=isAllowed,proto3" json:"is_allowed,omitempty"`
+	ChildDirectoryCount uint32                 `protobuf:"varint,7,opt,name=child_directory_count,json=childDirectoryCount,proto3" json:"child_directory_count,omitempty"`
+	ChildFileCount      uint32                 `protobuf:"varint,8,opt,name=child_file_count,json=childFileCount,proto3" json:"child_file_count,omitempty"`
+	ModifiedAt          *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=modified_at,json=modifiedAt,proto3" json:"modified_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PathMetadata) Reset() {
+	*x = PathMetadata{}
+	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PathMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PathMetadata) ProtoMessage() {}
+
+func (x *PathMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PathMetadata.ProtoReflect.Descriptor instead.
+func (*PathMetadata) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PathMetadata) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *PathMetadata) GetCanonicalPath() string {
+	if x != nil {
+		return x.CanonicalPath
+	}
+	return ""
+}
+
+func (x *PathMetadata) GetBasename() string {
+	if x != nil {
+		return x.Basename
+	}
+	return ""
+}
+
+func (x *PathMetadata) GetIsDirectory() bool {
+	if x != nil {
+		return x.IsDirectory
+	}
+	return false
+}
+
+func (x *PathMetadata) GetIsRepo() bool {
+	if x != nil {
+		return x.IsRepo
+	}
+	return false
+}
+
+func (x *PathMetadata) GetIsAllowed() bool {
+	if x != nil {
+		return x.IsAllowed
+	}
+	return false
+}
+
+func (x *PathMetadata) GetChildDirectoryCount() uint32 {
+	if x != nil {
+		return x.ChildDirectoryCount
+	}
+	return 0
+}
+
+func (x *PathMetadata) GetChildFileCount() uint32 {
+	if x != nil {
+		return x.ChildFileCount
+	}
+	return 0
+}
+
+func (x *PathMetadata) GetModifiedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ModifiedAt
+	}
+	return nil
+}
+
+type ListDirectoryRootsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDirectoryRootsRequest) Reset() {
+	*x = ListDirectoryRootsRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDirectoryRootsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDirectoryRootsRequest) ProtoMessage() {}
+
+func (x *ListDirectoryRootsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDirectoryRootsRequest.ProtoReflect.Descriptor instead.
+func (*ListDirectoryRootsRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{10}
+}
+
+type ListDirectoryRootsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Roots         []*DirectoryRoot       `protobuf:"bytes,1,rep,name=roots,proto3" json:"roots,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDirectoryRootsResponse) Reset() {
+	*x = ListDirectoryRootsResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDirectoryRootsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDirectoryRootsResponse) ProtoMessage() {}
+
+func (x *ListDirectoryRootsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDirectoryRootsResponse.ProtoReflect.Descriptor instead.
+func (*ListDirectoryRootsResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListDirectoryRootsResponse) GetRoots() []*DirectoryRoot {
+	if x != nil {
+		return x.Roots
+	}
+	return nil
+}
+
+type ListDirectoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDirectoryRequest) Reset() {
+	*x = ListDirectoryRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDirectoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDirectoryRequest) ProtoMessage() {}
+
+func (x *ListDirectoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDirectoryRequest.ProtoReflect.Descriptor instead.
+func (*ListDirectoryRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListDirectoryRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type ListDirectoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Listing       *DirectoryListing      `protobuf:"bytes,1,opt,name=listing,proto3" json:"listing,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDirectoryResponse) Reset() {
+	*x = ListDirectoryResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDirectoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDirectoryResponse) ProtoMessage() {}
+
+func (x *ListDirectoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDirectoryResponse.ProtoReflect.Descriptor instead.
+func (*ListDirectoryResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListDirectoryResponse) GetListing() *DirectoryListing {
+	if x != nil {
+		return x.Listing
+	}
+	return nil
+}
+
+type GetPathMetadataRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPathMetadataRequest) Reset() {
+	*x = GetPathMetadataRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPathMetadataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPathMetadataRequest) ProtoMessage() {}
+
+func (x *GetPathMetadataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPathMetadataRequest.ProtoReflect.Descriptor instead.
+func (*GetPathMetadataRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetPathMetadataRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type GetPathMetadataResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Metadata      *PathMetadata          `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPathMetadataResponse) Reset() {
+	*x = GetPathMetadataResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPathMetadataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPathMetadataResponse) ProtoMessage() {}
+
+func (x *GetPathMetadataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPathMetadataResponse.ProtoReflect.Descriptor instead.
+func (*GetPathMetadataResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetPathMetadataResponse) GetMetadata() *PathMetadata {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
+type ListRecentReposRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         uint32                 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecentReposRequest) Reset() {
+	*x = ListRecentReposRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecentReposRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecentReposRequest) ProtoMessage() {}
+
+func (x *ListRecentReposRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecentReposRequest.ProtoReflect.Descriptor instead.
+func (*ListRecentReposRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListRecentReposRequest) GetLimit() uint32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListRecentReposResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Repos         []*PathMetadata        `protobuf:"bytes,1,rep,name=repos,proto3" json:"repos,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecentReposResponse) Reset() {
+	*x = ListRecentReposResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecentReposResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecentReposResponse) ProtoMessage() {}
+
+func (x *ListRecentReposResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecentReposResponse.ProtoReflect.Descriptor instead.
+func (*ListRecentReposResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListRecentReposResponse) GetRepos() []*PathMetadata {
+	if x != nil {
+		return x.Repos
+	}
+	return nil
+}
+
 var File_orchd_v1_host_proto protoreflect.FileDescriptor
 
 const file_orchd_v1_host_proto_rawDesc = "" +
@@ -360,10 +1016,58 @@ const file_orchd_v1_host_proto_rawDesc = "" +
 	"hostStatus\"\x15\n" +
 	"\x13ListBackendsRequest\"K\n" +
 	"\x14ListBackendsResponse\x123\n" +
-	"\bbackends\x18\x01 \x03(\v2\x17.orchd.v1.BackendStatusR\bbackends2\xae\x01\n" +
+	"\bbackends\x18\x01 \x03(\v2\x17.orchd.v1.BackendStatusR\bbackends\"M\n" +
+	"\rDirectoryRoot\x12\x14\n" +
+	"\x05label\x18\x01 \x01(\tR\x05label\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\"\xb6\x01\n" +
+	"\x0eDirectoryEntry\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12!\n" +
+	"\fis_directory\x18\x03 \x01(\bR\visDirectory\x12\x17\n" +
+	"\ais_repo\x18\x04 \x01(\bR\x06isRepo\x12!\n" +
+	"\fhas_children\x18\x05 \x01(\bR\vhasChildren\x12\x1d\n" +
+	"\n" +
+	"is_allowed\x18\x06 \x01(\bR\tisAllowed\"\x8a\x01\n" +
+	"\x10DirectoryListing\x12!\n" +
+	"\fcurrent_path\x18\x01 \x01(\tR\vcurrentPath\x12\x1f\n" +
+	"\vparent_path\x18\x02 \x01(\tR\n" +
+	"parentPath\x122\n" +
+	"\aentries\x18\x03 \x03(\v2\x18.orchd.v1.DirectoryEntryR\aentries\"\xdb\x02\n" +
+	"\fPathMetadata\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12%\n" +
+	"\x0ecanonical_path\x18\x02 \x01(\tR\rcanonicalPath\x12\x1a\n" +
+	"\bbasename\x18\x03 \x01(\tR\bbasename\x12!\n" +
+	"\fis_directory\x18\x04 \x01(\bR\visDirectory\x12\x17\n" +
+	"\ais_repo\x18\x05 \x01(\bR\x06isRepo\x12\x1d\n" +
+	"\n" +
+	"is_allowed\x18\x06 \x01(\bR\tisAllowed\x122\n" +
+	"\x15child_directory_count\x18\a \x01(\rR\x13childDirectoryCount\x12(\n" +
+	"\x10child_file_count\x18\b \x01(\rR\x0echildFileCount\x12;\n" +
+	"\vmodified_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"modifiedAt\"\x1b\n" +
+	"\x19ListDirectoryRootsRequest\"K\n" +
+	"\x1aListDirectoryRootsResponse\x12-\n" +
+	"\x05roots\x18\x01 \x03(\v2\x17.orchd.v1.DirectoryRootR\x05roots\"*\n" +
+	"\x14ListDirectoryRequest\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\"M\n" +
+	"\x15ListDirectoryResponse\x124\n" +
+	"\alisting\x18\x01 \x01(\v2\x1a.orchd.v1.DirectoryListingR\alisting\",\n" +
+	"\x16GetPathMetadataRequest\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\"M\n" +
+	"\x17GetPathMetadataResponse\x122\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x16.orchd.v1.PathMetadataR\bmetadata\".\n" +
+	"\x16ListRecentReposRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\rR\x05limit\"G\n" +
+	"\x17ListRecentReposResponse\x12,\n" +
+	"\x05repos\x18\x01 \x03(\v2\x16.orchd.v1.PathMetadataR\x05repos2\x91\x04\n" +
 	"\vHostService\x12P\n" +
 	"\rGetHostStatus\x12\x1e.orchd.v1.GetHostStatusRequest\x1a\x1f.orchd.v1.GetHostStatusResponse\x12M\n" +
-	"\fListBackends\x12\x1d.orchd.v1.ListBackendsRequest\x1a\x1e.orchd.v1.ListBackendsResponseB\x85\x01\n" +
+	"\fListBackends\x12\x1d.orchd.v1.ListBackendsRequest\x1a\x1e.orchd.v1.ListBackendsResponse\x12_\n" +
+	"\x12ListDirectoryRoots\x12#.orchd.v1.ListDirectoryRootsRequest\x1a$.orchd.v1.ListDirectoryRootsResponse\x12P\n" +
+	"\rListDirectory\x12\x1e.orchd.v1.ListDirectoryRequest\x1a\x1f.orchd.v1.ListDirectoryResponse\x12V\n" +
+	"\x0fGetPathMetadata\x12 .orchd.v1.GetPathMetadataRequest\x1a!.orchd.v1.GetPathMetadataResponse\x12V\n" +
+	"\x0fListRecentRepos\x12 .orchd.v1.ListRecentReposRequest\x1a!.orchd.v1.ListRecentReposResponseB\x85\x01\n" +
 	"\fcom.orchd.v1B\tHostProtoP\x01Z)orchd/internal/gen/proto/orchd/v1;orchdv1\xa2\x02\x03OXX\xaa\x02\bOrchd.V1\xca\x02\bOrchd\\V1\xe2\x02\x14Orchd\\V1\\GPBMetadata\xea\x02\tOrchd::V1b\x06proto3"
 
 var (
@@ -378,32 +1082,58 @@ func file_orchd_v1_host_proto_rawDescGZIP() []byte {
 	return file_orchd_v1_host_proto_rawDescData
 }
 
-var file_orchd_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_orchd_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_orchd_v1_host_proto_goTypes = []any{
-	(*BackendStatus)(nil),         // 0: orchd.v1.BackendStatus
-	(*HostStatus)(nil),            // 1: orchd.v1.HostStatus
-	(*GetHostStatusRequest)(nil),  // 2: orchd.v1.GetHostStatusRequest
-	(*GetHostStatusResponse)(nil), // 3: orchd.v1.GetHostStatusResponse
-	(*ListBackendsRequest)(nil),   // 4: orchd.v1.ListBackendsRequest
-	(*ListBackendsResponse)(nil),  // 5: orchd.v1.ListBackendsResponse
-	(HostStatusKind)(0),           // 6: orchd.v1.HostStatusKind
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*BackendStatus)(nil),              // 0: orchd.v1.BackendStatus
+	(*HostStatus)(nil),                 // 1: orchd.v1.HostStatus
+	(*GetHostStatusRequest)(nil),       // 2: orchd.v1.GetHostStatusRequest
+	(*GetHostStatusResponse)(nil),      // 3: orchd.v1.GetHostStatusResponse
+	(*ListBackendsRequest)(nil),        // 4: orchd.v1.ListBackendsRequest
+	(*ListBackendsResponse)(nil),       // 5: orchd.v1.ListBackendsResponse
+	(*DirectoryRoot)(nil),              // 6: orchd.v1.DirectoryRoot
+	(*DirectoryEntry)(nil),             // 7: orchd.v1.DirectoryEntry
+	(*DirectoryListing)(nil),           // 8: orchd.v1.DirectoryListing
+	(*PathMetadata)(nil),               // 9: orchd.v1.PathMetadata
+	(*ListDirectoryRootsRequest)(nil),  // 10: orchd.v1.ListDirectoryRootsRequest
+	(*ListDirectoryRootsResponse)(nil), // 11: orchd.v1.ListDirectoryRootsResponse
+	(*ListDirectoryRequest)(nil),       // 12: orchd.v1.ListDirectoryRequest
+	(*ListDirectoryResponse)(nil),      // 13: orchd.v1.ListDirectoryResponse
+	(*GetPathMetadataRequest)(nil),     // 14: orchd.v1.GetPathMetadataRequest
+	(*GetPathMetadataResponse)(nil),    // 15: orchd.v1.GetPathMetadataResponse
+	(*ListRecentReposRequest)(nil),     // 16: orchd.v1.ListRecentReposRequest
+	(*ListRecentReposResponse)(nil),    // 17: orchd.v1.ListRecentReposResponse
+	(HostStatusKind)(0),                // 18: orchd.v1.HostStatusKind
+	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
 }
 var file_orchd_v1_host_proto_depIdxs = []int32{
-	6, // 0: orchd.v1.HostStatus.status:type_name -> orchd.v1.HostStatusKind
-	0, // 1: orchd.v1.HostStatus.backends:type_name -> orchd.v1.BackendStatus
-	7, // 2: orchd.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
-	1, // 3: orchd.v1.GetHostStatusResponse.host_status:type_name -> orchd.v1.HostStatus
-	0, // 4: orchd.v1.ListBackendsResponse.backends:type_name -> orchd.v1.BackendStatus
-	2, // 5: orchd.v1.HostService.GetHostStatus:input_type -> orchd.v1.GetHostStatusRequest
-	4, // 6: orchd.v1.HostService.ListBackends:input_type -> orchd.v1.ListBackendsRequest
-	3, // 7: orchd.v1.HostService.GetHostStatus:output_type -> orchd.v1.GetHostStatusResponse
-	5, // 8: orchd.v1.HostService.ListBackends:output_type -> orchd.v1.ListBackendsResponse
-	7, // [7:9] is the sub-list for method output_type
-	5, // [5:7] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	18, // 0: orchd.v1.HostStatus.status:type_name -> orchd.v1.HostStatusKind
+	0,  // 1: orchd.v1.HostStatus.backends:type_name -> orchd.v1.BackendStatus
+	19, // 2: orchd.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
+	1,  // 3: orchd.v1.GetHostStatusResponse.host_status:type_name -> orchd.v1.HostStatus
+	0,  // 4: orchd.v1.ListBackendsResponse.backends:type_name -> orchd.v1.BackendStatus
+	7,  // 5: orchd.v1.DirectoryListing.entries:type_name -> orchd.v1.DirectoryEntry
+	19, // 6: orchd.v1.PathMetadata.modified_at:type_name -> google.protobuf.Timestamp
+	6,  // 7: orchd.v1.ListDirectoryRootsResponse.roots:type_name -> orchd.v1.DirectoryRoot
+	8,  // 8: orchd.v1.ListDirectoryResponse.listing:type_name -> orchd.v1.DirectoryListing
+	9,  // 9: orchd.v1.GetPathMetadataResponse.metadata:type_name -> orchd.v1.PathMetadata
+	9,  // 10: orchd.v1.ListRecentReposResponse.repos:type_name -> orchd.v1.PathMetadata
+	2,  // 11: orchd.v1.HostService.GetHostStatus:input_type -> orchd.v1.GetHostStatusRequest
+	4,  // 12: orchd.v1.HostService.ListBackends:input_type -> orchd.v1.ListBackendsRequest
+	10, // 13: orchd.v1.HostService.ListDirectoryRoots:input_type -> orchd.v1.ListDirectoryRootsRequest
+	12, // 14: orchd.v1.HostService.ListDirectory:input_type -> orchd.v1.ListDirectoryRequest
+	14, // 15: orchd.v1.HostService.GetPathMetadata:input_type -> orchd.v1.GetPathMetadataRequest
+	16, // 16: orchd.v1.HostService.ListRecentRepos:input_type -> orchd.v1.ListRecentReposRequest
+	3,  // 17: orchd.v1.HostService.GetHostStatus:output_type -> orchd.v1.GetHostStatusResponse
+	5,  // 18: orchd.v1.HostService.ListBackends:output_type -> orchd.v1.ListBackendsResponse
+	11, // 19: orchd.v1.HostService.ListDirectoryRoots:output_type -> orchd.v1.ListDirectoryRootsResponse
+	13, // 20: orchd.v1.HostService.ListDirectory:output_type -> orchd.v1.ListDirectoryResponse
+	15, // 21: orchd.v1.HostService.GetPathMetadata:output_type -> orchd.v1.GetPathMetadataResponse
+	17, // 22: orchd.v1.HostService.ListRecentRepos:output_type -> orchd.v1.ListRecentReposResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_orchd_v1_host_proto_init() }
@@ -418,7 +1148,7 @@ func file_orchd_v1_host_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchd_v1_host_proto_rawDesc), len(file_orchd_v1_host_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

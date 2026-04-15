@@ -40,6 +40,39 @@ type Backend struct {
 	Reason    string
 }
 
+type DirectoryRoot struct {
+	Label string
+	Path  string
+	Kind  string
+}
+
+type DirectoryEntry struct {
+	Name        string
+	Path        string
+	IsDirectory bool
+	IsRepo      bool
+	HasChildren bool
+	IsAllowed   bool
+}
+
+type DirectoryListing struct {
+	CurrentPath string
+	ParentPath  string
+	Entries     []DirectoryEntry
+}
+
+type PathMetadata struct {
+	Path                string
+	CanonicalPath       string
+	Basename            string
+	IsDirectory         bool
+	IsRepo              bool
+	IsAllowed           bool
+	ChildDirectoryCount int
+	ChildFileCount      int
+	ModifiedAt          time.Time
+}
+
 type HostSnapshot struct {
 	HostID       string
 	Status       HostState
@@ -106,6 +139,10 @@ type EventSink interface {
 type WorkspaceService interface {
 	GetHostStatus() HostSnapshot
 	ListBackends() []Backend
+	ListDirectoryRoots() ([]DirectoryRoot, error)
+	ListDirectory(path string) (DirectoryListing, error)
+	GetPathMetadata(path string) (PathMetadata, error)
+	ListRecentRepos(limit uint32) ([]PathMetadata, error)
 	ListProjects() []Project
 	CreateProject(CreateProjectInput) (Project, error)
 	GetProject(projectID string) (Project, bool)

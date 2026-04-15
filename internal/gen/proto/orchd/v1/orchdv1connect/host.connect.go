@@ -39,12 +39,28 @@ const (
 	// HostServiceListBackendsProcedure is the fully-qualified name of the HostService's ListBackends
 	// RPC.
 	HostServiceListBackendsProcedure = "/orchd.v1.HostService/ListBackends"
+	// HostServiceListDirectoryRootsProcedure is the fully-qualified name of the HostService's
+	// ListDirectoryRoots RPC.
+	HostServiceListDirectoryRootsProcedure = "/orchd.v1.HostService/ListDirectoryRoots"
+	// HostServiceListDirectoryProcedure is the fully-qualified name of the HostService's ListDirectory
+	// RPC.
+	HostServiceListDirectoryProcedure = "/orchd.v1.HostService/ListDirectory"
+	// HostServiceGetPathMetadataProcedure is the fully-qualified name of the HostService's
+	// GetPathMetadata RPC.
+	HostServiceGetPathMetadataProcedure = "/orchd.v1.HostService/GetPathMetadata"
+	// HostServiceListRecentReposProcedure is the fully-qualified name of the HostService's
+	// ListRecentRepos RPC.
+	HostServiceListRecentReposProcedure = "/orchd.v1.HostService/ListRecentRepos"
 )
 
 // HostServiceClient is a client for the orchd.v1.HostService service.
 type HostServiceClient interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
+	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
+	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
+	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
+	ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error)
 }
 
 // NewHostServiceClient constructs a client for the orchd.v1.HostService service. By default, it
@@ -70,13 +86,41 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(hostServiceMethods.ByName("ListBackends")),
 			connect.WithClientOptions(opts...),
 		),
+		listDirectoryRoots: connect.NewClient[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse](
+			httpClient,
+			baseURL+HostServiceListDirectoryRootsProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ListDirectoryRoots")),
+			connect.WithClientOptions(opts...),
+		),
+		listDirectory: connect.NewClient[v1.ListDirectoryRequest, v1.ListDirectoryResponse](
+			httpClient,
+			baseURL+HostServiceListDirectoryProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ListDirectory")),
+			connect.WithClientOptions(opts...),
+		),
+		getPathMetadata: connect.NewClient[v1.GetPathMetadataRequest, v1.GetPathMetadataResponse](
+			httpClient,
+			baseURL+HostServiceGetPathMetadataProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("GetPathMetadata")),
+			connect.WithClientOptions(opts...),
+		),
+		listRecentRepos: connect.NewClient[v1.ListRecentReposRequest, v1.ListRecentReposResponse](
+			httpClient,
+			baseURL+HostServiceListRecentReposProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ListRecentRepos")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // hostServiceClient implements HostServiceClient.
 type hostServiceClient struct {
-	getHostStatus *connect.Client[v1.GetHostStatusRequest, v1.GetHostStatusResponse]
-	listBackends  *connect.Client[v1.ListBackendsRequest, v1.ListBackendsResponse]
+	getHostStatus      *connect.Client[v1.GetHostStatusRequest, v1.GetHostStatusResponse]
+	listBackends       *connect.Client[v1.ListBackendsRequest, v1.ListBackendsResponse]
+	listDirectoryRoots *connect.Client[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse]
+	listDirectory      *connect.Client[v1.ListDirectoryRequest, v1.ListDirectoryResponse]
+	getPathMetadata    *connect.Client[v1.GetPathMetadataRequest, v1.GetPathMetadataResponse]
+	listRecentRepos    *connect.Client[v1.ListRecentReposRequest, v1.ListRecentReposResponse]
 }
 
 // GetHostStatus calls orchd.v1.HostService.GetHostStatus.
@@ -89,10 +133,34 @@ func (c *hostServiceClient) ListBackends(ctx context.Context, req *connect.Reque
 	return c.listBackends.CallUnary(ctx, req)
 }
 
+// ListDirectoryRoots calls orchd.v1.HostService.ListDirectoryRoots.
+func (c *hostServiceClient) ListDirectoryRoots(ctx context.Context, req *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error) {
+	return c.listDirectoryRoots.CallUnary(ctx, req)
+}
+
+// ListDirectory calls orchd.v1.HostService.ListDirectory.
+func (c *hostServiceClient) ListDirectory(ctx context.Context, req *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error) {
+	return c.listDirectory.CallUnary(ctx, req)
+}
+
+// GetPathMetadata calls orchd.v1.HostService.GetPathMetadata.
+func (c *hostServiceClient) GetPathMetadata(ctx context.Context, req *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error) {
+	return c.getPathMetadata.CallUnary(ctx, req)
+}
+
+// ListRecentRepos calls orchd.v1.HostService.ListRecentRepos.
+func (c *hostServiceClient) ListRecentRepos(ctx context.Context, req *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error) {
+	return c.listRecentRepos.CallUnary(ctx, req)
+}
+
 // HostServiceHandler is an implementation of the orchd.v1.HostService service.
 type HostServiceHandler interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
+	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
+	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
+	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
+	ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error)
 }
 
 // NewHostServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -114,12 +182,44 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(hostServiceMethods.ByName("ListBackends")),
 		connect.WithHandlerOptions(opts...),
 	)
+	hostServiceListDirectoryRootsHandler := connect.NewUnaryHandler(
+		HostServiceListDirectoryRootsProcedure,
+		svc.ListDirectoryRoots,
+		connect.WithSchema(hostServiceMethods.ByName("ListDirectoryRoots")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceListDirectoryHandler := connect.NewUnaryHandler(
+		HostServiceListDirectoryProcedure,
+		svc.ListDirectory,
+		connect.WithSchema(hostServiceMethods.ByName("ListDirectory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceGetPathMetadataHandler := connect.NewUnaryHandler(
+		HostServiceGetPathMetadataProcedure,
+		svc.GetPathMetadata,
+		connect.WithSchema(hostServiceMethods.ByName("GetPathMetadata")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceListRecentReposHandler := connect.NewUnaryHandler(
+		HostServiceListRecentReposProcedure,
+		svc.ListRecentRepos,
+		connect.WithSchema(hostServiceMethods.ByName("ListRecentRepos")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/orchd.v1.HostService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case HostServiceGetHostStatusProcedure:
 			hostServiceGetHostStatusHandler.ServeHTTP(w, r)
 		case HostServiceListBackendsProcedure:
 			hostServiceListBackendsHandler.ServeHTTP(w, r)
+		case HostServiceListDirectoryRootsProcedure:
+			hostServiceListDirectoryRootsHandler.ServeHTTP(w, r)
+		case HostServiceListDirectoryProcedure:
+			hostServiceListDirectoryHandler.ServeHTTP(w, r)
+		case HostServiceGetPathMetadataProcedure:
+			hostServiceGetPathMetadataHandler.ServeHTTP(w, r)
+		case HostServiceListRecentReposProcedure:
+			hostServiceListRecentReposHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -135,4 +235,20 @@ func (UnimplementedHostServiceHandler) GetHostStatus(context.Context, *connect.R
 
 func (UnimplementedHostServiceHandler) ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListBackends is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListDirectoryRoots is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListDirectory is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.GetPathMetadata is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListRecentRepos is not implemented"))
 }

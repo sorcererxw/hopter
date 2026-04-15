@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orchd/v1/host.proto.
  */
 export const file_orchd_v1_host: GenFile = /*@__PURE__*/
-  fileDesc("ChNvcmNoZC92MS9ob3N0LnByb3RvEghvcmNoZC52MSJYCg1CYWNrZW5kU3RhdHVzEhMKC2JhY2tlbmRfa2V5GAEgASgJEhEKCWF2YWlsYWJsZRgCIAEoCBIPCgd2ZXJzaW9uGAMgASgJEg4KBnJlYXNvbhgEIAEoCSLQAQoKSG9zdFN0YXR1cxIPCgdob3N0X2lkGAEgASgJEigKBnN0YXR1cxgCIAEoDjIYLm9yY2hkLnYxLkhvc3RTdGF0dXNLaW5kEikKCGJhY2tlbmRzGAMgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cxIVCg1wcm9qZWN0X2NvdW50GAQgASgNEhUKDXNlc3Npb25fY291bnQYBSABKA0SLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiFgoUR2V0SG9zdFN0YXR1c1JlcXVlc3QiQgoVR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEikKC2hvc3Rfc3RhdHVzGAEgASgLMhQub3JjaGQudjEuSG9zdFN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkEKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEikKCGJhY2tlbmRzGAEgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1czKuAQoLSG9zdFNlcnZpY2USUAoNR2V0SG9zdFN0YXR1cxIeLm9yY2hkLnYxLkdldEhvc3RTdGF0dXNSZXF1ZXN0Gh8ub3JjaGQudjEuR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEk0KDExpc3RCYWNrZW5kcxIdLm9yY2hkLnYxLkxpc3RCYWNrZW5kc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0QmFja2VuZHNSZXNwb25zZUKFAQoMY29tLm9yY2hkLnYxQglIb3N0UHJvdG9QAVopb3JjaGQvaW50ZXJuYWwvZ2VuL3Byb3RvL29yY2hkL3YxO29yY2hkdjGiAgNPWFiqAghPcmNoZC5WMcoCCE9yY2hkXFYx4gIUT3JjaGRcVjFcR1BCTWV0YWRhdGHqAglPcmNoZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_orchd_v1_common]);
+  fileDesc("ChNvcmNoZC92MS9ob3N0LnByb3RvEghvcmNoZC52MSJYCg1CYWNrZW5kU3RhdHVzEhMKC2JhY2tlbmRfa2V5GAEgASgJEhEKCWF2YWlsYWJsZRgCIAEoCBIPCgd2ZXJzaW9uGAMgASgJEg4KBnJlYXNvbhgEIAEoCSLQAQoKSG9zdFN0YXR1cxIPCgdob3N0X2lkGAEgASgJEigKBnN0YXR1cxgCIAEoDjIYLm9yY2hkLnYxLkhvc3RTdGF0dXNLaW5kEikKCGJhY2tlbmRzGAMgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cxIVCg1wcm9qZWN0X2NvdW50GAQgASgNEhUKDXNlc3Npb25fY291bnQYBSABKA0SLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiFgoUR2V0SG9zdFN0YXR1c1JlcXVlc3QiQgoVR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEikKC2hvc3Rfc3RhdHVzGAEgASgLMhQub3JjaGQudjEuSG9zdFN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkEKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEikKCGJhY2tlbmRzGAEgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cyI6Cg1EaXJlY3RvcnlSb290Eg0KBWxhYmVsGAEgASgJEgwKBHBhdGgYAiABKAkSDAoEa2luZBgDIAEoCSJ9Cg5EaXJlY3RvcnlFbnRyeRIMCgRuYW1lGAEgASgJEgwKBHBhdGgYAiABKAkSFAoMaXNfZGlyZWN0b3J5GAMgASgIEg8KB2lzX3JlcG8YBCABKAgSFAoMaGFzX2NoaWxkcmVuGAUgASgIEhIKCmlzX2FsbG93ZWQYBiABKAgiaAoQRGlyZWN0b3J5TGlzdGluZxIUCgxjdXJyZW50X3BhdGgYASABKAkSEwoLcGFyZW50X3BhdGgYAiABKAkSKQoHZW50cmllcxgDIAMoCzIYLm9yY2hkLnYxLkRpcmVjdG9yeUVudHJ5IusBCgxQYXRoTWV0YWRhdGESDAoEcGF0aBgBIAEoCRIWCg5jYW5vbmljYWxfcGF0aBgCIAEoCRIQCghiYXNlbmFtZRgDIAEoCRIUCgxpc19kaXJlY3RvcnkYBCABKAgSDwoHaXNfcmVwbxgFIAEoCBISCgppc19hbGxvd2VkGAYgASgIEh0KFWNoaWxkX2RpcmVjdG9yeV9jb3VudBgHIAEoDRIYChBjaGlsZF9maWxlX2NvdW50GAggASgNEi8KC21vZGlmaWVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIbChlMaXN0RGlyZWN0b3J5Um9vdHNSZXF1ZXN0IkQKGkxpc3REaXJlY3RvcnlSb290c1Jlc3BvbnNlEiYKBXJvb3RzGAEgAygLMhcub3JjaGQudjEuRGlyZWN0b3J5Um9vdCIkChRMaXN0RGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJIkQKFUxpc3REaXJlY3RvcnlSZXNwb25zZRIrCgdsaXN0aW5nGAEgASgLMhoub3JjaGQudjEuRGlyZWN0b3J5TGlzdGluZyImChZHZXRQYXRoTWV0YWRhdGFSZXF1ZXN0EgwKBHBhdGgYASABKAkiQwoXR2V0UGF0aE1ldGFkYXRhUmVzcG9uc2USKAoIbWV0YWRhdGEYASABKAsyFi5vcmNoZC52MS5QYXRoTWV0YWRhdGEiJwoWTGlzdFJlY2VudFJlcG9zUmVxdWVzdBINCgVsaW1pdBgBIAEoDSJAChdMaXN0UmVjZW50UmVwb3NSZXNwb25zZRIlCgVyZXBvcxgBIAMoCzIWLm9yY2hkLnYxLlBhdGhNZXRhZGF0YTKRBAoLSG9zdFNlcnZpY2USUAoNR2V0SG9zdFN0YXR1cxIeLm9yY2hkLnYxLkdldEhvc3RTdGF0dXNSZXF1ZXN0Gh8ub3JjaGQudjEuR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEk0KDExpc3RCYWNrZW5kcxIdLm9yY2hkLnYxLkxpc3RCYWNrZW5kc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0QmFja2VuZHNSZXNwb25zZRJfChJMaXN0RGlyZWN0b3J5Um9vdHMSIy5vcmNoZC52MS5MaXN0RGlyZWN0b3J5Um9vdHNSZXF1ZXN0GiQub3JjaGQudjEuTGlzdERpcmVjdG9yeVJvb3RzUmVzcG9uc2USUAoNTGlzdERpcmVjdG9yeRIeLm9yY2hkLnYxLkxpc3REaXJlY3RvcnlSZXF1ZXN0Gh8ub3JjaGQudjEuTGlzdERpcmVjdG9yeVJlc3BvbnNlElYKD0dldFBhdGhNZXRhZGF0YRIgLm9yY2hkLnYxLkdldFBhdGhNZXRhZGF0YVJlcXVlc3QaIS5vcmNoZC52MS5HZXRQYXRoTWV0YWRhdGFSZXNwb25zZRJWCg9MaXN0UmVjZW50UmVwb3MSIC5vcmNoZC52MS5MaXN0UmVjZW50UmVwb3NSZXF1ZXN0GiEub3JjaGQudjEuTGlzdFJlY2VudFJlcG9zUmVzcG9uc2VChQEKDGNvbS5vcmNoZC52MUIJSG9zdFByb3RvUAFaKW9yY2hkL2ludGVybmFsL2dlbi9wcm90by9vcmNoZC92MTtvcmNoZHYxogIDT1hYqgIIT3JjaGQuVjHKAghPcmNoZFxWMeICFE9yY2hkXFYxXEdQQk1ldGFkYXRh6gIJT3JjaGQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_orchd_v1_common]);
 
 /**
  * @generated from message orchd.v1.BackendStatus
@@ -151,6 +151,291 @@ export const ListBackendsResponseSchema: GenMessage<ListBackendsResponse> = /*@_
   messageDesc(file_orchd_v1_host, 5);
 
 /**
+ * @generated from message orchd.v1.DirectoryRoot
+ */
+export type DirectoryRoot = Message<"orchd.v1.DirectoryRoot"> & {
+  /**
+   * @generated from field: string label = 1;
+   */
+  label: string;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path: string;
+
+  /**
+   * @generated from field: string kind = 3;
+   */
+  kind: string;
+};
+
+/**
+ * Describes the message orchd.v1.DirectoryRoot.
+ * Use `create(DirectoryRootSchema)` to create a new message.
+ */
+export const DirectoryRootSchema: GenMessage<DirectoryRoot> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 6);
+
+/**
+ * @generated from message orchd.v1.DirectoryEntry
+ */
+export type DirectoryEntry = Message<"orchd.v1.DirectoryEntry"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path: string;
+
+  /**
+   * @generated from field: bool is_directory = 3;
+   */
+  isDirectory: boolean;
+
+  /**
+   * @generated from field: bool is_repo = 4;
+   */
+  isRepo: boolean;
+
+  /**
+   * @generated from field: bool has_children = 5;
+   */
+  hasChildren: boolean;
+
+  /**
+   * @generated from field: bool is_allowed = 6;
+   */
+  isAllowed: boolean;
+};
+
+/**
+ * Describes the message orchd.v1.DirectoryEntry.
+ * Use `create(DirectoryEntrySchema)` to create a new message.
+ */
+export const DirectoryEntrySchema: GenMessage<DirectoryEntry> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 7);
+
+/**
+ * @generated from message orchd.v1.DirectoryListing
+ */
+export type DirectoryListing = Message<"orchd.v1.DirectoryListing"> & {
+  /**
+   * @generated from field: string current_path = 1;
+   */
+  currentPath: string;
+
+  /**
+   * @generated from field: string parent_path = 2;
+   */
+  parentPath: string;
+
+  /**
+   * @generated from field: repeated orchd.v1.DirectoryEntry entries = 3;
+   */
+  entries: DirectoryEntry[];
+};
+
+/**
+ * Describes the message orchd.v1.DirectoryListing.
+ * Use `create(DirectoryListingSchema)` to create a new message.
+ */
+export const DirectoryListingSchema: GenMessage<DirectoryListing> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 8);
+
+/**
+ * @generated from message orchd.v1.PathMetadata
+ */
+export type PathMetadata = Message<"orchd.v1.PathMetadata"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * @generated from field: string canonical_path = 2;
+   */
+  canonicalPath: string;
+
+  /**
+   * @generated from field: string basename = 3;
+   */
+  basename: string;
+
+  /**
+   * @generated from field: bool is_directory = 4;
+   */
+  isDirectory: boolean;
+
+  /**
+   * @generated from field: bool is_repo = 5;
+   */
+  isRepo: boolean;
+
+  /**
+   * @generated from field: bool is_allowed = 6;
+   */
+  isAllowed: boolean;
+
+  /**
+   * @generated from field: uint32 child_directory_count = 7;
+   */
+  childDirectoryCount: number;
+
+  /**
+   * @generated from field: uint32 child_file_count = 8;
+   */
+  childFileCount: number;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp modified_at = 9;
+   */
+  modifiedAt?: Timestamp;
+};
+
+/**
+ * Describes the message orchd.v1.PathMetadata.
+ * Use `create(PathMetadataSchema)` to create a new message.
+ */
+export const PathMetadataSchema: GenMessage<PathMetadata> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 9);
+
+/**
+ * @generated from message orchd.v1.ListDirectoryRootsRequest
+ */
+export type ListDirectoryRootsRequest = Message<"orchd.v1.ListDirectoryRootsRequest"> & {
+};
+
+/**
+ * Describes the message orchd.v1.ListDirectoryRootsRequest.
+ * Use `create(ListDirectoryRootsRequestSchema)` to create a new message.
+ */
+export const ListDirectoryRootsRequestSchema: GenMessage<ListDirectoryRootsRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 10);
+
+/**
+ * @generated from message orchd.v1.ListDirectoryRootsResponse
+ */
+export type ListDirectoryRootsResponse = Message<"orchd.v1.ListDirectoryRootsResponse"> & {
+  /**
+   * @generated from field: repeated orchd.v1.DirectoryRoot roots = 1;
+   */
+  roots: DirectoryRoot[];
+};
+
+/**
+ * Describes the message orchd.v1.ListDirectoryRootsResponse.
+ * Use `create(ListDirectoryRootsResponseSchema)` to create a new message.
+ */
+export const ListDirectoryRootsResponseSchema: GenMessage<ListDirectoryRootsResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 11);
+
+/**
+ * @generated from message orchd.v1.ListDirectoryRequest
+ */
+export type ListDirectoryRequest = Message<"orchd.v1.ListDirectoryRequest"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+};
+
+/**
+ * Describes the message orchd.v1.ListDirectoryRequest.
+ * Use `create(ListDirectoryRequestSchema)` to create a new message.
+ */
+export const ListDirectoryRequestSchema: GenMessage<ListDirectoryRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 12);
+
+/**
+ * @generated from message orchd.v1.ListDirectoryResponse
+ */
+export type ListDirectoryResponse = Message<"orchd.v1.ListDirectoryResponse"> & {
+  /**
+   * @generated from field: orchd.v1.DirectoryListing listing = 1;
+   */
+  listing?: DirectoryListing;
+};
+
+/**
+ * Describes the message orchd.v1.ListDirectoryResponse.
+ * Use `create(ListDirectoryResponseSchema)` to create a new message.
+ */
+export const ListDirectoryResponseSchema: GenMessage<ListDirectoryResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 13);
+
+/**
+ * @generated from message orchd.v1.GetPathMetadataRequest
+ */
+export type GetPathMetadataRequest = Message<"orchd.v1.GetPathMetadataRequest"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+};
+
+/**
+ * Describes the message orchd.v1.GetPathMetadataRequest.
+ * Use `create(GetPathMetadataRequestSchema)` to create a new message.
+ */
+export const GetPathMetadataRequestSchema: GenMessage<GetPathMetadataRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 14);
+
+/**
+ * @generated from message orchd.v1.GetPathMetadataResponse
+ */
+export type GetPathMetadataResponse = Message<"orchd.v1.GetPathMetadataResponse"> & {
+  /**
+   * @generated from field: orchd.v1.PathMetadata metadata = 1;
+   */
+  metadata?: PathMetadata;
+};
+
+/**
+ * Describes the message orchd.v1.GetPathMetadataResponse.
+ * Use `create(GetPathMetadataResponseSchema)` to create a new message.
+ */
+export const GetPathMetadataResponseSchema: GenMessage<GetPathMetadataResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 15);
+
+/**
+ * @generated from message orchd.v1.ListRecentReposRequest
+ */
+export type ListRecentReposRequest = Message<"orchd.v1.ListRecentReposRequest"> & {
+  /**
+   * @generated from field: uint32 limit = 1;
+   */
+  limit: number;
+};
+
+/**
+ * Describes the message orchd.v1.ListRecentReposRequest.
+ * Use `create(ListRecentReposRequestSchema)` to create a new message.
+ */
+export const ListRecentReposRequestSchema: GenMessage<ListRecentReposRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 16);
+
+/**
+ * @generated from message orchd.v1.ListRecentReposResponse
+ */
+export type ListRecentReposResponse = Message<"orchd.v1.ListRecentReposResponse"> & {
+  /**
+   * @generated from field: repeated orchd.v1.PathMetadata repos = 1;
+   */
+  repos: PathMetadata[];
+};
+
+/**
+ * Describes the message orchd.v1.ListRecentReposResponse.
+ * Use `create(ListRecentReposResponseSchema)` to create a new message.
+ */
+export const ListRecentReposResponseSchema: GenMessage<ListRecentReposResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 17);
+
+/**
  * @generated from service orchd.v1.HostService
  */
 export const HostService: GenService<{
@@ -169,6 +454,38 @@ export const HostService: GenService<{
     methodKind: "unary";
     input: typeof ListBackendsRequestSchema;
     output: typeof ListBackendsResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.ListDirectoryRoots
+   */
+  listDirectoryRoots: {
+    methodKind: "unary";
+    input: typeof ListDirectoryRootsRequestSchema;
+    output: typeof ListDirectoryRootsResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.ListDirectory
+   */
+  listDirectory: {
+    methodKind: "unary";
+    input: typeof ListDirectoryRequestSchema;
+    output: typeof ListDirectoryResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.GetPathMetadata
+   */
+  getPathMetadata: {
+    methodKind: "unary";
+    input: typeof GetPathMetadataRequestSchema;
+    output: typeof GetPathMetadataResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.ListRecentRepos
+   */
+  listRecentRepos: {
+    methodKind: "unary";
+    input: typeof ListRecentReposRequestSchema;
+    output: typeof ListRecentReposResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_orchd_v1_host, 0);

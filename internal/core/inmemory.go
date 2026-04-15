@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +54,29 @@ func (w *InMemoryWorkspace) ListBackends() []Backend {
 	}
 }
 
+func (w *InMemoryWorkspace) ListDirectoryRoots() ([]DirectoryRoot, error) {
+	return discoverDirectoryRoots()
+}
+
+func (w *InMemoryWorkspace) ListDirectory(path string) (DirectoryListing, error) {
+	return listDirectory(path)
+}
+
+func (w *InMemoryWorkspace) GetPathMetadata(path string) (PathMetadata, error) {
+	return getPathMetadata(path)
+}
+
+func (w *InMemoryWorkspace) ListRecentRepos(limit uint32) ([]PathMetadata, error) {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	projects := make([]Project, 0, len(w.projectIDs))
+	for _, id := range w.projectIDs {
+		projects = append(projects, w.projects[id])
+	}
+	return listRecentRepos(projects, limit)
+}
+
 func (w *InMemoryWorkspace) ListProjects() []Project {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
@@ -71,15 +95,31 @@ func (w *InMemoryWorkspace) CreateProject(input CreateProjectInput) (Project, er
 	w.projectSeq++
 	now := time.Now().UTC()
 	name := strings.TrimSpace(input.Name)
+	rootPath, err := validateProjectRoot(input.RootPath)
+	if err != nil {
+		w.projectSeq--
+		return Project{}, err
+	}
 	if name == "" {
-		name = fmt.Sprintf("Project %d", w.projectSeq)
+		name = filepath.Base(rootPath)
+	}
+	defaultBackend := strings.TrimSpace(input.DefaultBackend)
+	if defaultBackend == "" {
+		defaultBackend = "codex"
+	}
+
+	for _, existing := range w.projects {
+		if existing.RootPath == rootPath {
+			w.projectSeq--
+			return Project{}, fmt.Errorf("project for %q already exists", rootPath)
+		}
 	}
 
 	project := Project{
 		ID:             fmt.Sprintf("proj_%04d", w.projectSeq),
 		Name:           name,
-		RootPath:       strings.TrimSpace(input.RootPath),
-		DefaultBackend: strings.TrimSpace(input.DefaultBackend),
+		RootPath:       rootPath,
+		DefaultBackend: defaultBackend,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}

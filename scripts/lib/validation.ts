@@ -1,4 +1,5 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
 import path from "node:path";
 
 export type ValidationRun = {
@@ -44,17 +45,48 @@ export async function runCommand(command: string[], cwd: string): Promise<{
   stderr: string;
   exitCode: number;
 }> {
-  const proc = Bun.spawn(command, {
+  if (typeof Bun !== "undefined") {
+    const proc = Bun.spawn(command, {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+
+    return {
+      command,
+      cwd,
+      stdout,
+      stderr,
+      exitCode,
+    };
+  }
+
+  const [bin, ...args] = command;
+  const child = spawn(bin, args, {
     cwd,
-    stdout: "pipe",
-    stderr: "pipe",
+    stdio: ["ignore", "pipe", "pipe"],
   });
 
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.on("data", (chunk) => {
+    stdout += chunk.toString();
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  const exitCode = await new Promise<number>((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => resolve(code ?? 1));
+  });
 
   return {
     command,

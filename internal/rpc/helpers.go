@@ -87,6 +87,51 @@ func projectRef(project core.Project) *orchdv1.ProjectRef {
 	}
 }
 
+func directoryRootToProto(root core.DirectoryRoot) *orchdv1.DirectoryRoot {
+	return &orchdv1.DirectoryRoot{
+		Label: root.Label,
+		Path:  root.Path,
+		Kind:  root.Kind,
+	}
+}
+
+func directoryEntryToProto(entry core.DirectoryEntry) *orchdv1.DirectoryEntry {
+	return &orchdv1.DirectoryEntry{
+		Name:        entry.Name,
+		Path:        entry.Path,
+		IsDirectory: entry.IsDirectory,
+		IsRepo:      entry.IsRepo,
+		HasChildren: entry.HasChildren,
+		IsAllowed:   entry.IsAllowed,
+	}
+}
+
+func directoryListingToProto(listing core.DirectoryListing) *orchdv1.DirectoryListing {
+	entries := make([]*orchdv1.DirectoryEntry, 0, len(listing.Entries))
+	for _, entry := range listing.Entries {
+		entries = append(entries, directoryEntryToProto(entry))
+	}
+	return &orchdv1.DirectoryListing{
+		CurrentPath: listing.CurrentPath,
+		ParentPath:  listing.ParentPath,
+		Entries:     entries,
+	}
+}
+
+func pathMetadataToProto(metadata core.PathMetadata) *orchdv1.PathMetadata {
+	return &orchdv1.PathMetadata{
+		Path:                metadata.Path,
+		CanonicalPath:       metadata.CanonicalPath,
+		Basename:            metadata.Basename,
+		IsDirectory:         metadata.IsDirectory,
+		IsRepo:              metadata.IsRepo,
+		IsAllowed:           metadata.IsAllowed,
+		ChildDirectoryCount: uint32(metadata.ChildDirectoryCount),
+		ChildFileCount:      uint32(metadata.ChildFileCount),
+		ModifiedAt:          timestamp(metadata.ModifiedAt),
+	}
+}
+
 func sessionToProto(project core.Project, session core.Session) *orchdv1.Session {
 	artifacts := make([]*orchdv1.ArtifactRef, 0, len(session.Artifacts))
 	for _, artifact := range session.Artifacts {

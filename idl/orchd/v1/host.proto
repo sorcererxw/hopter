@@ -10,6 +10,10 @@ import "orchd/v1/common.proto";
 service HostService {
   rpc GetHostStatus(GetHostStatusRequest) returns (GetHostStatusResponse);
   rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
+  rpc ListDirectoryRoots(ListDirectoryRootsRequest) returns (ListDirectoryRootsResponse);
+  rpc ListDirectory(ListDirectoryRequest) returns (ListDirectoryResponse);
+  rpc GetPathMetadata(GetPathMetadataRequest) returns (GetPathMetadataResponse);
+  rpc ListRecentRepos(ListRecentReposRequest) returns (ListRecentReposResponse);
 }
 
 message BackendStatus {
@@ -38,4 +42,67 @@ message ListBackendsRequest {}
 
 message ListBackendsResponse {
   repeated BackendStatus backends = 1;
+}
+
+message DirectoryRoot {
+  string label = 1;
+  string path = 2;
+  string kind = 3;
+}
+
+message DirectoryEntry {
+  string name = 1;
+  string path = 2;
+  bool is_directory = 3;
+  bool is_repo = 4;
+  bool has_children = 5;
+  bool is_allowed = 6;
+}
+
+message DirectoryListing {
+  string current_path = 1;
+  string parent_path = 2;
+  repeated DirectoryEntry entries = 3;
+}
+
+message PathMetadata {
+  string path = 1;
+  string canonical_path = 2;
+  string basename = 3;
+  bool is_directory = 4;
+  bool is_repo = 5;
+  bool is_allowed = 6;
+  uint32 child_directory_count = 7;
+  uint32 child_file_count = 8;
+  google.protobuf.Timestamp modified_at = 9;
+}
+
+message ListDirectoryRootsRequest {}
+
+message ListDirectoryRootsResponse {
+  repeated DirectoryRoot roots = 1;
+}
+
+message ListDirectoryRequest {
+  string path = 1;
+}
+
+message ListDirectoryResponse {
+  DirectoryListing listing = 1;
+}
+
+message GetPathMetadataRequest {
+  string path = 1;
+}
+
+message GetPathMetadataResponse {
+  PathMetadata metadata = 1;
+}
+
+message ListRecentReposRequest {
+  uint32 limit = 1;
+}
+
+message ListRecentReposResponse {
+  repeated PathMetadata repos = 1;
 }
