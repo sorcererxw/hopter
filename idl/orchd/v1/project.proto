@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package orchd.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+}
+
+message Project {
+  string id = 1;
+  string name = 2;
+  string root_path = 3;
+  string default_backend = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ListProjectsRequest {}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  string root_path = 2;
+  string default_backend = 3;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}

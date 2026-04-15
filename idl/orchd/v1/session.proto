@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package orchd.v1;
+
+import "google/protobuf/timestamp.proto";
+import "orchd/v1/common.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service SessionService {
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+  rpc SendSessionInput(SendSessionInputRequest) returns (SendSessionInputResponse);
+  rpc RespondToSessionApproval(RespondToSessionApprovalRequest) returns (RespondToSessionApprovalResponse);
+  rpc ListSessionArtifacts(ListSessionArtifactsRequest) returns (ListSessionArtifactsResponse);
+}
+
+message Session {
+  string id = 1;
+  string title = 2;
+  ProjectRef project = 3;
+  SessionStatus status = 4;
+  string summary = 5;
+  bool attention_required = 6;
+  string attention_reason = 7;
+  string last_input_hint = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  repeated ArtifactRef artifacts = 10;
+}
+
+message SessionListItem {
+  string id = 1;
+  string title = 2;
+  ProjectRef project = 3;
+  SessionStatus status = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  bool attention_required = 6;
+}
+
+message ListSessionsRequest {
+  optional string project_id = 1;
+  optional uint32 limit = 2;
+}
+
+message ListSessionsResponse {
+  repeated SessionListItem sessions = 1;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message CreateSessionRequest {
+  string project_id = 1;
+  optional string title = 2;
+  string prompt = 3;
+}
+
+message CreateSessionResponse {
+  Session session = 1;
+}
+
+message SendSessionInputRequest {
+  string session_id = 1;
+  string input = 2;
+}
+
+message SendSessionInputResponse {
+  bool accepted = 1;
+  string session_id = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message RespondToSessionApprovalRequest {
+  string session_id = 1;
+  string approval_id = 2;
+  ApprovalDecision decision = 3;
+  optional string comment = 4;
+}
+
+message RespondToSessionApprovalResponse {
+  bool accepted = 1;
+  string session_id = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+
+message ListSessionArtifactsRequest {
+  string session_id = 1;
+}
+
+message ListSessionArtifactsResponse {
+  repeated ArtifactRef artifacts = 1;
+}

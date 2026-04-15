@@ -1,1 +1,0 @@
-The file is in place. I’m doing a quick sanity pass on the generated HTML and script structure now so I can catch any single-file issues before I hand it over.

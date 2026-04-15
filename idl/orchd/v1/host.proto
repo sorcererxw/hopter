@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package orchd.v1;
+
+import "google/protobuf/timestamp.proto";
+import "orchd/v1/common.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service HostService {
+  rpc GetHostStatus(GetHostStatusRequest) returns (GetHostStatusResponse);
+  rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
+}
+
+message BackendStatus {
+  string backend_key = 1;
+  bool available = 2;
+  string version = 3;
+  string reason = 4;
+}
+
+message HostStatus {
+  string host_id = 1;
+  HostStatusKind status = 2;
+  repeated BackendStatus backends = 3;
+  uint32 project_count = 4;
+  uint32 session_count = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message GetHostStatusRequest {}
+
+message GetHostStatusResponse {
+  HostStatus host_status = 1;
+}
+
+message ListBackendsRequest {}
+
+message ListBackendsResponse {
+  repeated BackendStatus backends = 1;
+}

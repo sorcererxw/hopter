@@ -1,1 +1,0 @@
-I’ve confirmed the repo is essentially empty apart from `README.md`, so I’m keeping the change scoped to a new `index.html`. Next step is the whole game in one file: layout, controls, score, game-over overlay, and restart behavior.

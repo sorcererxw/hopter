@@ -1,1 +1,0 @@
-The single-file implementation is done and the inline JavaScript parses cleanly. I’m grabbing exact file references now so the summary points to the relevant sections instead of hand-waving.

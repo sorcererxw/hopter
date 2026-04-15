@@ -1,3 +1,0 @@
-Created a self-contained Snake game in [index.html](/tmp/orchd-snake-e2e/index.html).
-
-It includes arrow-key controls, live score and best score, a game-over state with restart, and a responsive layout that scales the board to the viewport. No unrelated files were modified.

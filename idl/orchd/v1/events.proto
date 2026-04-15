@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package orchd.v1;
+
+import "google/protobuf/timestamp.proto";
+import "orchd/v1/common.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+enum WorkspaceEventType {
+  WORKSPACE_EVENT_TYPE_UNSPECIFIED = 0;
+  WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED = 1;
+  WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED = 2;
+  WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED = 3;
+  WORKSPACE_EVENT_TYPE_SESSION_CHANGED = 4;
+  WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED = 5;
+}
+
+message WorkspaceEventPayload {
+  RefreshHint refresh_hint = 1;
+  string summary = 2;
+}
+
+message WorkspaceEvent {
+  string id = 1;
+  WorkspaceEventType type = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+  optional string project_id = 4;
+  optional string session_id = 5;
+  WorkspaceEventPayload payload = 6;
+}

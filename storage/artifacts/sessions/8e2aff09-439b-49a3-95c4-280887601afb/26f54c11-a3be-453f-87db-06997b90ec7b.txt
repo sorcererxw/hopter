@@ -1,1 +1,0 @@
-I’m writing a single self-contained `index.html` now: HTML, CSS, and JS together, with a responsive canvas, score bar, keyboard input, game-over overlay, and restart control.

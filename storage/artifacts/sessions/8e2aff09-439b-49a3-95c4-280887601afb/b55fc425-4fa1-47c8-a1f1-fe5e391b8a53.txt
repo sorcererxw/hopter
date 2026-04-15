@@ -1,1 +1,0 @@
-Using `using-superpowers` to make sure I’m following the local skill/workflow rules before I touch the repo. I’ve confirmed this is a minimal repo, so the change will stay scoped to a new `index.html`.

@@ -1,1 +1,0 @@
-I’ve got the constraints pinned down: one standalone `index.html`, no assets, no packages, and nothing else touched. I’m writing a canvas-based Snake with a responsive shell, keyboard controls, score, game-over overlay, and restart flow.

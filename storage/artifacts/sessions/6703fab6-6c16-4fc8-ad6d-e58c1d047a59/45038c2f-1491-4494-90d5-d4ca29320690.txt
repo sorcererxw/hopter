@@ -1,7 +1,0 @@
-total 16
-drwxr-xr-x   6 sorcererxw  staff  192 Apr 14 21:10 .
-drwx------   3 sorcererxw  staff   96 Apr 14 21:10 ..
-drwxr-xr-x  12 sorcererxw  staff  384 Apr 14 21:10 .git
--rw-r--r--   1 sorcererxw  staff    6 Apr 14 21:10 .gitignore
-drwxr-xr-x   4 sorcererxw  staff  128 Apr 14 21:10 .omx
--rw-r--r--   1 sorcererxw  staff   13 Apr 14 21:10 README.md

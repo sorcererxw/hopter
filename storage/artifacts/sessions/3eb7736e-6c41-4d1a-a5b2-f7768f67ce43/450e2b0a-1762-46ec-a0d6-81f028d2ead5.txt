@@ -1,5 +1,0 @@
-Created a self-contained Snake game in [index.html](/var/folders/cr/_1kd3cyd6r723trvl6kz1msr0000gn/T/orchd-template-snake-yeM1tV/repo/index.html).
-
-It includes arrow-key movement, a live score display, collision-based game-over state, restart via button or `Enter`, and a responsive layout built with plain HTML, CSS, and inline JavaScript on a canvas. There are no external dependencies.
-
-Verification: the inline game script parses cleanly with `node`, and I only added `index.html` for this task. I did not change the existing `.gitignore`.

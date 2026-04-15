@@ -1,5 +1,0 @@
-Created a self-contained Snake game in [index.html](/var/folders/cr/_1kd3cyd6r723trvl6kz1msr0000gn/T/orchd-template-snake-rd6xi1/repo/index.html).
-
-It includes arrow-key movement, a live score display, collision-based game-over state, a restart button plus `Enter`/`Space` restart, and a responsive square playfield that scales to the viewport without any external assets or libraries. Everything is embedded in that one file: structure, styling, and game logic.
-
-Verification: I compiled the embedded JavaScript with `node` to confirm syntax was valid.

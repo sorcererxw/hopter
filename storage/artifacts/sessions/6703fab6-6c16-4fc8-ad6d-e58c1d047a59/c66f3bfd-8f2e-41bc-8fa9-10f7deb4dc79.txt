@@ -1,1 +1,0 @@
-Using `using-superpowers` to satisfy the session skill contract. I’ve got enough context now; I’m going to add one self-contained `index.html` with HTML, CSS, and JS only, keeping the repo otherwise untouched.

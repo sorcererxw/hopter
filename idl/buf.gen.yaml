@@ -1,0 +1,20 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: orchd/internal/gen/proto
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ../internal/gen/proto
+    opt:
+      - paths=source_relative
+  - remote: buf.build/connectrpc/go
+    out: ../internal/gen/proto
+    opt:
+      - paths=source_relative
+      - package_suffix=connect
+  - remote: buf.build/bufbuild/es
+    out: ../ui/src/gen/proto
+    opt:
+      - target=ts

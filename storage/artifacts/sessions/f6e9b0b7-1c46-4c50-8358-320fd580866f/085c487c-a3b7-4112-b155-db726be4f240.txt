@@ -1,1 +1,0 @@
-I didn’t find any saved OMX project state to restore. Next I’m reading the repo’s actual `AGENTS.md` files and current file layout so the implementation stays scoped.

@@ -1,1 +1,0 @@
-I’m editing only `index.html`. The file will contain the full game loop, rendering, responsive sizing, keyboard handling, score UI, and the restart/game-over flow in one place.

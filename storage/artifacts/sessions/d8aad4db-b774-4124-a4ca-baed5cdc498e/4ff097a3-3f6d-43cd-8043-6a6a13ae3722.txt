@@ -1,1 +1,0 @@
-The core file is in place. I’m doing a logic pass on collision handling now so the movement rules behave like Snake rather than ending on a tail cell that would have moved away the same tick.

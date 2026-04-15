@@ -1,1 +1,0 @@
-Using `using-superpowers` first, then I’m loading the repo’s `AGENTS.md` and OMX memory/state so I can work inside the local rules before I touch files.

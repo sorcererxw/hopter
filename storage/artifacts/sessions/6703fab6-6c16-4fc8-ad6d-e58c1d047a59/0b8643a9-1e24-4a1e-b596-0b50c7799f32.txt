@@ -1,5 +1,0 @@
-Created a self-contained Snake game in [index.html](/var/folders/cr/_1kd3cyd6r723trvl6kz1msr0000gn/T/orchd-template-snake-hyk9b0/repo/index.html).
-
-It includes arrow-key movement, a visible score plus persistent best score, a game-over overlay, restart via button or space/enter after losing, and a responsive canvas-based layout that scales to the viewport. Everything is inline HTML, CSS, and JavaScript with no external dependencies, so you can open the file directly in a browser.
-
-I only added `index.html` for this task. I did a code-level sanity pass on the game loop and collision/restart flow; I did not run an actual browser session here.

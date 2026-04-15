@@ -1,1 +1,0 @@
-I have enough context now. I’m adding a single `index.html` that contains the full game loop, keyboard input handling, score and state UI, touch-safe responsive layout, and a restart control without bringing in any assets or libraries.

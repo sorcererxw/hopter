@@ -1,99 +1,116 @@
 # orchd
 
-Bun-first, Codex-first remote control plane for local coding agents.
+Go-native remote control plane for local coding agents, with a React + Vite UI served by the same Go process.
+
+## Current active architecture
+
+- **Backend**: Go
+- **Router**: Go 1.22+ `http.ServeMux`
+- **Control-plane API**: Connect
+- **Realtime notifications**: SSE
+- **Frontend**: React + Vite under `ui/`
+- **IDL**: protobuf + Buf under `idl/`
+- **Production delivery**: Go binary serves the built UI from `ui/dist`
+- **Development entrypoint**: Go remains the browser origin and can reverse-proxy the Vite dev server
 
 ## Start here
 
 Choose the shortest path that answers your question:
 
-- understand the repo and where to drill down: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
-- understand the product wedge and UX: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md), [`docs/product/DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/DESIGN_DOC.md)
-- understand system contracts: [`docs/specs/ARCHITECTURE_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ARCHITECTURE_MEMO.md), [`docs/specs/COMMUNICATION_AND_UX_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/COMMUNICATION_AND_UX_SPEC.md), [`docs/specs/ENGINEERING_SPEC_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/specs/ENGINEERING_SPEC_V1.md)
-- understand validation and evidence flow: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
-- understand the web UI system and route shape: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
-- build, validate, or ship locally: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md), [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md), [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
+- repo/doc map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+- active rebuild master plan: [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
+- detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+- backend execution plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
+- frontend execution plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
+- IDL execution plan: [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
+- concrete first-pass protobuf surface: [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
+- rebuilt UI design: [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
+- validation harness: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
 
-## Current scope
-
-This repo currently contains:
-
-- Bun + Hono gateway runtime for Codex-backed local control-plane sessions
-- React Router browser shell backed by shadcn-style primitives under `src/web/app/components/ui`
-- validation scripts that write evidence under `storage/artifacts/validation/`
-
-It intentionally preserves the architectural boundary from the product docs:
-
-- Codex owns session content, history, approvals, and artifact semantics
-- `orchd` owns project bindings, lightweight session references, auth state, terminal state, and validation evidence
-
-## Quick start
-
-```bash
-bun install
-bun run build:web
-bun run start
-```
-
-Server defaults:
-
-- host: `127.0.0.1`
-- port: `8787`
-- db: `storage/orchd.sqlite`
-- artifacts: `storage/artifacts`
-
-## Useful commands
-
-```bash
-bun run build:web
-bun run ui:add -- button
-bun run test
-bun run validate:docs
-bun run validate:m0
-bun run validate:m1
-bun run validate:m2
-bun run validate:m3
-bun run validate:m4
-bun run validate:m5
-bun run validate:template-snake
-```
-
-`validate:template-snake` is the repeatable browser template flow: create a binding, start a Codex-backed session from the web UI, approve required actions, and verify the generated single-file Snake game with screenshot evidence.
-
-## Environment
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `ORCHD_HOST` | `127.0.0.1` | HTTP bind host |
-| `ORCHD_PORT` | `8787` | HTTP bind port |
-| `ORCHD_HOST_ID` | `host_local` | Stable local host identifier |
-| `ORCHD_STORAGE_DIR` | `./storage` | Base storage root |
-| `ORCHD_DB_PATH` | `./storage/orchd.sqlite` | SQLite metadata database |
-| `ORCHD_ARTIFACTS_DIR` | `./storage/artifacts` | Validation and artifact root |
-| `ORCHD_ACCESS_MODE` | `local_only` | `local_only` or `self_managed_remote` |
-| `ORCHD_TRUST_PROXY` | `false` | Reverse-proxy trust flag |
-| `ORCHD_AUTH_PASSWORD` | unset | Single-user login password |
-| `ORCHD_PROJECT_PATH_ALLOWLIST` | unset | Optional `:` separated project path allowlist |
-| `ORCHD_CODEX_MIN_VERSION` | `0.120.0` | Minimum compatible Codex CLI version |
-
-## Storage layout
+## Repository shape
 
 ```text
-storage/
-  orchd.sqlite
-  artifacts/
-    validation/
-      latest-template-snake.txt
-      <run-id>/
+/cmd
+/internal
+/idl
+/ui
+/scripts
+/docs
 ```
 
-`storage/artifacts/validation/<run-id>/` is the canonical evidence bundle root for milestone validation.
+## Core commands
 
-## Documentation paths
+### Common entrypoints
 
-- progressive-disclosure map: [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
-- validation/evidence harness: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
-- UI rules and shadcn workflow: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
-- contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
-- deployment notes: [`docs/operations/DEPLOYMENT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEPLOYMENT.md)
-- release gate: [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
-- current readiness snapshot: [`docs/operations/ALPHA_READINESS_SUMMARY.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/ALPHA_READINESS_SUMMARY.md)
+```bash
+make dev
+make go-test
+make go-run
+make ui-dev
+make ui-typecheck
+make ui-build
+make ui-lint
+make proto
+make test
+make docs
+make validate-go-idl
+make validate-go-server
+make validate-go-ui
+make validate-go-tetris
+make validate-all
+```
+
+### Direct commands still available
+
+```bash
+go test ./...
+go run ./cmd/orchd
+pnpm --dir ui dev
+pnpm --dir ui typecheck
+pnpm --dir ui build
+pnpm --dir ui lint
+cd idl && buf lint
+cd idl && buf generate
+bun scripts/validate-docs.ts
+bun scripts/validate-go-idl.ts
+bun scripts/validate-go-server.ts
+bun scripts/validate-go-ui.ts
+bun scripts/validate-go-tetris.ts
+```
+
+`make dev` is the preferred local loop. It starts:
+
+- `pnpm --dir ui dev`
+- `go run ./cmd/orchd`
+
+and if either process exits, the other one is terminated too. The launcher now waits for Vite to become ready before starting the Go server, which avoids initial `502/503` errors on early `/src/*` dev-module requests.
+
+`make dev` now binds the dev surfaces to `0.0.0.0` by default.
+
+Examples:
+
+```bash
+make dev
+```
+
+By default, `make dev` keeps the Go server aligned with the UI dev bind host, so both Vite and Go listen on `0.0.0.0`.
+
+If you need a different bind host for debugging, you can still override `ORCHD_UI_DEV_HOST` and/or `ORCHD_HOST`.
+
+## Current proof point
+
+The active rebuild already proves the main product loop:
+
+- the frontend can create a project
+- the frontend can create a Codex-backed session
+- the frontend can drive Codex to generate a working Tetris web game
+
+Latest Tetris proof evidence:
+
+- `storage/artifacts/validation/go_tetris_2026-04-15T08-40-01-569Z`
+
+## Notes
+
+- Development auth is intentionally weak and localhost-only.
+- Relay and terminal are deferred.
+- The old Bun-first runtime and binding-based surfaces are no longer the active implementation path.

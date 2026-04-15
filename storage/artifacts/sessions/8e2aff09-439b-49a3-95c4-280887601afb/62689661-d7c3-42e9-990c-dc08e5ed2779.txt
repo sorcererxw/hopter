@@ -1,1 +1,0 @@
-I’ve got an empty workspace state, so this is a clean build. Next I’m checking the repo-level instructions and then I’ll write the single-file game.

@@ -8,3 +8,6 @@ storage/artifacts/validation
 .omx/
 
 storage/artifacts/sessions
+ui/node_modules
+ui/.omx
+ui/.turbo

@@ -1,3 +1,0 @@
-Created a self-contained Snake game in [index.html](/var/folders/cr/_1kd3cyd6r723trvl6kz1msr0000gn/T/orchd-template-snake-l3HHvd/repo/index.html). It includes arrow-key movement, a live score and best-score display, a visible game-over overlay, restart via button or `Enter`/`Space`, and a responsive layout that scales the board to the viewport. Everything is inline in one file with no external dependencies.
-
-I only added that file. Verification: I ran a local syntax check on the inline JavaScript (`Inline script syntax OK`). I did not run a full browser playthrough inside the session.

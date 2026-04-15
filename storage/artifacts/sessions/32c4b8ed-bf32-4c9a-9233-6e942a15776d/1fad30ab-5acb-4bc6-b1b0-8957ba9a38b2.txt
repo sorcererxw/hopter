@@ -1,1 +1,0 @@
-/private/tmp/orchd-snake-e2e

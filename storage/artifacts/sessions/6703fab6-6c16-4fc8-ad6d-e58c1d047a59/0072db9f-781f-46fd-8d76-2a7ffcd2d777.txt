@@ -1,1 +1,0 @@
-I’m fixing two behavior details: the initial start overlay should actually stay visible, and self-collision should account for the tail moving away on non-food turns.
