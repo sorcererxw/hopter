@@ -24,7 +24,8 @@ export function createArtifactRoutes(sessionService: BackendSessionService): Hon
       }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -42,7 +43,8 @@ export function createArtifactRoutes(sessionService: BackendSessionService): Hon
       });
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;

@@ -1,171 +1,131 @@
-import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ConnectionBanner } from "@/components/orchd/connection-banner";
+import { ContentHeader } from "@/components/orchd/content-header";
 import { EmptyState } from "@/components/orchd/empty-state";
-import { PageHero } from "@/components/orchd/page-hero";
-import { SelectableSurface } from "@/components/orchd/selectable-surface";
+import { SessionCreateComposer } from "@/components/orchd/session-create-composer";
 import { StatusBadge } from "@/components/orchd/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { api } from "@/lib/api";
-import type { BackendSessionView, HostStatus, ProjectBindingView } from "@/lib/contracts";
-import { usePolling, useRealtimeVersion } from "@/lib/hooks";
-import { toUserFacingError } from "@/lib/utils";
+import { useRealtimeVersion } from "@/lib/hooks";
+import { useShellNavigationData } from "@/lib/use-shell-navigation-data";
 
 export function DashboardRoute() {
   const navigate = useNavigate();
   const realtime = useRealtimeVersion();
-  const { data: host } = usePolling(() => api.get<HostStatus>("/api/host/status"), [realtime.version]);
-  const { data: bindings } = usePolling(() => api.get<{ items: ProjectBindingView[] }>("/api/bindings"), [realtime.version]);
-  const [sessionGroups, setSessionGroups] = useState<Array<{ binding: ProjectBindingView; sessions: BackendSessionView[] }>>([]);
-  const [partialFetchError, setPartialFetchError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!bindings?.items) {
-      return;
-    }
-
-    let cancelled = false;
-    void Promise.all(
-      bindings.items.map(async (binding) => {
-        try {
-          const response = await api.get<{ items: BackendSessionView[] }>(`/api/bindings/${binding.id}/backend-sessions`);
-          return { binding, sessions: response.items, failed: false };
-        } catch (error) {
-          return { binding, sessions: [], failed: true, error };
-        }
-      }),
-    ).then((results) => {
-      if (cancelled) {
-        return;
-      }
-
-      const failedCount = results.filter((result) => result.failed).length;
-      setSessionGroups(results.map(({ binding, sessions }) => ({ binding, sessions })));
-      setPartialFetchError(
-        failedCount > 0
-          ? toUserFacingError("Some binding activity could not be refreshed", results.find((result) => result.failed)?.error)
-          : null,
-      );
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bindings?.items?.map((binding) => binding.id).join(","), realtime.version]);
-
-  const runningSessions = useMemo(
-    () => sessionGroups.flatMap((group) => group.sessions.filter((session) => session.status === "running").map((session) => ({ ...session, bindingName: group.binding.name }))),
-    [sessionGroups],
-  );
-  const attentionSessions = useMemo(
-    () => sessionGroups.flatMap((group) => group.sessions.filter((session) => session.attentionReason).map((session) => ({ ...session, bindingName: group.binding.name }))),
-    [sessionGroups],
-  );
+  const shell = useShellNavigationData();
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div className="xl:col-span-2">
-        <ConnectionBanner state={realtime.connectionState} messageWhenDegraded="Realtime connection is degraded. HTTP refresh continues to keep the control plane honest." />
-      </div>
+    <section className="grid gap-4 lg:gap-5">
+      <ConnectionBanner state={realtime.connectionState} messageWhenDegraded="Realtime connection is degraded. Sessions keep polling, but the live shell may lag for a few seconds." />
 
-      <div className="xl:col-span-2">
-        <PageHero
-          eyebrow="Host"
-          title={host?.status ?? "Loading host…"}
-          description={`Codex ${host?.codex.detected ? host.codex.version : "missing"} · access ${host?.accessMode ?? "—"}`}
-          status={host ? <StatusBadge status={host.status} /> : null}
-          actions={<Button variant="secondary" onClick={() => navigate("/bindings/new")}>Add binding</Button>}
-        />
-      </div>
+      <ContentHeader
+        eyebrow="Session home"
+        title={shell.attentionSessions.length > 0 ? "Something needs you" : "Pick up the next session"}
+        description={
+          shell.host
+            ? `Codex ${shell.host.codex.detected ? shell.host.codex.version : "missing"} · ${shell.activeSessions.length} active session${shell.activeSessions.length === 1 ? "" : "s"}`
+            : "Loading host truth and recent sessions."
+        }
+        status={shell.host ? <StatusBadge status={shell.host.status} /> : null}
+        actions={<Button variant="secondary" onClick={() => navigate("/bindings/new")}>Add repo</Button>}
+      />
 
-      {partialFetchError ? (
-        <div className="xl:col-span-2">
-          <Alert variant="warning">
-            <AlertTitle>Partial dashboard refresh</AlertTitle>
-            <AlertDescription>{partialFetchError}</AlertDescription>
-          </Alert>
-        </div>
+      {shell.error ? (
+        <Alert variant="warning">
+          <AlertTitle>Navigation state is partial</AlertTitle>
+          <AlertDescription>{shell.error}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Attention now</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {attentionSessions.length === 0 ? (
-            <EmptyState title="No sessions need you right now" description="When a backend session pauses for approval or input, it lands here first." />
-          ) : (
-            <div className="space-y-4">
-              {attentionSessions.map((session, index) => (
-                <div key={session.id} className="space-y-4">
-                  <SelectableSurface
-                    title={session.title ?? session.bindingName}
-                    description={session.attentionReason ?? "Needs your input."}
-                    meta={<span>{session.bindingName}</span>}
-                    aside={<StatusBadge status={session.status} />}
-                    onSelect={() => navigate(`/backend-sessions/${session.id}`)}
-                  />
-                  {index < attentionSessions.length - 1 ? <Separator /> : null}
-                </div>
-              ))}
+      {shell.sessions.length === 0 ? (
+        <div className="grid min-h-[65vh] place-items-center">
+          <div className="w-full max-w-3xl space-y-6">
+            <div className="space-y-2 text-center">
+              <h2 className="text-4xl font-semibold tracking-tight text-foreground md:text-6xl">Let&apos;s build</h2>
+              <p className="text-lg text-muted-foreground">Start a session. The repo context stays underneath, but the session is now the thing you come back to.</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <SessionCreateComposer contexts={shell.contexts} />
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:items-start">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Needs you now</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {shell.attentionSessions.length === 0 ? (
+                  <EmptyState title="No blocked sessions" description="Approvals, degraded sessions, and explicit input requests land here first." />
+                ) : (
+                  <div className="space-y-3">
+                    {shell.attentionSessions.slice(0, 8).map((session) => (
+                      <button
+                        key={session.id}
+                        type="button"
+                        onClick={() => navigate(`/backend-sessions/${session.id}`)}
+                        className="flex w-full flex-col gap-2 rounded-[24px] border border-border bg-background/60 px-4 py-4 text-left transition hover:border-primary/40 hover:bg-accent/40"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{session.title ?? session.context.name}</p>
+                            <p className="text-xs text-muted-foreground">{session.context.name}</p>
+                          </div>
+                          <StatusBadge status={session.status} />
+                        </div>
+                        <p className="text-sm text-muted-foreground">{session.attentionReason ?? (session.degraded ? "Live truth is degraded. Open the session and decide what to do next." : session.lastSummary ?? "Open session")}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Running sessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {runningSessions.length === 0 ? (
-            <EmptyState title="No active sessions" description="Kick off a backend session from any binding when you want Codex to keep moving while you're away." />
-          ) : (
-            <div className="space-y-4">
-              {runningSessions.map((session, index) => (
-                <div key={session.id} className="space-y-4">
-                  <SelectableSurface
-                    title={session.title ?? session.bindingName}
-                    description={session.lastSummary ?? session.status}
-                    meta={<span>{session.bindingName}</span>}
-                    aside={<StatusBadge status={session.status} />}
-                    onSelect={() => navigate(`/backend-sessions/${session.id}`)}
-                  />
-                  {index < runningSessions.length - 1 ? <Separator /> : null}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent sessions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {shell.recentSessions.slice(0, 10).map((session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      onClick={() => navigate(`/backend-sessions/${session.id}`)}
+                      className="flex w-full flex-col gap-2 rounded-[24px] border border-transparent bg-card/70 px-4 py-4 text-left transition hover:border-border hover:bg-accent/30"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{session.title ?? session.context.name}</p>
+                          <p className="text-xs text-muted-foreground">{session.context.name} · {session.backendSessionId ?? "pending session id"}</p>
+                        </div>
+                        <StatusBadge status={session.status} />
+                      </div>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{session.lastSummary ?? "No summary yet."}</p>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card className="xl:col-span-2">
-        <CardHeader className="flex-row items-center justify-between gap-4">
-          <CardTitle>Bindings</CardTitle>
-          <Button variant="secondary" onClick={() => navigate("/bindings/new")}>Create binding</Button>
-        </CardHeader>
-        <CardContent>
-          {!bindings?.items?.length ? (
-            <EmptyState title="No bindings yet" description="Bind one local repo path to the thin control plane. orchd stores the binding, not the repo contents." />
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {bindings.items.map((binding) => (
-                <SelectableSurface
-                  key={binding.id}
-                  title={binding.name}
-                  description={binding.repoPath}
-                  onSelect={() => navigate(`/bindings/${binding.id}`)}
-                  className="px-5 py-5"
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <div className="space-y-4 xl:sticky xl:top-6">
+            <SessionCreateComposer contexts={shell.contexts} compact />
+            <Card>
+              <CardHeader>
+                <CardTitle>Live shell truth</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Host status: {shell.host?.status ?? "loading"}</p>
+                <p>Repo contexts: {shell.contexts.length}</p>
+                <p>Recent sessions: {shell.sessions.length}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { chromium, devices } from "playwright";
+import { chromium, devices, type Page } from "playwright";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -66,7 +66,7 @@ function createTempRepo(): string {
   return repoPath;
 }
 
-async function maybeLogin(page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>): Promise<void> {
+async function maybeLogin(page: Page): Promise<void> {
   const passwordField = page.getByLabel("Password");
   if (!await passwordField.isVisible().catch(() => false)) {
     return;
@@ -82,7 +82,7 @@ async function maybeLogin(page: Awaited<ReturnType<ReturnType<typeof chromium.la
 }
 
 async function captureScreenshot(
-  page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>,
+  page: Page,
   run: ReturnType<typeof createValidationRun>,
   relativePath: string,
 ): Promise<void> {
@@ -91,12 +91,12 @@ async function captureScreenshot(
   await page.screenshot({ path: absolutePath, fullPage: true });
 }
 
-async function refreshPage(page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>): Promise<void> {
+async function refreshPage(page: Page): Promise<void> {
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForTimeout(2_000);
 }
 
-async function startGame(page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>): Promise<void> {
+async function startGame(page: Page): Promise<void> {
   const startButton = page.getByRole("button", { name: /Start Game|Play Again|Restart/i }).first();
   if (await startButton.count()) {
     await startButton.click().catch(() => {});
@@ -112,7 +112,7 @@ async function startGame(page: Awaited<ReturnType<ReturnType<typeof chromium.lau
 }
 
 async function readOptionalText(
-  page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>,
+  page: Page,
   selector: string,
 ): Promise<string | null> {
   const locator = page.locator(selector).first();
@@ -123,13 +123,13 @@ async function readOptionalText(
 }
 
 async function focusButtonByKeyboard(
-  page: Awaited<ReturnType<ReturnType<typeof chromium.launch>["newPage"]>>,
+  page: Page,
   buttonName: RegExp,
   attempts = 12,
 ): Promise<boolean> {
   for (let index = 0; index < attempts; index += 1) {
     await page.keyboard.press("Tab");
-    const focusedMatches = await page.evaluate((pattern) => {
+    const focusedMatches = await page.evaluate((pattern: string) => {
       const active = document.activeElement as HTMLElement | null;
       if (!active) {
         return false;

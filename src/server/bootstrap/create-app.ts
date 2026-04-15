@@ -7,11 +7,13 @@ import type { AppConfig } from "../config/types.ts";
 import type { AuthService } from "../services/auth-service.ts";
 import type { CodexDetectionService } from "../services/codex-detection-service.ts";
 import type { HostHealthService } from "../services/host-health-service.ts";
+import type { HostFilesystemService } from "../services/host-filesystem-service.ts";
 import type { BindingService } from "../services/binding-service.ts";
 import type { BackendSessionService } from "../services/backend-session-service.ts";
 import { createAuthMiddleware } from "../http/middleware/auth.ts";
 import { createAuthRoutes } from "../http/routes/auth.ts";
 import { createHostRoutes } from "../http/routes/host.ts";
+import { createHostFilesystemRoutes } from "../http/routes/host-filesystem.ts";
 import { createBindingRoutes } from "../http/routes/projects.ts";
 import { createBackendSessionRoutes } from "../http/routes/sessions.ts";
 import { createArtifactRoutes } from "../http/routes/artifacts.ts";
@@ -23,6 +25,7 @@ type CreateAppOptions = {
   backendSessionService: BackendSessionService;
   codexDetectionService: CodexDetectionService;
   hostHealthService: HostHealthService;
+  hostFilesystemService: HostFilesystemService;
 };
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -84,6 +87,7 @@ export function createApp(options: CreateAppOptions): Hono {
     ),
   );
   app.route("/api", createHostRoutes(options.hostHealthService, options.codexDetectionService));
+  app.route("/api", createHostFilesystemRoutes(options.hostFilesystemService));
   app.route("/api", createBindingRoutes(options.bindingService, options.codexDetectionService, options.config));
   app.route("/api", createBackendSessionRoutes(options.backendSessionService));
   app.route("/api", createArtifactRoutes(options.backendSessionService));

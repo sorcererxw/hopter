@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, mkdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createApp } from "../src/server/bootstrap/create-app.ts";
@@ -12,6 +12,7 @@ import { BackendSessionService } from "../src/server/services/backend-session-se
 import { BindingService } from "../src/server/services/binding-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
+import { HostFilesystemService } from "../src/server/services/host-filesystem-service.ts";
 
 function makeTestApp() {
   const root = mkdtempSync(path.join(tmpdir(), "orchd-app-"));
@@ -23,6 +24,7 @@ function makeTestApp() {
       ORCHD_STORAGE_DIR: root,
       ORCHD_ARTIFACTS_DIR: path.join(root, "artifacts"),
       ORCHD_AUTH_PASSWORD: "",
+      ORCHD_PROJECT_PATH_ALLOWLIST: root,
     },
   });
 
@@ -33,6 +35,7 @@ function makeTestApp() {
   const bindingService = new BindingService(projectRepository);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService);
+  const hostFilesystemService = new HostFilesystemService(config, projectRepository);
   const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository);
 
   return {
@@ -45,6 +48,7 @@ function makeTestApp() {
       backendSessionService,
       codexDetectionService,
       hostHealthService,
+      hostFilesystemService,
     }),
   };
 }
@@ -91,8 +95,33 @@ describe("http app", () => {
 
     const detail = await app.request(`http://local/api/bindings/${bindingId}`);
     const detailPayload = await detail.json();
-    expect(detailPayload.data.binding.repoPath).toBe(repoPath);
+    expect(detailPayload.data.binding.repoPath).toBe(realpathSync(repoPath));
     expect(detailPayload.data.health.status).toBeDefined();
+  });
+
+
+  test("lists host filesystem roots and directories", async () => {
+    const { app, root } = makeTestApp();
+    const repoPath = path.join(root, "repo");
+    const nested = path.join(repoPath, "nested");
+    mkdirSync(path.join(repoPath, ".git"), { recursive: true });
+    mkdirSync(nested, { recursive: true });
+
+    const roots = await app.request("http://local/api/host/fs/roots");
+    const rootsPayload = await roots.json();
+    expect(rootsPayload.ok).toBe(true);
+    expect(Array.isArray(rootsPayload.data.items)).toBe(true);
+
+    const listing = await app.request(`http://local/api/host/fs/list?path=${encodeURIComponent(root)}`);
+    const listingPayload = await listing.json();
+    expect(listingPayload.ok).toBe(true);
+    expect(listingPayload.data.currentPath).toBe(realpathSync(root));
+    expect(listingPayload.data.entries.some((entry: { path: string; isRepo: boolean }) => entry.path === realpathSync(repoPath) && entry.isRepo)).toBe(true);
+
+    const recent = await app.request("http://local/api/host/fs/recent-repos");
+    const recentPayload = await recent.json();
+    expect(recentPayload.ok).toBe(true);
+    expect(Array.isArray(recentPayload.data.items)).toBe(true);
   });
 
   test("serves the static app shell", async () => {

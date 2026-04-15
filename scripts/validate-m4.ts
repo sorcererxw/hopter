@@ -11,6 +11,7 @@ import { BackendSessionService } from "../src/server/services/backend-session-se
 import { AuthService } from "../src/server/services/auth-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
+import { HostFilesystemService } from "../src/server/services/host-filesystem-service.ts";
 import { EventHub } from "../src/server/ws/event-hub.ts";
 import { createFetchHandler } from "../src/server/bootstrap/create-fetch-handler.ts";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
@@ -44,6 +45,7 @@ async function main(): Promise<void> {
   const bindingService = new BindingService(projectRepository, eventHub);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService, eventHub);
+const hostFilesystemService = new HostFilesystemService(config, projectRepository);
   const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository, eventHub);
 
   const projectId = crypto.randomUUID();
@@ -82,6 +84,7 @@ async function main(): Promise<void> {
     backendSessionService,
     codexDetectionService,
     hostHealthService,
+    hostFilesystemService,
     eventHub,
   });
 

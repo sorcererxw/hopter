@@ -118,7 +118,7 @@ export function normalizeNotification(method: string, params: unknown): SessionP
 }
 
 export function normalizeCompletedItem(item: ThreadItem): SessionPatch {
-  if (item.type === "agentMessage") {
+  if (item.type === "agentMessage" && "text" in item) {
     const summary = summarizeText(item.text);
     return {
       lastSummary: summary || null,
@@ -133,7 +133,7 @@ export function normalizeCompletedItem(item: ThreadItem): SessionPatch {
     };
   }
 
-  if (item.type === "plan") {
+  if (item.type === "plan" && "text" in item) {
     return {
       lastSummary: summarizeText(item.text) || null,
       artifactText: item.text.trim()
@@ -147,7 +147,7 @@ export function normalizeCompletedItem(item: ThreadItem): SessionPatch {
     };
   }
 
-  if (item.type === "commandExecution" && item.aggregatedOutput) {
+  if (item.type === "commandExecution" && "aggregatedOutput" in item && item.aggregatedOutput) {
     return {
       artifactText: {
         kind: "command_output",

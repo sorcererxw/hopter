@@ -12,6 +12,7 @@ import { BackendSessionService } from "../src/server/services/backend-session-se
 import { BindingService } from "../src/server/services/binding-service.ts";
 import { CodexDetectionService } from "../src/server/services/codex-detection-service.ts";
 import { HostHealthService } from "../src/server/services/host-health-service.ts";
+import { HostFilesystemService } from "../src/server/services/host-filesystem-service.ts";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 
 async function main(): Promise<void> {
@@ -40,6 +41,7 @@ async function main(): Promise<void> {
   const bindingService = new BindingService(projectRepository);
   const authService = new AuthService(authRepository, config.auth.password, config.auth.sessionTtlDays);
   const hostHealthService = new HostHealthService(config, codexDetectionService);
+  const hostFilesystemService = new HostFilesystemService(config, projectRepository);
   const backendSessionService = new BackendSessionService(config, projectRepository, sessionRepository);
   const app = createApp({
     config,
@@ -48,6 +50,7 @@ async function main(): Promise<void> {
     backendSessionService,
     codexDetectionService,
     hostHealthService,
+    hostFilesystemService,
   });
 
   const now = new Date().toISOString();

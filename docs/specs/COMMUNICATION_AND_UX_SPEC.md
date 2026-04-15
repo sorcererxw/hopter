@@ -321,23 +321,22 @@ The product should not feel like:
 
 Top-level navigation should stay minimal:
 
-- Dashboard
-- Projects
-- Session
+- Sessions home
+- Current session
 - Settings
 
 But the product should be biased toward direct session re-entry.
 
 ### Key principle
 
-Project is the durable organizational model.
-Session is the primary operational surface.
+Repo context remains a real execution requirement.
+Session is both the primary operational surface and the primary navigation surface.
 
 So:
 
-- dashboard should foreground active sessions
-- project pages should quickly lead into sessions
-- session detail should be the main page users live in
+- dashboard should foreground active and recent sessions
+- repo-context pages should exist, but as secondary utility surfaces
+- session detail should be the page users live in
 
 ## Main User Jobs
 
@@ -376,31 +375,31 @@ Purpose:
 
 The dashboard should prioritize:
 
-1. host health
-2. pending approvals/questions
-3. running sessions
-4. recently completed sessions
-5. project access
+1. pending approvals/questions
+2. running sessions
+3. recent sessions worth re-entering
+4. host health
+5. repo-context utility actions
 
 The dashboard should not default to:
 
 - giant timeline dumps
-- project administration first
+- repo administration first
 
-## Project Detail
+## Repo Context Detail
 
 Purpose:
 
-- durable home for one repo
+- secondary utility page for one stored local repo context
 
-The project page should show:
+The repo-context page should show:
 
-- project title and health
-- sessions list
+- context title and health
+- sessions launched from this repo
 - quick start session form
-- project-level settings
+- context-level settings
 
-The project page should not become the main decision surface.
+The repo-context page should not become the main decision surface.
 That is what session detail is for.
 
 ## Session Detail
@@ -411,19 +410,20 @@ The order matters.
 
 ### Session detail hierarchy
 
-1. status band
-2. latest summary
+1. compact session header
+2. conversation stream with latest summary and truth blocks
 3. pending attention card
-4. action bar
+4. sticky composer
 5. artifact surface
 6. timeline
 7. terminal drawer
 
 ### Why this order
 
-- status answers "is it alive?"
-- summary answers "what is it doing?"
+- compact header answers "which session am I in?"
+- conversation stream answers "what is it doing right now?"
 - attention answers "what do you need from me?"
+- sticky composer answers "what do I say back?"
 - artifacts answer "what has it produced?"
 - timeline answers "how did it get here?"
 - terminal is fallback tooling, not the product's main narrative

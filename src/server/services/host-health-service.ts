@@ -39,7 +39,7 @@ export class HostHealthService {
       ? "degraded"
       : "unhealthy";
 
-    const result = {
+    const result: HostStatus = {
       hostId: this.config.server.hostId,
       status,
       codex: {

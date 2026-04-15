@@ -6,14 +6,19 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "types": ["bun-types"],
+    "types": [
+      "bun-types"
+    ],
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/web/app/*"]
-    }
+      "@/*": [
+        "src/web/app/*"
+      ]
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src/**/*.ts",

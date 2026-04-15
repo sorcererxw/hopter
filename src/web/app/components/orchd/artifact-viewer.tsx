@@ -14,15 +14,15 @@ export function ArtifactViewer({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Artifact viewer</CardTitle>
+        <CardTitle>{artifactDetail?.artifact.label ?? "Artifact viewer"}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading artifact…</p>
         ) : error ? (
-          <p className="text-sm text-foreground">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         ) : artifactDetail?.content ? (
-          <ScrollArea className="max-h-[28rem] rounded-2xl border border-border bg-muted/40 p-4">
+          <ScrollArea className="max-h-[30rem] rounded-[22px] border border-border bg-background/70 p-4">
             <pre className="whitespace-pre-wrap break-words text-sm text-foreground">{artifactDetail.content}</pre>
           </ScrollArea>
         ) : artifactDetail?.downloadUrl ? (
@@ -30,7 +30,7 @@ export function ArtifactViewer({
             Download artifact
           </a>
         ) : (
-          <p className="text-sm text-muted-foreground">Select an artifact to inspect it.</p>
+          <p className="text-sm text-muted-foreground">Pick an artifact to inspect it inline.</p>
         )}
       </CardContent>
     </Card>

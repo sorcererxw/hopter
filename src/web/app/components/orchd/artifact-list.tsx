@@ -1,8 +1,16 @@
+import { FileText, ImageIcon, TestTube2 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/orchd/empty-state";
 import type { SessionDetail } from "@/lib/contracts";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+function artifactIcon(kind: string) {
+  if (kind.includes("screenshot")) return ImageIcon;
+  if (kind.includes("test")) return TestTube2;
+  return FileText;
+}
 
 export function ArtifactList({
   artifacts,
@@ -20,32 +28,36 @@ export function ArtifactList({
       </CardHeader>
       <CardContent>
         {artifacts.length === 0 ? (
-          <EmptyState title="No artifacts yet" description="Codex-owned artifacts appear here as soon as the session emits them." />
+          <EmptyState title="No artifacts yet" description="Artifacts will show up inline as the session produces summaries, diffs, tests, and screenshots." />
         ) : (
-          <Tabs
-            value={selectedArtifactId ?? artifacts[0]?.id}
-            onValueChange={(artifactId) => void onSelect(artifactId)}
-            orientation="vertical"
-            className="w-full"
-          >
-            <TabsList variant="line" className="grid h-auto w-full gap-2 bg-transparent p-0">
-              {artifacts.map((artifact) => (
-                <TabsTrigger
+          <div className="space-y-2">
+            {artifacts.map((artifact) => {
+              const Icon = artifactIcon(artifact.kind);
+              const isSelected = selectedArtifactId === artifact.id;
+              return (
+                <button
                   key={artifact.id}
-                  value={artifact.id}
-                  className="h-auto w-full justify-start rounded-2xl border border-border bg-card px-4 py-4 text-left data-[state=active]:border-primary/60 data-[state=active]:bg-primary/10"
+                  type="button"
+                  onClick={() => void onSelect(artifact.id)}
+                  className={cn(
+                    "flex w-full items-start gap-3 rounded-[22px] border px-3 py-3 text-left transition",
+                    isSelected ? "border-primary/60 bg-primary/10" : "border-border bg-background/60 hover:border-primary/30 hover:bg-accent/40",
+                  )}
                 >
-                  <div className="grid gap-2 text-left">
-                    <div className="flex flex-wrap items-center gap-3">
+                  <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                    <Icon className="size-4" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">{artifact.label}</span>
                       <Badge variant="secondary">{artifact.kind}</Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">{artifact.contentType}</span>
+                    <p className="truncate text-xs text-muted-foreground">{artifact.contentType}</p>
                   </div>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+                </button>
+              );
+            })}
+          </div>
         )}
       </CardContent>
     </Card>

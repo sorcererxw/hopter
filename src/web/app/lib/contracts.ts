@@ -24,6 +24,25 @@ export type HostStatus = {
   accessMode: string;
 };
 
+export type HostFsRoots = { items: string[] };
+
+export type HostFsRecentRepo = {
+  path: string;
+  name: string;
+};
+
+export type HostFsList = {
+  currentPath: string;
+  parentPath: string | null;
+  roots: string[];
+  entries: Array<{
+    name: string;
+    path: string;
+    isRepo: boolean;
+    hasChildren: boolean;
+  }>;
+};
+
 export type ProjectBindingView = {
   id: string;
   name: string;
@@ -49,6 +68,9 @@ export type BackendSessionView = {
   attentionReason: string | null;
   degraded: boolean;
   backendSessionId: string | null;
+  lastEventAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SessionDetail = {
@@ -79,4 +101,8 @@ export type ArtifactDetail = {
   };
   content?: string;
   downloadUrl?: string;
+};
+
+export type ShellSessionItem = BackendSessionView & {
+  context: ProjectBindingView;
 };

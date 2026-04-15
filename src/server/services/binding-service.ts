@@ -1,4 +1,4 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import type { ProjectBinding, ProjectBindingHealth } from "../../shared/domain/project.ts";
 import type { ProjectRepository } from "../repositories/project-repository.ts";
@@ -20,7 +20,7 @@ type UpdateProjectInput = {
 };
 
 function normalizeRepoPath(repoPath: string): string {
-  return path.resolve(repoPath.trim());
+  return realpathSync(path.resolve(repoPath.trim()));
 }
 
 function hasGitMetadata(repoPath: string): boolean {
@@ -29,7 +29,8 @@ function hasGitMetadata(repoPath: string): boolean {
 
 function insideAllowlist(repoPath: string, allowlist: string[]): boolean {
   return allowlist.some((allowedPath) => {
-    const relative = path.relative(allowedPath, repoPath);
+    const canonicalAllowed = existsSync(allowedPath) ? realpathSync(allowedPath) : path.resolve(allowedPath);
+    const relative = path.relative(canonicalAllowed, repoPath);
     return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
   });
 }

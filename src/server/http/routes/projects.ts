@@ -25,7 +25,8 @@ export function createBindingRoutes(
       }>();
 
       if (!body.name || !body.repoPath || !body.defaultBackend) {
-        return c.json(fail("INVALID_BINDING_BODY", "name, repoPath, and defaultBackend are required"), 400);
+        c.status(400 as never);
+        return c.json(fail("INVALID_BINDING_BODY", "name, repoPath, and defaultBackend are required"));
       }
 
       const binding = bindingService.create({
@@ -39,7 +40,8 @@ export function createBindingRoutes(
       return c.json(ok({ binding }), 201);
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -56,7 +58,8 @@ export function createBindingRoutes(
       }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -74,7 +77,8 @@ export function createBindingRoutes(
       return c.json(ok({ binding }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;

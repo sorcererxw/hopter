@@ -20,7 +20,8 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
       }>();
 
       if (!body.prompt || body.prompt.trim() === "") {
-        return c.json(fail("INVALID_BACKEND_SESSION_BODY", "prompt is required"), 400);
+        c.status(400 as never);
+        return c.json(fail("INVALID_BACKEND_SESSION_BODY", "prompt is required"));
       }
 
       const handle = await sessionService.createSession(c.req.param("bindingId"), {
@@ -31,7 +32,8 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
       return c.json(ok({ handle }), 201);
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -50,7 +52,8 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
       }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -63,7 +66,8 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
       return c.json(ok(attached));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -74,14 +78,16 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
     try {
       const body = await c.req.json<{ text?: string }>();
       if (!body.text || body.text.trim() === "") {
-        return c.json(fail("INVALID_HANDLE_INPUT", "text is required"), 400);
+        c.status(400 as never);
+        return c.json(fail("INVALID_HANDLE_INPUT", "text is required"));
       }
 
       const result = await sessionService.input(c.req.param("handleId"), body.text);
       return c.json(ok(result));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -92,14 +98,16 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
     try {
       const body = await c.req.json<{ decision?: "approve" | "reject"; note?: string | null }>();
       if (body.decision !== "approve" && body.decision !== "reject") {
-        return c.json(fail("INVALID_APPROVAL_DECISION", "decision must be approve or reject"), 400);
+        c.status(400 as never);
+        return c.json(fail("INVALID_APPROVAL_DECISION", "decision must be approve or reject"));
       }
 
       const result = await sessionService.approve(c.req.param("handleId"), body.decision);
       return c.json(ok(result));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -110,14 +118,16 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
     try {
       const body = await c.req.json<{ mode?: "interrupt" | "stop" }>();
       if (body.mode !== "interrupt" && body.mode !== "stop") {
-        return c.json(fail("INVALID_INTERRUPT_MODE", "mode must be interrupt or stop"), 400);
+        c.status(400 as never);
+        return c.json(fail("INVALID_INTERRUPT_MODE", "mode must be interrupt or stop"));
       }
 
       const result = await sessionService.interrupt(c.req.param("handleId"));
       return c.json(ok({ ...result, mode: body.mode }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;
@@ -130,7 +140,8 @@ export function createBackendSessionRoutes(sessionService: BackendSessionService
       return c.json(ok({ items }));
     } catch (error) {
       if (error instanceof AppError) {
-        return c.json(fail(error.code, error.message), error.status);
+        c.status(error.status as never);
+        return c.json(fail(error.code, error.message));
       }
 
       throw error;

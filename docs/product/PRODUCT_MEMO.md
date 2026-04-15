@@ -73,21 +73,22 @@ It is a control plane with a thin adapter layer:
 
 ### Primary information architecture
 
-- Workspace
-  - Bindings
-    - Backend sessions
+- Workspace shell
+  - Sessions
+    - repo context metadata
 
 ### Top-level navigation
 
 The product should support both:
 
-1. Binding-first navigation
-   - users enter a binding, then inspect or start backend sessions
+1. Session-first re-entry
+   - users jump straight back into a live or recent session
+   - repo context is visible as supporting metadata, not the main destination
 
 2. Attention-first overview
-   - users see what currently needs action across all bindings
+   - users see what currently needs action across all sessions
 
-The core container is the binding. The dashboard is a cross-binding attention layer, not the primary data model.
+The core operational object is now the session. Repo context still exists because execution happens on a real local repo, but the dashboard and shell are optimized for session re-entry, not repo administration.
 
 ## Delivery model
 
@@ -119,7 +120,8 @@ Accessible from:
 Responsibilities:
 
 - create backend sessions
-- inspect plans and progress
+- jump back into recent sessions immediately
+- inspect plans, conversation flow, and progress
 - surface approval points
 - display session checkpoints and artifacts
 - allow attach/resume across devices
@@ -176,7 +178,7 @@ That is acceptable as long as the control plane contract stays small.
 
 The adapter framework should abstract only the minimum common surface the control plane needs:
 
-- binding creation
+- repo-context creation
 - backend session creation
 - backend session attach/resume
 - event stream

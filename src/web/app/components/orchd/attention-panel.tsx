@@ -1,4 +1,5 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import type { SessionDetail } from "@/lib/contracts";
 
@@ -14,28 +15,28 @@ export function AttentionPanel({
   error?: string | null;
 }) {
   if (!attention) {
-    return (
-      <Alert>
-        <AlertTitle>Attention</AlertTitle>
-        <AlertDescription>No action required.</AlertDescription>
-      </Alert>
-    );
+    return null;
   }
 
   return (
-    <Alert variant="warning" className="space-y-4">
-      <div className="space-y-2">
-        <AlertTitle>Attention</AlertTitle>
-        <AlertDescription>
-          <span className="block font-medium text-foreground">{attention.headline}</span>
-          <span className="mt-1 block">{attention.reason}</span>
-        </AlertDescription>
+    <section className="rounded-[24px] border border-signal-waiting/35 bg-signal-waiting/10 p-4 text-sm">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-signal-waiting/15 text-signal-waiting">
+          <AlertTriangle className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-signal-waiting">Pending approval</p>
+            <p className="font-semibold text-foreground">{attention.headline}</p>
+            <p className="text-muted-foreground">{attention.reason}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button size="sm" onClick={() => void onApprove()}>Approve</Button>
+            <Button size="sm" variant="secondary" onClick={() => void onReject()}>Reject</Button>
+          </div>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={() => void onApprove()}>Approve</Button>
-        <Button variant="secondary" onClick={() => void onReject()}>Reject</Button>
-      </div>
-      {error ? <p className="text-sm text-foreground">{error}</p> : null}
-    </Alert>
+    </section>
   );
 }

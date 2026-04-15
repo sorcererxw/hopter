@@ -5,6 +5,7 @@ import type { AppConfig } from "../config/types.ts";
 import type { AuthService } from "../services/auth-service.ts";
 import type { CodexDetectionService } from "../services/codex-detection-service.ts";
 import type { HostHealthService } from "../services/host-health-service.ts";
+import type { HostFilesystemService } from "../services/host-filesystem-service.ts";
 import type { BindingService } from "../services/binding-service.ts";
 import type { BackendSessionService } from "../services/backend-session-service.ts";
 import type { EventHub } from "../ws/event-hub.ts";
@@ -20,6 +21,7 @@ type Options = {
   backendSessionService: BackendSessionService;
   codexDetectionService: CodexDetectionService;
   hostHealthService: HostHealthService;
+  hostFilesystemService: HostFilesystemService;
   eventHub: EventHub;
 };
 
@@ -31,6 +33,7 @@ export function createFetchHandler(options: Options) {
     backendSessionService: options.backendSessionService,
     codexDetectionService: options.codexDetectionService,
     hostHealthService: options.hostHealthService,
+    hostFilesystemService: options.hostFilesystemService,
   });
 
   return {
@@ -60,6 +63,7 @@ export function createFetchHandler(options: Options) {
           ws.send(JSON.stringify(event));
         });
       },
+      message() {},
       close(ws: ServerWebSocket<WsData>) {
         ws.data.unsub?.();
       },

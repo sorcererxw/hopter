@@ -69,6 +69,27 @@ async function readStreamLines(
   }
 }
 
+function getReadableStream(
+  stream: number | ReadableStream<Uint8Array> | undefined,
+  name: string,
+): ReadableStream<Uint8Array> {
+  if (!stream || typeof stream === "number") {
+    throw new Error(`Expected ${name} to be a readable stream`);
+  }
+
+  return stream;
+}
+
+function getWritableStdin(
+  stdin: unknown,
+): { write: (chunk: string) => void; flush: () => void } {
+  if (!stdin || typeof stdin === "number") {
+    throw new Error("Expected stdin to be a writable pipe");
+  }
+
+  return stdin as { write: (chunk: string) => void; flush: () => void };
+}
+
 function appendJsonl(stream: WriteStream | null, payload: unknown): void {
   if (!stream || stream.writableEnded || stream.destroyed) {
     return;
@@ -139,7 +160,7 @@ export class CodexAppServerClient {
   }
 
   private bindReaders(): void {
-    void readStreamLines(this.proc.stdout, async (line) => {
+    void readStreamLines(getReadableStream(this.proc.stdout, "stdout"), async (line) => {
       appendJsonl(this.transcript, {
         ts: new Date().toISOString(),
         stream: "stdout",
@@ -149,7 +170,7 @@ export class CodexAppServerClient {
       await this.handleMessage(line);
     });
 
-    void readStreamLines(this.proc.stderr, async (line) => {
+    void readStreamLines(getReadableStream(this.proc.stderr, "stderr"), async (line) => {
       appendJsonl(this.stderrTranscript, {
         ts: new Date().toISOString(),
         stream: "stderr",
@@ -279,8 +300,9 @@ export class CodexAppServerClient {
       line: payload,
     });
 
-    this.proc.stdin.write(`${payload}\n`);
-    this.proc.stdin.flush();
+    const stdin = getWritableStdin(this.proc.stdin);
+    stdin.write(`${payload}\n`);
+    stdin.flush();
   }
 
   async request(method: string, params: unknown): Promise<unknown> {

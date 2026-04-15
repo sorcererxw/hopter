@@ -183,9 +183,9 @@ Key decisions:
 
 - The product is a control plane, not a new agent.
 - The user's machine remains the source of execution truth.
-- Bindings are the main container.
-- Backend sessions live inside bindings.
-- A top-level dashboard exists as an attention layer across bindings.
+- Session is the main product surface and the main navigation object.
+- Repo context still exists underneath each session, but it is supporting metadata rather than the primary IA.
+- The dashboard and sidebar are optimized for session re-entry and attention-first work.
 - v1 backend is Codex.
 - The adapter framework exists from day one.
 - Future integrations include Claude Code and OpenCode.
@@ -224,7 +224,7 @@ Runs on:
 Responsibilities:
 
 - connect to installed coding agent backends
-- manage binding definitions
+- manage stored repo contexts
 - create and resume backend sessions
 - expose structured events to the web UI
 - handle authentication and optional remote access
@@ -240,10 +240,10 @@ Accessible from:
 
 Responsibilities:
 
-- list bindings
-- show backend sessions within bindings
+- list and re-enter recent backend sessions
+- keep repo context visible as supporting metadata
 - start a backend session
-- display plan/progress/checkpoints
+- display plan/progress/checkpoints in a conversation-first shell
 - support attach/resume across devices
 
 ### Managed relay, later
