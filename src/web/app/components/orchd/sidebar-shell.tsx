@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/orchd/status-badge";
 import { SessionCreateComposer } from "@/components/orchd/session-create-composer";
+import { ThemeControls } from "@/components/orchd/theme-controls";
 import type { AuthMe, HostStatus, ProjectBindingView, ShellSessionItem } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 
@@ -225,6 +226,7 @@ export function SidebarShell({
                 Settings
               </NavLink>
             </nav>
+            <ThemeControls compact />
             {auth.required ? (
               <Button
                 variant="secondary"

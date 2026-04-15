@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarShell } from "@/components/orchd/sidebar-shell";
 import { StatusBadge } from "@/components/orchd/status-badge";
+import { QuickThemeToggle } from "@/components/orchd/theme-controls";
 import type { AuthMe } from "@/lib/contracts";
 import { useShellNavigationData } from "@/lib/use-shell-navigation-data";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,10 @@ export function AppShell({ auth, children }: { auth: AuthMe; children: ReactNode
               <p className="text-sm font-medium text-foreground">{titleFromPath(location.pathname)}</p>
             </div>
           </div>
-          {shell.host ? <StatusBadge status={shell.host.status} /> : null}
+          <div className="flex items-center gap-2">
+            <QuickThemeToggle />
+            {shell.host ? <StatusBadge status={shell.host.status} /> : null}
+          </div>
         </header>
         {mobileDrawerOpen ? (
           <div className="fixed inset-0 z-50 bg-black/55" onClick={() => setMobileDrawerOpen(false)}>
@@ -150,7 +154,12 @@ export function AppShell({ auth, children }: { auth: AuthMe; children: ReactNode
             </button>
           ) : null}
         </aside>
-        <main className={cn("min-w-0 flex-1 overflow-y-auto px-6 pb-20 pt-6 lg:px-8", sidebarCollapsed ? "xl:px-10" : "xl:px-8")}>{children}</main>
+        <main className={cn("min-w-0 flex-1 overflow-y-auto px-6 pb-20 pt-6 lg:px-8", sidebarCollapsed ? "xl:px-10" : "xl:px-8")}>
+          <div className="sticky top-0 z-30 -mx-2 mb-4 flex justify-end bg-gradient-to-b from-background via-background/95 to-transparent px-2 pb-3">
+            <QuickThemeToggle />
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

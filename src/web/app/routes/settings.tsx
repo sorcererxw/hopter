@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageHero } from "@/components/orchd/page-hero";
 import { StatusBadge } from "@/components/orchd/status-badge";
+import { ThemeControls } from "@/components/orchd/theme-controls";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import type { HostStatus } from "@/lib/contracts";
@@ -25,6 +26,15 @@ export function SettingsRoute() {
           <AlertDescription>{toUserFacingError("Could not refresh host health", new Error(error))}</AlertDescription>
         </Alert>
       ) : null}
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Tailwind + shadcn class-based theme selection with semantic tokens.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeControls />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Host status JSON</CardTitle>

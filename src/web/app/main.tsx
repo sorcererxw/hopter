@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 
 import { BootSurface } from "@/components/orchd/boot-surface";
+import { ThemeProvider } from "@/components/orchd/theme-provider";
 import { AppShell } from "@/shell/app-shell";
 import { api } from "@/lib/api";
 import type { AuthMe } from "@/lib/contracts";
@@ -53,19 +54,21 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginRoute auth={auth} onLoggedIn={refreshAuth} />} />
-        <Route element={<ProtectedLayout auth={auth} />}>
-          <Route path="/" element={<DashboardRoute />} />
-          <Route path="/bindings/new" element={<BindingCreateRoute />} />
-          <Route path="/bindings/:bindingId" element={<BindingDetailRoute />} />
-          <Route path="/backend-sessions/:handleId" element={<BackendSessionDetailRoute />} />
-          <Route path="/settings" element={<SettingsRoute />} />
-          <Route path="*" element={<NotFoundRoute />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginRoute auth={auth} onLoggedIn={refreshAuth} />} />
+          <Route element={<ProtectedLayout auth={auth} />}>
+            <Route path="/" element={<DashboardRoute />} />
+            <Route path="/bindings/new" element={<BindingCreateRoute />} />
+            <Route path="/bindings/:bindingId" element={<BindingDetailRoute />} />
+            <Route path="/backend-sessions/:handleId" element={<BackendSessionDetailRoute />} />
+            <Route path="/settings" element={<SettingsRoute />} />
+            <Route path="*" element={<NotFoundRoute />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
