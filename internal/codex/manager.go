@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -26,11 +27,70 @@ type liveSession struct {
 	active  string
 }
 
+type ResolvedSession struct {
+	Project core.Project
+	Session core.Session
+}
+
 func NewManager(workspace core.WorkspaceService) *Manager {
 	return &Manager{
 		workspace: workspace,
 		live:      make(map[string]*liveSession),
 	}
+}
+
+func (m *Manager) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
+	projects := m.workspace.ListProjects()
+
+	client, _, err := m.startEphemeralClient()
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	list, err := client.ListThreads("", max(limit, 100))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]ResolvedSession, 0, len(list.Data))
+	for _, thread := range list.Data {
+		project := projectForThreadOrSynthetic(projects, thread)
+		if projectID != "" && project.ID != projectID {
+			continue
+		}
+
+		local, hasLocal := m.sessionByThreadID(thread.ID)
+		session := sessionFromThread(thread, project, local, hasLocal)
+		result = append(result, ResolvedSession{
+			Project: project,
+			Session: session,
+		})
+		if limit > 0 && len(result) >= int(limit) {
+			break
+		}
+	}
+
+	return result, nil
+}
+
+func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, error) {
+	if local, ok := m.workspace.GetSession(sessionID); ok {
+		project, ok := m.workspace.GetProject(local.ProjectID)
+		if !ok {
+			return core.Session{}, core.Project{}, fmt.Errorf("project %q not found for session", local.ProjectID)
+		}
+		if strings.TrimSpace(local.BackendThreadID) == "" {
+			return local, project, nil
+		}
+		return m.fetchThreadSession(sessionID, local.BackendThreadID, project, local, true)
+	}
+
+	if session, project, err := m.fetchRawThreadSession(sessionID); err == nil {
+		return session, project, nil
+	}
+
+	return core.Session{}, core.Project{}, fmt.Errorf("session %q not found", sessionID)
 }
 
 func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, error) {
@@ -50,19 +110,59 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 }
 
 func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error) {
-	session, err := m.workspace.SendSessionInput(sessionID, input)
+	if session, ok := m.workspace.GetSession(sessionID); ok {
+		updated, err := m.workspace.SendSessionInput(sessionID, input)
+		if err != nil {
+			return core.Session{}, err
+		}
+		project, ok := m.workspace.GetProject(session.ProjectID)
+		if !ok {
+			return core.Session{}, fmt.Errorf("project %q not found", session.ProjectID)
+		}
+		if strings.TrimSpace(session.BackendThreadID) != "" {
+			if _, err := m.ensureLiveSession(sessionID, project, session.BackendThreadID); err != nil {
+				return updated, err
+			}
+		}
+		go m.dispatchInput(sessionID, input)
+		return updated, nil
+	}
+
+	session, project, err := m.GetSession(sessionID)
+	if err != nil {
+		return core.Session{}, err
+	}
+	live, err := m.ensureLiveSession(sessionID, project, session.BackendThreadID)
 	if err != nil {
 		return core.Session{}, err
 	}
 
-	m.mu.Lock()
-	live := m.live[sessionID]
-	m.mu.Unlock()
-	if live == nil {
-		return session, fmt.Errorf("session %q is not attached to a live Codex runtime", sessionID)
+	var (
+		turn *StartTurnResult
+		runErr error
+	)
+	if strings.TrimSpace(live.active) != "" {
+		turn, runErr = live.client.SteerTurn(live.thread, live.active, input)
+	} else {
+		turn, runErr = live.client.StartTurn(live.thread, input)
+	}
+	if runErr != nil {
+		return core.Session{}, fmt.Errorf("dispatch session input: %w", runErr)
 	}
 
-	go m.dispatchInput(sessionID, input)
+	m.mu.Lock()
+	if current := m.live[sessionID]; current != nil {
+		current.active = turn.Turn.ID
+	}
+	m.mu.Unlock()
+
+	go m.watchTurn(sessionID, live.thread, turn.Turn.ID)
+
+	session.LastInputHint = truncate(strings.TrimSpace(input), 120)
+	session.ActiveTurnID = turn.Turn.ID
+	session.Status = core.SessionStateRunning
+	session.Summary = "Codex is processing the latest input…"
+	session.UpdatedAt = time.Now().UTC()
 	return session, nil
 }
 
@@ -191,7 +291,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			active := payload.Turn.ID
 			running := core.SessionStateRunning
 			summary := "Codex is working…"
-			_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+			m.updateWorkspaceSession(sessionID, core.SessionPatch{
 				ActiveTurnID: &active,
 				Status:       &running,
 				Summary:      &summary,
@@ -231,7 +331,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			}
 		}
 
-		_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			ActiveTurnID: &active,
 			Status:       &status,
 			Summary:      &summary,
@@ -250,7 +350,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			text := strings.TrimSpace(payload.Item.Text)
 			if payload.Item.Type == "agentMessage" && text != "" {
 				summary := text
-				_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+				m.updateWorkspaceSession(sessionID, core.SessionPatch{
 					Summary: &summary,
 				})
 			}
@@ -316,7 +416,7 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 		if summary == "" {
 			summary = "Codex completed the turn."
 		}
-		_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			ActiveTurnID: &active,
 			Status:       &status,
 			Summary:      &summary,
@@ -332,7 +432,7 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 	active := ""
 	status := core.SessionStateDegraded
 	summary := "Timed out waiting for Codex turn completion."
-	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
 		ActiveTurnID: &active,
 		Status:       &status,
 		Summary:      &summary,
@@ -344,7 +444,7 @@ func (m *Manager) failSession(sessionID string, err error) {
 	status := core.SessionStateFailed
 	attention := true
 	summary := err.Error()
-	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
 		ActiveTurnID:      &active,
 		Status:            &status,
 		Summary:           &summary,
@@ -355,4 +455,314 @@ func (m *Manager) failSession(sessionID string, err error) {
 
 func ptrSessionState(value core.SessionState) *core.SessionState {
 	return &value
+}
+
+func truncate(value string, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	if len(value) <= limit {
+		return value
+	}
+	return strings.TrimSpace(value[:limit])
+}
+
+func (m *Manager) startEphemeralClient() (*Client, string, error) {
+	cwd := "."
+	projects := m.workspace.ListProjects()
+	if len(projects) > 0 {
+		cwd = projects[0].RootPath
+	}
+
+	client, err := Start(context.Background(), cwd, nil, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	return client, cwd, nil
+}
+
+func (m *Manager) fetchThreadSession(
+	sessionID string,
+	threadID string,
+	project core.Project,
+	local core.Session,
+	hasLocal bool,
+) (core.Session, core.Project, error) {
+	client, err := Start(context.Background(), project.RootPath, nil, nil)
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+	defer client.Close()
+
+	resumed, err := client.ResumeThread(threadID, project.RootPath)
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+
+	read, err := client.ReadThread(threadID)
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+
+	session := sessionFromThread(resumed.Thread, project, local, hasLocal)
+	session.BackendThreadID = threadID
+	session.Summary = latestAgentSummary(read)
+	if session.Summary == "" {
+		session.Summary = fallbackThreadPreview(resumed.Thread, local, hasLocal)
+	}
+	if hasLocal && strings.TrimSpace(local.LastInputHint) != "" {
+		session.LastInputHint = local.LastInputHint
+	}
+	session.ActiveTurnID = latestActiveTurnID(read)
+	if session.ActiveTurnID != "" {
+		session.Status = core.SessionStateRunning
+	}
+
+	return session, project, nil
+}
+
+func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Project, error) {
+	client, _, err := m.startEphemeralClient()
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+	defer client.Close()
+
+	resumed, err := client.ResumeThread(threadID, "")
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+	read, err := client.ReadThread(threadID)
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+
+	project := projectForThreadOrSynthetic(m.workspace.ListProjects(), resumed.Thread)
+	session := sessionFromThread(resumed.Thread, project, core.Session{}, false)
+	session.BackendThreadID = threadID
+	session.Summary = latestAgentSummary(read)
+	if session.Summary == "" {
+		session.Summary = fallbackThreadPreview(resumed.Thread, core.Session{}, false)
+	}
+	session.ActiveTurnID = latestActiveTurnID(read)
+	if session.ActiveTurnID != "" {
+		session.Status = core.SessionStateRunning
+	}
+	return session, project, nil
+}
+
+func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, threadID string) (*liveSession, error) {
+	m.mu.Lock()
+	live := m.live[sessionKey]
+	m.mu.Unlock()
+	if live != nil {
+		return live, nil
+	}
+
+	client, err := Start(context.Background(), project.RootPath, func(n Notification) {
+		m.handleNotification(sessionKey, n)
+	}, func() {
+		summary := "Codex runtime exited unexpectedly."
+		degraded := true
+		active := ""
+		m.updateWorkspaceSession(sessionKey, core.SessionPatch{
+			Status:            ptrSessionState(core.SessionStateDegraded),
+			Summary:           &summary,
+			AttentionReason:   &summary,
+			AttentionRequired: &degraded,
+			ActiveTurnID:      &active,
+		})
+		m.mu.Lock()
+		delete(m.live, sessionKey)
+		m.mu.Unlock()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := client.ResumeThread(threadID, project.RootPath); err != nil {
+		_ = client.Close()
+		return nil, err
+	}
+
+	read, err := client.ReadThread(threadID)
+	if err != nil {
+		_ = client.Close()
+		return nil, err
+	}
+
+	live = &liveSession{
+		project: project,
+		client:  client,
+		thread:  threadID,
+		active:  latestActiveTurnID(read),
+	}
+	m.mu.Lock()
+	m.live[sessionKey] = live
+	m.mu.Unlock()
+	return live, nil
+}
+
+func (m *Manager) sessionByThreadID(threadID string) (core.Session, bool) {
+	sessions := m.workspace.ListSessions(core.ListSessionsInput{})
+	for _, session := range sessions {
+		if session.BackendThreadID == threadID {
+			return session, true
+		}
+	}
+	return core.Session{}, false
+}
+
+func (m *Manager) updateWorkspaceSession(sessionID string, patch core.SessionPatch) {
+	if _, ok := m.workspace.GetSession(sessionID); ok {
+		_, _ = m.workspace.UpdateSession(sessionID, patch)
+	}
+}
+
+func sessionFromThread(thread ThreadRecord, project core.Project, local core.Session, hasLocal bool) core.Session {
+	session := core.Session{
+		ID:              thread.ID,
+		ProjectID:       project.ID,
+		Title:           fallbackThreadTitle(thread, local, hasLocal),
+		BackendThreadID: thread.ID,
+		Status:          mapThreadStatus(thread.Status),
+		Summary:         fallbackThreadPreview(thread, local, hasLocal),
+		UpdatedAt:       time.Unix(thread.UpdatedAt, 0).UTC(),
+	}
+	if hasLocal {
+		session.ID = local.ID
+		session.AttentionRequired = local.AttentionRequired
+		session.AttentionReason = local.AttentionReason
+		session.LastInputHint = local.LastInputHint
+		session.Artifacts = append([]core.Artifact(nil), local.Artifacts...)
+		if strings.TrimSpace(local.Title) != "" && strings.TrimSpace(thread.NameValue()) == "" {
+			session.Title = local.Title
+		}
+	}
+	return session
+}
+
+func fallbackThreadTitle(thread ThreadRecord, local core.Session, hasLocal bool) string {
+	if name := strings.TrimSpace(thread.NameValue()); name != "" {
+		return name
+	}
+	if hasLocal && strings.TrimSpace(local.Title) != "" {
+		return local.Title
+	}
+	if preview := strings.TrimSpace(thread.Preview); preview != "" {
+		return truncate(preview, 72)
+	}
+	return thread.ID
+}
+
+func fallbackThreadPreview(thread ThreadRecord, local core.Session, hasLocal bool) string {
+	if preview := strings.TrimSpace(thread.Preview); preview != "" {
+		return preview
+	}
+	if hasLocal && strings.TrimSpace(local.Summary) != "" {
+		return local.Summary
+	}
+	return "Codex thread loaded."
+}
+
+func mapThreadStatus(status ThreadStatus) core.SessionState {
+	switch status.Type {
+	case "active":
+		return core.SessionStateRunning
+	case "systemError":
+		return core.SessionStateFailed
+	case "idle", "notLoaded":
+		return core.SessionStateCompleted
+	default:
+		return core.SessionStatePending
+	}
+}
+
+func latestActiveTurnID(read *ReadThreadResult) string {
+	if read == nil {
+		return ""
+	}
+	for i := len(read.Thread.Turns) - 1; i >= 0; i-- {
+		turn := read.Thread.Turns[i]
+		if turn.Status == "inProgress" {
+			return turn.ID
+		}
+	}
+	return ""
+}
+
+func projectForThread(projects []core.Project, cwd string) (core.Project, bool) {
+	normalizedCwd := filepath.Clean(strings.TrimSpace(cwd))
+	var (
+		best    core.Project
+		bestLen int
+		found   bool
+	)
+	for _, project := range projects {
+		root := filepath.Clean(strings.TrimSpace(project.RootPath))
+		if root == "" {
+			continue
+		}
+		if normalizedCwd == root || strings.HasPrefix(normalizedCwd, root+string(filepath.Separator)) {
+			if len(root) > bestLen {
+				best = project
+				bestLen = len(root)
+				found = true
+			}
+		}
+	}
+	return best, found
+}
+
+func projectForThreadOrSynthetic(projects []core.Project, thread ThreadRecord) core.Project {
+	if project, ok := projectForThread(projects, thread.Cwd); ok {
+		return project
+	}
+
+	rootPath := repoRootForPath(thread.Cwd)
+	if project, ok := projectForThread(projects, rootPath); ok {
+		return project
+	}
+
+	updatedAt := time.Unix(thread.UpdatedAt, 0).UTC()
+	createdAt := time.Unix(thread.CreatedAt, 0).UTC()
+	name := filepath.Base(rootPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = rootPath
+	}
+
+	return core.Project{
+		ID:             "cwd:" + rootPath,
+		Name:           name,
+		RootPath:       rootPath,
+		DefaultBackend: "codex",
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
+	}
+}
+
+func (t ThreadRecord) NameValue() string {
+	if t.Name == nil {
+		return ""
+	}
+	return *t.Name
+}
+
+func repoRootForPath(cwd string) string {
+	normalized := filepath.Clean(strings.TrimSpace(cwd))
+	if normalized == "." || normalized == "" {
+		return normalized
+	}
+
+	cmd := exec.Command("git", "-C", normalized, "rev-parse", "--show-toplevel")
+	output, err := cmd.Output()
+	if err != nil {
+		return normalized
+	}
+
+	root := filepath.Clean(strings.TrimSpace(string(output)))
+	if root == "" {
+		return normalized
+	}
+	return root
 }

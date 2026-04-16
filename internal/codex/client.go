@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -52,6 +53,30 @@ type StartThreadResult struct {
 	} `json:"thread"`
 }
 
+type ThreadStatus struct {
+	Type string `json:"type"`
+}
+
+type ThreadRecord struct {
+	ID            string       `json:"id"`
+	ForkedFromID  *string      `json:"forkedFromId"`
+	Preview       string       `json:"preview"`
+	Ephemeral     bool         `json:"ephemeral"`
+	ModelProvider string       `json:"modelProvider"`
+	CreatedAt     int64        `json:"createdAt"`
+	UpdatedAt     int64        `json:"updatedAt"`
+	Status        ThreadStatus `json:"status"`
+	Path          *string      `json:"path"`
+	Cwd           string       `json:"cwd"`
+	CLIVersion    string       `json:"cliVersion"`
+	Name          *string      `json:"name"`
+}
+
+type ThreadListResult struct {
+	Data       []ThreadRecord `json:"data"`
+	NextCursor *string        `json:"nextCursor"`
+}
+
 type StartTurnResult struct {
 	Turn struct {
 		ID string `json:"id"`
@@ -70,6 +95,11 @@ type ReadThreadResult struct {
 			} `json:"items"`
 		} `json:"turns"`
 	} `json:"thread"`
+}
+
+type ResumeThreadResult struct {
+	Thread ThreadRecord `json:"thread"`
+	Cwd    string       `json:"cwd"`
 }
 
 func Start(ctx context.Context, cwd string, onNotification func(Notification), onExit func()) (*Client, error) {
@@ -150,6 +180,50 @@ func (c *Client) StartThread(cwd string) (*StartThreadResult, error) {
 	var out StartThreadResult
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return nil, fmt.Errorf("decode thread/start: %w", err)
+	}
+	return &out, nil
+}
+
+func (c *Client) ListThreads(cwd string, limit uint32) (*ThreadListResult, error) {
+	params := map[string]any{
+		"archived": false,
+		"sortKey":  "updated_at",
+	}
+	if strings.TrimSpace(cwd) != "" {
+		params["cwd"] = cwd
+	}
+	if limit > 0 {
+		params["limit"] = limit
+	}
+
+	raw, err := c.request("thread/list", params)
+	if err != nil {
+		return nil, err
+	}
+	var out ThreadListResult
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("decode thread/list: %w", err)
+	}
+	return &out, nil
+}
+
+func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error) {
+	params := map[string]any{
+		"threadId":               threadID,
+		"approvalPolicy":         "never",
+		"sandbox":                "danger-full-access",
+		"persistExtendedHistory": false,
+	}
+	if strings.TrimSpace(cwd) != "" {
+		params["cwd"] = cwd
+	}
+	raw, err := c.request("thread/resume", params)
+	if err != nil {
+		return nil, err
+	}
+	var out ResumeThreadResult
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("decode thread/resume: %w", err)
 	}
 	return &out, nil
 }

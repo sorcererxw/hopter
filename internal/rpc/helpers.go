@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -72,9 +73,9 @@ func timestamp(t time.Time) *timestamppb.Timestamp {
 func projectToProto(project core.Project) *orchdv1.Project {
 	return &orchdv1.Project{
 		Id:             project.ID,
-		Name:           project.Name,
-		RootPath:       project.RootPath,
-		DefaultBackend: project.DefaultBackend,
+		Name:           validUTF8(project.Name),
+		RootPath:       validUTF8(project.RootPath),
+		DefaultBackend: validUTF8(project.DefaultBackend),
 		CreatedAt:      timestamp(project.CreatedAt),
 		UpdatedAt:      timestamp(project.UpdatedAt),
 	}
@@ -83,7 +84,7 @@ func projectToProto(project core.Project) *orchdv1.Project {
 func projectRef(project core.Project) *orchdv1.ProjectRef {
 	return &orchdv1.ProjectRef{
 		Id:   project.ID,
-		Name: project.Name,
+		Name: validUTF8(project.Name),
 	}
 }
 
@@ -138,21 +139,21 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 		artifacts = append(artifacts, &orchdv1.ArtifactRef{
 			Id:          artifact.ID,
 			Kind:        mapArtifactKind(artifact.Kind),
-			Label:       artifact.Label,
+			Label:       validUTF8(artifact.Label),
 			CreatedAt:   timestamp(artifact.CreatedAt),
-			DownloadUrl: artifact.DownloadURL,
-			ContentType: artifact.ContentType,
+			DownloadUrl: validUTF8(artifact.DownloadURL),
+			ContentType: validUTF8(artifact.ContentType),
 		})
 	}
 	return &orchdv1.Session{
 		Id:                session.ID,
-		Title:             session.Title,
+		Title:             validUTF8(session.Title),
 		Project:           projectRef(project),
 		Status:            mapSessionState(session.Status),
-		Summary:           session.Summary,
+		Summary:           validUTF8(session.Summary),
 		AttentionRequired: session.AttentionRequired,
-		AttentionReason:   session.AttentionReason,
-		LastInputHint:     session.LastInputHint,
+		AttentionReason:   validUTF8(session.AttentionReason),
+		LastInputHint:     validUTF8(session.LastInputHint),
 		UpdatedAt:         timestamp(session.UpdatedAt),
 		Artifacts:         artifacts,
 	}
@@ -161,10 +162,14 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 func sessionListItemToProto(project core.Project, session core.Session) *orchdv1.SessionListItem {
 	return &orchdv1.SessionListItem{
 		Id:                session.ID,
-		Title:             session.Title,
+		Title:             validUTF8(session.Title),
 		Project:           projectRef(project),
 		Status:            mapSessionState(session.Status),
 		UpdatedAt:         timestamp(session.UpdatedAt),
 		AttentionRequired: session.AttentionRequired,
 	}
+}
+
+func validUTF8(value string) string {
+	return strings.ToValidUTF8(value, "")
 }

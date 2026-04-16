@@ -1,18 +1,19 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import {
-  Cloud,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Filter,
   Folder,
   FolderOpen,
   Grid2x2,
+  Plus,
   Search,
   Settings,
-  Sparkles,
   SquarePen,
-  Workflow,
 } from "lucide-react"
 import { Link, NavLink } from "react-router-dom"
 
-import { useHostStatus } from "@/features/host/use-host-status"
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
@@ -27,25 +28,20 @@ function formatRelativeTime(date?: Date) {
   const diffMinutes = Math.floor(diffMs / 60_000)
 
   if (diffMinutes < 1) {
-    return "刚刚"
+    return "just now"
   }
 
   if (diffMinutes < 60) {
-    return `${diffMinutes} 分钟`
+    return `${diffMinutes}m`
   }
 
   const diffHours = Math.floor(diffMinutes / 60)
   if (diffHours < 24) {
-    return `${diffHours} 小时`
+    return `${diffHours}h`
   }
 
   const diffDays = Math.floor(diffHours / 24)
-  if (diffDays < 30) {
-    return `${diffDays} 天`
-  }
-
-  const diffMonths = Math.floor(diffDays / 30)
-  return `${diffMonths} 月`
+  return `${diffDays}d`
 }
 
 function groupWeight(updatedAt?: Date) {
@@ -56,10 +52,42 @@ function groupWeight(updatedAt?: Date) {
   return updatedAt.getTime()
 }
 
-export function SessionRail() {
-  const { data: hostStatus } = useHostStatus()
+function syntheticProjectPath(projectID: string) {
+  if (!projectID.startsWith("cwd:")) {
+    return ""
+  }
+
+  return projectID.slice(4)
+}
+
+function disambiguateProjectLabel(projectID: string, projectName: string, duplicateNames: Set<string>) {
+  if (!duplicateNames.has(projectName)) {
+    return projectName
+  }
+
+  const rawPath = syntheticProjectPath(projectID)
+  if (!rawPath) {
+    return projectName
+  }
+
+  const parts = rawPath.split(/[\\/]/).filter(Boolean)
+  if (parts.length === 0) {
+    return projectName
+  }
+
+  const genericNames = new Set(["repo", "app", "ui", "src", "project", "workspace", "tmp"])
+  let segmentCount = 2
+  if (parts.length >= 3 && genericNames.has(parts[parts.length - 2])) {
+    segmentCount = 3
+  }
+
+  return parts.slice(-Math.min(segmentCount, parts.length)).join("/")
+}
+
+export function SessionRail({ onOpenSearch }: { onOpenSearch: () => void }) {
   const { data: projects } = useProjects()
   const { data: sessions, isError, isLoading } = useSessions()
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   const groups = useMemo(() => {
     const map = new Map<
@@ -73,7 +101,7 @@ export function SessionRail() {
 
     for (const session of sessions ?? []) {
       const projectId = session.project?.id || "unassigned"
-      const projectName = session.project?.name || "未分配项目"
+      const projectName = session.project?.name || "Unassigned"
       const group = map.get(projectId) ?? {
         id: projectId,
         name: projectName,
@@ -104,64 +132,122 @@ export function SessionRail() {
       })
   }, [projects, sessions])
 
+  useEffect(() => {
+    setCollapsedGroups((current) => {
+      const next = { ...current }
+      for (const group of groups) {
+        if (!(group.id in next)) {
+          next[group.id] = false
+        }
+      }
+      for (const groupID of Object.keys(next)) {
+        if (!groups.some((group) => group.id === groupID)) {
+          delete next[groupID]
+        }
+      }
+      return next
+    })
+  }, [groups])
+
+  const duplicateProjectNames = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const group of groups) {
+      counts.set(group.name, (counts.get(group.name) ?? 0) + 1)
+    }
+
+    return new Set(
+      [...counts.entries()]
+        .filter(([, count]) => count > 1)
+        .map(([name]) => name)
+    )
+  }, [groups])
+
+  function toggleGroup(groupID: string) {
+    setCollapsedGroups((current) => ({
+      ...current,
+      [groupID]: !current[groupID],
+    }))
+  }
+
   return (
-    <div className="flex h-full flex-col text-sidebar-foreground">
+    <div className="flex h-full flex-col bg-[#141414] text-[#c8c8c8]">
       <div className="space-y-0.5 px-3 pt-4 pb-2">
         <RailAction icon={SquarePen} label="Quick chat" to="/" />
-        <RailAction icon={Search} label="Search" />
-        <RailAction icon={Grid2x2} label="技能和应用" />
-        <RailAction icon={Workflow} label="自动化" />
+        <RailAction icon={Search} label="Search" onClick={onOpenSearch} />
+        <RailAction icon={Grid2x2} label="Skills & Apps" />
       </div>
 
       <div className="mx-3 my-1 h-px bg-white/6" />
 
-      <div className="flex items-center justify-between px-4 py-3">
-        <span className="text-[11px] uppercase tracking-[0.16em] text-[#6e6e6e]">
-          线程
-        </span>
-        <Link
-          to="/"
-          className="rounded-md px-2 py-1 text-[12px] text-[#949494] transition hover:bg-white/6 hover:text-white"
-        >
-          新建
-        </Link>
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <span className="text-[11px] uppercase tracking-[0.06em] text-[#555]">Threads</span>
+        <div className="flex items-center gap-1">
+          <ThreadHeaderButton to="/" title="New thread">
+            <Plus className="size-[13px]" />
+          </ThreadHeaderButton>
+          <ThreadHeaderButton title="Sort">
+            <ArrowUpDown className="size-3" />
+          </ThreadHeaderButton>
+          <ThreadHeaderButton title="Filter">
+            <Filter className="size-3" />
+          </ThreadHeaderButton>
+        </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pb-3">
-        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" data-testid="session-list">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-1.5 pb-2">
+        <div className="thin-scrollbar h-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1">
           {isLoading ? (
-            <div className="space-y-3 px-2 py-4 text-sm text-[#747474]">
-              <div className="rounded-lg border border-white/6 bg-white/4 px-3 py-2">
-                正在加载线程…
-              </div>
-            </div>
+            <div className="px-3 py-3 text-[12px] text-[#555]">Loading threads…</div>
           ) : null}
 
           {isError ? (
-            <div className="px-2 py-4 text-sm text-[#8a8a8a]">
-              后端还没有返回会话列表，外壳已经就绪。
+            <div className="px-3 py-3 text-[12px] text-[#666]">
+              The shell is ready. Session data will appear when the backend responds.
             </div>
           ) : null}
 
           {!isLoading && !isError && groups.length === 0 ? (
-            <div className="px-2 py-4 text-sm text-[#8a8a8a]">
-              还没有线程。打开一个项目后，就可以从这里继续会话。
+            <div className="px-3 py-3 text-[12px] leading-5 text-[#666]">
+              No threads yet. Open a repo and continue from the same workspace.
             </div>
           ) : null}
 
           <div className="space-y-3">
             {groups.map((group) => (
-              <div key={group.id} className="space-y-1">
-                <div className="flex items-center gap-2 px-3 py-1 text-[12px] text-[#828282]">
-                  {group.sessions.length > 0 ? (
-                    <FolderOpen className="size-3.5" />
-                  ) : (
-                    <Folder className="size-3.5" />
-                  )}
-                  <span className="truncate">{group.name}</span>
+              <div key={group.id}>
+                <div className="flex items-center px-2.5 pb-1">
+                  {(() => {
+                    const displayName = disambiguateProjectLabel(
+                      group.id,
+                      group.name,
+                      duplicateProjectNames
+                    )
+                    const rawPath = syntheticProjectPath(group.id)
+
+                    return (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    title={rawPath || group.name}
+                    className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-left text-[12px] text-[#777] transition hover:bg-white/5"
+                  >
+                    {collapsedGroups[group.id] ? (
+                      <ChevronRight className="size-3 shrink-0" />
+                    ) : (
+                      <ChevronDown className="size-3 shrink-0" />
+                    )}
+                    {group.sessions.length > 0 && !collapsedGroups[group.id] ? (
+                      <FolderOpen className="size-3 shrink-0" />
+                    ) : (
+                      <Folder className="size-3 shrink-0" />
+                    )}
+                    <span className="truncate">{displayName}</span>
+                  </button>
+                    )
+                  })()}
                 </div>
 
-                {group.sessions.length > 0 ? (
+                {group.sessions.length > 0 && !collapsedGroups[group.id] ? (
                   <div className="ml-4 border-l border-white/8 pl-3">
                     {group.sessions.map((session) => {
                       const updatedAt = timestampToDate(session.updatedAt)
@@ -172,76 +258,58 @@ export function SessionRail() {
                           to={`/sessions/${session.id}`}
                           className={({ isActive }) =>
                             cn(
-                              "mb-1 flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition",
+                              "mb-1 flex items-start justify-between gap-2 rounded-md border px-3 py-2 transition",
                               isActive
-                                ? "bg-white/8 text-white"
-                                : "text-[#d0d0d0] hover:bg-white/6 hover:text-white"
+                                ? "border-white/10 bg-white/10 text-[#f0f0f0]"
+                                : "border-transparent text-[#aaa] hover:border-white/8 hover:bg-white/6"
                             )
                           }
                         >
                           {({ isActive }) => (
                             <>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[13px] font-medium leading-5">
-                                  {session.title || "Untitled session"}
+                                <p className="truncate text-[12.5px] leading-5">
+                                  {session.title || "Untitled thread"}
                                 </p>
                                 <p
                                   className={cn(
                                     "truncate text-[11px] leading-4",
-                                    isActive ? "text-[#c0c0c0]" : "text-[#808080]"
+                                    isActive ? "text-[#888]" : "text-[#666]"
                                   )}
                                 >
-                                  {formatSessionStatus(session.status)}
+                                  {formatSessionStatus(session.status).toLowerCase()}
                                 </p>
                               </div>
 
-                              <div className="flex shrink-0 items-center gap-2 text-[12px]">
-                                <Cloud
-                                  className={cn(
-                                    "size-3.5",
-                                    session.attentionRequired
-                                      ? "text-amber-300"
-                                      : isActive
-                                        ? "text-[#d8d8d8]"
-                                        : "text-[#777]"
-                                  )}
-                                />
-                                <span className={isActive ? "text-[#d2d2d2]" : "text-[#8a8a8a]"}>
-                                  {formatRelativeTime(updatedAt)}
-                                </span>
-                              </div>
+                              <span
+                                className={cn(
+                                  "mt-0.5 shrink-0 text-[11px]",
+                                  isActive ? "text-[#777]" : "text-[#555]"
+                                )}
+                              >
+                                {formatRelativeTime(updatedAt)}
+                              </span>
                             </>
                           )}
                         </NavLink>
                       )
                     })}
                   </div>
-                ) : (
-                  <div className="ml-4 border-l border-white/8 px-3 py-2 text-[12px] text-[#6f6f6f]">
-                    暂无线程
-                  </div>
-                )}
+                ) : null}
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="border-t border-white/6 px-3 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            to="/settings"
-            className="inline-flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] text-[#9a9a9a] transition hover:bg-white/6 hover:text-white"
-          >
-            <Settings className="size-4" />
-            设置
-          </Link>
-
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/5 px-3 py-1.5 text-[11px] text-[#8c8c8c]">
-            <Sparkles className="size-3.5 text-[#bcbcbc]" />
-            {hostStatus ? `${hostStatus.projectCount} 项目` : "本地工作区"}
-          </div>
-        </div>
+      <div className="border-t border-white/6 px-3 py-3.5">
+        <Link
+          to="/settings"
+          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-[#888] transition hover:bg-white/7 hover:text-[#bbb]"
+        >
+          <Settings className="size-[15px]" />
+          <span>Settings</span>
+        </Link>
       </div>
     </div>
   )
@@ -250,28 +318,57 @@ export function SessionRail() {
 function RailAction({
   icon: Icon,
   label,
+  onClick,
   to,
 }: {
   icon: typeof Search
   label: string
+  onClick?: () => void
   to?: string
 }) {
   const classes =
-    "flex w-full items-center gap-3 rounded-md px-2.5 py-2.5 text-[15px] text-[#d0d0d0] transition hover:bg-white/6 hover:text-white"
+    "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2.5 text-[13.5px] text-[#c8c8c8] transition hover:bg-white/7"
 
   if (to) {
     return (
-      <NavLink to={to} end className={({ isActive }) => cn(classes, isActive && "bg-white/6 text-white")}>
-        <Icon className="size-4 text-[#8a8a8a]" />
+      <Link to={to} className={classes}>
+        <Icon className="size-[15px] text-[#888]" />
         <span>{label}</span>
-      </NavLink>
+      </Link>
     )
   }
 
   return (
-    <button type="button" className={classes}>
-      <Icon className="size-4 text-[#8a8a8a]" />
+    <button type="button" className={classes} onClick={onClick}>
+      <Icon className="size-[15px] text-[#888]" />
       <span>{label}</span>
+    </button>
+  )
+}
+
+function ThreadHeaderButton({
+  children,
+  title,
+  to,
+}: {
+  children: ReactNode
+  title: string
+  to?: string
+}) {
+  const className =
+    "flex size-6 items-center justify-center rounded-md text-[#555] transition hover:bg-white/7 hover:text-[#888]"
+
+  if (to) {
+    return (
+      <Link to={to} className={className} title={title}>
+        {children}
+      </Link>
+    )
+  }
+
+  return (
+    <button type="button" className={className} title={title}>
+      {children}
     </button>
   )
 }

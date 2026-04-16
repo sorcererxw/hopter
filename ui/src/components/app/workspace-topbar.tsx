@@ -25,17 +25,17 @@ export function WorkspaceTopbar({
   title,
 }: WorkspaceTopbarProps) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-white/7 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 border-b border-white/7 bg-[#0f0f0f] px-4 py-3">
       <div className="flex min-w-0 items-center gap-2.5">
-        <h1 className="truncate text-[15px] font-semibold text-[#efefef]">{title}</h1>
+        <h1 className="truncate text-[13.5px] font-medium text-[#c8c8c8]">{title}</h1>
         {tag ? (
-          <span className="workspace-chip hidden max-w-44 truncate rounded-full px-3 py-1 text-[12px] text-[#8f8f8f] sm:inline-flex">
+          <span className="workspace-chip hidden max-w-44 truncate rounded-md px-2.5 py-1 text-[12px] text-[#888] sm:inline-flex">
             {tag}
           </span>
         ) : null}
         <button
           type="button"
-          className="hidden rounded-md p-1 text-[#676767] transition hover:bg-white/6 hover:text-[#bfbfbf] sm:inline-flex"
+          className="hidden rounded-md p-1 text-[#555] transition hover:bg-white/7 hover:text-[#888] sm:inline-flex"
         >
           <MoreHorizontal className="size-4" />
         </button>
@@ -43,27 +43,27 @@ export function WorkspaceTopbar({
 
       <div className="flex items-center gap-1.5">
         <TopbarIconButton label="Run">
-          <Play className="size-4" />
+          <Play className="size-[13px]" />
         </TopbarIconButton>
 
         <button
           type="button"
           onClick={onOpenProject}
-          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/3 px-3 py-2 text-[13px] text-[#d4d4d4] transition hover:bg-white/8"
+          className="inline-flex items-center gap-2 rounded-md border border-white/8 bg-white/6 px-3 py-1.5 text-[12px] text-[#888] transition hover:bg-white/10 hover:text-[#d6d6d6]"
         >
-          <FolderOpen className="size-4 text-[#9f9f9f]" />
-          <span>打开</span>
+          <FolderOpen className="size-[13px] text-[#666]" />
+          <span>Open</span>
         </button>
 
         {showReview ? (
           <button
             type="button"
             onClick={onOpenReview}
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/3 px-3 py-2 text-[13px] text-[#d4d4d4] transition hover:bg-white/8"
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/8 bg-white/6 px-3 py-1.5 text-[12px] text-[#888] transition hover:bg-white/10 hover:text-[#d6d6d6]"
           >
-            <Rocket className="size-4 text-[#9f9f9f]" />
-            <span>提交</span>
-            <ChevronDown className="size-3.5 text-[#7f7f7f]" />
+            <Rocket className="size-[12px] text-[#666]" />
+            <span>Commit</span>
+            <ChevronDown className="size-[11px] text-[#666]" />
           </button>
         ) : null}
 
@@ -72,13 +72,13 @@ export function WorkspaceTopbar({
             type="button"
             onClick={onToggleInspector}
             className={cn(
-              "inline-flex size-10 items-center justify-center rounded-2xl border border-white/10 transition",
+              "inline-flex size-8 items-center justify-center rounded-md border border-white/8 transition",
               inspectorOpen
-                ? "bg-white/10 text-[#ececec]"
-                : "bg-transparent text-[#7b7b7b] hover:bg-white/6 hover:text-[#d4d4d4]"
+                ? "bg-white/10 text-[#e0e0e0]"
+                : "bg-transparent text-[#666] hover:bg-white/7 hover:text-[#aaa]"
             )}
           >
-            <PanelRight className="size-4" />
+            <PanelRight className="size-[13px]" />
           </button>
         ) : null}
       </div>
@@ -97,7 +97,7 @@ function TopbarIconButton({
     <button
       type="button"
       aria-label={label}
-      className="inline-flex size-10 items-center justify-center rounded-2xl text-[#6d6d6d] transition hover:bg-white/6 hover:text-[#d4d4d4]"
+      className="inline-flex size-8 items-center justify-center rounded-md text-[#666] transition hover:bg-white/7 hover:text-[#aaa]"
     >
       {children}
     </button>

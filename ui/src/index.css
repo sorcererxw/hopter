@@ -1,16 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/700.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
   --font-heading: var(--font-sans);
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   --color-background: var(--background);
@@ -107,6 +104,7 @@
   body,
   #root {
     height: 100%;
+    overflow: hidden;
   }
 
   html {
@@ -136,18 +134,22 @@
     background: rgba(255, 255, 255, 0.12);
     color: inherit;
   }
+
+  textarea::placeholder {
+    color: #3d3d3d;
+  }
 }
 
 @layer utilities {
   .surface-panel {
     background: #171717;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 
   .workspace-chip {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.07);
   }
 
   .thin-scrollbar {
@@ -157,8 +159,8 @@
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {

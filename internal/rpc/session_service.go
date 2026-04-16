@@ -21,31 +21,37 @@ func NewSessionService(workspace core.WorkspaceService, codexManager *codex.Mana
 }
 
 func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[orchdv1.ListSessionsRequest]) (*connect.Response[orchdv1.ListSessionsResponse], error) {
-	sessions := s.workspace.ListSessions(core.ListSessionsInput{
-		ProjectID: req.Msg.GetProjectId(),
-		Limit:     req.Msg.GetLimit(),
-	})
-	response := &orchdv1.ListSessionsResponse{
-		Sessions: make([]*orchdv1.SessionListItem, 0, len(sessions)),
-	}
-	for _, session := range sessions {
-		project, ok := s.workspace.GetProject(session.ProjectID)
-		if !ok {
-			continue
+	resolvedSessions, err := s.codex.ListSessions(req.Msg.GetProjectId(), req.Msg.GetLimit())
+	if err != nil {
+		sessions := s.workspace.ListSessions(core.ListSessionsInput{
+			ProjectID: req.Msg.GetProjectId(),
+			Limit:     req.Msg.GetLimit(),
+		})
+		resolvedSessions = make([]codex.ResolvedSession, 0, len(sessions))
+		for _, session := range sessions {
+			project, ok := s.workspace.GetProject(session.ProjectID)
+			if !ok {
+				continue
+			}
+			resolvedSessions = append(resolvedSessions, codex.ResolvedSession{
+				Project: project,
+				Session: session,
+			})
 		}
-		response.Sessions = append(response.Sessions, sessionListItemToProto(project, session))
+	}
+	response := &orchdv1.ListSessionsResponse{
+		Sessions: make([]*orchdv1.SessionListItem, 0, len(resolvedSessions)),
+	}
+	for _, resolved := range resolvedSessions {
+		response.Sessions = append(response.Sessions, sessionListItemToProto(resolved.Project, resolved.Session))
 	}
 	return connect.NewResponse(response), nil
 }
 
 func (s *SessionService) GetSession(_ context.Context, req *connect.Request[orchdv1.GetSessionRequest]) (*connect.Response[orchdv1.GetSessionResponse], error) {
-	session, ok := s.workspace.GetSession(req.Msg.GetSessionId())
-	if !ok {
+	session, project, err := s.codex.GetSession(req.Msg.GetSessionId())
+	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
-	}
-	project, ok := s.workspace.GetProject(session.ProjectID)
-	if !ok {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project %q not found for session", session.ProjectID))
 	}
 	return connect.NewResponse(&orchdv1.GetSessionResponse{
 		Session: sessionToProto(project, session),
