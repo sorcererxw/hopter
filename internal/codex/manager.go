@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	codexsdk "orchd/internal/codex/sdk"
 	"orchd/internal/core"
 )
 
@@ -19,6 +20,7 @@ type Manager struct {
 	workspace core.WorkspaceService
 	live      map[string]*liveSession
 	start     clientStarter
+	execTurns turnExecutor
 }
 
 type liveSession struct {
@@ -50,6 +52,55 @@ type clientStarter func(
 	onExit func(),
 ) (codexClient, error)
 
+type turnExecutor interface {
+	Run(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error)
+}
+
+type sdkTurnExecutor struct{}
+
+func (sdkTurnExecutor) Run(
+	ctx context.Context,
+	project core.Project,
+	threadID string,
+	input string,
+	onEvent func(codexsdk.Event),
+) (string, error) {
+	client, err := codexsdk.New(codexsdk.ClientOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	threadOptions := codexsdk.ThreadOptions{
+		WorkingDirectory: project.RootPath,
+		SandboxMode:      codexsdk.SandboxModeDangerFullAccess,
+		ApprovalPolicy:   codexsdk.ApprovalPolicyNever,
+	}
+
+	var thread *codexsdk.Thread
+	if strings.TrimSpace(threadID) == "" {
+		thread = client.StartThread(threadOptions)
+	} else {
+		thread = client.ResumeThread(threadID, threadOptions)
+	}
+
+	stream, err := thread.RunStreamed(ctx, codexsdk.TextInput(input), codexsdk.RunOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for event := range stream.Events {
+		if onEvent != nil {
+			onEvent(event)
+		}
+	}
+	for err := range stream.Err {
+		if err != nil {
+			return thread.ID(), err
+		}
+	}
+	return thread.ID(), nil
+}
+
 type ResolvedSession struct {
 	Project core.Project
 	Session core.Session
@@ -59,6 +110,7 @@ func NewManager(workspace core.WorkspaceService) *Manager {
 	return &Manager{
 		workspace: workspace,
 		live:      make(map[string]*liveSession),
+		execTurns: sdkTurnExecutor{},
 		start: func(
 			ctx context.Context,
 			cwd string,
@@ -154,12 +206,7 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 		if !ok {
 			return core.Session{}, fmt.Errorf("project %q not found", session.ProjectID)
 		}
-		if strings.TrimSpace(session.BackendThreadID) != "" {
-			if _, err := m.ensureLiveSession(sessionID, project, session.BackendThreadID); err != nil {
-				return updated, err
-			}
-		}
-		go m.dispatchInput(sessionID, input)
+		go m.dispatchInput(project, sessionID, session.BackendThreadID, input)
 		return updated, nil
 	}
 
@@ -167,155 +214,111 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	if err != nil {
 		return core.Session{}, err
 	}
-	live, err := m.ensureLiveSession(sessionID, project, session.BackendThreadID)
-	if err != nil {
-		return core.Session{}, err
-	}
-
-	var (
-		turn   *StartTurnResult
-		runErr error
-	)
-	if strings.TrimSpace(live.active) != "" {
-		turn, runErr = live.client.SteerTurn(live.thread, live.active, input)
-	} else {
-		turn, runErr = live.client.StartTurn(live.thread, input)
-	}
-	if runErr != nil {
-		return core.Session{}, fmt.Errorf("dispatch session input: %w", runErr)
-	}
-
-	m.mu.Lock()
-	if current := m.live[sessionID]; current != nil {
-		current.active = turn.Turn.ID
-		current.optimisticSummary = "Codex is processing the latest input…"
-		current.optimisticLastInput = truncate(strings.TrimSpace(input), 120)
-		current.optimisticStatus = core.SessionStateRunning
-		current.optimisticUpdatedAt = time.Now().UTC()
-	}
-	m.mu.Unlock()
-
-	go m.watchTurn(sessionID, live.thread, turn.Turn.ID)
-
+	summary := "Codex is processing the latest input…"
+	running := core.SessionStateRunning
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		Status:  &running,
+		Summary: &summary,
+	})
 	session.LastInputHint = truncate(strings.TrimSpace(input), 120)
-	session.ActiveTurnID = turn.Turn.ID
 	session.Status = core.SessionStateRunning
-	session.Summary = "Codex is processing the latest input…"
+	session.Summary = summary
 	session.UpdatedAt = time.Now().UTC()
+	go m.dispatchInput(project, sessionID, session.BackendThreadID, input)
 	return session, nil
 }
 
 func (m *Manager) runSession(project core.Project, sessionID, prompt string) {
-	client, err := Start(context.Background(), project.RootPath, func(n Notification) {
-		m.handleNotification(sessionID, n)
-	}, func() {
-		summary := "Codex runtime exited unexpectedly."
-		degraded := true
-		active := ""
-		_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
-			Status:            ptrSessionState(core.SessionStateDegraded),
-			Summary:           &summary,
-			AttentionReason:   &summary,
-			AttentionRequired: &degraded,
-			ActiveTurnID:      &active,
-		})
-		m.mu.Lock()
-		delete(m.live, sessionID)
-		m.mu.Unlock()
-	})
-	if err != nil {
-		m.failSession(sessionID, fmt.Errorf("start codex app-server: %w", err))
-		return
-	}
-
-	threadResult, err := client.StartThread(project.RootPath)
-	if err != nil {
-		_ = client.Close()
-		m.failSession(sessionID, fmt.Errorf("start codex thread: %w", err))
-		return
-	}
-
-	threadID := threadResult.Thread.ID
-	active := ""
-	running := core.SessionStateRunning
 	summary := "Codex thread started. Running the first turn…"
+	running := core.SessionStateRunning
 	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
-		BackendThreadID: &threadID,
-		ActiveTurnID:    &active,
-		Status:          &running,
-		Summary:         &summary,
+		Status:  &running,
+		Summary: &summary,
 	})
-
-	m.mu.Lock()
-	m.live[sessionID] = &liveSession{
-		project: project,
-		client:  client,
-		thread:  threadID,
-	}
-	m.mu.Unlock()
-
-	turnResult, err := client.StartTurn(threadID, prompt)
-	if err != nil {
-		_ = client.Close()
-		m.failSession(sessionID, fmt.Errorf("start codex turn: %w", err))
-		return
-	}
-
-	active = turnResult.Turn.ID
-	summary = "Codex is working…"
-	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
-		ActiveTurnID: &active,
-		Status:       &running,
-		Summary:      &summary,
-	})
-
-	m.mu.Lock()
-	if live := m.live[sessionID]; live != nil {
-		live.active = active
-	}
-	m.mu.Unlock()
-
-	go m.watchTurn(sessionID, threadID, active)
+	m.executeTurn(project, sessionID, "", prompt, "Codex is working…")
 }
 
-func (m *Manager) dispatchInput(sessionID, input string) {
-	m.mu.Lock()
-	live := m.live[sessionID]
-	m.mu.Unlock()
-	if live == nil {
-		return
-	}
+func (m *Manager) dispatchInput(project core.Project, sessionID, threadID, input string) {
+	m.executeTurn(project, sessionID, threadID, input, "Codex is processing the latest input…")
+}
 
-	var (
-		turn *StartTurnResult
-		err  error
-	)
-	if strings.TrimSpace(live.active) != "" {
-		turn, err = live.client.SteerTurn(live.thread, live.active, input)
-	} else {
-		turn, err = live.client.StartTurn(live.thread, input)
-	}
+func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string) {
+	resolvedThreadID, err := m.execTurns.Run(context.Background(), project, threadID, input, func(event codexsdk.Event) {
+		m.handleSDKEvent(sessionID, event)
+	})
 	if err != nil {
-		m.failSession(sessionID, fmt.Errorf("dispatch session input: %w", err))
+		m.failSession(sessionID, fmt.Errorf("execute codex turn: %w", err))
 		return
 	}
+	if strings.TrimSpace(threadID) == "" && strings.TrimSpace(resolvedThreadID) != "" {
+		m.updateWorkspaceSession(sessionID, core.SessionPatch{
+			BackendThreadID: &resolvedThreadID,
+		})
+	}
 
-	active := turn.Turn.ID
-	running := core.SessionStateRunning
-	summary := "Codex is processing the latest input…"
-	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
+	status := core.SessionStateCompleted
+	summary := latestLocalSummary(m.workspace, sessionID)
+	if strings.TrimSpace(summary) == "" {
+		summary = "Codex completed the turn."
+	}
+	active := ""
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
 		ActiveTurnID: &active,
-		Status:       &running,
+		Status:       &status,
 		Summary:      &summary,
 	})
 
 	m.mu.Lock()
 	if current := m.live[sessionID]; current != nil {
-		current.active = active
+		current.active = ""
+		current.optimisticSummary = ""
+		current.optimisticStatus = ""
 	}
 	m.mu.Unlock()
+	_ = runningSummary
+}
 
-	go m.watchTurn(sessionID, live.thread, active)
+func (m *Manager) handleSDKEvent(sessionID string, event codexsdk.Event) {
+	switch typed := event.(type) {
+	case *codexsdk.ThreadStartedEvent:
+		threadID := typed.ThreadID
+		running := core.SessionStateRunning
+		summary := "Codex is working…"
+		m.updateWorkspaceSession(sessionID, core.SessionPatch{
+			BackendThreadID: &threadID,
+			Status:          &running,
+			Summary:         &summary,
+		})
+	case *codexsdk.ItemCompletedEvent:
+		switch item := typed.Item.(type) {
+		case *codexsdk.AgentMessageItem:
+			text := strings.TrimSpace(item.Text)
+			if text != "" {
+				m.updateWorkspaceSession(sessionID, core.SessionPatch{
+					Summary: &text,
+				})
+			}
+		case *codexsdk.ErrorItem:
+			if strings.TrimSpace(item.Message) != "" {
+				message := strings.TrimSpace(item.Message)
+				m.updateWorkspaceSession(sessionID, core.SessionPatch{
+					Summary: &message,
+				})
+			}
+		}
+	case *codexsdk.TurnFailedEvent:
+		m.failSession(sessionID, fmt.Errorf("%w: %s", codexsdk.ErrTurnFailed, typed.Error.Message))
+	case *codexsdk.StreamErrorEvent:
+		m.failSession(sessionID, fmt.Errorf("%w: %s", codexsdk.ErrStreamFailed, typed.Message))
+	}
+}
+
+func latestLocalSummary(workspace core.WorkspaceService, sessionID string) string {
+	session, ok := workspace.GetSession(sessionID)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(session.Summary)
 }
 
 func (m *Manager) handleNotification(sessionID string, notification Notification) {
