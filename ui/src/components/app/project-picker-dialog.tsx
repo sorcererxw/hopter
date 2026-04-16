@@ -110,34 +110,34 @@ function makeFavorites(roots: DirectoryRoot[]) {
   }
 
   return [
-    { icon: <Home className="size-[13px] text-sky-400" />, label: "Home", path: homeRoot.path },
+    { icon: <Home className="size-3.5 text-sky-400" />, label: "Home", path: homeRoot.path },
     {
-      icon: <Monitor className="size-[13px] text-sky-400" />,
+      icon: <Monitor className="size-3.5 text-sky-400" />,
       label: "Desktop",
       path: joinPath(homeRoot.path, "Desktop"),
     },
     {
-      icon: <FileText className="size-[13px] text-sky-400" />,
+      icon: <FileText className="size-3.5 text-sky-400" />,
       label: "Documents",
       path: joinPath(homeRoot.path, "Documents"),
     },
     {
-      icon: <Download className="size-[13px] text-sky-400" />,
+      icon: <Download className="size-3.5 text-sky-400" />,
       label: "Downloads",
       path: joinPath(homeRoot.path, "Downloads"),
     },
     {
-      icon: <Image className="size-[13px] text-sky-400" />,
+      icon: <Image className="size-3.5 text-sky-400" />,
       label: "Pictures",
       path: joinPath(homeRoot.path, "Pictures"),
     },
     {
-      icon: <Music className="size-[13px] text-sky-400" />,
+      icon: <Music className="size-3.5 text-sky-400" />,
       label: "Music",
       path: joinPath(homeRoot.path, "Music"),
     },
     {
-      icon: <Film className="size-[13px] text-sky-400" />,
+      icon: <Film className="size-3.5 text-sky-400" />,
       label: "Movies",
       path: joinPath(homeRoot.path, "Movies"),
     },
@@ -151,14 +151,14 @@ function makeLocations(roots: DirectoryRoot[]) {
   return [
     systemRoot
       ? {
-          icon: <HardDrive className="size-[13px] text-zinc-400" />,
+          icon: <HardDrive className="size-3.5 text-zinc-400" />,
           label: "Macintosh HD",
           path: systemRoot.path,
         }
       : null,
     homeRoot
       ? {
-          icon: <Cloud className="size-[13px] text-zinc-400" />,
+          icon: <Cloud className="size-3.5 text-zinc-400" />,
           label: "iCloud Drive",
           path: joinPath(homeRoot.path, "Documents"),
         }
@@ -322,22 +322,22 @@ export function ProjectPickerDialog() {
         className="h-[min(960px,calc(100vh-48px))] !w-[min(1412px,calc(100vw-72px))] !max-w-[calc(100vw-72px)] gap-0 overflow-hidden rounded-[18px] border-0 bg-popover p-0 text-zinc-100 shadow-[0_32px_80px_rgba(0,0,0,0.8)] ring-0 sm:!max-w-[calc(100vw-72px)]"
       >
         <div className="flex h-full min-h-0 flex-col bg-popover">
-          <div className="flex h-[52px] items-center gap-2 border-b border-border bg-card px-3">
+          <div className="flex h-13 items-center gap-2 border-b border-border bg-card px-3">
             <button
               type="button"
               onClick={navigateBack}
-              className="flex size-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+              className="flex size-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-secondary hover:text-zinc-200"
               title="Close"
             >
-              <X className="size-[14px]" />
+              <X className="size-3.5" />
             </button>
 
             <div className="flex items-center gap-0.5">
               <ToolbarButton disabled={historyIndex <= 0} onClick={goBack}>
-                <ChevronLeft className="size-[14px]" />
+                <ChevronLeft className="size-3.5" />
               </ToolbarButton>
               <ToolbarButton disabled={historyIndex >= history.length - 1} onClick={goForward}>
-                <ChevronRight className="size-[14px]" />
+                <ChevronRight className="size-3.5" />
               </ToolbarButton>
             </div>
 
@@ -348,7 +348,7 @@ export function ProjectPickerDialog() {
                     type="button"
                     onClick={() => openDirectory(crumb.path)}
                     className={cn(
-                      "max-w-[120px] truncate rounded px-1 py-0.5 text-xs transition hover:bg-accent",
+                      "max-w-30 truncate rounded px-1 py-0.5 text-xs transition hover:bg-accent",
                       index === breadcrumbs.length - 1
                         ? "font-semibold text-zinc-100"
                         : "text-zinc-400"
@@ -357,7 +357,7 @@ export function ProjectPickerDialog() {
                     {crumb.label}
                   </button>
                   {index < breadcrumbs.length - 1 ? (
-                    <ChevronRight className="size-[11px] shrink-0 text-zinc-500" />
+                    <ChevronRight className="size-3 shrink-0 text-zinc-500" />
                   ) : null}
                 </div>
               ))}
@@ -365,15 +365,15 @@ export function ProjectPickerDialog() {
 
             <div className="mr-1 flex items-center gap-0.5">
               <ToolbarButton active={viewMode === "list"} onClick={() => setViewMode("list")}>
-                <List className="size-[13px]" />
+                <List className="size-3.5" />
               </ToolbarButton>
               <ToolbarButton active={viewMode === "grid"} onClick={() => setViewMode("grid")}>
-                <Grid2x2 className="size-[13px]" />
+                <Grid2x2 className="size-3.5" />
               </ToolbarButton>
             </div>
 
-            <div className="flex w-[272px] items-center gap-2 rounded-xl bg-accent px-4 py-2.5">
-              <Search className="size-[14px] shrink-0 text-zinc-500" />
+            <div className="flex w-68 items-center gap-2 rounded-xl bg-accent px-4 py-2.5">
+              <Search className="size-3.5 shrink-0 text-zinc-500" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -383,12 +383,12 @@ export function ProjectPickerDialog() {
             </div>
 
             <ToolbarButton onClick={() => void handleRefresh()} title="Refresh">
-              <RefreshCcw className="size-[13px]" />
+              <RefreshCcw className="size-3.5" />
             </ToolbarButton>
           </div>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
-            <div className="flex w-[320px] shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar py-6">
+            <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar py-6">
               <SidebarSection label="Favorites">
                 {favorites.map((item) => (
                   <SidebarItem
@@ -414,7 +414,7 @@ export function ProjectPickerDialog() {
               </SidebarSection>
             </div>
 
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-ws-elevated">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-popover">
               {listingQuery.isLoading ? (
                 <div className="space-y-2 px-4 py-4">
                   <Skeleton className="h-10 w-full bg-accent" />
@@ -445,7 +445,7 @@ export function ProjectPickerDialog() {
             </div>
           ) : null}
 
-          <div className="flex h-[52px] items-center justify-between border-t border-border bg-card px-5">
+          <div className="flex h-13 items-center justify-between border-t border-border bg-card px-5">
             <div className="min-w-0 flex-1 overflow-hidden text-xs text-zinc-500">
               <span className="truncate">{footerText}</span>
             </div>
@@ -454,7 +454,7 @@ export function ProjectPickerDialog() {
               <button
                 type="button"
                 onClick={navigateBack}
-                className="rounded-md bg-white/10 px-4 py-1.5 text-[13px] text-zinc-100 transition hover:bg-white/15"
+                className="rounded-md bg-secondary px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-accent"
               >
                 Cancel
               </button>
@@ -462,7 +462,7 @@ export function ProjectPickerDialog() {
                 type="button"
                 onClick={() => void handleOpen()}
                 className={cn(
-                  "rounded-md px-4 py-1.5 text-[13px] font-medium text-white transition",
+                  "rounded-md px-4 py-1.5 text-sm font-medium text-white transition",
                   createProject.isPending
                     ? "cursor-wait bg-picker/70"
                     : "bg-picker hover:bg-picker-hover"
@@ -488,7 +488,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-[0.04em] text-zinc-400">
+      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-wider text-zinc-400">
         {label}
       </div>
       {children}
@@ -512,7 +512,7 @@ function SidebarItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-4 px-6 py-3 text-left text-[22px] transition",
+        "flex w-full items-center gap-4 px-6 py-3 text-left text-2xl transition",
         active ? "bg-picker/25 text-zinc-100" : "text-zinc-400 hover:bg-secondary hover:text-zinc-200"
       )}
       style={{ borderRadius: 0 }}
@@ -549,7 +549,7 @@ function ToolbarButton({
         disabled
           ? "cursor-not-allowed opacity-30"
           : active
-            ? "bg-white/15 text-zinc-100"
+            ? "bg-accent text-zinc-100"
             : "hover:bg-accent hover:text-zinc-100"
       )}
     >
@@ -574,7 +574,7 @@ function ListView({
   }
 
   return (
-    <table className="w-full border-collapse text-[13px]">
+    <table className="w-full border-collapse text-sm">
       <colgroup>
         <col className="w-[52%]" />
         <col className="w-[30%]" />
@@ -582,13 +582,13 @@ function ListView({
       </colgroup>
       <thead>
         <tr className="border-b border-border">
-          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
             Name
           </th>
-          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
             Date Modified
           </th>
-          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
             Size
           </th>
         </tr>
@@ -603,13 +603,13 @@ function ListView({
               key={entry.path}
               onClick={() => onSelect(entry)}
               onDoubleClick={() => onDoubleOpen(entry)}
-              className={cn("cursor-pointer transition", selected ? "bg-picker" : "hover:bg-white/5")}
+              className={cn("cursor-pointer transition", selected ? "bg-picker" : "hover:bg-muted")}
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                   <Icon
                     className={cn(
-                      "size-[22px] shrink-0",
+                      "size-5.5 shrink-0",
                       selected ? "text-white" : entry.isDirectory ? "text-sky-400" : "text-zinc-400"
                     )}
                   />
@@ -661,7 +661,7 @@ function GridView({
             onDoubleClick={() => onDoubleOpen(entry)}
             className={cn(
               "flex flex-col items-center gap-2 px-3 pb-3 pt-3 text-center transition",
-              selected ? "rounded-lg bg-picker text-white" : "text-zinc-100 hover:rounded-lg hover:bg-white/5"
+              selected ? "rounded-lg bg-picker text-white" : "text-zinc-100 hover:rounded-lg hover:bg-muted"
             )}
             style={{ width: "104px" }}
           >
@@ -681,7 +681,7 @@ function GridView({
 
 function EmptyState() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-[13px] text-zinc-500">
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-sm text-zinc-500">
       <Folder className="size-8 opacity-30" />
       <span>No results</span>
     </div>

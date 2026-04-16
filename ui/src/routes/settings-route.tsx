@@ -41,11 +41,11 @@ export function SettingsRoute() {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <div className="flex w-[220px] shrink-0 flex-col border-r border-border bg-sidebar py-4">
+      <div className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar py-4">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-3 flex items-center gap-2 px-4 py-2 text-[13px] text-muted-foreground transition hover:text-foreground"
+          className="mb-3 flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
           <span>Back to app</span>
@@ -60,12 +60,12 @@ export function SettingsRoute() {
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition",
                 activeSection === id
-                  ? "bg-white/10 text-foreground"
+                  ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
-              <Icon className={cn("size-3.5", activeSection === id ? "text-muted-foreground" : "text-ws-text-muted")} />
-              <span className="text-[13px]">{label}</span>
+              <Icon className={cn("size-3.5", activeSection === id ? "text-muted-foreground" : "text-muted-foreground")} />
+              <span className="text-sm">{label}</span>
             </button>
           ))}
         </div>
@@ -173,7 +173,7 @@ export function SettingsRoute() {
         {!["general", "appearance", "usage", "mcp"].includes(activeSection) ? (
           <div className="max-w-2xl">
             <SectionTitle>{NAV_ITEMS.find((item) => item.id === activeSection)?.label}</SectionTitle>
-            <div className="rounded-lg border border-border bg-white/5 px-5 py-4 text-[13px] leading-7 text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted px-5 py-4 text-sm leading-7 text-muted-foreground">
               This section has been visually rebuilt, but the active product loop is still the
               workspace shell, project picker, and session continuation flow.
             </div>
@@ -185,12 +185,12 @@ export function SettingsRoute() {
 }
 
 function SectionTitle({ children }: { children: ReactNode }) {
-  return <h1 className="mb-8 text-[22px] text-foreground">{children}</h1>
+  return <h1 className="mb-8 text-2xl text-foreground">{children}</h1>
 }
 
 function SelectField({ value }: { value: string }) {
   return (
-    <div className="flex min-w-40 items-center gap-2 rounded-lg border border-border bg-ws-hover px-3 py-2 text-[13px] text-muted-foreground">
+    <div className="flex min-w-40 items-center gap-2 rounded-lg border border-border bg-accent px-3 py-2 text-sm text-muted-foreground">
       <span className="flex-1">{value}</span>
       <span className="text-muted-foreground">▾</span>
     </div>
@@ -201,13 +201,13 @@ function ToggleSwitch({ enabled = false }: { enabled?: boolean }) {
   return (
     <div
       className={cn(
-        "flex h-[22px] w-10 items-center rounded-full p-0.5 transition",
-        enabled ? "bg-sky-500" : "bg-white/10"
+        "flex h-5.5 w-10 items-center rounded-full p-0.5 transition",
+        enabled ? "bg-sky-500" : "bg-secondary"
       )}
     >
       <div
         className={cn(
-          "size-[18px] rounded-full bg-white transition",
+          "size-4.5 rounded-full bg-white transition",
           enabled ? "translate-x-[18px]" : "translate-x-0"
         )}
       />
@@ -217,7 +217,7 @@ function ToggleSwitch({ enabled = false }: { enabled?: boolean }) {
 
 function StatBadge({ value }: { value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-ws-hover px-3 py-2 text-[13px] text-foreground">
+    <div className="rounded-lg border border-border bg-accent px-3 py-2 text-sm text-foreground">
       {value}
     </div>
   )
@@ -236,7 +236,7 @@ function SettingRow({
     <div className="flex items-start justify-between gap-8 border-b border-border py-5 last:border-b-0">
       <div className="flex-1 pr-8">
         <div className="mb-1 text-sm text-foreground">{label}</div>
-        <div className="text-[12.5px] leading-6 text-muted-foreground">{description}</div>
+        <div className="text-xs leading-6 text-muted-foreground">{description}</div>
       </div>
       <div className="shrink-0">{control}</div>
     </div>

@@ -48,7 +48,7 @@ const HOME_SUGGESTIONS: Array<{
   {
     icon: Sparkles,
     text: "Build a classic Snake game in this repo.",
-    tone: "text-ws-text-sub",
+    tone: "text-muted-foreground",
   },
   {
     icon: FileText,
@@ -76,7 +76,7 @@ export function HomeWorkspacePane() {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-ws-page">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
         title="New Thread"
         tag={selectedProject?.name}
@@ -86,15 +86,15 @@ export function HomeWorkspacePane() {
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="workspace-scrollbar flex-1 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col items-center justify-center px-6 pt-6 pb-20">
-            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-ws-border-strong bg-ws-hover">
-              <Bot className="size-7 text-ws-text" />
+            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-ws-border-strong bg-accent">
+              <Bot className="size-7 text-foreground" />
             </div>
 
-            <h2 className="text-[22px] font-medium text-ws-text">
+            <h2 className="text-2xl font-medium text-foreground">
               Start building
             </h2>
 
-            <label className="relative mt-1 inline-flex items-center gap-1 text-sm text-ws-text-muted">
+            <label className="relative mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">
               <select
                 value={selectedProjectId}
                 onChange={(event) =>
@@ -111,7 +111,7 @@ export function HomeWorkspacePane() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-ws-text-muted" />
+              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
             </label>
 
             <div className="mt-8 grid w-full max-w-[700px] gap-3 md:grid-cols-3">
@@ -120,10 +120,10 @@ export function HomeWorkspacePane() {
                   key={text}
                   type="button"
                   onClick={() => setPrompt(text)}
-                  className="flex items-center gap-3 rounded-2xl border border-ws-tool-border bg-ws-tool p-4 text-left transition hover:bg-ws-hover md:flex-col md:items-start"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-muted p-4 text-left transition hover:bg-accent md:flex-col md:items-start"
                 >
                   <Icon className={`size-4 shrink-0 ${tone}`} />
-                  <span className="text-[12.5px] leading-[1.55] text-ws-text-sub">
+                  <span className="text-xs leading-[1.55] text-muted-foreground">
                     {text}
                   </span>
                 </button>
@@ -217,7 +217,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   }, [session, showPendingInputHint, transcriptItems])
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-ws-page">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
         title={session?.title || "Thread"}
         tag={session?.project?.name}
@@ -233,12 +233,12 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       />
 
       {sessionQuery.isLoading ? (
-        <div className="flex flex-1 items-center justify-center px-6 text-[13px] text-ws-text-muted">
+        <div className="flex flex-1 items-center justify-center px-6 text-sm text-muted-foreground">
           Loading thread...
         </div>
       ) : sessionQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
-          <div className="rounded-2xl border border-ws-border bg-ws-hover-soft px-6 py-4 text-xs text-ws-text-muted">
+          <div className="rounded-2xl border border-border bg-muted px-6 py-4 text-xs text-muted-foreground">
             This thread is temporarily unavailable.
           </div>
         </div>
@@ -254,7 +254,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                     <div className="mb-1 text-xs text-amber-100/80">
                       Attention
                     </div>
-                    <p className="text-[13px] leading-6 text-amber-50/85">
+                    <p className="text-sm leading-6 text-amber-50/85">
                       {session.attentionReason ||
                         "This session requires user input."}
                     </p>
@@ -344,9 +344,9 @@ function ArtifactPills({ session }: { session: Session }) {
         <button
           key={artifact.id}
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-ws-border bg-ws-hover px-3 py-1.5 text-xs text-ws-text-sub transition hover:bg-ws-active"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-accent"
         >
-          <FileText className="size-3.5 text-ws-text-muted" />
+          <FileText className="size-3.5 text-muted-foreground" />
           <span>{artifact.label}</span>
         </button>
       ))}
@@ -364,14 +364,14 @@ function ArtifactStrip({ session }: { session: Session }) {
       {session.artifacts.slice(0, 2).map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4"
+          className="rounded-2xl border border-border bg-card px-4 py-4"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-[13px] text-ws-text">
+              <div className="truncate text-sm text-foreground">
                 {artifact.label}
               </div>
-              <div className="mt-1 text-xs text-ws-text-muted">
+              <div className="mt-1 text-xs text-muted-foreground">
                 {formatArtifactKind(artifact.kind)}
               </div>
             </div>
@@ -380,7 +380,7 @@ function ArtifactStrip({ session }: { session: Session }) {
                 href={artifact.downloadUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 rounded-md border border-ws-border bg-ws-tag px-2.5 py-1 text-[11px] text-ws-text-sub transition hover:bg-ws-hover"
+                className="shrink-0 rounded-md border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-accent"
               >
                 Open
               </a>
@@ -428,7 +428,7 @@ function PendingInputEntry({ text }: { text: string }) {
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
-          className="space-y-2 rounded-2xl bg-ws-hover px-4 py-3 text-sm leading-7 text-ws-text"
+          className="space-y-2 rounded-2xl bg-accent px-4 py-3 text-sm leading-7 text-foreground"
         />
       </div>
     </div>
@@ -460,7 +460,7 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
       <div className="max-w-[85%]">
         <SessionRichText
           text={item.body}
-          className="space-y-2 rounded-2xl bg-ws-hover px-4 py-3 text-sm leading-7 text-ws-text"
+          className="space-y-2 rounded-2xl bg-accent px-4 py-3 text-sm leading-7 text-foreground"
         />
       </div>
     </div>
@@ -470,13 +470,13 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
 function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
     <div className="flex gap-3">
-      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-ws-hover">
-        <Bot className="size-3.5 text-ws-text-sub" />
+      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-accent">
+        <Bot className="size-3.5 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <SessionRichText
           text={item.body}
-          className="space-y-3 text-sm leading-7 text-ws-text"
+          className="space-y-3 text-sm leading-7 text-foreground"
         />
       </div>
     </div>
@@ -490,14 +490,14 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ws-hover-soft">
-        <Lightbulb className="size-3.5 text-ws-text-muted" />
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+        <Lightbulb className="size-3.5 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-xs text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-muted-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
@@ -512,7 +512,7 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
         {expanded ? (
           <SessionRichText
             text={item.body}
-            className="mt-2 space-y-2 text-[13px] leading-6 text-ws-text-sub"
+            className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground"
           />
         ) : null}
       </div>
@@ -526,14 +526,14 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ws-hover-soft">
-        <Wrench className="size-3.5 text-ws-text-muted" />
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+        <Wrench className="size-3.5 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-xs text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-muted-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
@@ -543,7 +543,7 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
           <span className="font-medium">{label}</span>
         </button>
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-ws-hover-soft p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-ws-text-sub">
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-muted-foreground">
             {item.body}
           </pre>
         ) : null}
@@ -558,14 +558,14 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ws-hover-soft">
-        <Terminal className="size-3.5 text-ws-text-muted" />
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+        <Terminal className="size-3.5 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-xs text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-muted-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
@@ -575,7 +575,7 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
           <span className="font-medium">{label}</span>
         </button>
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-ws-hover-soft p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-ws-text-sub">
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-muted-foreground">
             {item.body}
           </pre>
         ) : null}
@@ -590,14 +590,14 @@ function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-ws-hover-soft">
-        <FileCode className="size-3.5 text-ws-text-muted" />
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+        <FileCode className="size-3.5 text-muted-foreground" />
       </div>
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-xs text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition hover:text-muted-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
@@ -607,7 +607,7 @@ function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
           <span className="font-medium">{label}</span>
         </button>
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-ws-hover-soft p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-ws-text-sub">
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-muted-foreground">
             {item.body}
           </pre>
         ) : null}
@@ -622,11 +622,11 @@ function normalizeTranscriptText(value: string) {
 
 function TypingIndicator() {
   return (
-    <div className="flex items-center gap-2 pb-2 text-xs text-ws-text-muted">
+    <div className="flex items-center gap-2 pb-2 text-xs text-muted-foreground">
       <div className="flex items-center gap-1">
-        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted" />
-        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted [animation-delay:140ms]" />
-        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted [animation-delay:280ms]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-primary-muted" />
+        <span className="size-1.5 animate-pulse rounded-full bg-primary-muted [animation-delay:140ms]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-primary-muted [animation-delay:280ms]" />
       </div>
       <span>Thinking...</span>
     </div>

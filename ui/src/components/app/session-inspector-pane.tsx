@@ -108,8 +108,8 @@ export function SessionInspectorPane({
   const reviewLabel = "summary.md"
 
   return (
-    <aside className="hidden h-full w-[404px] shrink-0 border-l border-ws-border bg-ws-surface lg:flex lg:flex-col">
-      <div className="flex items-center gap-1 border-b border-ws-border bg-popover px-3 py-2">
+    <aside className="hidden h-full w-[404px] shrink-0 border-l border-border bg-card lg:flex lg:flex-col">
+      <div className="flex items-center gap-1 border-b border-border bg-popover px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           <InspectorTabButton active={activeTab === "summary"} onClick={() => onTabChange("summary")}>
             Summary
@@ -132,9 +132,9 @@ export function SessionInspectorPane({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-6 items-center justify-center rounded text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
+            className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
           >
-            <X className="size-[13px]" />
+            <X className="size-3.5" />
           </button>
         </div>
       </div>
@@ -142,17 +142,17 @@ export function SessionInspectorPane({
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
         {activeTab === "summary" ? (
           <div className="space-y-4 p-4">
-            <div className="rounded-2xl border border-ws-border bg-ws-surface">
-              <div className="border-b border-ws-border px-4 py-3 text-xs text-ws-text-muted">
+            <div className="rounded-2xl border border-border bg-card">
+              <div className="border-b border-border px-4 py-3 text-xs text-muted-foreground">
                 Current state
               </div>
               <SessionRichText
                 text={session.summary || "No summary yet."}
-                className="space-y-3 px-4 py-4 text-[13px] leading-7 text-ws-text"
+                className="space-y-3 px-4 py-4 text-sm leading-7 text-foreground"
               />
             </div>
 
-            <div className="rounded-2xl border border-ws-border bg-ws-surface">
+            <div className="rounded-2xl border border-border bg-card">
               <InfoRow label="Status" value={formatSessionStatus(session.status)} />
               <InfoRow label="Project" value={session.project?.name || "Unassigned"} />
               <InfoRow label="Updated" value={formatUpdatedAt(session.updatedAt)} />
@@ -193,12 +193,12 @@ function CodeModePane({ session }: { session: Session }) {
       {lines.map((line, index) => (
         <div
           key={`${line}-${index}`}
-          className="flex items-start px-0 transition hover:bg-ws-hover-soft"
+          className="flex items-start px-0 transition hover:bg-muted"
         >
-          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-5 text-ws-text-off">
+          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-5 text-muted-foreground">
             {index + 1}
           </div>
-          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-xs leading-5 text-ws-text">
+          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-xs leading-5 text-foreground">
             {tokenizeLine(line)}
           </pre>
         </div>
@@ -215,7 +215,7 @@ function DiffModePane({ session }: { session: Session }) {
   if (changedArtifacts.length === 0) {
     return (
       <div className="p-4">
-        <div className="rounded-2xl border border-dashed border-ws-border bg-ws-hover-soft px-4 py-5 text-xs leading-6 text-ws-text-muted">
+        <div className="rounded-2xl border border-dashed border-border bg-muted px-4 py-5 text-xs leading-6 text-muted-foreground">
           No changed-files artifact yet. When the backend emits file changes or review metadata,
           the diff view will render them here.
         </div>
@@ -228,18 +228,18 @@ function DiffModePane({ session }: { session: Session }) {
       {changedArtifacts.map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4"
+          className="rounded-2xl border border-border bg-card px-4 py-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[13px] text-ws-text">
+              <p className="truncate text-sm text-foreground">
                 {artifact.label}
               </p>
-              <p className="mt-1 text-xs text-ws-text-muted">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {formatArtifactKind(artifact.kind)}
               </p>
             </div>
-            <span className="rounded-md border border-ws-border bg-ws-tag px-2 py-1 text-[11px] text-ws-text-sub">
+            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
               {artifact.contentType || "metadata"}
             </span>
           </div>
@@ -249,12 +249,12 @@ function DiffModePane({ session }: { session: Session }) {
               href={artifact.downloadUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-4 inline-flex items-center rounded-md border border-ws-border bg-ws-hover px-2.5 py-1 text-[11px] text-ws-text-sub transition hover:bg-ws-active"
+              className="mt-4 inline-flex items-center rounded-md border border-border bg-accent px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-accent"
             >
               Download artifact
             </a>
           ) : (
-            <p className="mt-4 text-xs leading-6 text-ws-text-muted">
+            <p className="mt-4 text-xs leading-6 text-muted-foreground">
               This artifact currently exposes metadata only.
             </p>
           )}
@@ -278,10 +278,10 @@ function InspectorTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "truncate rounded-md px-3 py-1.5 text-[12px] transition",
+        "truncate rounded-md px-3 py-1.5 text-xs transition",
         active
-          ? "border-b border-ws-code bg-ws-hover text-ws-text"
-          : "text-ws-text-muted hover:bg-ws-hover hover:text-ws-text-sub"
+          ? "border-b border-ws-code bg-accent text-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-muted-foreground"
       )}
     >
       {children}
@@ -303,10 +303,10 @@ function ModeButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md px-2.5 py-1 text-[12px] transition",
+        "rounded-md px-2.5 py-1 text-xs transition",
         active
-          ? "bg-ws-hover text-ws-text"
-          : "text-ws-text-muted hover:bg-ws-hover hover:text-ws-text-sub"
+          ? "bg-accent text-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-muted-foreground"
       )}
     >
       {children}
@@ -324,13 +324,13 @@ function InfoRow({
   value: string
 }) {
   return (
-    <div className="border-b border-ws-border px-4 py-3 last:border-b-0">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ws-text-muted">
+    <div className="border-b border-border px-4 py-3 last:border-b-0">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
       <p
         className={cn(
-          "mt-2 text-[13px] text-ws-text",
+          "mt-2 text-sm text-foreground",
           multiline ? "leading-7" : "truncate"
         )}
       >

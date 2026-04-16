@@ -43,7 +43,7 @@ function renderInline(text: string) {
       return (
         <strong
           key={`${part}-${index}`}
-          className="font-semibold text-ws-text"
+          className="font-semibold text-foreground"
         >
           {part.slice(2, -2)}
         </strong>
@@ -70,7 +70,7 @@ function renderInline(text: string) {
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="text-ws-text underline decoration-white/20 underline-offset-4 transition hover:text-white"
+            className="text-foreground underline decoration-white/20 underline-offset-4 transition hover:text-white"
           >
             {label}
           </a>

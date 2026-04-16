@@ -62,7 +62,7 @@ export function SessionComposer({
               }
             }}
             placeholder={placeholder}
-            className="min-h-14 w-full resize-none bg-transparent text-sm leading-[1.6] text-ws-text outline-none placeholder:text-ws-text-off"
+            className="min-h-14 w-full resize-none bg-transparent text-sm leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -78,7 +78,7 @@ export function SessionComposer({
 
           <div className="flex items-center gap-2">
             <GhostIconButton aria-label="Voice input">
-              <Mic className="size-[15px]" />
+              <Mic className="size-4" />
             </GhostIconButton>
 
             <button
@@ -89,14 +89,14 @@ export function SessionComposer({
               className={cn(
                 "flex size-8 items-center justify-center rounded-lg transition md:size-7",
                 canSubmit
-                  ? "bg-ws-text text-ws-page hover:brightness-110"
-                  : "bg-ws-hover text-ws-text-muted"
+                  ? "bg-primary text-primary-foreground hover:brightness-110"
+                  : "bg-accent text-muted-foreground"
               )}
             >
               {busy ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
-                <ArrowUp className="size-[14px]" />
+                <ArrowUp className="size-3.5" />
               )}
             </button>
           </div>
@@ -122,7 +122,7 @@ function GhostIconButton({
   return (
     <button
       type="button"
-      className="flex size-8 items-center justify-center rounded-md text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub md:size-7"
+      className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-muted-foreground md:size-7"
       {...props}
     >
       {children}
@@ -134,10 +134,10 @@ function ChipButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-xs text-ws-text-sub transition hover:bg-ws-hover"
+      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-xs text-muted-foreground transition hover:bg-accent"
     >
       {children}
-      <ChevronDown className="size-[11px] text-ws-text-muted" />
+      <ChevronDown className="size-3 text-muted-foreground" />
     </button>
   )
 }
@@ -146,7 +146,7 @@ function MetaButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center rounded-md px-2 py-1 text-[11.5px] text-ws-text-muted transition hover:bg-ws-hover-soft hover:text-ws-text-sub"
+      className="inline-flex items-center rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-muted-foreground"
     >
       {children}
     </button>

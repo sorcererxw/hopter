@@ -49,7 +49,7 @@ function sessionDot(status: string) {
     case "waiting":
       return "bg-amber-300/70"
     default:
-      return "bg-ws-text-muted/70"
+      return "bg-primary-muted/70"
   }
 }
 
@@ -109,21 +109,21 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
   }, [activeSession?.project?.id, projects, sessions])
 
   return (
-    <div className="flex h-full flex-col bg-ws-sidebar text-ws-text">
+    <div className="flex h-full flex-col bg-sidebar text-foreground">
       <div className="px-3 pb-2 pt-3">
         <button
           type="button"
-          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-ws-hover"
+          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-accent"
         >
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex size-5 shrink-0 items-center justify-center rounded bg-emerald-900/50 text-[10px]">
+            <div className="flex size-5 shrink-0 items-center justify-center rounded bg-emerald-900/50 text-xs">
               🌿
             </div>
-            <span className="truncate text-[13px] font-semibold text-ws-text">
+            <span className="truncate text-sm font-semibold text-foreground">
               {workspaceName}
             </span>
           </div>
-          <ChevronDown className="size-[13px] text-ws-text-muted" />
+          <ChevronDown className="size-3.5 text-muted-foreground" />
         </button>
       </div>
 
@@ -138,59 +138,59 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         <button
           type="button"
           onClick={onOpenSearch}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
         >
-          <Search className="size-[14px] shrink-0" />
+          <Search className="size-3.5 shrink-0" />
           <span className="flex-1 text-left">Search</span>
           <span className="workspace-kbd">⌘K</span>
         </button>
         <RailAction icon={Grid2x2} label="Skills & Apps" />
       </div>
 
-      <div className="mx-3 mb-1 h-px bg-ws-border" />
+      <div className="mx-3 mb-1 h-px bg-border" />
 
       <div className="flex items-center justify-between px-3 pb-1 pt-2">
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 rounded text-xs font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-muted-foreground"
         >
-          <FolderOpen className="size-[11px]" />
+          <FolderOpen className="size-3" />
           <span>Threads</span>
         </button>
         <div className="flex items-center gap-0.5">
           <ThreadHeaderButton onClick={onNavigate} title="New thread" to="/">
-            <SquarePen className="size-[11px]" />
+            <SquarePen className="size-3" />
           </ThreadHeaderButton>
           <ThreadHeaderButton title="Sort">
-            <ArrowUpDown className="size-[11px]" />
+            <ArrowUpDown className="size-3" />
           </ThreadHeaderButton>
           <ThreadHeaderButton title="Add new project" to="/projects/new">
-            <FolderPlus className="size-[11px]" />
+            <FolderPlus className="size-3" />
           </ThreadHeaderButton>
         </div>
       </div>
 
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {isLoading ? (
-          <div className="px-3 py-3 text-xs text-ws-text-muted">
+          <div className="px-3 py-3 text-xs text-muted-foreground">
             Loading threads...
           </div>
         ) : null}
 
         {isError ? (
-          <div className="px-3 py-3 text-xs leading-5 text-ws-text-muted">
+          <div className="px-3 py-3 text-xs leading-5 text-muted-foreground">
             The shell is ready. Session data will appear when the backend responds.
           </div>
         ) : null}
 
         {!isLoading && !isError && visibleSessions.length === 0 ? (
-          <div className="px-3 py-3 text-xs leading-5 text-ws-text-muted">
+          <div className="px-3 py-3 text-xs leading-5 text-muted-foreground">
             No threads yet. Open a repo and continue from the same workspace.
           </div>
         ) : null}
 
         {visibleSessions.length > 0 ? (
-          <div className="mt-1 border-l border-ws-thread pl-3">
+          <div className="mt-1 border-l border-border pl-3">
             {visibleSessions.map((session) => {
               const updatedAt = timestampToDate(session.updatedAt)
               const status = formatSessionStatus(session.status).toLowerCase()
@@ -206,8 +206,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                     cn(
                       "mb-1 flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition",
                       isActive
-                        ? "border-ws-border-strong bg-ws-hover"
-                        : "border-transparent hover:bg-ws-hover-soft"
+                        ? "border-ws-border-strong bg-accent"
+                        : "border-transparent hover:bg-muted"
                     )
                   }
                 >
@@ -219,10 +219,10 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                       <div className="min-w-0 flex-1">
                         <div
                           className={cn(
-                            "flex items-center gap-1.5 truncate text-[11px] font-medium",
+                            "flex items-center gap-1.5 truncate text-xs font-medium",
                             isActive
-                              ? "text-ws-text"
-                              : "text-ws-text-sub"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
                           )}
                           title={folderPath}
                         >
@@ -231,20 +231,20 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                         </div>
                         <p
                           className={cn(
-                            "mt-1 truncate text-[13px]",
+                            "mt-1 truncate text-sm",
                             isActive
-                              ? "text-ws-text"
-                              : "text-ws-text-sub"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
                           )}
                         >
                           {session.title || "Untitled thread"}
                         </p>
                         <p
                           className={cn(
-                            "mt-1 truncate font-mono text-[10px]",
+                            "mt-1 truncate font-mono text-xs",
                             isActive
-                              ? "text-ws-text-sub"
-                              : "text-ws-text-muted"
+                              ? "text-muted-foreground"
+                              : "text-muted-foreground"
                           )}
                           title={folderPath}
                         >
@@ -252,10 +252,10 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                         </p>
                         <div
                           className={cn(
-                            "mt-1 flex items-center gap-2 text-[11px]",
+                            "mt-1 flex items-center gap-2 text-xs",
                             isActive
-                              ? "text-ws-text-sub"
-                              : "text-ws-text-muted"
+                              ? "text-muted-foreground"
+                              : "text-muted-foreground"
                           )}
                         >
                           <span className="truncate">{status}</span>
@@ -272,13 +272,13 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         ) : null}
       </div>
 
-      <div className="border-t border-ws-border px-3 py-2">
+      <div className="border-t border-border px-3 py-2">
         <Link
           to="/settings"
           onClick={onNavigate}
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
         >
-          <Settings className="size-[14px]" />
+          <Settings className="size-3.5" />
           <span>Settings</span>
         </Link>
       </div>
@@ -300,15 +300,15 @@ function RailAction({
   to?: string
 }) {
   const className = cn(
-    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] transition",
+    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
     active
-      ? "border border-ws-border-strong bg-ws-tag text-ws-text"
-      : "text-ws-text-sub hover:bg-ws-hover"
+      ? "border border-ws-border-strong bg-secondary text-foreground"
+      : "text-muted-foreground hover:bg-accent"
   )
 
   const content = (
     <>
-      <Icon className="size-3.5 shrink-0 text-ws-text-muted" />
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
       <span>{label}</span>
     </>
   )
@@ -340,7 +340,7 @@ function ThreadHeaderButton({
   to?: string
 }) {
   const className =
-    "flex size-6 items-center justify-center rounded text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
+    "flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
 
   if (to) {
     return (

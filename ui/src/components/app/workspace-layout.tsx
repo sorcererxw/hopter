@@ -34,7 +34,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
   return (
     <WorkspaceShellContext.Provider value={shellContext}>
-      <div className="h-screen overflow-hidden bg-ws-page text-ws-text">
+      <div className="h-screen overflow-hidden bg-background text-foreground">
         <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
         {sidebarOpen ? (
@@ -47,7 +47,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         ) : null}
 
         <aside
-          className={`fixed left-0 top-0 z-50 h-full w-[248px] border-r border-ws-border bg-ws-sidebar transition-transform duration-300 md:hidden ${
+          className={`fixed left-0 top-0 z-50 h-full w-[248px] border-r border-border bg-sidebar transition-transform duration-300 md:hidden ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -58,11 +58,11 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         </aside>
 
         <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[248px_minmax(0,1fr)]">
-          <aside className="hidden min-h-0 h-full border-r border-ws-border bg-ws-sidebar md:flex md:flex-col">
+          <aside className="hidden min-h-0 h-full border-r border-border bg-sidebar md:flex md:flex-col">
             <SessionRail onOpenSearch={() => setSearchOpen(true)} />
           </aside>
 
-          <main className="min-h-0 min-w-0 overflow-hidden bg-ws-page">
+          <main className="min-h-0 min-w-0 overflow-hidden bg-background">
             {children}
           </main>
         </div>
