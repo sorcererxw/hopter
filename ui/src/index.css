@@ -1,13 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Geist Variable", system-ui, sans-serif;
   --font-heading: var(--font-sans);
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   --color-background: var(--background);
@@ -89,6 +90,9 @@
   --workspace-scrollbar-thumb-hover: rgba(255, 255, 255, 0.16);
   --workspace-inline-code-bg: rgba(99, 183, 255, 0.1);
   --workspace-inline-code-text: #63b7ff;
+  --workspace-placeholder-color: #4d4d4d;
+  --workspace-selection-bg: rgba(255, 255, 255, 0.12);
+  --workspace-surface-panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 .light {
@@ -139,6 +143,9 @@
   --workspace-scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
   --workspace-inline-code-bg: rgba(0, 100, 220, 0.07);
   --workspace-inline-code-text: #0055cc;
+  --workspace-placeholder-color: #a8a8a8;
+  --workspace-selection-bg: rgba(0, 0, 0, 0.1);
+  --workspace-surface-panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 @layer base {
@@ -177,12 +184,12 @@
   }
 
   ::selection {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--workspace-selection-bg);
     color: inherit;
   }
 
   textarea::placeholder {
-    color: #3d3d3d;
+    color: var(--workspace-placeholder-color);
   }
 }
 
@@ -190,7 +197,7 @@
   .surface-panel {
     background: var(--workspace-surface-bg);
     border: 1px solid var(--workspace-border-strong);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--workspace-surface-panel-shadow);
   }
 
   .workspace-chip {
