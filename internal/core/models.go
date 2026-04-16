@@ -122,6 +122,7 @@ type Artifact struct {
 type Session struct {
 	ID                string
 	ProjectID         string
+	BackendKey        string
 	Title             string
 	BackendThreadID   string
 	ActiveTurnID      string
@@ -186,12 +187,14 @@ type ListSessionsInput struct {
 }
 
 type CreateSessionInput struct {
-	ProjectID string
-	Title     string
-	Prompt    string
+	ProjectID  string
+	BackendKey string
+	Title      string
+	Prompt     string
 }
 
 type SessionPatch struct {
+	BackendKey            *string
 	BackendThreadID       *string
 	ActiveTurnID          *string
 	Status                *SessionState

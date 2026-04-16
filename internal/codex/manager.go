@@ -780,6 +780,7 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 	session := core.Session{
 		ID:              thread.ID,
 		ProjectID:       project.ID,
+		BackendKey:      "codex",
 		Title:           fallbackThreadTitle(thread, local, hasLocal),
 		BackendThreadID: thread.ID,
 		Status:          mapThreadStatus(thread.Status),

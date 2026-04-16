@@ -24,6 +24,19 @@ export function formatSessionStatus(status: SessionStatus) {
   }
 }
 
+export function formatBackendKey(value?: string) {
+  switch ((value || "").trim().toLowerCase()) {
+    case "codex":
+      return "codex"
+    case "copilot":
+      return "copilot"
+    case "":
+      return "unknown"
+    default:
+      return (value || "").trim().toLowerCase()
+  }
+}
+
 export function formatArtifactKind(kind: ArtifactKind) {
   switch (kind) {
     case ArtifactKind.SUMMARY:

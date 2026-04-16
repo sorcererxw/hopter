@@ -28,6 +28,7 @@ message Session {
   google.protobuf.Timestamp updated_at = 9;
   repeated ArtifactRef artifacts = 10;
   repeated SessionTranscriptItem transcript_items = 11;
+  string backend_key = 12;
 }
 
 enum SessionTranscriptItemKind {
@@ -55,6 +56,7 @@ message SessionListItem {
   SessionStatus status = 4;
   google.protobuf.Timestamp updated_at = 5;
   bool attention_required = 6;
+  string backend_key = 7;
 }
 
 message ListSessionsRequest {
@@ -78,6 +80,7 @@ message CreateSessionRequest {
   string project_id = 1;
   optional string title = 2;
   string prompt = 3;
+  optional string backend_key = 4;
 }
 
 message CreateSessionResponse {
