@@ -17,6 +17,7 @@ Start with the thinnest document that answers your question, then drill down onl
 - validation guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
 - Go rebuild validation plan: [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
 - contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
+- local dev loop, watch behavior, and file-based logs: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
 - UI system rules: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 
 ## Physical layout

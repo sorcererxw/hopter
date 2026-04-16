@@ -120,20 +120,43 @@ Completion requires:
 
 No evidence, no pass.
 
+## Local dev loop
+
+When working on the live stack, the authority is the file-based dev loop, not terminal memory.
+
+Use:
+
+- `make reset` to clear stale listeners on `5173` and `8787`
+- `make dev` to start the supervisor, Vite, and Go hot reload
+- `make verify-live` to validate the running loop without rebuilding everything
+
+AI agents should read machine state from:
+
+- [~/.orchd/devlogs/codeshell/state.json](/Users/sorcererxw/.orchd/devlogs/codeshell/state.json)
+
+and logs from:
+
+- [~/.orchd/devlogs/codeshell/timeline.jsonl](/Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl)
+
+Deeper reference:
+
+- [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+
 ## Read these docs
 
 Start here, in this order:
 
 0. [docs/README.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
-1. [docs/planning/GO_REBUILD_MASTER_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
-2. [docs/planning/GO_REBUILD_TASK_LIST.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
-3. [docs/planning/BACKEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
-4. [docs/planning/FRONTEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
-5. [docs/planning/IDL_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
-6. [docs/planning/IDL_SURFACE_V1_DRAFT.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
-7. [docs/product/UI_REBUILD_DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
-8. [docs/VALIDATION_HARNESS.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
-9. [docs/planning/GO_REBUILD_VALIDATION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
+1. [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+2. [docs/planning/GO_REBUILD_MASTER_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
+3. [docs/planning/GO_REBUILD_TASK_LIST.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+4. [docs/planning/BACKEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
+5. [docs/planning/FRONTEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
+6. [docs/planning/IDL_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
+7. [docs/planning/IDL_SURFACE_V1_DRAFT.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
+8. [docs/product/UI_REBUILD_DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
+9. [docs/VALIDATION_HARNESS.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+10. [docs/planning/GO_REBUILD_VALIDATION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
 
 ## Immediate next step
 

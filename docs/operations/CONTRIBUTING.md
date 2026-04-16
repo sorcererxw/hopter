@@ -23,6 +23,7 @@ Use the docs progressively:
 - frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
 - IDL plan: [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
 - validation/evidence guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- local dev loop, watch behavior, and file-based logs: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
 - UI rules: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 
 ## Local workflow
@@ -100,6 +101,8 @@ Persistent log files:
 ```
 
 `timeline.jsonl` is the main AI-facing entrypoint. Use `tail`, `rg`, or `jq` directly. Do not build another API on top of this.
+
+If you need the deeper explanation for the local loop, including what is watched automatically and how `make verify-live` fits into the fast path, read [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md).
 
 `make dev` binds the dev surfaces to `0.0.0.0` by default.
 

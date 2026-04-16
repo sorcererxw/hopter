@@ -26,6 +26,7 @@ Choose the shortest path that answers your question:
 - concrete first-pass protobuf surface: [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
 - rebuilt UI design: [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
 - validation harness: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- local dev loop, watch behavior, and file-based logs: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
 
 ## Repository shape
 
@@ -111,6 +112,8 @@ It also keeps append-only JSONL logs under:
 ```
 
 The log plane is outside the repo on purpose so AI agents can `tail`, `rg`, and `jq` it directly without polluting git or losing context on restart.
+
+If you need the full local-loop reference, including service watch behavior and how AI should read the file-based log plane, read [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md).
 
 `make dev` still waits for Vite before bringing up the Go origin, which avoids the initial `502/503` burst on early `/src/*` dev-module requests, and it now tracks Go readiness continuously after every rebuild.
 
