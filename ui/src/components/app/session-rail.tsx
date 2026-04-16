@@ -53,6 +53,23 @@ function sessionDot(status: string) {
   }
 }
 
+function projectFolderName(rootPath?: string, fallbackName?: string) {
+  const normalized = rootPath?.trim()
+  if (normalized) {
+    const segments = normalized.split(/[/\\]+/).filter(Boolean)
+    const lastSegment = segments.at(-1)
+    if (lastSegment) {
+      return lastSegment
+    }
+  }
+
+  return fallbackName || "Unassigned project"
+}
+
+function projectFolderPath(rootPath?: string, fallbackName?: string) {
+  return rootPath?.trim() || fallbackName || "Unassigned project"
+}
+
 type SessionRailProps = {
   onNavigate?: () => void
   onOpenSearch: () => void
@@ -177,6 +194,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
             {visibleSessions.map((session) => {
               const updatedAt = timestampToDate(session.updatedAt)
               const status = formatSessionStatus(session.status).toLowerCase()
+              const folderName = projectFolderName(session.project?.rootPath, session.project?.name)
+              const folderPath = projectFolderPath(session.project?.rootPath, session.project?.name)
 
               return (
                 <NavLink
@@ -198,15 +217,38 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                         className={cn("mt-[0.35rem] size-1.5 shrink-0 rounded-full", sessionDot(status))}
                       />
                       <div className="min-w-0 flex-1">
+                        <div
+                          className={cn(
+                            "flex items-center gap-1.5 truncate text-[11px] font-medium",
+                            isActive
+                              ? "text-[var(--workspace-text-primary)]"
+                              : "text-[var(--workspace-text-secondary)]"
+                          )}
+                          title={folderPath}
+                        >
+                          <FolderOpen className="size-3 shrink-0" />
+                          <span className="truncate">{folderName}</span>
+                        </div>
                         <p
                           className={cn(
-                            "truncate text-[13px]",
+                            "mt-1 truncate text-[13px]",
                             isActive
                               ? "text-[var(--workspace-text-primary)]"
                               : "text-[var(--workspace-text-secondary)]"
                           )}
                         >
                           {session.title || "Untitled thread"}
+                        </p>
+                        <p
+                          className={cn(
+                            "mt-1 truncate font-mono text-[10px]",
+                            isActive
+                              ? "text-[var(--workspace-text-secondary)]"
+                              : "text-[var(--workspace-text-muted)]"
+                          )}
+                          title={folderPath}
+                        >
+                          {folderPath}
                         </p>
                         <div
                           className={cn(

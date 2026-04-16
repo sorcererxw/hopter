@@ -44,6 +44,7 @@ Choose the shortest path that answers your question:
 
 ```bash
 make dev
+make verify-live
 make go-test
 make go-run
 make ui-dev
@@ -76,24 +77,59 @@ bun scripts/validate-go-idl.ts
 bun scripts/validate-go-server.ts
 bun scripts/validate-go-ui.ts
 bun scripts/validate-go-tetris.ts
+bun scripts/validate-live.ts
 ```
 
-`make dev` is the preferred local loop. It starts:
+`make dev` is the preferred local loop. It now runs an AI-first supervisor that starts:
 
 - `pnpm --dir ui dev`
-- `go run ./cmd/orchd`
+- Go hot reload through `air`
 
-and if either process exits, the other one is terminated too. The launcher now waits for Vite to become ready before starting the Go server, which avoids initial `502/503` errors on early `/src/*` dev-module requests.
+The supervisor keeps a persistent machine-readable dev state under:
 
-`make dev` now binds the dev surfaces to `0.0.0.0` by default.
+```text
+~/.orchd/devlogs/<repo-slug>/state.json
+```
+
+State values:
+
+- `starting`
+- `rebuilding`
+- `ready`
+- `build_failed`
+- `stopped`
+
+It also keeps append-only JSONL logs under:
+
+```text
+~/.orchd/devlogs/<repo-slug>/
+  supervisor.jsonl
+  go.jsonl
+  vite.jsonl
+  browser.jsonl
+  timeline.jsonl
+```
+
+The log plane is outside the repo on purpose so AI agents can `tail`, `rg`, and `jq` it directly without polluting git or losing context on restart.
+
+`make dev` still waits for Vite before bringing up the Go origin, which avoids the initial `502/503` burst on early `/src/*` dev-module requests, and it now tracks Go readiness continuously after every rebuild.
+
+`make dev` binds the dev surfaces to `0.0.0.0` by default.
 
 Examples:
 
 ```bash
 make dev
+make verify-live
 ```
 
-By default, `make dev` keeps the Go server aligned with the UI dev bind host, so both Vite and Go listen on `0.0.0.0`.
+`make verify-live` attaches to the existing dev loop instead of starting a second server. It waits for the persistent dev state to become `ready`, then runs a lightweight browser smoke check through the Go origin and records evidence under:
+
+```text
+storage/artifacts/validation/verify_live_<timestamp>/
+```
+
+By default, `make dev` keeps the Go server aligned with the UI dev bind host, so both Vite and Go listen on `0.0.0.0`. Set `ORCHD_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
 
 If you need a different bind host for debugging, you can still override `ORCHD_UI_DEV_HOST` and/or `ORCHD_HOST`.
 

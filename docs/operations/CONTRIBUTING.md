@@ -31,6 +31,7 @@ Use the docs progressively:
 
 ```bash
 make dev
+make verify-live
 make go-test
 make go-run
 make ui-dev
@@ -64,13 +65,43 @@ bun scripts/validate-go-idl.ts
 bun scripts/validate-go-server.ts
 bun scripts/validate-go-ui.ts
 bun scripts/validate-go-tetris.ts
+bun scripts/validate-live.ts
 ```
 
 In dev, the browser should still enter through the Go origin.
 
-`make dev` is the recommended local workflow. It starts Vite and Go together, waits for Vite to become ready before bringing up the Go origin, and tears both down if either process exits.
+`make dev` is the recommended local workflow. It now runs a Bun supervisor that:
 
-`make dev` now binds the dev surfaces to `0.0.0.0` by default.
+- starts Vite
+- starts Go hot reload through `air`
+- writes machine-readable dev state to `~/.orchd/devlogs/<repo-slug>/state.json`
+- writes persistent append-only logs to `~/.orchd/devlogs/<repo-slug>/`
+- keeps the browser entering through the Go origin in dev
+
+The dev state is the authority for AI agents:
+
+- `starting`
+- `rebuilding`
+- `ready`
+- `build_failed`
+- `stopped`
+
+Use `make verify-live` after edits. It attaches to the current dev loop, waits for `ready`, runs a lightweight browser smoke through the Go origin, and records evidence under `storage/artifacts/validation/verify_live_<timestamp>/`.
+
+Persistent log files:
+
+```text
+~/.orchd/devlogs/<repo-slug>/
+  supervisor.jsonl
+  go.jsonl
+  vite.jsonl
+  browser.jsonl
+  timeline.jsonl
+```
+
+`timeline.jsonl` is the main AI-facing entrypoint. Use `tail`, `rg`, or `jq` directly. Do not build another API on top of this.
+
+`make dev` binds the dev surfaces to `0.0.0.0` by default.
 
 Examples:
 
@@ -78,7 +109,7 @@ Examples:
 make dev
 ```
 
-The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the default local loop.
+The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the default local loop. Set `ORCHD_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
 
 If you need a different bind host for debugging, you can still override `ORCHD_UI_DEV_HOST` and/or `ORCHD_HOST`.
 

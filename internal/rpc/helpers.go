@@ -102,8 +102,9 @@ func projectToProto(project core.Project) *orchdv1.Project {
 
 func projectRef(project core.Project) *orchdv1.ProjectRef {
 	return &orchdv1.ProjectRef{
-		Id:   project.ID,
-		Name: validUTF8(project.Name),
+		Id:       project.ID,
+		Name:     validUTF8(project.Name),
+		RootPath: validUTF8(project.RootPath),
 	}
 }
 

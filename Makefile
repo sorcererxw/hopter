@@ -1,8 +1,10 @@
-.PHONY: help dev start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-all
+.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-all
 
 help:
 	@echo "Targets:"
-	@echo "  dev                Run Vite + Go together; if either exits, both stop"
+	@echo "  dev                Run the AI-first live loop with Vite, Go hot reload, and persistent logs"
+	@echo "  reset              Stop stale listeners on 5173/8787 and clear tmp/air"
+	@echo "  verify-live        Attach to the current dev loop and run a live smoke check"
 	@echo "  start              Build UI, then run the Go server"
 	@echo "  go-test            Run Go tests"
 	@echo "  go-run             Run the Go server"
@@ -23,6 +25,12 @@ help:
 
 dev:
 	bash scripts/dev.sh
+
+reset:
+	bash scripts/reset-dev.sh
+
+verify-live:
+	bun scripts/validate-live.ts
 
 start: ui-build
 	$(MAKE) go-run

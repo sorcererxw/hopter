@@ -346,6 +346,7 @@ type ProjectRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	RootPath      string                 `protobuf:"bytes,3,opt,name=root_path,json=rootPath,proto3" json:"root_path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -390,6 +391,13 @@ func (x *ProjectRef) GetId() string {
 func (x *ProjectRef) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *ProjectRef) GetRootPath() string {
+	if x != nil {
+		return x.RootPath
 	}
 	return ""
 }
@@ -567,11 +575,12 @@ var File_orchd_v1_common_proto protoreflect.FileDescriptor
 const file_orchd_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x15orchd/v1/common.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\a\n" +
-	"\x05Empty\"0\n" +
+	"\x05Empty\"M\n" +
 	"\n" +
 	"ProjectRef\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\xfd\x01\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
+	"\troot_path\x18\x03 \x01(\tR\brootPath\"\xfd\x01\n" +
 	"\n" +
 	"SessionRef\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
