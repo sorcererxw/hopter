@@ -43,12 +43,20 @@ async function main(): Promise<void> {
     detail: build.exitCode === 0 ? "ui build passed" : (build.stderr || build.stdout || "ui build failed").trim(),
   });
 
-  const dist = checkRequiredPaths(["ui/dist/index.html", "ui/dist/assets"]);
+  const dist = checkRequiredPaths([
+    "ui/dist/index.html",
+    "ui/dist/assets",
+    "ui/dist/manifest.webmanifest",
+    "ui/dist/sw.js",
+  ]);
   run.writeJson("dist/required-paths.json", dist);
   checks.push({
     name: "ui dist output",
     status: dist.status,
-    detail: dist.status === "pass" ? "ui/dist contains index.html and assets" : `missing: ${dist.missing.join(", ")}`,
+    detail:
+      dist.status === "pass"
+        ? "ui/dist contains index.html, assets, manifest.webmanifest, and sw.js"
+        : `missing: ${dist.missing.join(", ")}`,
   });
 
   const overallStatus = combineValidationStatus(checks.map((check) => check.status));

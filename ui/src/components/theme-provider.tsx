@@ -39,6 +39,21 @@ function getSystemTheme(): ResolvedTheme {
   return "light"
 }
 
+function getThemeColor(theme: ResolvedTheme): string {
+  return theme === "dark" ? "#101010" : "#f3f3f3"
+}
+
+function syncThemeColor(theme: ResolvedTheme) {
+  const themeColor = getThemeColor(theme)
+  const metaTag = document.querySelector<HTMLMetaElement>(
+    'meta[name="theme-color"]'
+  )
+
+  if (metaTag) {
+    metaTag.content = themeColor
+  }
+}
+
 function disableTransitionsTemporarily() {
   const style = document.createElement("style")
   style.appendChild(
@@ -112,6 +127,7 @@ export function ThemeProvider({
 
       root.classList.remove("light", "dark")
       root.classList.add(resolvedTheme)
+      syncThemeColor(resolvedTheme)
 
       if (restoreTransitions) {
         restoreTransitions()
