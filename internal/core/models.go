@@ -192,12 +192,14 @@ type CreateSessionInput struct {
 }
 
 type SessionPatch struct {
-	BackendThreadID   *string
-	ActiveTurnID      *string
-	Status            *SessionState
-	Summary           *string
-	AttentionRequired *bool
-	AttentionReason   *string
-	LastInputHint     *string
-	Artifacts         *[]Artifact
+	BackendThreadID       *string
+	ActiveTurnID          *string
+	Status                *SessionState
+	Summary               *string
+	AttentionRequired     *bool
+	AttentionReason       *string
+	LastInputHint         *string
+	Artifacts             *[]Artifact
+	TranscriptItems       *[]SessionTranscriptItem
+	AppendTranscriptItems *[]SessionTranscriptItem
 }

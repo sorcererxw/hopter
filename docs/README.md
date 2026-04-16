@@ -11,6 +11,7 @@ Start with the thinnest document that answers your question, then drill down onl
 - active master plan: [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
 - detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
 - Codex TS-SDK parity design for Go client: [`docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md)
+- Copilot backend adapter design: [`docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md)
 - backend plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
 - frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
 - IDL plan: [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)

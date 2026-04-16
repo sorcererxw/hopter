@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -205,8 +206,23 @@ func TestCreateSessionRunsThroughTurnExecutorAndUpdatesSession(t *testing.T) {
 		return ok &&
 			current.BackendThreadID == "thread-sdk" &&
 			current.Status == core.SessionStateCompleted &&
-			current.Summary == "Implemented from SDK path."
+			current.Summary == "Implemented from SDK path." &&
+			len(current.TranscriptItems) == 2
 	})
+
+	current, _ := workspace.GetSession(session.ID)
+	if current.TranscriptItems[0].Kind != core.SessionTranscriptItemKindUserMessage {
+		t.Fatalf("first transcript kind = %q", current.TranscriptItems[0].Kind)
+	}
+	if current.TranscriptItems[0].Body != "build something" {
+		t.Fatalf("first transcript body = %q", current.TranscriptItems[0].Body)
+	}
+	if current.TranscriptItems[1].Kind != core.SessionTranscriptItemKindAgentMessage {
+		t.Fatalf("second transcript kind = %q", current.TranscriptItems[1].Kind)
+	}
+	if current.TranscriptItems[1].Body != "Implemented from SDK path." {
+		t.Fatalf("second transcript body = %q", current.TranscriptItems[1].Body)
+	}
 
 	if len(executor.runCalls) != 1 {
 		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))
@@ -255,6 +271,14 @@ func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T)
 			onEvent(&codexsdk.ItemCompletedEvent{
 				Item: &codexsdk.AgentMessageItem{ID: "msg-2", Text: "Follow-up handled."},
 			})
+			onEvent(&codexsdk.ItemCompletedEvent{
+				Item: &codexsdk.CommandExecutionItem{
+					ID:               "cmd-1",
+					Command:          "git status",
+					AggregatedOutput: "On branch master",
+					Status:           "completed",
+				},
+			})
 			onEvent(&codexsdk.TurnCompletedEvent{
 				Usage: codexsdk.Usage{InputTokens: 1, CachedInputTokens: 0, OutputTokens: 1},
 			})
@@ -278,8 +302,23 @@ func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T)
 		return ok &&
 			current.Status == core.SessionStateCompleted &&
 			current.Summary == "Follow-up handled." &&
-			current.LastInputHint == "follow up"
+			current.LastInputHint == "follow up" &&
+			len(current.TranscriptItems) == 3
 	})
+
+	current, _ := workspace.GetSession(session.ID)
+	if current.TranscriptItems[0].Kind != core.SessionTranscriptItemKindUserMessage {
+		t.Fatalf("first transcript kind = %q", current.TranscriptItems[0].Kind)
+	}
+	if current.TranscriptItems[1].Kind != core.SessionTranscriptItemKindAgentMessage {
+		t.Fatalf("second transcript kind = %q", current.TranscriptItems[1].Kind)
+	}
+	if current.TranscriptItems[2].Kind != core.SessionTranscriptItemKindCommandExecution {
+		t.Fatalf("third transcript kind = %q", current.TranscriptItems[2].Kind)
+	}
+	if !strings.Contains(current.TranscriptItems[2].Body, "git status") {
+		t.Fatalf("command transcript body = %q", current.TranscriptItems[2].Body)
+	}
 
 	if len(executor.runCalls) != 1 {
 		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))

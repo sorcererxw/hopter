@@ -134,7 +134,9 @@ export function HomeWorkspacePane() {
 
         <SessionComposer
           busy={createSession.isPending}
+          composerTestId="home-session-composer"
           disabled={!selectedProjectId}
+          inputTestId="home-session-prompt-input"
           placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
           projectLabel={selectedProject?.name || "Local"}
           branchLabel="main"
@@ -157,6 +159,7 @@ export function HomeWorkspacePane() {
               navigate(`/sessions/${session.id}`)
             }
           }}
+          submitTestId="home-session-submit"
           value={prompt}
         />
       </div>
@@ -270,6 +273,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
             <SessionComposer
               busy={sendInput.isPending}
+              composerTestId="session-composer"
+              inputTestId="session-prompt-input"
               placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
               projectLabel={session.project?.name || "Local"}
               branchLabel="main"
@@ -287,6 +292,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 })
                 setPrompt("")
               }}
+              submitTestId="session-followup-submit"
               value={prompt}
             />
           </div>
@@ -404,7 +410,7 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-testid="session-transcript">
       {items.map((item) =>
         item.kind === "transcript" ? (
           <TranscriptEntry key={item.key} item={item.item} />
@@ -418,7 +424,7 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
 
 function PendingInputEntry({ text }: { text: string }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end" data-testid="session-transcript-pending">
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
@@ -450,7 +456,7 @@ function TranscriptEntry({ item }: { item: SessionTranscriptItem }) {
 
 function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end" data-testid="session-transcript-user">
       <div className="max-w-[85%]">
         <SessionRichText
           text={item.body}

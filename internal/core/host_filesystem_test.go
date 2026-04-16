@@ -83,3 +83,56 @@ func TestCreateProjectCanonicalizesAndDeduplicatesRootPath(t *testing.T) {
 		t.Fatalf("expected duplicate project root to be rejected")
 	}
 }
+
+func TestUpdateSessionAppendsTranscriptItems(t *testing.T) {
+	root := t.TempDir()
+	repoDir := filepath.Join(root, "orchd")
+	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	project, err := workspace.CreateProject(CreateProjectInput{
+		Name:           "orchd",
+		RootPath:       repoDir,
+		DefaultBackend: "codex",
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	session, err := workspace.CreateSession(CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	firstBatch := []SessionTranscriptItem{
+		{ID: "u1", Kind: SessionTranscriptItemKindUserMessage, Title: "You", Body: "hello"},
+	}
+	if _, err := workspace.UpdateSession(session.ID, SessionPatch{
+		AppendTranscriptItems: &firstBatch,
+	}); err != nil {
+		t.Fatalf("UpdateSession first append: %v", err)
+	}
+
+	secondBatch := []SessionTranscriptItem{
+		{ID: "a1", Kind: SessionTranscriptItemKindAgentMessage, Title: "Codex", Body: "hi"},
+	}
+	updated, err := workspace.UpdateSession(session.ID, SessionPatch{
+		AppendTranscriptItems: &secondBatch,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSession second append: %v", err)
+	}
+
+	if len(updated.TranscriptItems) != 2 {
+		t.Fatalf("transcript len = %d, want 2", len(updated.TranscriptItems))
+	}
+	if updated.TranscriptItems[0].ID != "u1" || updated.TranscriptItems[1].ID != "a1" {
+		t.Fatalf("unexpected transcript items: %#v", updated.TranscriptItems)
+	}
+}

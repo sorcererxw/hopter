@@ -13,10 +13,17 @@ import (
 
 type SessionService struct {
 	workspace core.WorkspaceService
-	codex     *codex.Manager
+	codex     sessionRuntime
 }
 
-func NewSessionService(workspace core.WorkspaceService, codexManager *codex.Manager) *SessionService {
+type sessionRuntime interface {
+	ListSessions(projectID string, limit uint32) ([]codex.ResolvedSession, error)
+	GetSession(sessionID string) (core.Session, core.Project, error)
+	CreateSession(input core.CreateSessionInput) (core.Session, error)
+	SendSessionInput(sessionID, input string) (core.Session, error)
+}
+
+func NewSessionService(workspace core.WorkspaceService, codexManager sessionRuntime) *SessionService {
 	return &SessionService{workspace: workspace, codex: codexManager}
 }
 
