@@ -12,6 +12,7 @@ type ThemeProviderProps = {
 }
 
 type ThemeProviderState = {
+  resolvedTheme: ResolvedTheme
   theme: Theme
   setTheme: (theme: Theme) => void
 }
@@ -107,6 +108,9 @@ export function ThemeProvider({
 
     return defaultTheme
   })
+  const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>(() =>
+    (theme === "system" ? getSystemTheme() : theme)
+  )
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
@@ -119,15 +123,16 @@ export function ThemeProvider({
   const applyTheme = React.useCallback(
     (nextTheme: Theme) => {
       const root = document.documentElement
-      const resolvedTheme =
+      const nextResolvedTheme =
         nextTheme === "system" ? getSystemTheme() : nextTheme
       const restoreTransitions = disableTransitionOnChange
         ? disableTransitionsTemporarily()
         : null
 
       root.classList.remove("light", "dark")
-      root.classList.add(resolvedTheme)
-      syncThemeColor(resolvedTheme)
+      root.classList.add(nextResolvedTheme)
+      syncThemeColor(nextResolvedTheme)
+      setResolvedTheme(nextResolvedTheme)
 
       if (restoreTransitions) {
         restoreTransitions()
@@ -222,10 +227,11 @@ export function ThemeProvider({
 
   const value = React.useMemo(
     () => ({
+      resolvedTheme,
       theme,
       setTheme,
     }),
-    [theme, setTheme]
+    [resolvedTheme, theme, setTheme]
   )
 
   return (

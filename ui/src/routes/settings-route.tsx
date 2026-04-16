@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
+import { useTheme } from "@/components/theme-provider"
 import { useHostStatus } from "@/features/host/use-host-status"
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
@@ -31,10 +32,21 @@ const NAV_ITEMS = [
 ] as const
 
 type SettingsSection = (typeof NAV_ITEMS)[number]["id"]
+type SelectOption = {
+  label: string
+  value: string
+}
+
+const THEME_OPTIONS: SelectOption[] = [
+  { label: "System", value: "system" },
+  { label: "Dark", value: "dark" },
+  { label: "Light", value: "light" },
+]
 
 export function SettingsRoute() {
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState<SettingsSection>("general")
+  const { resolvedTheme, theme, setTheme } = useTheme()
   const { data: hostStatus } = useHostStatus()
   const { data: projects } = useProjects()
   const { data: sessions } = useSessions()
@@ -115,8 +127,16 @@ export function SettingsRoute() {
 
             <SettingRow
               label="Theme"
-              description="Choose the workspace theme"
-              control={<SelectField value="Dark" />}
+              description={`Choose the workspace theme${theme === "system" ? ` (currently following ${resolvedTheme})` : ""}`}
+              control={
+                <SelectField
+                  onChange={(value) =>
+                    setTheme(value as "dark" | "light" | "system")
+                  }
+                  options={THEME_OPTIONS}
+                  value={theme}
+                />
+              }
             />
             <SettingRow
               label="Interface font"
@@ -188,7 +208,36 @@ function SectionTitle({ children }: { children: ReactNode }) {
   return <h1 className="mb-8 text-2xl text-foreground">{children}</h1>
 }
 
-function SelectField({ value }: { value: string }) {
+function SelectField({
+  onChange,
+  options,
+  value,
+}: {
+  onChange?: (value: string) => void
+  options?: SelectOption[]
+  value: string
+}) {
+  if (options && onChange) {
+    return (
+      <label className="relative block min-w-40">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 w-full appearance-none rounded-lg border border-border bg-accent px-3 py-2 pr-8 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">
+          ▾
+        </span>
+      </label>
+    )
+  }
+
   return (
     <div className="flex min-w-40 items-center gap-2 rounded-lg border border-border bg-accent px-3 py-2 text-sm text-muted-foreground">
       <span className="flex-1">{value}</span>

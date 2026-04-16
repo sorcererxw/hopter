@@ -20,7 +20,7 @@ function WorkspaceRouteFrame() {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="orchd-theme">
+    <ThemeProvider defaultTheme="system" storageKey="orchd-theme">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>

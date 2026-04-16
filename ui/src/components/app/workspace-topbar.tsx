@@ -3,12 +3,15 @@ import {
   ChevronDown,
   FolderOpen,
   Menu,
+  MoonStar,
   MoreHorizontal,
   PanelRight,
   Play,
   Rocket,
+  SunMedium,
 } from "lucide-react"
 
+import { useTheme } from "@/components/theme-provider"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
 
@@ -34,6 +37,8 @@ export function WorkspaceTopbar({
   title,
 }: WorkspaceTopbarProps) {
   const { openSidebar } = useWorkspaceShell()
+  const { resolvedTheme, setTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3">
@@ -65,6 +70,17 @@ export function WorkspaceTopbar({
       </div>
 
       <div className="flex items-center gap-1.5">
+        <TopbarIconButton
+          label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+        >
+          {isDark ? (
+            <SunMedium className="size-3.5" />
+          ) : (
+            <MoonStar className="size-3.5" />
+          )}
+        </TopbarIconButton>
+
         <TopbarIconButton label="Run">
           <Play className="size-3.5" />
         </TopbarIconButton>
@@ -112,14 +128,18 @@ export function WorkspaceTopbar({
 function TopbarIconButton({
   children,
   label,
+  onClick,
 }: {
   children: ReactNode
   label: string
+  onClick?: () => void
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      title={label}
+      onClick={onClick}
       className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
     >
       {children}

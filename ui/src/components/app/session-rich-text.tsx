@@ -70,7 +70,7 @@ function renderInline(text: string) {
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="text-foreground underline decoration-white/20 underline-offset-4 transition hover:text-white"
+            className="text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
           >
             {label}
           </a>

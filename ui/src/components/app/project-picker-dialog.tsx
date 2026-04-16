@@ -440,13 +440,13 @@ export function ProjectPickerDialog() {
           </div>
 
           {activeError ? (
-            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100">
+            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-100">
               {typeof activeError === "string" ? activeError : errorMessage(activeError)}
             </div>
           ) : null}
 
           <div className="flex h-13 items-center justify-between border-t border-border bg-card px-5">
-            <div className="min-w-0 flex-1 overflow-hidden text-xs text-zinc-500">
+            <div className="min-w-0 flex-1 overflow-hidden text-xs text-muted-foreground">
               <span className="truncate">{footerText}</span>
             </div>
 
@@ -454,7 +454,7 @@ export function ProjectPickerDialog() {
               <button
                 type="button"
                 onClick={navigateBack}
-                className="rounded-md bg-secondary px-4 py-1.5 text-sm text-zinc-100 transition hover:bg-accent"
+                className="rounded-md bg-secondary px-4 py-1.5 text-sm text-foreground transition hover:bg-accent"
               >
                 Cancel
               </button>
@@ -488,7 +488,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       {children}
@@ -513,12 +513,19 @@ function SidebarItem({
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-4 px-6 py-3 text-left text-2xl transition",
-        active ? "bg-picker/25 text-zinc-100" : "text-zinc-400 hover:bg-secondary hover:text-zinc-200"
+        active
+          ? "bg-picker/25 text-foreground"
+          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
       style={{ borderRadius: 0 }}
     >
       {icon}
-      <span className={cn("truncate", active ? "font-semibold text-zinc-100" : "text-zinc-400")}>
+      <span
+        className={cn(
+          "truncate",
+          active ? "font-semibold text-foreground" : "text-muted-foreground"
+        )}
+      >
         {label}
       </span>
     </button>
@@ -545,12 +552,12 @@ function ToolbarButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "flex size-10 items-center justify-center rounded-lg text-zinc-400 transition",
+        "flex size-10 items-center justify-center rounded-lg text-muted-foreground transition",
         disabled
           ? "cursor-not-allowed opacity-30"
           : active
-            ? "bg-accent text-zinc-100"
-            : "hover:bg-accent hover:text-zinc-100"
+            ? "bg-accent text-foreground"
+            : "hover:bg-accent hover:text-foreground"
       )}
     >
       {children}
@@ -582,13 +589,13 @@ function ListView({
       </colgroup>
       <thead>
         <tr className="border-b border-border">
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
             Name
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
             Date Modified
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-zinc-500">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
             Size
           </th>
         </tr>
@@ -610,18 +617,37 @@ function ListView({
                   <Icon
                     className={cn(
                       "size-5.5 shrink-0",
-                      selected ? "text-white" : entry.isDirectory ? "text-sky-400" : "text-zinc-400"
+                      selected
+                        ? "text-white"
+                        : entry.isDirectory
+                          ? "text-sky-400"
+                          : "text-muted-foreground"
                     )}
                   />
-                  <span className={cn("text-lg", selected ? "text-white" : "text-zinc-100")}>
+                  <span
+                    className={cn(
+                      "text-lg",
+                      selected ? "text-white" : "text-foreground"
+                    )}
+                  >
                     {entry.name}
                   </span>
                 </div>
               </td>
-              <td className={cn("px-6 py-4 text-lg", selected ? "text-white/75" : "text-zinc-400")}>
+              <td
+                className={cn(
+                  "px-6 py-4 text-lg",
+                  selected ? "text-white/75" : "text-muted-foreground"
+                )}
+              >
                 —
               </td>
-              <td className={cn("px-6 py-4 text-lg", selected ? "text-white/75" : "text-zinc-500")}>
+              <td
+                className={cn(
+                  "px-6 py-4 text-lg",
+                  selected ? "text-white/75" : "text-muted-foreground"
+                )}
+              >
                 —
               </td>
             </tr>
@@ -661,14 +687,20 @@ function GridView({
             onDoubleClick={() => onDoubleOpen(entry)}
             className={cn(
               "flex flex-col items-center gap-2 px-3 pb-3 pt-3 text-center transition",
-              selected ? "rounded-lg bg-picker text-white" : "text-zinc-100 hover:rounded-lg hover:bg-muted"
+              selected
+                ? "rounded-lg bg-picker text-white"
+                : "text-foreground hover:rounded-lg hover:bg-muted"
             )}
             style={{ width: "104px" }}
           >
             <Icon
               className={cn(
                 "size-10",
-                selected ? "text-white" : entry.isDirectory ? "text-sky-400" : "text-zinc-400"
+                selected
+                  ? "text-white"
+                  : entry.isDirectory
+                    ? "text-sky-400"
+                    : "text-muted-foreground"
               )}
             />
             <span className="line-clamp-2 text-xs leading-[1.3]">{entry.name}</span>
@@ -681,7 +713,7 @@ function GridView({
 
 function EmptyState() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-sm text-zinc-500">
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
       <Folder className="size-8 opacity-30" />
       <span>No results</span>
     </div>
