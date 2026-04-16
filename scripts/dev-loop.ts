@@ -27,9 +27,66 @@ let currentStatus: ReturnType<typeof writeDevState>["status"] = "starting"
 let lastError = ""
 let shutdownStarted = false
 
+const ANSI = {
+  blue: "\u001b[34m",
+  cyan: "\u001b[36m",
+  dim: "\u001b[2m",
+  green: "\u001b[32m",
+  red: "\u001b[31m",
+  reset: "\u001b[0m",
+  yellow: "\u001b[33m",
+}
+
+function supportsColor() {
+  return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR
+}
+
+function highlightMessage(source: "go" | "supervisor" | "vite", message: string, stream: "stderr" | "stdout") {
+  if (!supportsColor()) {
+    return `[${source}] ${message}`
+  }
+
+  const sourceColor =
+    source === "supervisor"
+      ? ANSI.cyan
+      : source === "vite"
+        ? ANSI.green
+        : ANSI.blue
+
+  const normalized = message.toLowerCase()
+  let messageColor = ""
+
+  if (
+    stream === "stderr" ||
+    normalized.includes("error") ||
+    normalized.includes("failed") ||
+    normalized.includes("exit code 1")
+  ) {
+    messageColor = ANSI.red
+  } else if (
+    normalized.includes("ready") ||
+    normalized.includes("running") ||
+    normalized.includes("listening") ||
+    normalized.includes("state=ready")
+  ) {
+    messageColor = ANSI.green
+  } else if (
+    normalized.includes("rebuilding") ||
+    normalized.includes("building") ||
+    normalized.includes("starting") ||
+    normalized.includes("watching")
+  ) {
+    messageColor = ANSI.yellow
+  } else if (normalized.includes("stopped") || normalized.includes("shutdown")) {
+    messageColor = ANSI.dim
+  }
+
+  return `${sourceColor}[${source}]${ANSI.reset} ${messageColor}${message}${ANSI.reset}`
+}
+
 function printConsoleLine(source: "go" | "supervisor" | "vite", message: string, stream: "stderr" | "stdout" = "stdout") {
   const writer = stream === "stderr" ? process.stderr : process.stdout
-  writer.write(`[${source}] ${message}\n`)
+  writer.write(`${highlightMessage(source, message, stream)}\n`)
 }
 
 async function describePortOwner(port: number) {
