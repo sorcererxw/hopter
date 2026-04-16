@@ -98,6 +98,59 @@ Priority order inside the selected session pane:
 
 Do not make timeline the default focus.
 
+## UI token rules
+
+**Do not use Tailwind arbitrary values for colors or spacing when a standard token exists.**
+
+### Allowed color sources (in order of preference)
+
+1. **shadcn semantic tokens** — `bg-background`, `text-foreground`, `bg-card`, `bg-popover`, `bg-sidebar`, `text-muted-foreground`, `bg-accent`, `bg-secondary`, `border-border`, etc.
+2. **Workspace design tokens** — `bg-ws-*`, `text-ws-*`, `border-ws-*` (defined in `@theme inline` in `index.css`)
+3. **Tailwind palette utilities** — `text-zinc-400`, `text-sky-400`, `text-amber-400`, etc. for specific semantic tones (e.g. syntax highlighting, status indicators)
+4. **Arbitrary values as last resort** — only for values that have no token equivalent (e.g. `shadow-[...]`, complex `calc()`, `min(...)` expressions)
+
+### Workspace token reference (`ws-*`)
+
+| Token | Resolves to |
+|---|---|
+| `bg-ws-page` | `--workspace-page-bg` (#0f0f0f) |
+| `bg-ws-sidebar` | `--workspace-sidebar-bg` (#141414) |
+| `bg-ws-panel` | `--workspace-panel-bg` (#1e1e1e) |
+| `bg-ws-surface` | `--workspace-surface-bg` (#1a1a1a) |
+| `bg-ws-elevated` | `--workspace-elevated-bg` (#242424) |
+| `bg-ws-hover` | `--workspace-hover-bg` (rgba white/7%) |
+| `bg-ws-hover-soft` | `--workspace-hover-bg-soft` (rgba white/4%) |
+| `bg-ws-active` | `--workspace-active-bg` (rgba white/10%) |
+| `bg-ws-tag` | `--workspace-tag-bg` (rgba white/6%) |
+| `bg-ws-tool` | `--workspace-tool-bg` (rgba white/4%) |
+| `text-ws-text` | `--workspace-text-primary` (#e0e0e0) |
+| `text-ws-text-sub` | `--workspace-text-secondary` (#888) |
+| `text-ws-text-muted` | `--workspace-text-muted` (#555) |
+| `text-ws-text-off` | `--workspace-text-disabled` (#3a3a3a) |
+| `border-ws-border` | `--workspace-border` (rgba white/7%) |
+| `border-ws-border-strong` | `--workspace-border-strong` (rgba white/12%) |
+| `border-ws-tag-border` | `--workspace-tag-border` (rgba white/8%) |
+| `border-ws-tool-border` | `--workspace-tool-border` (rgba white/7%) |
+| `border-ws-thread` | `--workspace-thread-guide` (rgba white/8%) |
+| `border-ws-code` | `--workspace-inline-code-text` (#63b7ff) |
+| `bg-picker` | `--picker-selection` (#2a5cb8) |
+| `bg-picker-hover` | `--picker-selection-hover` (#1e4fa0) |
+
+### Spacing / size rules
+
+- Use standard Tailwind spacing scale: `size-3.5` (14px), `min-w-40` (160px), `w-80` (320px), `gap-2` (8px), `gap-0.5` (2px), etc.
+- Use standard radius tokens: `rounded-lg` (10px), `rounded-xl` (12px), `rounded-2xl` (1rem/16px)
+- Use standard font size tokens where they exist: `text-xs` (12px), `text-sm` (14px), `text-base` (16px), `text-lg` (18px)
+- Use standard opacity modifiers in multiples of 5: `/5`, `/10`, `/15`, `/20`, etc.
+- Arbitrary values are acceptable **only** when there is no standard equivalent (e.g. `text-[13px]`, `w-[248px]`, complex grid templates)
+
+### Prohibited patterns
+
+- ❌ Hard-coded hex colors in className: `text-[#888]`, `bg-[#1e1e1e]`
+- ❌ CSS var arbitrary syntax when a ws-token exists: `text-[var(--workspace-text-primary)]`
+- ❌ Non-standard opacity fractions: `white/7`, `white/8`, `white/12`
+- ❌ Redundant custom tokens when shadcn already has an equivalent (`bg-popover` = `#1e1e1e`, `bg-card` = `#1a1a1a`, `bg-sidebar` = `#141414`)
+
 ## Active repository shape
 
 ```text

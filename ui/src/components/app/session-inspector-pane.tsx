@@ -108,8 +108,8 @@ export function SessionInspectorPane({
   const reviewLabel = "summary.md"
 
   return (
-    <aside className="hidden h-full w-[404px] shrink-0 border-l border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] lg:flex lg:flex-col">
-      <div className="flex items-center gap-1 border-b border-[color:var(--workspace-border)] bg-[var(--workspace-panel-bg)] px-3 py-2">
+    <aside className="hidden h-full w-[404px] shrink-0 border-l border-ws-border bg-ws-surface lg:flex lg:flex-col">
+      <div className="flex items-center gap-1 border-b border-ws-border bg-ws-panel px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           <InspectorTabButton active={activeTab === "summary"} onClick={() => onTabChange("summary")}>
             Summary
@@ -132,7 +132,7 @@ export function SessionInspectorPane({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-6 items-center justify-center rounded text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+            className="flex size-6 items-center justify-center rounded text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
           >
             <X className="size-[13px]" />
           </button>
@@ -142,17 +142,17 @@ export function SessionInspectorPane({
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
         {activeTab === "summary" ? (
           <div className="space-y-4 p-4">
-            <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)]">
-              <div className="border-b border-[color:var(--workspace-border)] px-4 py-3 text-[12px] text-[var(--workspace-text-muted)]">
+            <div className="rounded-2xl border border-ws-border bg-ws-surface">
+              <div className="border-b border-ws-border px-4 py-3 text-xs text-ws-text-muted">
                 Current state
               </div>
               <SessionRichText
                 text={session.summary || "No summary yet."}
-                className="space-y-3 px-4 py-4 text-[13px] leading-7 text-[var(--workspace-text-primary)]"
+                className="space-y-3 px-4 py-4 text-[13px] leading-7 text-ws-text"
               />
             </div>
 
-            <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)]">
+            <div className="rounded-2xl border border-ws-border bg-ws-surface">
               <InfoRow label="Status" value={formatSessionStatus(session.status)} />
               <InfoRow label="Project" value={session.project?.name || "Unassigned"} />
               <InfoRow label="Updated" value={formatUpdatedAt(session.updatedAt)} />
@@ -193,12 +193,12 @@ function CodeModePane({ session }: { session: Session }) {
       {lines.map((line, index) => (
         <div
           key={`${line}-${index}`}
-          className="flex items-start px-0 transition hover:bg-[var(--workspace-hover-bg-soft)]"
+          className="flex items-start px-0 transition hover:bg-ws-hover-soft"
         >
-          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-[12px] leading-5 text-[var(--workspace-text-disabled)]">
+          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-5 text-ws-text-off">
             {index + 1}
           </div>
-          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-[12px] leading-5 text-[var(--workspace-text-primary)]">
+          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-xs leading-5 text-ws-text">
             {tokenizeLine(line)}
           </pre>
         </div>
@@ -215,7 +215,7 @@ function DiffModePane({ session }: { session: Session }) {
   if (changedArtifacts.length === 0) {
     return (
       <div className="p-4">
-        <div className="rounded-[1rem] border border-dashed border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-4 py-5 text-[12px] leading-6 text-[var(--workspace-text-muted)]">
+        <div className="rounded-2xl border border-dashed border-ws-border bg-ws-hover-soft px-4 py-5 text-xs leading-6 text-ws-text-muted">
           No changed-files artifact yet. When the backend emits file changes or review metadata,
           the diff view will render them here.
         </div>
@@ -228,18 +228,18 @@ function DiffModePane({ session }: { session: Session }) {
       {changedArtifacts.map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4"
+          className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[13px] text-[var(--workspace-text-primary)]">
+              <p className="truncate text-[13px] text-ws-text">
                 {artifact.label}
               </p>
-              <p className="mt-1 text-[12px] text-[var(--workspace-text-muted)]">
+              <p className="mt-1 text-xs text-ws-text-muted">
                 {formatArtifactKind(artifact.kind)}
               </p>
             </div>
-            <span className="rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-tag-bg)] px-2 py-1 text-[11px] text-[var(--workspace-text-secondary)]">
+            <span className="rounded-md border border-ws-border bg-ws-tag px-2 py-1 text-[11px] text-ws-text-sub">
               {artifact.contentType || "metadata"}
             </span>
           </div>
@@ -249,12 +249,12 @@ function DiffModePane({ session }: { session: Session }) {
               href={artifact.downloadUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-4 inline-flex items-center rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg)] px-2.5 py-1 text-[11px] text-[var(--workspace-text-secondary)] transition hover:bg-[var(--workspace-active-bg)]"
+              className="mt-4 inline-flex items-center rounded-md border border-ws-border bg-ws-hover px-2.5 py-1 text-[11px] text-ws-text-sub transition hover:bg-ws-active"
             >
               Download artifact
             </a>
           ) : (
-            <p className="mt-4 text-[12px] leading-6 text-[var(--workspace-text-muted)]">
+            <p className="mt-4 text-xs leading-6 text-ws-text-muted">
               This artifact currently exposes metadata only.
             </p>
           )}
@@ -280,8 +280,8 @@ function InspectorTabButton({
       className={cn(
         "truncate rounded-md px-3 py-1.5 text-[12px] transition",
         active
-          ? "border-b border-[#63b7ff] bg-[var(--workspace-hover-bg)] text-[var(--workspace-text-primary)]"
-          : "text-[var(--workspace-text-muted)] hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+          ? "border-b border-ws-code bg-ws-hover text-ws-text"
+          : "text-ws-text-muted hover:bg-ws-hover hover:text-ws-text-sub"
       )}
     >
       {children}
@@ -305,8 +305,8 @@ function ModeButton({
       className={cn(
         "rounded-md px-2.5 py-1 text-[12px] transition",
         active
-          ? "bg-[var(--workspace-hover-bg)] text-[var(--workspace-text-primary)]"
-          : "text-[var(--workspace-text-muted)] hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+          ? "bg-ws-hover text-ws-text"
+          : "text-ws-text-muted hover:bg-ws-hover hover:text-ws-text-sub"
       )}
     >
       {children}
@@ -324,13 +324,13 @@ function InfoRow({
   value: string
 }) {
   return (
-    <div className="border-b border-[color:var(--workspace-border)] px-4 py-3 last:border-b-0">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--workspace-text-muted)]">
+    <div className="border-b border-ws-border px-4 py-3 last:border-b-0">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ws-text-muted">
         {label}
       </p>
       <p
         className={cn(
-          "mt-2 text-[13px] text-[var(--workspace-text-primary)]",
+          "mt-2 text-[13px] text-ws-text",
           multiline ? "leading-7" : "truncate"
         )}
       >

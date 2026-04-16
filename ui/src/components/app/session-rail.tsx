@@ -49,7 +49,7 @@ function sessionDot(status: string) {
     case "waiting":
       return "bg-amber-300/70"
     default:
-      return "bg-[var(--workspace-text-muted)]/70"
+      return "bg-ws-text-muted/70"
   }
 }
 
@@ -109,21 +109,21 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
   }, [activeSession?.project?.id, projects, sessions])
 
   return (
-    <div className="flex h-full flex-col bg-[var(--workspace-sidebar-bg)] text-[var(--workspace-text-primary)]">
+    <div className="flex h-full flex-col bg-ws-sidebar text-ws-text">
       <div className="px-3 pb-2 pt-3">
         <button
           type="button"
-          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-[var(--workspace-hover-bg)]"
+          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-ws-hover"
         >
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex size-5 shrink-0 items-center justify-center rounded bg-emerald-900/50 text-[10px]">
               🌿
             </div>
-            <span className="truncate text-[13px] font-semibold text-[var(--workspace-text-primary)]">
+            <span className="truncate text-[13px] font-semibold text-ws-text">
               {workspaceName}
             </span>
           </div>
-          <ChevronDown className="size-[13px] text-[var(--workspace-text-muted)]" />
+          <ChevronDown className="size-[13px] text-ws-text-muted" />
         </button>
       </div>
 
@@ -138,7 +138,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         <button
           type="button"
           onClick={onOpenSearch}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
         >
           <Search className="size-[14px] shrink-0" />
           <span className="flex-1 text-left">Search</span>
@@ -147,12 +147,12 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         <RailAction icon={Grid2x2} label="Skills & Apps" />
       </div>
 
-      <div className="mx-3 mb-1 h-px bg-[var(--workspace-border)]" />
+      <div className="mx-3 mb-1 h-px bg-ws-border" />
 
       <div className="flex items-center justify-between px-3 pb-1 pt-2">
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.05em] text-ws-text-muted transition hover:text-ws-text-sub"
         >
           <FolderOpen className="size-[11px]" />
           <span>Threads</span>
@@ -172,25 +172,25 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
 
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {isLoading ? (
-          <div className="px-3 py-3 text-[12px] text-[var(--workspace-text-muted)]">
+          <div className="px-3 py-3 text-xs text-ws-text-muted">
             Loading threads...
           </div>
         ) : null}
 
         {isError ? (
-          <div className="px-3 py-3 text-[12px] leading-5 text-[var(--workspace-text-muted)]">
+          <div className="px-3 py-3 text-xs leading-5 text-ws-text-muted">
             The shell is ready. Session data will appear when the backend responds.
           </div>
         ) : null}
 
         {!isLoading && !isError && visibleSessions.length === 0 ? (
-          <div className="px-3 py-3 text-[12px] leading-5 text-[var(--workspace-text-muted)]">
+          <div className="px-3 py-3 text-xs leading-5 text-ws-text-muted">
             No threads yet. Open a repo and continue from the same workspace.
           </div>
         ) : null}
 
         {visibleSessions.length > 0 ? (
-          <div className="mt-1 border-l border-[color:var(--workspace-thread-guide)] pl-3">
+          <div className="mt-1 border-l border-ws-thread pl-3">
             {visibleSessions.map((session) => {
               const updatedAt = timestampToDate(session.updatedAt)
               const status = formatSessionStatus(session.status).toLowerCase()
@@ -206,8 +206,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                     cn(
                       "mb-1 flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition",
                       isActive
-                        ? "border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)]"
-                        : "border-transparent hover:bg-[var(--workspace-hover-bg-soft)]"
+                        ? "border-ws-border-strong bg-ws-hover"
+                        : "border-transparent hover:bg-ws-hover-soft"
                     )
                   }
                 >
@@ -221,8 +221,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           className={cn(
                             "flex items-center gap-1.5 truncate text-[11px] font-medium",
                             isActive
-                              ? "text-[var(--workspace-text-primary)]"
-                              : "text-[var(--workspace-text-secondary)]"
+                              ? "text-ws-text"
+                              : "text-ws-text-sub"
                           )}
                           title={folderPath}
                         >
@@ -233,8 +233,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           className={cn(
                             "mt-1 truncate text-[13px]",
                             isActive
-                              ? "text-[var(--workspace-text-primary)]"
-                              : "text-[var(--workspace-text-secondary)]"
+                              ? "text-ws-text"
+                              : "text-ws-text-sub"
                           )}
                         >
                           {session.title || "Untitled thread"}
@@ -243,8 +243,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           className={cn(
                             "mt-1 truncate font-mono text-[10px]",
                             isActive
-                              ? "text-[var(--workspace-text-secondary)]"
-                              : "text-[var(--workspace-text-muted)]"
+                              ? "text-ws-text-sub"
+                              : "text-ws-text-muted"
                           )}
                           title={folderPath}
                         >
@@ -254,8 +254,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           className={cn(
                             "mt-1 flex items-center gap-2 text-[11px]",
                             isActive
-                              ? "text-[var(--workspace-text-secondary)]"
-                              : "text-[var(--workspace-text-muted)]"
+                              ? "text-ws-text-sub"
+                              : "text-ws-text-muted"
                           )}
                         >
                           <span className="truncate">{status}</span>
@@ -272,11 +272,11 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         ) : null}
       </div>
 
-      <div className="border-t border-[color:var(--workspace-border)] px-3 py-2">
+      <div className="border-t border-ws-border px-3 py-2">
         <Link
           to="/settings"
           onClick={onNavigate}
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
         >
           <Settings className="size-[14px]" />
           <span>Settings</span>
@@ -302,13 +302,13 @@ function RailAction({
   const className = cn(
     "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] transition",
     active
-      ? "border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-tag-bg)] text-[var(--workspace-text-primary)]"
-      : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-hover-bg)]"
+      ? "border border-ws-border-strong bg-ws-tag text-ws-text"
+      : "text-ws-text-sub hover:bg-ws-hover"
   )
 
   const content = (
     <>
-      <Icon className="size-[14px] shrink-0 text-[var(--workspace-text-muted)]" />
+      <Icon className="size-3.5 shrink-0 text-ws-text-muted" />
       <span>{label}</span>
     </>
   )
@@ -340,7 +340,7 @@ function ThreadHeaderButton({
   to?: string
 }) {
   const className =
-    "flex size-6 items-center justify-center rounded text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+    "flex size-6 items-center justify-center rounded text-ws-text-muted transition hover:bg-ws-hover hover:text-ws-text-sub"
 
   if (to) {
     return (

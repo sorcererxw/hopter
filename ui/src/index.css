@@ -38,6 +38,42 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 2px);
+
+  /* Workspace layer backgrounds */
+  --color-ws-page: var(--workspace-page-bg);
+  --color-ws-sidebar: var(--workspace-sidebar-bg);
+  --color-ws-panel: var(--workspace-panel-bg);
+  --color-ws-surface: var(--workspace-surface-bg);
+  --color-ws-elevated: var(--workspace-elevated-bg);
+
+  /* Workspace interactive states */
+  --color-ws-hover: var(--workspace-hover-bg);
+  --color-ws-hover-soft: var(--workspace-hover-bg-soft);
+  --color-ws-active: var(--workspace-active-bg);
+
+  /* Workspace borders */
+  --color-ws-border: var(--workspace-border);
+  --color-ws-border-strong: var(--workspace-border-strong);
+
+  /* Workspace text */
+  --color-ws-text: var(--workspace-text-primary);
+  --color-ws-text-sub: var(--workspace-text-secondary);
+  --color-ws-text-muted: var(--workspace-text-muted);
+  --color-ws-text-off: var(--workspace-text-disabled);
+
+  /* Workspace chips / tags / tools */
+  --color-ws-tag: var(--workspace-tag-bg);
+  --color-ws-tag-border: var(--workspace-tag-border);
+  --color-ws-tool: var(--workspace-tool-bg);
+  --color-ws-tool-border: var(--workspace-tool-border);
+
+  /* Workspace misc */
+  --color-ws-thread: var(--workspace-thread-guide);
+  --color-ws-code: var(--workspace-inline-code-text);
+
+  /* Picker selection */
+  --color-picker: var(--picker-selection);
+  --color-picker-hover: var(--picker-selection-hover);
 }
 
 :root {
@@ -89,6 +125,8 @@
   --workspace-scrollbar-thumb-hover: rgba(255, 255, 255, 0.16);
   --workspace-inline-code-bg: rgba(99, 183, 255, 0.1);
   --workspace-inline-code-text: #63b7ff;
+  --picker-selection: #2a5cb8;
+  --picker-selection-hover: #1e4fa0;
 }
 
 .light {

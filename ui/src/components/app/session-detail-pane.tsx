@@ -43,17 +43,17 @@ const HOME_SUGGESTIONS: Array<{
   {
     icon: Sparkles,
     text: "Build a classic Snake game in this repo.",
-    tone: "text-[var(--workspace-text-secondary)]",
+    tone: "text-ws-text-sub",
   },
   {
     icon: FileText,
     text: "Create a one-page summary of this app.",
-    tone: "text-[#d4845c]",
+    tone: "text-orange-400",
   },
   {
     icon: PenLine,
     text: "Create a plan to finish the next milestone.",
-    tone: "text-[#c9a84c]",
+    tone: "text-amber-400",
   },
 ]
 
@@ -71,7 +71,7 @@ export function HomeWorkspacePane() {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[var(--workspace-page-bg)]">
+    <div className="flex h-full min-h-0 flex-col bg-ws-page">
       <WorkspaceTopbar
         title="New Thread"
         tag={selectedProject?.name}
@@ -81,15 +81,15 @@ export function HomeWorkspacePane() {
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="workspace-scrollbar flex-1 overflow-y-auto">
           <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col items-center justify-center px-6 pt-6 pb-20">
-            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)]">
-              <Bot className="size-7 text-[var(--workspace-text-primary)]" />
+            <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-ws-border-strong bg-ws-hover">
+              <Bot className="size-7 text-ws-text" />
             </div>
 
-            <h2 className="text-[22px] font-medium text-[var(--workspace-text-primary)]">
+            <h2 className="text-[22px] font-medium text-ws-text">
               Start building
             </h2>
 
-            <label className="relative mt-1 inline-flex items-center gap-1 text-[14px] text-[var(--workspace-text-muted)]">
+            <label className="relative mt-1 inline-flex items-center gap-1 text-sm text-ws-text-muted">
               <select
                 value={selectedProjectId}
                 onChange={(event) =>
@@ -106,7 +106,7 @@ export function HomeWorkspacePane() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-[var(--workspace-text-muted)]" />
+              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-ws-text-muted" />
             </label>
 
             <div className="mt-8 grid w-full max-w-[700px] gap-3 md:grid-cols-3">
@@ -115,10 +115,10 @@ export function HomeWorkspacePane() {
                   key={text}
                   type="button"
                   onClick={() => setPrompt(text)}
-                  className="flex items-center gap-3 rounded-[1rem] border border-[color:var(--workspace-tool-border)] bg-[var(--workspace-tool-bg)] p-4 text-left transition hover:bg-[var(--workspace-hover-bg)] md:flex-col md:items-start"
+                  className="flex items-center gap-3 rounded-2xl border border-ws-tool-border bg-ws-tool p-4 text-left transition hover:bg-ws-hover md:flex-col md:items-start"
                 >
                   <Icon className={`size-4 shrink-0 ${tone}`} />
-                  <span className="text-[12.5px] leading-[1.55] text-[var(--workspace-text-secondary)]">
+                  <span className="text-[12.5px] leading-[1.55] text-ws-text-sub">
                     {text}
                   </span>
                 </button>
@@ -209,7 +209,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   }, [session, showPendingInputHint, transcriptItems])
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[var(--workspace-page-bg)]">
+    <div className="flex h-full min-h-0 flex-col bg-ws-page">
       <WorkspaceTopbar
         title={session?.title || "Thread"}
         tag={session?.project?.name}
@@ -225,12 +225,12 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       />
 
       {sessionQuery.isLoading ? (
-        <div className="flex flex-1 items-center justify-center px-6 text-[13px] text-[var(--workspace-text-muted)]">
+        <div className="flex flex-1 items-center justify-center px-6 text-[13px] text-ws-text-muted">
           Loading thread...
         </div>
       ) : sessionQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
-          <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-6 py-4 text-[12px] text-[var(--workspace-text-muted)]">
+          <div className="rounded-2xl border border-ws-border bg-ws-hover-soft px-6 py-4 text-xs text-ws-text-muted">
             This thread is temporarily unavailable.
           </div>
         </div>
@@ -242,7 +242,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 <ArtifactPills session={session} />
 
                 {session.attentionRequired ? (
-                  <div className="rounded-[1rem] border border-amber-300/15 bg-amber-300/8 px-4 py-3">
+                  <div className="rounded-2xl border border-amber-300/15 bg-amber-300/8 px-4 py-3">
                     <div className="mb-1 text-[12px] text-amber-100/80">
                       Attention
                     </div>
@@ -333,9 +333,9 @@ function ArtifactPills({ session }: { session: Session }) {
         <button
           key={artifact.id}
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg)] px-3 py-1.5 text-[12px] text-[var(--workspace-text-secondary)] transition hover:bg-[var(--workspace-active-bg)]"
+          className="inline-flex items-center gap-2 rounded-md border border-ws-border bg-ws-hover px-3 py-1.5 text-xs text-ws-text-sub transition hover:bg-ws-active"
         >
-          <FileText className="size-3.5 text-[var(--workspace-text-muted)]" />
+          <FileText className="size-3.5 text-ws-text-muted" />
           <span>{artifact.label}</span>
         </button>
       ))}
@@ -353,14 +353,14 @@ function ArtifactStrip({ session }: { session: Session }) {
       {session.artifacts.slice(0, 2).map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4"
+          className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-[13px] text-[var(--workspace-text-primary)]">
+              <div className="truncate text-[13px] text-ws-text">
                 {artifact.label}
               </div>
-              <div className="mt-1 text-[12px] text-[var(--workspace-text-muted)]">
+              <div className="mt-1 text-xs text-ws-text-muted">
                 {formatArtifactKind(artifact.kind)}
               </div>
             </div>
@@ -369,7 +369,7 @@ function ArtifactStrip({ session }: { session: Session }) {
                 href={artifact.downloadUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-tag-bg)] px-2.5 py-1 text-[11px] text-[var(--workspace-text-secondary)] transition hover:bg-[var(--workspace-hover-bg)]"
+                className="shrink-0 rounded-md border border-ws-border bg-ws-tag px-2.5 py-1 text-[11px] text-ws-text-sub transition hover:bg-ws-hover"
               >
                 Open
               </a>
@@ -400,7 +400,7 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="text-[11px] font-semibold tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
+      <div className="text-[11px] font-semibold tracking-[0.08em] text-ws-text-muted uppercase">
         Activity
       </div>
       {items.map((item) =>
@@ -417,13 +417,13 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
 function PendingInputCard({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
-        <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
+      <div className="max-w-[560px] rounded-2xl border border-ws-border-strong bg-ws-hover px-4 py-3">
+        <div className="mb-2 text-xs text-ws-text-muted">
           You
         </div>
         <SessionRichText
           text={text}
-          className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+          className="space-y-3 text-[13.5px] leading-7 text-ws-text"
         />
       </div>
     </div>
@@ -437,57 +437,57 @@ function TranscriptItemCard({ item }: { item: SessionTranscriptItem }) {
     case SessionTranscriptItemKind.USER_MESSAGE:
       return (
         <div className="flex justify-end">
-          <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
-            <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
+          <div className="max-w-[560px] rounded-2xl border border-ws-border-strong bg-ws-hover px-4 py-3">
+            <div className="mb-2 text-xs text-ws-text-muted">
               {label}
             </div>
             <SessionRichText
               text={item.body}
-              className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+              className="space-y-3 text-[13.5px] leading-7 text-ws-text"
             />
           </div>
         </div>
       )
     case SessionTranscriptItemKind.AGENT_MESSAGE:
       return (
-        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
+        <div className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-muted)]">
+            <div className="text-xs text-ws-text-muted">
               {label}
             </div>
             <TranscriptStatus status={item.status} />
           </div>
           <SessionRichText
             text={item.body}
-            className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+            className="space-y-3 text-[13.5px] leading-7 text-ws-text"
           />
         </div>
       )
     case SessionTranscriptItemKind.REASONING:
       return (
-        <div className="rounded-[1rem] border border-dashed border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-4 py-4">
+        <div className="rounded-2xl border border-dashed border-ws-border bg-ws-hover-soft px-4 py-4">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-muted)]">
+            <div className="text-xs text-ws-text-muted">
               {label}
             </div>
             <TranscriptStatus status={item.status} />
           </div>
           <SessionRichText
             text={item.body}
-            className="space-y-3 text-[13px] leading-7 text-[var(--workspace-text-secondary)]"
+            className="space-y-3 text-[13px] leading-7 text-ws-text-sub"
           />
         </div>
       )
     default:
       return (
-        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
+        <div className="rounded-2xl border border-ws-border bg-ws-surface px-4 py-4">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-secondary)]">
+            <div className="text-xs text-ws-text-sub">
               {label}
             </div>
             <TranscriptStatus status={item.status} />
           </div>
-          <pre className="workspace-scrollbar m-0 overflow-x-auto font-mono text-[12px] leading-6 break-words whitespace-pre-wrap text-[var(--workspace-text-primary)]">
+          <pre className="workspace-scrollbar m-0 overflow-x-auto font-mono text-xs leading-6 break-words whitespace-pre-wrap text-ws-text">
             {item.body}
           </pre>
         </div>
@@ -501,7 +501,7 @@ function TranscriptStatus({ status }: { status: string }) {
   }
 
   return (
-    <span className="rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-tag-bg)] px-2 py-0.5 text-[10px] tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
+    <span className="rounded-md border border-ws-border bg-ws-tag px-2 py-0.5 text-[10px] tracking-[0.08em] text-ws-text-muted uppercase">
       {status}
     </span>
   )
@@ -532,11 +532,11 @@ function normalizeTranscriptText(value: string) {
 
 function TypingIndicator() {
   return (
-    <div className="flex items-center gap-2 pb-2 text-[12px] text-[var(--workspace-text-muted)]">
+    <div className="flex items-center gap-2 pb-2 text-xs text-ws-text-muted">
       <div className="flex items-center gap-1">
-        <span className="size-1.5 animate-pulse rounded-full bg-[var(--workspace-text-muted)]" />
-        <span className="size-1.5 animate-pulse rounded-full bg-[var(--workspace-text-muted)] [animation-delay:140ms]" />
-        <span className="size-1.5 animate-pulse rounded-full bg-[var(--workspace-text-muted)] [animation-delay:280ms]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted" />
+        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted [animation-delay:140ms]" />
+        <span className="size-1.5 animate-pulse rounded-full bg-ws-text-muted [animation-delay:280ms]" />
       </div>
       <span>Thinking...</span>
     </div>

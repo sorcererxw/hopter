@@ -110,34 +110,34 @@ function makeFavorites(roots: DirectoryRoot[]) {
   }
 
   return [
-    { icon: <Home className="size-[13px] text-[#5ea0ef]" />, label: "Home", path: homeRoot.path },
+    { icon: <Home className="size-[13px] text-sky-400" />, label: "Home", path: homeRoot.path },
     {
-      icon: <Monitor className="size-[13px] text-[#5ea0ef]" />,
+      icon: <Monitor className="size-[13px] text-sky-400" />,
       label: "Desktop",
       path: joinPath(homeRoot.path, "Desktop"),
     },
     {
-      icon: <FileText className="size-[13px] text-[#5ea0ef]" />,
+      icon: <FileText className="size-[13px] text-sky-400" />,
       label: "Documents",
       path: joinPath(homeRoot.path, "Documents"),
     },
     {
-      icon: <Download className="size-[13px] text-[#5ea0ef]" />,
+      icon: <Download className="size-[13px] text-sky-400" />,
       label: "Downloads",
       path: joinPath(homeRoot.path, "Downloads"),
     },
     {
-      icon: <Image className="size-[13px] text-[#5ea0ef]" />,
+      icon: <Image className="size-[13px] text-sky-400" />,
       label: "Pictures",
       path: joinPath(homeRoot.path, "Pictures"),
     },
     {
-      icon: <Music className="size-[13px] text-[#5ea0ef]" />,
+      icon: <Music className="size-[13px] text-sky-400" />,
       label: "Music",
       path: joinPath(homeRoot.path, "Music"),
     },
     {
-      icon: <Film className="size-[13px] text-[#5ea0ef]" />,
+      icon: <Film className="size-[13px] text-sky-400" />,
       label: "Movies",
       path: joinPath(homeRoot.path, "Movies"),
     },
@@ -319,10 +319,10 @@ export function ProjectPickerDialog() {
       <DialogContent
         showCloseButton={false}
         data-testid="project-picker-dialog"
-        className="h-[min(960px,calc(100vh-48px))] !w-[min(1412px,calc(100vw-72px))] !max-w-[calc(100vw-72px)] gap-0 overflow-hidden rounded-[18px] border-0 bg-[#1e1e1e] p-0 text-zinc-100 shadow-[0_32px_80px_rgba(0,0,0,0.8)] ring-0 sm:!max-w-[calc(100vw-72px)]"
+        className="h-[min(960px,calc(100vh-48px))] !w-[min(1412px,calc(100vw-72px))] !max-w-[calc(100vw-72px)] gap-0 overflow-hidden rounded-[18px] border-0 bg-popover p-0 text-zinc-100 shadow-[0_32px_80px_rgba(0,0,0,0.8)] ring-0 sm:!max-w-[calc(100vw-72px)]"
       >
-        <div className="flex h-full min-h-0 flex-col bg-[#1e1e1e]">
-          <div className="flex h-[52px] items-center gap-2 border-b border-white/8 bg-[#1a1a1a] px-3">
+        <div className="flex h-full min-h-0 flex-col bg-popover">
+          <div className="flex h-[52px] items-center gap-2 border-b border-border bg-card px-3">
             <button
               type="button"
               onClick={navigateBack}
@@ -332,7 +332,7 @@ export function ProjectPickerDialog() {
               <X className="size-[14px]" />
             </button>
 
-            <div className="flex items-center gap-[2px]">
+            <div className="flex items-center gap-0.5">
               <ToolbarButton disabled={historyIndex <= 0} onClick={goBack}>
                 <ChevronLeft className="size-[14px]" />
               </ToolbarButton>
@@ -341,14 +341,14 @@ export function ProjectPickerDialog() {
               </ToolbarButton>
             </div>
 
-            <div className="flex min-w-0 flex-1 items-center gap-[2px] overflow-hidden">
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
               {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.path} className="flex min-w-0 items-center gap-[2px]">
+                <div key={crumb.path} className="flex min-w-0 items-center gap-0.5">
                   <button
                     type="button"
                     onClick={() => openDirectory(crumb.path)}
                     className={cn(
-                      "max-w-[120px] truncate rounded px-1 py-0.5 text-[12px] transition hover:bg-white/8",
+                      "max-w-[120px] truncate rounded px-1 py-0.5 text-xs transition hover:bg-accent",
                       index === breadcrumbs.length - 1
                         ? "font-semibold text-zinc-100"
                         : "text-zinc-400"
@@ -363,7 +363,7 @@ export function ProjectPickerDialog() {
               ))}
             </div>
 
-            <div className="mr-1 flex items-center gap-[2px]">
+            <div className="mr-1 flex items-center gap-0.5">
               <ToolbarButton active={viewMode === "list"} onClick={() => setViewMode("list")}>
                 <List className="size-[13px]" />
               </ToolbarButton>
@@ -372,12 +372,12 @@ export function ProjectPickerDialog() {
               </ToolbarButton>
             </div>
 
-            <div className="flex w-[272px] items-center gap-[8px] rounded-[12px] bg-white/8 px-4 py-[10px]">
+            <div className="flex w-[272px] items-center gap-2 rounded-xl bg-accent px-4 py-2.5">
               <Search className="size-[14px] shrink-0 text-zinc-500" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full bg-transparent text-[14px] text-zinc-100 outline-none placeholder:text-zinc-500"
+                className="w-full bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
                 placeholder="Search"
               />
             </div>
@@ -388,7 +388,7 @@ export function ProjectPickerDialog() {
           </div>
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
-            <div className="flex w-[320px] shrink-0 flex-col overflow-y-auto border-r border-white/8 bg-[#161616] py-6">
+            <div className="flex w-[320px] shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar py-6">
               <SidebarSection label="Favorites">
                 {favorites.map((item) => (
                   <SidebarItem
@@ -414,12 +414,12 @@ export function ProjectPickerDialog() {
               </SidebarSection>
             </div>
 
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#252525]">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-ws-elevated">
               {listingQuery.isLoading ? (
                 <div className="space-y-2 px-4 py-4">
-                  <Skeleton className="h-10 w-full bg-white/8" />
-                  <Skeleton className="h-10 w-full bg-white/8" />
-                  <Skeleton className="h-10 w-full bg-white/8" />
+                  <Skeleton className="h-10 w-full bg-accent" />
+                  <Skeleton className="h-10 w-full bg-accent" />
+                  <Skeleton className="h-10 w-full bg-accent" />
                 </div>
               ) : viewMode === "list" ? (
                 <ListView
@@ -440,13 +440,13 @@ export function ProjectPickerDialog() {
           </div>
 
           {activeError ? (
-            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-[12px] text-amber-100">
+            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-100">
               {typeof activeError === "string" ? activeError : errorMessage(activeError)}
             </div>
           ) : null}
 
-          <div className="flex h-[52px] items-center justify-between border-t border-white/8 bg-[#1a1a1a] px-5">
-            <div className="min-w-0 flex-1 overflow-hidden text-[12px] text-zinc-500">
+          <div className="flex h-[52px] items-center justify-between border-t border-border bg-card px-5">
+            <div className="min-w-0 flex-1 overflow-hidden text-xs text-zinc-500">
               <span className="truncate">{footerText}</span>
             </div>
 
@@ -464,8 +464,8 @@ export function ProjectPickerDialog() {
                 className={cn(
                   "rounded-md px-4 py-1.5 text-[13px] font-medium text-white transition",
                   createProject.isPending
-                    ? "cursor-wait bg-[#2a5cb8]/70"
-                    : "bg-[#2a5cb8] hover:bg-[#1e4fa0]"
+                    ? "cursor-wait bg-picker/70"
+                    : "bg-picker hover:bg-picker-hover"
                 )}
                 data-testid="project-create-submit"
               >
@@ -488,7 +488,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="px-6 pb-2 pt-2 text-[16px] font-semibold uppercase tracking-[0.04em] text-zinc-400">
+      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-[0.04em] text-zinc-400">
         {label}
       </div>
       {children}
@@ -513,7 +513,7 @@ function SidebarItem({
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-4 px-6 py-3 text-left text-[22px] transition",
-        active ? "bg-[#2a5cb8]/25 text-zinc-100" : "text-zinc-400 hover:bg-white/6 hover:text-zinc-200"
+        active ? "bg-picker/25 text-zinc-100" : "text-zinc-400 hover:bg-secondary hover:text-zinc-200"
       )}
       style={{ borderRadius: 0 }}
     >
@@ -545,12 +545,12 @@ function ToolbarButton({
       onClick={onClick}
       title={title}
       className={cn(
-        "flex size-10 items-center justify-center rounded-[10px] text-zinc-400 transition",
+        "flex size-10 items-center justify-center rounded-lg text-zinc-400 transition",
         disabled
           ? "cursor-not-allowed opacity-30"
           : active
             ? "bg-white/15 text-zinc-100"
-            : "hover:bg-white/8 hover:text-zinc-100"
+            : "hover:bg-accent hover:text-zinc-100"
       )}
     >
       {children}
@@ -581,14 +581,14 @@ function ListView({
         <col className="w-[18%]" />
       </colgroup>
       <thead>
-        <tr className="border-b border-white/8">
-          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+        <tr className="border-b border-border">
+          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
             Name
           </th>
-          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
             Date Modified
           </th>
-          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+          <th className="sticky top-0 bg-ws-elevated px-6 py-4 text-left text-base font-medium text-zinc-500">
             Size
           </th>
         </tr>
@@ -603,25 +603,25 @@ function ListView({
               key={entry.path}
               onClick={() => onSelect(entry)}
               onDoubleClick={() => onDoubleOpen(entry)}
-              className={cn("cursor-pointer transition", selected ? "bg-[#2a5cb8]" : "hover:bg-white/5")}
+              className={cn("cursor-pointer transition", selected ? "bg-picker" : "hover:bg-white/5")}
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                   <Icon
                     className={cn(
                       "size-[22px] shrink-0",
-                      selected ? "text-white" : entry.isDirectory ? "text-[#5ea0ef]" : "text-zinc-400"
+                      selected ? "text-white" : entry.isDirectory ? "text-sky-400" : "text-zinc-400"
                     )}
                   />
-                  <span className={cn("text-[18px]", selected ? "text-white" : "text-zinc-100")}>
+                  <span className={cn("text-lg", selected ? "text-white" : "text-zinc-100")}>
                     {entry.name}
                   </span>
                 </div>
               </td>
-              <td className={cn("px-6 py-4 text-[18px]", selected ? "text-white/75" : "text-zinc-400")}>
+              <td className={cn("px-6 py-4 text-lg", selected ? "text-white/75" : "text-zinc-400")}>
                 —
               </td>
-              <td className={cn("px-6 py-4 text-[18px]", selected ? "text-white/75" : "text-zinc-500")}>
+              <td className={cn("px-6 py-4 text-lg", selected ? "text-white/75" : "text-zinc-500")}>
                 —
               </td>
             </tr>
@@ -660,18 +660,18 @@ function GridView({
             onClick={() => onSelect(entry)}
             onDoubleClick={() => onDoubleOpen(entry)}
             className={cn(
-              "flex flex-col items-center gap-[8px] px-3 pb-3 pt-3 text-center transition",
-              selected ? "rounded-lg bg-[#2a5cb8] text-white" : "text-zinc-100 hover:rounded-lg hover:bg-white/5"
+              "flex flex-col items-center gap-2 px-3 pb-3 pt-3 text-center transition",
+              selected ? "rounded-lg bg-picker text-white" : "text-zinc-100 hover:rounded-lg hover:bg-white/5"
             )}
             style={{ width: "104px" }}
           >
             <Icon
               className={cn(
                 "size-10",
-                selected ? "text-white" : entry.isDirectory ? "text-[#5ea0ef]" : "text-zinc-400"
+                selected ? "text-white" : entry.isDirectory ? "text-sky-400" : "text-zinc-400"
               )}
             />
-            <span className="line-clamp-2 text-[12px] leading-[1.3]">{entry.name}</span>
+            <span className="line-clamp-2 text-xs leading-[1.3]">{entry.name}</span>
           </button>
         )
       })}
