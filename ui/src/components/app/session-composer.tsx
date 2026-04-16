@@ -47,8 +47,8 @@ export function SessionComposer({
   }
 
   return (
-    <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4">
-      <div className="overflow-hidden rounded-2xl border border-ws-border-strong bg-ws-panel shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4" data-testid={composerTestId}>
+      <div className="overflow-hidden rounded-2xl border border-ws-border-strong bg-popover shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="px-4 pb-3 pt-3">
           <textarea
             data-testid={inputTestId}

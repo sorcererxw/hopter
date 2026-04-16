@@ -52,7 +52,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[680px] gap-0 overflow-hidden rounded-2xl border border-ws-border-strong bg-ws-panel p-0 text-ws-text ring-0"
+        className="max-w-[680px] gap-0 overflow-hidden rounded-2xl border border-ws-border-strong bg-popover p-0 text-ws-text ring-0"
       >
         <div className="flex items-center gap-3 border-b border-ws-border px-4 py-3">
           <Search className="size-4 text-ws-text-muted" />

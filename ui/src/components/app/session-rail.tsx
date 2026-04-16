@@ -152,7 +152,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
       <div className="flex items-center justify-between px-3 pb-1 pt-2">
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.05em] text-ws-text-muted transition hover:text-ws-text-sub"
+          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-wider text-ws-text-muted transition hover:text-ws-text-sub"
         >
           <FolderOpen className="size-[11px]" />
           <span>Threads</span>

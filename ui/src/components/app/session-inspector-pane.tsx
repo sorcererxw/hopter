@@ -109,7 +109,7 @@ export function SessionInspectorPane({
 
   return (
     <aside className="hidden h-full w-[404px] shrink-0 border-l border-ws-border bg-ws-surface lg:flex lg:flex-col">
-      <div className="flex items-center gap-1 border-b border-ws-border bg-ws-panel px-3 py-2">
+      <div className="flex items-center gap-1 border-b border-ws-border bg-popover px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           <InspectorTabButton active={activeTab === "summary"} onClick={() => onTabChange("summary")}>
             Summary
