@@ -15,7 +15,7 @@ function formatRelativeTime(date?: Date) {
   if (!date) return ""
   const diffMs = Date.now() - date.getTime()
   const diffMinutes = Math.floor(diffMs / 60_000)
-  if (diffMinutes < 1) return "now"
+  if (diffMinutes < 1) return "just now"
   if (diffMinutes < 60) return `${diffMinutes}m`
   const diffHours = Math.floor(diffMinutes / 60)
   if (diffHours < 24) return `${diffHours}h`
@@ -49,7 +49,7 @@ function projectLabel(rootPath?: string, fallbackName?: string) {
     const last = segments.at(-1)
     if (last) return last
   }
-  return fallbackName || "untitled"
+  return fallbackName || "Untitled"
 }
 
 /* ------------------------------------------------------------------ */
