@@ -37,6 +37,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
       <div className="h-screen overflow-hidden bg-[var(--workspace-page-bg)] text-[var(--workspace-text-primary)]">
         <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
+        {/* Mobile overlay */}
         {sidebarOpen ? (
           <button
             type="button"
@@ -46,8 +47,9 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
           />
         ) : null}
 
+        {/* Mobile drawer */}
         <aside
-          className={`fixed left-0 top-0 z-50 h-full w-[248px] border-r border-[color:var(--workspace-border)] bg-[var(--workspace-sidebar-bg)] transition-transform duration-300 md:hidden ${
+          className={`fixed left-0 top-0 z-50 h-full w-[var(--sidebar-width)] border-r border-[color:var(--workspace-border)] bg-[var(--workspace-sidebar-bg)] transition-transform duration-200 ease-out md:hidden ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -57,7 +59,8 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
           />
         </aside>
 
-        <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[248px_minmax(0,1fr)]">
+        {/* Desktop layout */}
+        <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[var(--sidebar-width)_minmax(0,1fr)]">
           <aside className="hidden min-h-0 h-full border-r border-[color:var(--workspace-border)] bg-[var(--workspace-sidebar-bg)] md:flex md:flex-col">
             <SessionRail onOpenSearch={() => setSearchOpen(true)} />
           </aside>

@@ -38,6 +38,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 2px);
+  --sidebar-width: 260px;
 }
 
 :root {
