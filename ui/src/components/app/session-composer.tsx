@@ -47,11 +47,8 @@ export function SessionComposer({
   }
 
   return (
-    <div
-      className="px-3 pb-3 pt-2 md:px-4 md:pb-4"
-      data-testid={composerTestId}
-    >
-      <div className="overflow-hidden rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-panel-bg)] shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4" data-testid={composerTestId}>
+      <div className="overflow-hidden rounded-2xl border border-ws-border-strong bg-popover shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="px-4 pb-3 pt-3">
           <textarea
             data-testid={inputTestId}
@@ -65,7 +62,7 @@ export function SessionComposer({
               }
             }}
             placeholder={placeholder}
-            className="min-h-14 w-full resize-none bg-transparent text-[14px] leading-[1.6] text-[var(--workspace-text-primary)] outline-none placeholder:text-[var(--workspace-text-disabled)]"
+            className="min-h-14 w-full resize-none bg-transparent text-sm leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -81,7 +78,7 @@ export function SessionComposer({
 
           <div className="flex items-center gap-2">
             <GhostIconButton aria-label="Voice input">
-              <Mic className="size-[15px]" />
+              <Mic className="size-4" />
             </GhostIconButton>
 
             <button
@@ -92,14 +89,14 @@ export function SessionComposer({
               className={cn(
                 "flex size-8 items-center justify-center rounded-lg transition md:size-7",
                 canSubmit
-                  ? "bg-[var(--workspace-text-primary)] text-[var(--workspace-page-bg)] hover:brightness-110"
-                  : "bg-[var(--workspace-hover-bg)] text-[var(--workspace-text-muted)]"
+                  ? "bg-primary text-primary-foreground hover:brightness-110"
+                  : "bg-accent text-muted-foreground"
               )}
             >
               {busy ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
-                <ArrowUp className="size-[14px]" />
+                <ArrowUp className="size-3.5" />
               )}
             </button>
           </div>
@@ -125,7 +122,7 @@ function GhostIconButton({
   return (
     <button
       type="button"
-      className="flex size-8 items-center justify-center rounded-md text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)] md:size-7"
+      className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-muted-foreground md:size-7"
       {...props}
     >
       {children}
@@ -137,10 +134,10 @@ function ChipButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-[12px] text-[var(--workspace-text-secondary)] transition hover:bg-[var(--workspace-hover-bg)]"
+      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-xs text-muted-foreground transition hover:bg-accent"
     >
       {children}
-      <ChevronDown className="size-[11px] text-[var(--workspace-text-muted)]" />
+      <ChevronDown className="size-3 text-muted-foreground" />
     </button>
   )
 }
@@ -149,7 +146,7 @@ function MetaButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center rounded-md px-2 py-1 text-[11.5px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg-soft)] hover:text-[var(--workspace-text-secondary)]"
+      className="inline-flex items-center rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-muted-foreground"
     >
       {children}
     </button>
