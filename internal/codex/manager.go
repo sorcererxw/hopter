@@ -243,6 +243,11 @@ func (m *Manager) dispatchInput(project core.Project, sessionID, threadID, input
 }
 
 func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string) {
+	userItem := userTranscriptItem(input)
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		AppendTranscriptItems: &[]core.SessionTranscriptItem{userItem},
+	})
+
 	resolvedThreadID, err := m.execTurns.Run(context.Background(), project, threadID, input, func(event codexsdk.Event) {
 		m.handleSDKEvent(sessionID, event)
 	})
@@ -290,6 +295,11 @@ func (m *Manager) handleSDKEvent(sessionID string, event codexsdk.Event) {
 			Summary:         &summary,
 		})
 	case *codexsdk.ItemCompletedEvent:
+		if transcriptItem, ok := normalizeSDKItem(typed.Item); ok {
+			m.updateWorkspaceSession(sessionID, core.SessionPatch{
+				AppendTranscriptItems: &[]core.SessionTranscriptItem{transcriptItem},
+			})
+		}
 		switch item := typed.Item.(type) {
 		case *codexsdk.AgentMessageItem:
 			text := strings.TrimSpace(item.Text)

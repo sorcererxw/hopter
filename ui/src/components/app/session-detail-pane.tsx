@@ -134,7 +134,9 @@ export function HomeWorkspacePane() {
 
         <SessionComposer
           busy={createSession.isPending}
+          composerTestId="home-session-composer"
           disabled={!selectedProjectId}
+          inputTestId="home-session-prompt-input"
           placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
           projectLabel={selectedProject?.name || "Local"}
           branchLabel="main"
@@ -157,6 +159,7 @@ export function HomeWorkspacePane() {
               navigate(`/sessions/${session.id}`)
             }
           }}
+          submitTestId="home-session-submit"
           value={prompt}
         />
       </div>
@@ -270,6 +273,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
             <SessionComposer
               busy={sendInput.isPending}
+              composerTestId="session-composer"
+              inputTestId="session-prompt-input"
               placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
               projectLabel={session.project?.name || "Local"}
               branchLabel="main"
@@ -287,6 +292,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 })
                 setPrompt("")
               }}
+              submitTestId="session-followup-submit"
               value={prompt}
             />
           </div>
@@ -404,7 +410,7 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-testid="session-transcript">
       {items.map((item) =>
         item.kind === "transcript" ? (
           <TranscriptEntry key={item.key} item={item.item} />
@@ -418,7 +424,7 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
 
 function PendingInputEntry({ text }: { text: string }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end" data-testid="session-transcript-pending">
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
@@ -450,7 +456,7 @@ function TranscriptEntry({ item }: { item: SessionTranscriptItem }) {
 
 function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end" data-testid="session-transcript-user">
       <div className="max-w-[85%]">
         <SessionRichText
           text={item.body}
@@ -463,7 +469,7 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
 
 function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-agent">
       <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg)]">
         <Bot className="size-3.5 text-[var(--workspace-text-secondary)]" />
       </div>
@@ -483,7 +489,7 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
   const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-reasoning">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
         <Lightbulb className="size-3.5 text-[var(--workspace-text-muted)]" />
       </div>
@@ -519,7 +525,7 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Tool call"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-tool">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
         <Wrench className="size-3.5 text-[var(--workspace-text-muted)]" />
       </div>
@@ -551,7 +557,7 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Command"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-command">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
         <Terminal className="size-3.5 text-[var(--workspace-text-muted)]" />
       </div>
@@ -583,7 +589,7 @@ function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "File change"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-file-change">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
         <FileCode className="size-3.5 text-[var(--workspace-text-muted)]" />
       </div>

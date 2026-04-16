@@ -246,6 +246,15 @@ func (w *InMemoryWorkspace) UpdateSession(sessionID string, patch SessionPatch) 
 	if patch.Artifacts != nil {
 		session.Artifacts = append([]Artifact(nil), (*patch.Artifacts)...)
 	}
+	if patch.TranscriptItems != nil {
+		session.TranscriptItems = append([]SessionTranscriptItem(nil), (*patch.TranscriptItems)...)
+	}
+	if patch.AppendTranscriptItems != nil {
+		session.TranscriptItems = append(session.TranscriptItems, (*patch.AppendTranscriptItems)...)
+		if len(session.TranscriptItems) > 200 {
+			session.TranscriptItems = append([]SessionTranscriptItem(nil), session.TranscriptItems[len(session.TranscriptItems)-200:]...)
+		}
+	}
 	session.UpdatedAt = time.Now().UTC()
 	w.sessions[session.ID] = session
 	w.publish(Event{Kind: EventSessionChanged, ProjectID: session.ProjectID, SessionID: session.ID})
