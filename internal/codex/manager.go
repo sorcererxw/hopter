@@ -22,10 +22,15 @@ type Manager struct {
 }
 
 type liveSession struct {
-	project core.Project
-	client  codexClient
-	thread  string
-	active  string
+	project             core.Project
+	client              codexClient
+	thread              string
+	active              string
+	record              ThreadRecord
+	optimisticSummary   string
+	optimisticLastInput string
+	optimisticStatus    core.SessionState
+	optimisticUpdatedAt time.Time
 }
 
 type codexClient interface {
@@ -168,7 +173,7 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	}
 
 	var (
-		turn *StartTurnResult
+		turn   *StartTurnResult
 		runErr error
 	)
 	if strings.TrimSpace(live.active) != "" {
@@ -183,6 +188,10 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	m.mu.Lock()
 	if current := m.live[sessionID]; current != nil {
 		current.active = turn.Turn.ID
+		current.optimisticSummary = "Codex is processing the latest input…"
+		current.optimisticLastInput = truncate(strings.TrimSpace(input), 120)
+		current.optimisticStatus = core.SessionStateRunning
+		current.optimisticUpdatedAt = time.Now().UTC()
 	}
 	m.mu.Unlock()
 
@@ -329,6 +338,9 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			m.mu.Lock()
 			if live := m.live[sessionID]; live != nil {
 				live.active = active
+				live.optimisticSummary = summary
+				live.optimisticStatus = running
+				live.optimisticUpdatedAt = time.Now().UTC()
 			}
 			m.mu.Unlock()
 		}
@@ -343,6 +355,8 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		live := m.live[sessionID]
 		if live != nil {
 			live.active = ""
+			live.optimisticSummary = ""
+			live.optimisticStatus = ""
 		}
 		m.mu.Unlock()
 
@@ -455,6 +469,8 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 		m.mu.Lock()
 		if current := m.live[sessionID]; current != nil {
 			current.active = ""
+			current.optimisticSummary = ""
+			current.optimisticStatus = ""
 		}
 		m.mu.Unlock()
 		return
@@ -528,8 +544,7 @@ func (m *Manager) fetchThreadSession(
 		session := local
 		session.ProjectID = project.ID
 		session.BackendThreadID = threadID
-		session.Summary = latestAgentSummary(read)
-		session.ActiveTurnID = latestActiveTurnID(read)
+		hydrateSessionFromRead(&session, read)
 		latestStatus := latestTerminalTurnStatus(read)
 		optimisticPendingStart :=
 			local.Status == core.SessionStateRunning &&
@@ -574,7 +589,7 @@ func (m *Manager) fetchThreadSession(
 
 	session := sessionFromThread(resumed.Thread, project, local, hasLocal)
 	session.BackendThreadID = threadID
-	session.Summary = latestAgentSummary(read)
+	hydrateSessionFromRead(&session, read)
 	if session.Summary == "" {
 		session.Summary = fallbackThreadPreview(resumed.Thread, local, hasLocal)
 	}
@@ -590,6 +605,14 @@ func (m *Manager) fetchThreadSession(
 }
 
 func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Project, error) {
+	if live := m.liveSession(threadID); live != nil && live.thread == threadID {
+		read, err := live.client.ReadThread(threadID)
+		if err != nil {
+			return m.sessionFromLiveRaw(threadID, live, nil), live.project, nil
+		}
+		return m.sessionFromLiveRaw(threadID, live, read), live.project, nil
+	}
+
 	client, _, err := m.startEphemeralClient()
 	if err != nil {
 		return core.Session{}, core.Project{}, err
@@ -608,11 +631,10 @@ func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Pro
 	project := projectForThreadOrSynthetic(m.workspace.ListProjects(), resumed.Thread)
 	session := sessionFromThread(resumed.Thread, project, core.Session{}, false)
 	session.BackendThreadID = threadID
-	session.Summary = latestAgentSummary(read)
+	hydrateSessionFromRead(&session, read)
 	if session.Summary == "" {
 		session.Summary = fallbackThreadPreview(resumed.Thread, core.Session{}, false)
 	}
-	session.ActiveTurnID = latestActiveTurnID(read)
 	if session.ActiveTurnID != "" {
 		session.Status = core.SessionStateRunning
 	}
@@ -646,7 +668,8 @@ func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, thr
 		return nil, err
 	}
 
-	if _, err := client.ResumeThread(threadID, project.RootPath); err != nil {
+	resumed, err := client.ResumeThread(threadID, project.RootPath)
+	if err != nil {
 		_ = client.Close()
 		return nil, err
 	}
@@ -662,6 +685,7 @@ func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, thr
 		client:  client,
 		thread:  threadID,
 		active:  latestActiveTurnID(read),
+		record:  resumed.Thread,
 	}
 	m.mu.Lock()
 	m.live[sessionKey] = live
@@ -673,6 +697,54 @@ func (m *Manager) liveSession(sessionID string) *liveSession {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.live[sessionID]
+}
+
+func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *ReadThreadResult) core.Session {
+	record := live.record
+	if strings.TrimSpace(record.ID) == "" {
+		record.ID = threadID
+		record.Cwd = live.project.RootPath
+		record.UpdatedAt = time.Now().UTC().Unix()
+	}
+
+	session := sessionFromThread(record, live.project, core.Session{}, false)
+	session.BackendThreadID = threadID
+	hydrateSessionFromRead(&session, read)
+
+	if session.Summary == "" && strings.TrimSpace(live.optimisticSummary) != "" {
+		session.Summary = live.optimisticSummary
+	}
+	if session.Summary == "" {
+		session.Summary = fallbackThreadPreview(record, core.Session{}, false)
+	}
+
+	if strings.TrimSpace(live.optimisticLastInput) != "" {
+		session.LastInputHint = live.optimisticLastInput
+	}
+
+	if session.ActiveTurnID != "" || strings.TrimSpace(live.active) != "" {
+		session.Status = core.SessionStateRunning
+	} else if live.optimisticStatus != "" {
+		session.Status = live.optimisticStatus
+	} else {
+		session.Status = finalSessionState(latestTerminalTurnStatus(read), session.Status)
+	}
+
+	if !live.optimisticUpdatedAt.IsZero() {
+		session.UpdatedAt = live.optimisticUpdatedAt
+	}
+
+	return session
+}
+
+func hydrateSessionFromRead(session *core.Session, read *ReadThreadResult) {
+	if session == nil || read == nil {
+		return
+	}
+
+	session.TranscriptItems = normalizeTranscriptItems(read)
+	session.Summary = latestAgentSummary(read)
+	session.ActiveTurnID = latestActiveTurnID(read)
 }
 
 func (m *Manager) sessionByThreadID(threadID string) (core.Session, bool) {

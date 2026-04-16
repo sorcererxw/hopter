@@ -27,6 +27,25 @@ message Session {
   string last_input_hint = 8;
   google.protobuf.Timestamp updated_at = 9;
   repeated ArtifactRef artifacts = 10;
+  repeated SessionTranscriptItem transcript_items = 11;
+}
+
+enum SessionTranscriptItemKind {
+  SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED = 0;
+  SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE = 1;
+  SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE = 2;
+  SESSION_TRANSCRIPT_ITEM_KIND_REASONING = 3;
+  SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL = 4;
+  SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION = 5;
+  SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE = 6;
+}
+
+message SessionTranscriptItem {
+  string id = 1;
+  SessionTranscriptItemKind kind = 2;
+  string title = 3;
+  string body = 4;
+  string status = 5;
 }
 
 message SessionListItem {

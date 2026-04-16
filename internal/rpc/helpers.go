@@ -63,6 +63,25 @@ func mapArtifactKind(kind core.ArtifactKind) orchdv1.ArtifactKind {
 	}
 }
 
+func mapTranscriptItemKind(kind core.SessionTranscriptItemKind) orchdv1.SessionTranscriptItemKind {
+	switch kind {
+	case core.SessionTranscriptItemKindUserMessage:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE
+	case core.SessionTranscriptItemKindAgentMessage:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE
+	case core.SessionTranscriptItemKindReasoning:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_REASONING
+	case core.SessionTranscriptItemKindToolCall:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL
+	case core.SessionTranscriptItemKindCommandExecution:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION
+	case core.SessionTranscriptItemKindFileChange:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE
+	default:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED
+	}
+}
+
 func timestamp(t time.Time) *timestamppb.Timestamp {
 	if t.IsZero() {
 		return nil
@@ -145,6 +164,16 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 			ContentType: validUTF8(artifact.ContentType),
 		})
 	}
+	transcriptItems := make([]*orchdv1.SessionTranscriptItem, 0, len(session.TranscriptItems))
+	for _, item := range session.TranscriptItems {
+		transcriptItems = append(transcriptItems, &orchdv1.SessionTranscriptItem{
+			Id:     item.ID,
+			Kind:   mapTranscriptItemKind(item.Kind),
+			Title:  validUTF8(item.Title),
+			Body:   validUTF8(item.Body),
+			Status: validUTF8(item.Status),
+		})
+	}
 	return &orchdv1.Session{
 		Id:                session.ID,
 		Title:             validUTF8(session.Title),
@@ -156,6 +185,7 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 		LastInputHint:     validUTF8(session.LastInputHint),
 		UpdatedAt:         timestamp(session.UpdatedAt),
 		Artifacts:         artifacts,
+		TranscriptItems:   transcriptItems,
 	}
 }
 

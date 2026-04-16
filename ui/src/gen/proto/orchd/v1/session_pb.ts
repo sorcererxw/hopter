@@ -2,8 +2,8 @@
 // @generated from file orchd/v1/session.proto (package orchd.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { ApprovalDecision, ArtifactRef, ProjectRef, SessionStatus } from "./common_pb";
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orchd/v1/session.proto.
  */
 export const file_orchd_v1_session: GenFile = /*@__PURE__*/
-  fileDesc("ChZvcmNoZC92MS9zZXNzaW9uLnByb3RvEghvcmNoZC52MSKuAgoHU2Vzc2lvbhIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEg8KB3N1bW1hcnkYBSABKAkSGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhgKEGF0dGVudGlvbl9yZWFzb24YByABKAkSFwoPbGFzdF9pbnB1dF9oaW50GAggASgJEi4KCnVwZGF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEigKCWFydGlmYWN0cxgKIAMoCzIVLm9yY2hkLnYxLkFydGlmYWN0UmVmIsgBCg9TZXNzaW9uTGlzdEl0ZW0SCgoCaWQYASABKAkSDQoFdGl0bGUYAiABKAkSJQoHcHJvamVjdBgDIAEoCzIULm9yY2hkLnYxLlByb2plY3RSZWYSJwoGc3RhdHVzGAQgASgOMhcub3JjaGQudjEuU2Vzc2lvblN0YXR1cxIuCgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJhdHRlbnRpb25fcmVxdWlyZWQYBiABKAgiWwoTTGlzdFNlc3Npb25zUmVxdWVzdBIXCgpwcm9qZWN0X2lkGAEgASgJSACIAQESEgoFbGltaXQYAiABKA1IAYgBAUINCgtfcHJvamVjdF9pZEIICgZfbGltaXQiQwoUTGlzdFNlc3Npb25zUmVzcG9uc2USKwoIc2Vzc2lvbnMYASADKAsyGS5vcmNoZC52MS5TZXNzaW9uTGlzdEl0ZW0iJwoRR2V0U2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSI4ChJHZXRTZXNzaW9uUmVzcG9uc2USIgoHc2Vzc2lvbhgBIAEoCzIRLm9yY2hkLnYxLlNlc3Npb24iWAoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEgoKcHJvamVjdF9pZBgBIAEoCRISCgV0aXRsZRgCIAEoCUgAiAEBEg4KBnByb21wdBgDIAEoCUIICgZfdGl0bGUiOwoVQ3JlYXRlU2Vzc2lvblJlc3BvbnNlEiIKB3Nlc3Npb24YASABKAsyES5vcmNoZC52MS5TZXNzaW9uIjwKF1NlbmRTZXNzaW9uSW5wdXRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDQoFaW5wdXQYAiABKAkicAoYU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAimgEKH1Jlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRITCgthcHByb3ZhbF9pZBgCIAEoCRIsCghkZWNpc2lvbhgDIAEoDjIaLm9yY2hkLnYxLkFwcHJvdmFsRGVjaXNpb24SFAoHY29tbWVudBgEIAEoCUgAiAEBQgoKCF9jb21tZW50IngKIFJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiMQobTGlzdFNlc3Npb25BcnRpZmFjdHNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiSAocTGlzdFNlc3Npb25BcnRpZmFjdHNSZXNwb25zZRIoCglhcnRpZmFjdHMYASADKAsyFS5vcmNoZC52MS5BcnRpZmFjdFJlZjKvBAoOU2Vzc2lvblNlcnZpY2USTQoMTGlzdFNlc3Npb25zEh0ub3JjaGQudjEuTGlzdFNlc3Npb25zUmVxdWVzdBoeLm9yY2hkLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEkcKCkdldFNlc3Npb24SGy5vcmNoZC52MS5HZXRTZXNzaW9uUmVxdWVzdBocLm9yY2hkLnYxLkdldFNlc3Npb25SZXNwb25zZRJQCg1DcmVhdGVTZXNzaW9uEh4ub3JjaGQudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaHy5vcmNoZC52MS5DcmVhdGVTZXNzaW9uUmVzcG9uc2USWQoQU2VuZFNlc3Npb25JbnB1dBIhLm9yY2hkLnYxLlNlbmRTZXNzaW9uSW5wdXRSZXF1ZXN0GiIub3JjaGQudjEuU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlEnEKGFJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbBIpLm9yY2hkLnYxLlJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QaKi5vcmNoZC52MS5SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXNwb25zZRJlChRMaXN0U2Vzc2lvbkFydGlmYWN0cxIlLm9yY2hkLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBomLm9yY2hkLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2VCiAEKDGNvbS5vcmNoZC52MUIMU2Vzc2lvblByb3RvUAFaKW9yY2hkL2ludGVybmFsL2dlbi9wcm90by9vcmNoZC92MTtvcmNoZHYxogIDT1hYqgIIT3JjaGQuVjHKAghPcmNoZFxWMeICFE9yY2hkXFYxXEdQQk1ldGFkYXRh6gIJT3JjaGQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_orchd_v1_common]);
+  fileDesc("ChZvcmNoZC92MS9zZXNzaW9uLnByb3RvEghvcmNoZC52MSLpAgoHU2Vzc2lvbhIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEg8KB3N1bW1hcnkYBSABKAkSGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhgKEGF0dGVudGlvbl9yZWFzb24YByABKAkSFwoPbGFzdF9pbnB1dF9oaW50GAggASgJEi4KCnVwZGF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEigKCWFydGlmYWN0cxgKIAMoCzIVLm9yY2hkLnYxLkFydGlmYWN0UmVmEjkKEHRyYW5zY3JpcHRfaXRlbXMYCyADKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0igwEKFVNlc3Npb25UcmFuc2NyaXB0SXRlbRIKCgJpZBgBIAEoCRIxCgRraW5kGAIgASgOMiMub3JjaGQudjEuU2Vzc2lvblRyYW5zY3JpcHRJdGVtS2luZBINCgV0aXRsZRgDIAEoCRIMCgRib2R5GAQgASgJEg4KBnN0YXR1cxgFIAEoCSLIAQoPU2Vzc2lvbkxpc3RJdGVtEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiUKB3Byb2plY3QYAyABKAsyFC5vcmNoZC52MS5Qcm9qZWN0UmVmEicKBnN0YXR1cxgEIAEoDjIXLm9yY2hkLnYxLlNlc3Npb25TdGF0dXMSLgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIIlsKE0xpc3RTZXNzaW9uc1JlcXVlc3QSFwoKcHJvamVjdF9pZBgBIAEoCUgAiAEBEhIKBWxpbWl0GAIgASgNSAGIAQFCDQoLX3Byb2plY3RfaWRCCAoGX2xpbWl0IkMKFExpc3RTZXNzaW9uc1Jlc3BvbnNlEisKCHNlc3Npb25zGAEgAygLMhkub3JjaGQudjEuU2Vzc2lvbkxpc3RJdGVtIicKEUdldFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiOAoSR2V0U2Vzc2lvblJlc3BvbnNlEiIKB3Nlc3Npb24YASABKAsyES5vcmNoZC52MS5TZXNzaW9uIlgKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhIKCnByb2plY3RfaWQYASABKAkSEgoFdGl0bGUYAiABKAlIAIgBARIOCgZwcm9tcHQYAyABKAlCCAoGX3RpdGxlIjsKFUNyZWF0ZVNlc3Npb25SZXNwb25zZRIiCgdzZXNzaW9uGAEgASgLMhEub3JjaGQudjEuU2Vzc2lvbiI8ChdTZW5kU2Vzc2lvbklucHV0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg0KBWlucHV0GAIgASgJInAKGFNlbmRTZXNzaW9uSW5wdXRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpoBCh9SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEwoLYXBwcm92YWxfaWQYAiABKAkSLAoIZGVjaXNpb24YAyABKA4yGi5vcmNoZC52MS5BcHByb3ZhbERlY2lzaW9uEhQKB2NvbW1lbnQYBCABKAlIAIgBAUIKCghfY29tbWVudCJ4CiBSZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjEKG0xpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIkgKHExpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2USKAoJYXJ0aWZhY3RzGAEgAygLMhUub3JjaGQudjEuQXJ0aWZhY3RSZWYq4gIKGVNlc3Npb25UcmFuc2NyaXB0SXRlbUtpbmQSLAooU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9VTlNQRUNJRklFRBAAEi0KKVNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfVVNFUl9NRVNTQUdFEAESLgoqU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9BR0VOVF9NRVNTQUdFEAISKgomU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9SRUFTT05JTkcQAxIqCiZTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1RPT0xfQ0FMTBAEEjIKLlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfQ09NTUFORF9FWEVDVVRJT04QBRIsCihTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX0ZJTEVfQ0hBTkdFEAYyrwQKDlNlc3Npb25TZXJ2aWNlEk0KDExpc3RTZXNzaW9ucxIdLm9yY2hkLnYxLkxpc3RTZXNzaW9uc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0U2Vzc2lvbnNSZXNwb25zZRJHCgpHZXRTZXNzaW9uEhsub3JjaGQudjEuR2V0U2Vzc2lvblJlcXVlc3QaHC5vcmNoZC52MS5HZXRTZXNzaW9uUmVzcG9uc2USUAoNQ3JlYXRlU2Vzc2lvbhIeLm9yY2hkLnYxLkNyZWF0ZVNlc3Npb25SZXF1ZXN0Gh8ub3JjaGQudjEuQ3JlYXRlU2Vzc2lvblJlc3BvbnNlElkKEFNlbmRTZXNzaW9uSW5wdXQSIS5vcmNoZC52MS5TZW5kU2Vzc2lvbklucHV0UmVxdWVzdBoiLm9yY2hkLnYxLlNlbmRTZXNzaW9uSW5wdXRSZXNwb25zZRJxChhSZXNwb25kVG9TZXNzaW9uQXBwcm92YWwSKS5vcmNoZC52MS5SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXF1ZXN0Gioub3JjaGQudjEuUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsUmVzcG9uc2USZQoUTGlzdFNlc3Npb25BcnRpZmFjdHMSJS5vcmNoZC52MS5MaXN0U2Vzc2lvbkFydGlmYWN0c1JlcXVlc3QaJi5vcmNoZC52MS5MaXN0U2Vzc2lvbkFydGlmYWN0c1Jlc3BvbnNlQogBCgxjb20ub3JjaGQudjFCDFNlc3Npb25Qcm90b1ABWilvcmNoZC9pbnRlcm5hbC9nZW4vcHJvdG8vb3JjaGQvdjE7b3JjaGR2MaICA09YWKoCCE9yY2hkLlYxygIIT3JjaGRcVjHiAhRPcmNoZFxWMVxHUEJNZXRhZGF0YeoCCU9yY2hkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_orchd_v1_common]);
 
 /**
  * @generated from message orchd.v1.Session
@@ -69,6 +69,11 @@ export type Session = Message<"orchd.v1.Session"> & {
    * @generated from field: repeated orchd.v1.ArtifactRef artifacts = 10;
    */
   artifacts: ArtifactRef[];
+
+  /**
+   * @generated from field: repeated orchd.v1.SessionTranscriptItem transcript_items = 11;
+   */
+  transcriptItems: SessionTranscriptItem[];
 };
 
 /**
@@ -77,6 +82,43 @@ export type Session = Message<"orchd.v1.Session"> & {
  */
 export const SessionSchema: GenMessage<Session> = /*@__PURE__*/
   messageDesc(file_orchd_v1_session, 0);
+
+/**
+ * @generated from message orchd.v1.SessionTranscriptItem
+ */
+export type SessionTranscriptItem = Message<"orchd.v1.SessionTranscriptItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: orchd.v1.SessionTranscriptItemKind kind = 2;
+   */
+  kind: SessionTranscriptItemKind;
+
+  /**
+   * @generated from field: string title = 3;
+   */
+  title: string;
+
+  /**
+   * @generated from field: string body = 4;
+   */
+  body: string;
+
+  /**
+   * @generated from field: string status = 5;
+   */
+  status: string;
+};
+
+/**
+ * Describes the message orchd.v1.SessionTranscriptItem.
+ * Use `create(SessionTranscriptItemSchema)` to create a new message.
+ */
+export const SessionTranscriptItemSchema: GenMessage<SessionTranscriptItem> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 1);
 
 /**
  * @generated from message orchd.v1.SessionListItem
@@ -118,7 +160,7 @@ export type SessionListItem = Message<"orchd.v1.SessionListItem"> & {
  * Use `create(SessionListItemSchema)` to create a new message.
  */
 export const SessionListItemSchema: GenMessage<SessionListItem> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 1);
+  messageDesc(file_orchd_v1_session, 2);
 
 /**
  * @generated from message orchd.v1.ListSessionsRequest
@@ -140,7 +182,7 @@ export type ListSessionsRequest = Message<"orchd.v1.ListSessionsRequest"> & {
  * Use `create(ListSessionsRequestSchema)` to create a new message.
  */
 export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 2);
+  messageDesc(file_orchd_v1_session, 3);
 
 /**
  * @generated from message orchd.v1.ListSessionsResponse
@@ -157,7 +199,7 @@ export type ListSessionsResponse = Message<"orchd.v1.ListSessionsResponse"> & {
  * Use `create(ListSessionsResponseSchema)` to create a new message.
  */
 export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 3);
+  messageDesc(file_orchd_v1_session, 4);
 
 /**
  * @generated from message orchd.v1.GetSessionRequest
@@ -174,7 +216,7 @@ export type GetSessionRequest = Message<"orchd.v1.GetSessionRequest"> & {
  * Use `create(GetSessionRequestSchema)` to create a new message.
  */
 export const GetSessionRequestSchema: GenMessage<GetSessionRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 4);
+  messageDesc(file_orchd_v1_session, 5);
 
 /**
  * @generated from message orchd.v1.GetSessionResponse
@@ -191,7 +233,7 @@ export type GetSessionResponse = Message<"orchd.v1.GetSessionResponse"> & {
  * Use `create(GetSessionResponseSchema)` to create a new message.
  */
 export const GetSessionResponseSchema: GenMessage<GetSessionResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 5);
+  messageDesc(file_orchd_v1_session, 6);
 
 /**
  * @generated from message orchd.v1.CreateSessionRequest
@@ -218,7 +260,7 @@ export type CreateSessionRequest = Message<"orchd.v1.CreateSessionRequest"> & {
  * Use `create(CreateSessionRequestSchema)` to create a new message.
  */
 export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 6);
+  messageDesc(file_orchd_v1_session, 7);
 
 /**
  * @generated from message orchd.v1.CreateSessionResponse
@@ -235,7 +277,7 @@ export type CreateSessionResponse = Message<"orchd.v1.CreateSessionResponse"> & 
  * Use `create(CreateSessionResponseSchema)` to create a new message.
  */
 export const CreateSessionResponseSchema: GenMessage<CreateSessionResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 7);
+  messageDesc(file_orchd_v1_session, 8);
 
 /**
  * @generated from message orchd.v1.SendSessionInputRequest
@@ -257,7 +299,7 @@ export type SendSessionInputRequest = Message<"orchd.v1.SendSessionInputRequest"
  * Use `create(SendSessionInputRequestSchema)` to create a new message.
  */
 export const SendSessionInputRequestSchema: GenMessage<SendSessionInputRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 8);
+  messageDesc(file_orchd_v1_session, 9);
 
 /**
  * @generated from message orchd.v1.SendSessionInputResponse
@@ -284,7 +326,7 @@ export type SendSessionInputResponse = Message<"orchd.v1.SendSessionInputRespons
  * Use `create(SendSessionInputResponseSchema)` to create a new message.
  */
 export const SendSessionInputResponseSchema: GenMessage<SendSessionInputResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 9);
+  messageDesc(file_orchd_v1_session, 10);
 
 /**
  * @generated from message orchd.v1.RespondToSessionApprovalRequest
@@ -316,7 +358,7 @@ export type RespondToSessionApprovalRequest = Message<"orchd.v1.RespondToSession
  * Use `create(RespondToSessionApprovalRequestSchema)` to create a new message.
  */
 export const RespondToSessionApprovalRequestSchema: GenMessage<RespondToSessionApprovalRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 10);
+  messageDesc(file_orchd_v1_session, 11);
 
 /**
  * @generated from message orchd.v1.RespondToSessionApprovalResponse
@@ -343,7 +385,7 @@ export type RespondToSessionApprovalResponse = Message<"orchd.v1.RespondToSessio
  * Use `create(RespondToSessionApprovalResponseSchema)` to create a new message.
  */
 export const RespondToSessionApprovalResponseSchema: GenMessage<RespondToSessionApprovalResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 11);
+  messageDesc(file_orchd_v1_session, 12);
 
 /**
  * @generated from message orchd.v1.ListSessionArtifactsRequest
@@ -360,7 +402,7 @@ export type ListSessionArtifactsRequest = Message<"orchd.v1.ListSessionArtifacts
  * Use `create(ListSessionArtifactsRequestSchema)` to create a new message.
  */
 export const ListSessionArtifactsRequestSchema: GenMessage<ListSessionArtifactsRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 12);
+  messageDesc(file_orchd_v1_session, 13);
 
 /**
  * @generated from message orchd.v1.ListSessionArtifactsResponse
@@ -377,7 +419,53 @@ export type ListSessionArtifactsResponse = Message<"orchd.v1.ListSessionArtifact
  * Use `create(ListSessionArtifactsResponseSchema)` to create a new message.
  */
 export const ListSessionArtifactsResponseSchema: GenMessage<ListSessionArtifactsResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 13);
+  messageDesc(file_orchd_v1_session, 14);
+
+/**
+ * @generated from enum orchd.v1.SessionTranscriptItemKind
+ */
+export enum SessionTranscriptItemKind {
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE = 1;
+   */
+  USER_MESSAGE = 1,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE = 2;
+   */
+  AGENT_MESSAGE = 2,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_REASONING = 3;
+   */
+  REASONING = 3,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL = 4;
+   */
+  TOOL_CALL = 4,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION = 5;
+   */
+  COMMAND_EXECUTION = 5,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE = 6;
+   */
+  FILE_CHANGE = 6,
+}
+
+/**
+ * Describes the enum orchd.v1.SessionTranscriptItemKind.
+ */
+export const SessionTranscriptItemKindSchema: GenEnum<SessionTranscriptItemKind> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_session, 0);
 
 /**
  * @generated from service orchd.v1.SessionService

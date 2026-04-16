@@ -1,5 +1,11 @@
 import { useMemo, useState } from "react"
-import { Bot, ChevronDown, FileText, FolderGit2, PenLine, Sparkles } from "lucide-react"
+import {
+  Bot,
+  ChevronDown,
+  FileText,
+  PenLine,
+  Sparkles,
+} from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -14,14 +20,26 @@ import {
   useSendSessionInput,
   useSession,
 } from "@/features/sessions/use-sessions"
-import { formatArtifactKind, formatSessionStatus, formatUpdatedAt } from "@/lib/format/proto"
+import {
+  SessionTranscriptItemKind,
+  type Session,
+  type SessionTranscriptItem,
+} from "@/gen/proto/orchd/v1/session_pb"
+import {
+  formatArtifactKind,
+  formatSessionStatus,
+} from "@/lib/format/proto"
 
 function deriveTitle(prompt: string) {
   const normalized = prompt.trim().replace(/\s+/g, " ")
   return normalized.slice(0, 72)
 }
 
-const HOME_SUGGESTIONS: Array<{ icon: LucideIcon; text: string; tone: string }> = [
+const HOME_SUGGESTIONS: Array<{
+  icon: LucideIcon
+  text: string
+  tone: string
+}> = [
   {
     icon: Sparkles,
     text: "Build a classic Snake game in this repo.",
@@ -62,7 +80,7 @@ export function HomeWorkspacePane() {
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="workspace-scrollbar flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col items-center justify-center px-6 pb-20 pt-6">
+          <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col items-center justify-center px-6 pt-6 pb-20">
             <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)]">
               <Bot className="size-7 text-[var(--workspace-text-primary)]" />
             </div>
@@ -74,10 +92,14 @@ export function HomeWorkspacePane() {
             <label className="relative mt-1 inline-flex items-center gap-1 text-[14px] text-[var(--workspace-text-muted)]">
               <select
                 value={selectedProjectId}
-                onChange={(event) => setSelectedProjectIdState(event.target.value)}
+                onChange={(event) =>
+                  setSelectedProjectIdState(event.target.value)
+                }
                 className="min-w-52 appearance-none bg-transparent pr-5 text-center outline-none"
               >
-                <option value="">{projectsLoading ? "Loading projects..." : "Select project"}</option>
+                <option value="">
+                  {projectsLoading ? "Loading projects..." : "Select project"}
+                </option>
                 {projects?.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -147,13 +169,44 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const [inspectorMode, setInspectorMode] = useState<"code" | "diff">("code")
 
   const session = sessionQuery.data
-  const visibleMessageCount = useMemo(() => {
+  const transcriptItems = useMemo(() => {
+    return (session?.transcriptItems ?? []).filter(
+      (item) => item.body.trim().length > 0
+    )
+  }, [session?.transcriptItems])
+  const showPendingInputHint = useMemo(() => {
     if (!session) {
-      return 0
+      return false
     }
 
-    return 1 + (session.lastInputHint ? 1 : 0) + (session.artifacts.length > 0 ? 1 : 0)
-  }, [session])
+    const normalizedHint = normalizeTranscriptText(session.lastInputHint)
+    if (!normalizedHint) {
+      return false
+    }
+
+    return !transcriptItems.some(
+      (item) =>
+        item.kind === SessionTranscriptItemKind.USER_MESSAGE &&
+        normalizeTranscriptText(item.body).startsWith(normalizedHint)
+    )
+  }, [session, transcriptItems])
+  const activityItems = useMemo(() => {
+    const items: ActivityItem[] = transcriptItems.map((item) => ({
+      item,
+      kind: "transcript" as const,
+      key: item.id,
+    }))
+
+    if (session && showPendingInputHint) {
+      items.push({
+        kind: "pending-input" as const,
+        key: "pending-input",
+        text: session.lastInputHint,
+      })
+    }
+
+    return items
+  }, [session, showPendingInputHint, transcriptItems])
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--workspace-page-bg)]">
@@ -186,34 +239,25 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="workspace-scrollbar flex-1 overflow-y-auto px-6 py-4">
               <div className="mx-auto max-w-[720px] space-y-5">
-                <div className="flex items-center gap-2 text-[12px] text-[var(--workspace-text-muted)]">
-                  <span>{visibleMessageCount} messages</span>
-                  <ChevronDown className="size-3" />
-                </div>
-
                 <ArtifactPills session={session} />
-                <AssistantBlock session={session} />
 
                 {session.attentionRequired ? (
                   <div className="rounded-[1rem] border border-amber-300/15 bg-amber-300/8 px-4 py-3">
-                    <div className="mb-1 text-[12px] text-amber-100/80">Attention</div>
+                    <div className="mb-1 text-[12px] text-amber-100/80">
+                      Attention
+                    </div>
                     <p className="text-[13px] leading-6 text-amber-50/85">
-                      {session.attentionReason || "This session requires user input."}
+                      {session.attentionReason ||
+                        "This session requires user input."}
                     </p>
                   </div>
                 ) : null}
 
-                {session.lastInputHint ? (
-                  <div className="flex justify-end">
-                    <div className="max-w-[520px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]">
-                      {session.lastInputHint}
-                    </div>
-                  </div>
-                ) : null}
-
+                <TranscriptTimeline items={activityItems} />
                 <ArtifactStrip session={session} />
 
-                {formatSessionStatus(session.status).toLowerCase() !== "completed" ? (
+                {formatSessionStatus(session.status).toLowerCase() !==
+                "completed" ? (
                   <TypingIndicator />
                 ) : null}
               </div>
@@ -232,7 +276,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 }
 
                 const normalizedPrompt = prompt.trim()
-                await sendInput.mutateAsync({ input: normalizedPrompt, sessionId })
+                await sendInput.mutateAsync({
+                  input: normalizedPrompt,
+                  sessionId,
+                })
                 setPrompt("")
               }}
               value={prompt}
@@ -255,79 +302,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   )
 }
 
-function AssistantBlock({
-  session,
-}: {
-  session: NonNullable<ReturnType<typeof useSession>["data"]>
-}) {
-  const summary = session.summary || "Codex is working..."
-
-  return (
-    <div className="space-y-4">
-      <div className="inline-flex items-center gap-2 rounded-md bg-[var(--workspace-hover-bg)] px-3 py-1.5 text-[12px] text-[var(--workspace-text-secondary)]">
-        <span>{formatUpdatedAt(session.updatedAt)}</span>
-        <span>•</span>
-        <span>{formatSessionStatus(session.status).toLowerCase()}</span>
-      </div>
-
-      <div className="inline-flex items-center gap-2 rounded-md bg-[var(--workspace-tag-bg)] px-2.5 py-1 text-[12px] text-[var(--workspace-text-secondary)]">
-        <FolderGit2 className="size-3.5" />
-        <span>{session.project?.name || "Local project"}</span>
-      </div>
-
-      <ReviewMessage text={summary} />
-    </div>
-  )
-}
-
-function ReviewMessage({ text }: { text: string }) {
-  const blocks = text
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-
-  return (
-    <div className="space-y-5">
-      {blocks.map((block, index) => {
-        const lines = block.split("\n").map((line) => line.trimEnd()).filter(Boolean)
-        const firstLine = lines[0]?.trim().toLowerCase() || ""
-        const hasDiagramLikeRows = lines.slice(1).some((line) => /^(→|->)/.test(line.trim()))
-        const isInsetCard =
-          firstLine === "architecture" || (lines.length >= 4 && hasDiagramLikeRows)
-
-        if (isInsetCard) {
-          return (
-            <div
-              key={`${block}-${index}`}
-              className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-4 py-4"
-            >
-              <div className="mb-3 text-[12px] text-[var(--workspace-text-muted)]">
-                {lines[0]}
-              </div>
-              <pre className="m-0 whitespace-pre-wrap font-mono text-[13px] leading-7 text-[var(--workspace-text-secondary)]">
-                {lines.slice(1).join("\n")}
-              </pre>
-            </div>
-          )
-        }
-
-        return (
-          <SessionRichText
-            key={`${block}-${index}`}
-            text={block}
-            className="space-y-3 text-[14px] leading-8 text-[var(--workspace-text-primary)]"
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-function ArtifactPills({
-  session,
-}: {
-  session: NonNullable<ReturnType<typeof useSession>["data"]>
-}) {
+function ArtifactPills({ session }: { session: Session }) {
   const referencedFiles = parseReferencedFiles(session.summary || "")
   const fallbackPills =
     session.artifacts.length === 0
@@ -368,11 +343,7 @@ function ArtifactPills({
   )
 }
 
-function ArtifactStrip({
-  session,
-}: {
-  session: NonNullable<ReturnType<typeof useSession>["data"]>
-}) {
+function ArtifactStrip({ session }: { session: Session }) {
   if (session.artifacts.length === 0) {
     return null
   }
@@ -408,6 +379,155 @@ function ArtifactStrip({
       ))}
     </div>
   )
+}
+
+type ActivityItem =
+  | {
+      item: SessionTranscriptItem
+      kind: "transcript"
+      key: string
+    }
+  | {
+      key: string
+      kind: "pending-input"
+      text: string
+    }
+
+function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="text-[11px] font-semibold tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
+        Activity
+      </div>
+      {items.map((item) =>
+        item.kind === "transcript" ? (
+          <TranscriptItemCard key={item.key} item={item.item} />
+        ) : (
+          <PendingInputCard key={item.key} text={item.text} />
+        )
+      )}
+    </div>
+  )
+}
+
+function PendingInputCard({ text }: { text: string }) {
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
+        <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
+          You
+        </div>
+        <SessionRichText
+          text={text}
+          className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+        />
+      </div>
+    </div>
+  )
+}
+
+function TranscriptItemCard({ item }: { item: SessionTranscriptItem }) {
+  const label = item.title || transcriptItemLabel(item.kind)
+
+  switch (item.kind) {
+    case SessionTranscriptItemKind.USER_MESSAGE:
+      return (
+        <div className="flex justify-end">
+          <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
+            <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
+              {label}
+            </div>
+            <SessionRichText
+              text={item.body}
+              className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+            />
+          </div>
+        </div>
+      )
+    case SessionTranscriptItemKind.AGENT_MESSAGE:
+      return (
+        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="text-[12px] text-[var(--workspace-text-muted)]">
+              {label}
+            </div>
+            <TranscriptStatus status={item.status} />
+          </div>
+          <SessionRichText
+            text={item.body}
+            className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+          />
+        </div>
+      )
+    case SessionTranscriptItemKind.REASONING:
+      return (
+        <div className="rounded-[1rem] border border-dashed border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-4 py-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="text-[12px] text-[var(--workspace-text-muted)]">
+              {label}
+            </div>
+            <TranscriptStatus status={item.status} />
+          </div>
+          <SessionRichText
+            text={item.body}
+            className="space-y-3 text-[13px] leading-7 text-[var(--workspace-text-secondary)]"
+          />
+        </div>
+      )
+    default:
+      return (
+        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-[12px] text-[var(--workspace-text-secondary)]">
+              {label}
+            </div>
+            <TranscriptStatus status={item.status} />
+          </div>
+          <pre className="workspace-scrollbar m-0 overflow-x-auto font-mono text-[12px] leading-6 break-words whitespace-pre-wrap text-[var(--workspace-text-primary)]">
+            {item.body}
+          </pre>
+        </div>
+      )
+  }
+}
+
+function TranscriptStatus({ status }: { status: string }) {
+  if (!status.trim()) {
+    return null
+  }
+
+  return (
+    <span className="rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-tag-bg)] px-2 py-0.5 text-[10px] tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
+      {status}
+    </span>
+  )
+}
+
+function transcriptItemLabel(kind: SessionTranscriptItemKind) {
+  switch (kind) {
+    case SessionTranscriptItemKind.USER_MESSAGE:
+      return "You"
+    case SessionTranscriptItemKind.AGENT_MESSAGE:
+      return "Codex"
+    case SessionTranscriptItemKind.REASONING:
+      return "Thinking"
+    case SessionTranscriptItemKind.TOOL_CALL:
+      return "Tool call"
+    case SessionTranscriptItemKind.COMMAND_EXECUTION:
+      return "Command"
+    case SessionTranscriptItemKind.FILE_CHANGE:
+      return "File change"
+    default:
+      return "Activity"
+  }
+}
+
+function normalizeTranscriptText(value: string) {
+  return value.trim().replace(/\s+/g, " ")
 }
 
 function TypingIndicator() {

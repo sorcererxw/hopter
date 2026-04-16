@@ -83,17 +83,56 @@ type StartTurnResult struct {
 	} `json:"turn"`
 }
 
+type ReadThreadContentPart struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+	Path string `json:"path"`
+}
+
+type ReadThreadFileChange struct {
+	Path string `json:"path"`
+	Diff string `json:"diff"`
+	Kind struct {
+		Type     string  `json:"type"`
+		MovePath *string `json:"move_path"`
+	} `json:"kind"`
+}
+
+type ReadThreadError struct {
+	Message string `json:"message"`
+}
+
+type ReadThreadItem struct {
+	Type             string                 `json:"type"`
+	ID               string                 `json:"id"`
+	Text             string                 `json:"text"`
+	Phase            string                 `json:"phase"`
+	Status           string                 `json:"status"`
+	Server           string                 `json:"server"`
+	Tool             string                 `json:"tool"`
+	Command          string                 `json:"command"`
+	AggregatedOutput string                 `json:"aggregatedOutput"`
+	Source           string                 `json:"source"`
+	ProcessID        string                 `json:"processId"`
+	ExitCode         *int                   `json:"exitCode"`
+	DurationMs       int64                  `json:"durationMs"`
+	Arguments        json.RawMessage        `json:"arguments"`
+	Result           json.RawMessage        `json:"result"`
+	Error            *ReadThreadError       `json:"error"`
+	Content          json.RawMessage        `json:"content"`
+	Summary          json.RawMessage        `json:"summary"`
+	Changes          []ReadThreadFileChange `json:"changes"`
+}
+
+type ReadThreadTurn struct {
+	ID     string           `json:"id"`
+	Status string           `json:"status"`
+	Items  []ReadThreadItem `json:"items"`
+}
+
 type ReadThreadResult struct {
 	Thread struct {
-		Turns []struct {
-			ID     string `json:"id"`
-			Status string `json:"status"`
-			Items  []struct {
-				Type  string `json:"type"`
-				Text  string `json:"text"`
-				Phase string `json:"phase"`
-			} `json:"items"`
-		} `json:"turns"`
+		Turns []ReadThreadTurn `json:"turns"`
 	} `json:"thread"`
 }
 

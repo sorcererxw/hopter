@@ -22,18 +22,80 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SessionTranscriptItemKind int32
+
+const (
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED       SessionTranscriptItemKind = 0
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE      SessionTranscriptItemKind = 1
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE     SessionTranscriptItemKind = 2
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_REASONING         SessionTranscriptItemKind = 3
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL         SessionTranscriptItemKind = 4
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION SessionTranscriptItemKind = 5
+	SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE       SessionTranscriptItemKind = 6
+)
+
+// Enum value maps for SessionTranscriptItemKind.
+var (
+	SessionTranscriptItemKind_name = map[int32]string{
+		0: "SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED",
+		1: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
+		2: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+		3: "SESSION_TRANSCRIPT_ITEM_KIND_REASONING",
+		4: "SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL",
+		5: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
+		6: "SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE",
+	}
+	SessionTranscriptItemKind_value = map[string]int32{
+		"SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED":       0,
+		"SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE":      1,
+		"SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE":     2,
+		"SESSION_TRANSCRIPT_ITEM_KIND_REASONING":         3,
+		"SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL":         4,
+		"SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION": 5,
+		"SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE":       6,
+	}
+)
+
+func (x SessionTranscriptItemKind) Enum() *SessionTranscriptItemKind {
+	p := new(SessionTranscriptItemKind)
+	*p = x
+	return p
+}
+
+func (x SessionTranscriptItemKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SessionTranscriptItemKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchd_v1_session_proto_enumTypes[0].Descriptor()
+}
+
+func (SessionTranscriptItemKind) Type() protoreflect.EnumType {
+	return &file_orchd_v1_session_proto_enumTypes[0]
+}
+
+func (x SessionTranscriptItemKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SessionTranscriptItemKind.Descriptor instead.
+func (SessionTranscriptItemKind) EnumDescriptor() ([]byte, []int) {
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{0}
+}
+
 type Session struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title             string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Project           *ProjectRef            `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
-	Status            SessionStatus          `protobuf:"varint,4,opt,name=status,proto3,enum=orchd.v1.SessionStatus" json:"status,omitempty"`
-	Summary           string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
-	AttentionRequired bool                   `protobuf:"varint,6,opt,name=attention_required,json=attentionRequired,proto3" json:"attention_required,omitempty"`
-	AttentionReason   string                 `protobuf:"bytes,7,opt,name=attention_reason,json=attentionReason,proto3" json:"attention_reason,omitempty"`
-	LastInputHint     string                 `protobuf:"bytes,8,opt,name=last_input_hint,json=lastInputHint,proto3" json:"last_input_hint,omitempty"`
-	UpdatedAt         *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	Artifacts         []*ArtifactRef         `protobuf:"bytes,10,rep,name=artifacts,proto3" json:"artifacts,omitempty"`
+	state             protoimpl.MessageState   `protogen:"open.v1"`
+	Id                string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title             string                   `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Project           *ProjectRef              `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
+	Status            SessionStatus            `protobuf:"varint,4,opt,name=status,proto3,enum=orchd.v1.SessionStatus" json:"status,omitempty"`
+	Summary           string                   `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
+	AttentionRequired bool                     `protobuf:"varint,6,opt,name=attention_required,json=attentionRequired,proto3" json:"attention_required,omitempty"`
+	AttentionReason   string                   `protobuf:"bytes,7,opt,name=attention_reason,json=attentionReason,proto3" json:"attention_reason,omitempty"`
+	LastInputHint     string                   `protobuf:"bytes,8,opt,name=last_input_hint,json=lastInputHint,proto3" json:"last_input_hint,omitempty"`
+	UpdatedAt         *timestamppb.Timestamp   `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Artifacts         []*ArtifactRef           `protobuf:"bytes,10,rep,name=artifacts,proto3" json:"artifacts,omitempty"`
+	TranscriptItems   []*SessionTranscriptItem `protobuf:"bytes,11,rep,name=transcript_items,json=transcriptItems,proto3" json:"transcript_items,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -138,6 +200,89 @@ func (x *Session) GetArtifacts() []*ArtifactRef {
 	return nil
 }
 
+func (x *Session) GetTranscriptItems() []*SessionTranscriptItem {
+	if x != nil {
+		return x.TranscriptItems
+	}
+	return nil
+}
+
+type SessionTranscriptItem struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Id            string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Kind          SessionTranscriptItemKind `protobuf:"varint,2,opt,name=kind,proto3,enum=orchd.v1.SessionTranscriptItemKind" json:"kind,omitempty"`
+	Title         string                    `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Body          string                    `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
+	Status        string                    `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SessionTranscriptItem) Reset() {
+	*x = SessionTranscriptItem{}
+	mi := &file_orchd_v1_session_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionTranscriptItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionTranscriptItem) ProtoMessage() {}
+
+func (x *SessionTranscriptItem) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_session_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SessionTranscriptItem.ProtoReflect.Descriptor instead.
+func (*SessionTranscriptItem) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SessionTranscriptItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SessionTranscriptItem) GetKind() SessionTranscriptItemKind {
+	if x != nil {
+		return x.Kind
+	}
+	return SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED
+}
+
+func (x *SessionTranscriptItem) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *SessionTranscriptItem) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+func (x *SessionTranscriptItem) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
 type SessionListItem struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -152,7 +297,7 @@ type SessionListItem struct {
 
 func (x *SessionListItem) Reset() {
 	*x = SessionListItem{}
-	mi := &file_orchd_v1_session_proto_msgTypes[1]
+	mi := &file_orchd_v1_session_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -164,7 +309,7 @@ func (x *SessionListItem) String() string {
 func (*SessionListItem) ProtoMessage() {}
 
 func (x *SessionListItem) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[1]
+	mi := &file_orchd_v1_session_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -177,7 +322,7 @@ func (x *SessionListItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionListItem.ProtoReflect.Descriptor instead.
 func (*SessionListItem) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{1}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SessionListItem) GetId() string {
@@ -232,7 +377,7 @@ type ListSessionsRequest struct {
 
 func (x *ListSessionsRequest) Reset() {
 	*x = ListSessionsRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[2]
+	mi := &file_orchd_v1_session_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -244,7 +389,7 @@ func (x *ListSessionsRequest) String() string {
 func (*ListSessionsRequest) ProtoMessage() {}
 
 func (x *ListSessionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[2]
+	mi := &file_orchd_v1_session_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -257,7 +402,7 @@ func (x *ListSessionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionsRequest.ProtoReflect.Descriptor instead.
 func (*ListSessionsRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{2}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListSessionsRequest) GetProjectId() string {
@@ -283,7 +428,7 @@ type ListSessionsResponse struct {
 
 func (x *ListSessionsResponse) Reset() {
 	*x = ListSessionsResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[3]
+	mi := &file_orchd_v1_session_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +440,7 @@ func (x *ListSessionsResponse) String() string {
 func (*ListSessionsResponse) ProtoMessage() {}
 
 func (x *ListSessionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[3]
+	mi := &file_orchd_v1_session_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,7 +453,7 @@ func (x *ListSessionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionsResponse.ProtoReflect.Descriptor instead.
 func (*ListSessionsResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{3}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListSessionsResponse) GetSessions() []*SessionListItem {
@@ -327,7 +472,7 @@ type GetSessionRequest struct {
 
 func (x *GetSessionRequest) Reset() {
 	*x = GetSessionRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[4]
+	mi := &file_orchd_v1_session_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +484,7 @@ func (x *GetSessionRequest) String() string {
 func (*GetSessionRequest) ProtoMessage() {}
 
 func (x *GetSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[4]
+	mi := &file_orchd_v1_session_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +497,7 @@ func (x *GetSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionRequest.ProtoReflect.Descriptor instead.
 func (*GetSessionRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{4}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetSessionRequest) GetSessionId() string {
@@ -371,7 +516,7 @@ type GetSessionResponse struct {
 
 func (x *GetSessionResponse) Reset() {
 	*x = GetSessionResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[5]
+	mi := &file_orchd_v1_session_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -383,7 +528,7 @@ func (x *GetSessionResponse) String() string {
 func (*GetSessionResponse) ProtoMessage() {}
 
 func (x *GetSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[5]
+	mi := &file_orchd_v1_session_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -396,7 +541,7 @@ func (x *GetSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionResponse.ProtoReflect.Descriptor instead.
 func (*GetSessionResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{5}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetSessionResponse) GetSession() *Session {
@@ -417,7 +562,7 @@ type CreateSessionRequest struct {
 
 func (x *CreateSessionRequest) Reset() {
 	*x = CreateSessionRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[6]
+	mi := &file_orchd_v1_session_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -429,7 +574,7 @@ func (x *CreateSessionRequest) String() string {
 func (*CreateSessionRequest) ProtoMessage() {}
 
 func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[6]
+	mi := &file_orchd_v1_session_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -442,7 +587,7 @@ func (x *CreateSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionRequest.ProtoReflect.Descriptor instead.
 func (*CreateSessionRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{6}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateSessionRequest) GetProjectId() string {
@@ -475,7 +620,7 @@ type CreateSessionResponse struct {
 
 func (x *CreateSessionResponse) Reset() {
 	*x = CreateSessionResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[7]
+	mi := &file_orchd_v1_session_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -487,7 +632,7 @@ func (x *CreateSessionResponse) String() string {
 func (*CreateSessionResponse) ProtoMessage() {}
 
 func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[7]
+	mi := &file_orchd_v1_session_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -500,7 +645,7 @@ func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateSessionResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{7}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateSessionResponse) GetSession() *Session {
@@ -520,7 +665,7 @@ type SendSessionInputRequest struct {
 
 func (x *SendSessionInputRequest) Reset() {
 	*x = SendSessionInputRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[8]
+	mi := &file_orchd_v1_session_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -532,7 +677,7 @@ func (x *SendSessionInputRequest) String() string {
 func (*SendSessionInputRequest) ProtoMessage() {}
 
 func (x *SendSessionInputRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[8]
+	mi := &file_orchd_v1_session_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -545,7 +690,7 @@ func (x *SendSessionInputRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendSessionInputRequest.ProtoReflect.Descriptor instead.
 func (*SendSessionInputRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{8}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SendSessionInputRequest) GetSessionId() string {
@@ -573,7 +718,7 @@ type SendSessionInputResponse struct {
 
 func (x *SendSessionInputResponse) Reset() {
 	*x = SendSessionInputResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[9]
+	mi := &file_orchd_v1_session_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -585,7 +730,7 @@ func (x *SendSessionInputResponse) String() string {
 func (*SendSessionInputResponse) ProtoMessage() {}
 
 func (x *SendSessionInputResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[9]
+	mi := &file_orchd_v1_session_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -598,7 +743,7 @@ func (x *SendSessionInputResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendSessionInputResponse.ProtoReflect.Descriptor instead.
 func (*SendSessionInputResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{9}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SendSessionInputResponse) GetAccepted() bool {
@@ -634,7 +779,7 @@ type RespondToSessionApprovalRequest struct {
 
 func (x *RespondToSessionApprovalRequest) Reset() {
 	*x = RespondToSessionApprovalRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[10]
+	mi := &file_orchd_v1_session_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -646,7 +791,7 @@ func (x *RespondToSessionApprovalRequest) String() string {
 func (*RespondToSessionApprovalRequest) ProtoMessage() {}
 
 func (x *RespondToSessionApprovalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[10]
+	mi := &file_orchd_v1_session_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -659,7 +804,7 @@ func (x *RespondToSessionApprovalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespondToSessionApprovalRequest.ProtoReflect.Descriptor instead.
 func (*RespondToSessionApprovalRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{10}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RespondToSessionApprovalRequest) GetSessionId() string {
@@ -701,7 +846,7 @@ type RespondToSessionApprovalResponse struct {
 
 func (x *RespondToSessionApprovalResponse) Reset() {
 	*x = RespondToSessionApprovalResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[11]
+	mi := &file_orchd_v1_session_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -713,7 +858,7 @@ func (x *RespondToSessionApprovalResponse) String() string {
 func (*RespondToSessionApprovalResponse) ProtoMessage() {}
 
 func (x *RespondToSessionApprovalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[11]
+	mi := &file_orchd_v1_session_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,7 +871,7 @@ func (x *RespondToSessionApprovalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespondToSessionApprovalResponse.ProtoReflect.Descriptor instead.
 func (*RespondToSessionApprovalResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{11}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RespondToSessionApprovalResponse) GetAccepted() bool {
@@ -759,7 +904,7 @@ type ListSessionArtifactsRequest struct {
 
 func (x *ListSessionArtifactsRequest) Reset() {
 	*x = ListSessionArtifactsRequest{}
-	mi := &file_orchd_v1_session_proto_msgTypes[12]
+	mi := &file_orchd_v1_session_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -771,7 +916,7 @@ func (x *ListSessionArtifactsRequest) String() string {
 func (*ListSessionArtifactsRequest) ProtoMessage() {}
 
 func (x *ListSessionArtifactsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[12]
+	mi := &file_orchd_v1_session_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -784,7 +929,7 @@ func (x *ListSessionArtifactsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionArtifactsRequest.ProtoReflect.Descriptor instead.
 func (*ListSessionArtifactsRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{12}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListSessionArtifactsRequest) GetSessionId() string {
@@ -803,7 +948,7 @@ type ListSessionArtifactsResponse struct {
 
 func (x *ListSessionArtifactsResponse) Reset() {
 	*x = ListSessionArtifactsResponse{}
-	mi := &file_orchd_v1_session_proto_msgTypes[13]
+	mi := &file_orchd_v1_session_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -815,7 +960,7 @@ func (x *ListSessionArtifactsResponse) String() string {
 func (*ListSessionArtifactsResponse) ProtoMessage() {}
 
 func (x *ListSessionArtifactsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_session_proto_msgTypes[13]
+	mi := &file_orchd_v1_session_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -828,7 +973,7 @@ func (x *ListSessionArtifactsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionArtifactsResponse.ProtoReflect.Descriptor instead.
 func (*ListSessionArtifactsResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_session_proto_rawDescGZIP(), []int{13}
+	return file_orchd_v1_session_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListSessionArtifactsResponse) GetArtifacts() []*ArtifactRef {
@@ -842,7 +987,7 @@ var File_orchd_v1_session_proto protoreflect.FileDescriptor
 
 const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\x9c\x03\n" +
+	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\xe8\x03\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -855,7 +1000,14 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
 	"\tartifacts\x18\n" +
-	" \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts\"\x82\x02\n" +
+	" \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts\x12J\n" +
+	"\x10transcript_items\x18\v \x03(\v2\x1f.orchd.v1.SessionTranscriptItemR\x0ftranscriptItems\"\xa2\x01\n" +
+	"\x15SessionTranscriptItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x127\n" +
+	"\x04kind\x18\x02 \x01(\x0e2#.orchd.v1.SessionTranscriptItemKindR\x04kind\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x12\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\"\x82\x02\n" +
 	"\x0fSessionListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -914,7 +1066,15 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"S\n" +
 	"\x1cListSessionArtifactsResponse\x123\n" +
-	"\tartifacts\x18\x01 \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts2\xaf\x04\n" +
+	"\tartifacts\x18\x01 \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts*\xe2\x02\n" +
+	"\x19SessionTranscriptItemKind\x12,\n" +
+	"(SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED\x10\x00\x12-\n" +
+	")SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE\x10\x01\x12.\n" +
+	"*SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE\x10\x02\x12*\n" +
+	"&SESSION_TRANSCRIPT_ITEM_KIND_REASONING\x10\x03\x12*\n" +
+	"&SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL\x10\x04\x122\n" +
+	".SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION\x10\x05\x12,\n" +
+	"(SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE\x10\x062\xaf\x04\n" +
 	"\x0eSessionService\x12M\n" +
 	"\fListSessions\x12\x1d.orchd.v1.ListSessionsRequest\x1a\x1e.orchd.v1.ListSessionsResponse\x12G\n" +
 	"\n" +
@@ -937,60 +1097,65 @@ func file_orchd_v1_session_proto_rawDescGZIP() []byte {
 	return file_orchd_v1_session_proto_rawDescData
 }
 
-var file_orchd_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_orchd_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_orchd_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_orchd_v1_session_proto_goTypes = []any{
-	(*Session)(nil),                          // 0: orchd.v1.Session
-	(*SessionListItem)(nil),                  // 1: orchd.v1.SessionListItem
-	(*ListSessionsRequest)(nil),              // 2: orchd.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),             // 3: orchd.v1.ListSessionsResponse
-	(*GetSessionRequest)(nil),                // 4: orchd.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),               // 5: orchd.v1.GetSessionResponse
-	(*CreateSessionRequest)(nil),             // 6: orchd.v1.CreateSessionRequest
-	(*CreateSessionResponse)(nil),            // 7: orchd.v1.CreateSessionResponse
-	(*SendSessionInputRequest)(nil),          // 8: orchd.v1.SendSessionInputRequest
-	(*SendSessionInputResponse)(nil),         // 9: orchd.v1.SendSessionInputResponse
-	(*RespondToSessionApprovalRequest)(nil),  // 10: orchd.v1.RespondToSessionApprovalRequest
-	(*RespondToSessionApprovalResponse)(nil), // 11: orchd.v1.RespondToSessionApprovalResponse
-	(*ListSessionArtifactsRequest)(nil),      // 12: orchd.v1.ListSessionArtifactsRequest
-	(*ListSessionArtifactsResponse)(nil),     // 13: orchd.v1.ListSessionArtifactsResponse
-	(*ProjectRef)(nil),                       // 14: orchd.v1.ProjectRef
-	(SessionStatus)(0),                       // 15: orchd.v1.SessionStatus
-	(*timestamppb.Timestamp)(nil),            // 16: google.protobuf.Timestamp
-	(*ArtifactRef)(nil),                      // 17: orchd.v1.ArtifactRef
-	(ApprovalDecision)(0),                    // 18: orchd.v1.ApprovalDecision
+	(SessionTranscriptItemKind)(0),           // 0: orchd.v1.SessionTranscriptItemKind
+	(*Session)(nil),                          // 1: orchd.v1.Session
+	(*SessionTranscriptItem)(nil),            // 2: orchd.v1.SessionTranscriptItem
+	(*SessionListItem)(nil),                  // 3: orchd.v1.SessionListItem
+	(*ListSessionsRequest)(nil),              // 4: orchd.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),             // 5: orchd.v1.ListSessionsResponse
+	(*GetSessionRequest)(nil),                // 6: orchd.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),               // 7: orchd.v1.GetSessionResponse
+	(*CreateSessionRequest)(nil),             // 8: orchd.v1.CreateSessionRequest
+	(*CreateSessionResponse)(nil),            // 9: orchd.v1.CreateSessionResponse
+	(*SendSessionInputRequest)(nil),          // 10: orchd.v1.SendSessionInputRequest
+	(*SendSessionInputResponse)(nil),         // 11: orchd.v1.SendSessionInputResponse
+	(*RespondToSessionApprovalRequest)(nil),  // 12: orchd.v1.RespondToSessionApprovalRequest
+	(*RespondToSessionApprovalResponse)(nil), // 13: orchd.v1.RespondToSessionApprovalResponse
+	(*ListSessionArtifactsRequest)(nil),      // 14: orchd.v1.ListSessionArtifactsRequest
+	(*ListSessionArtifactsResponse)(nil),     // 15: orchd.v1.ListSessionArtifactsResponse
+	(*ProjectRef)(nil),                       // 16: orchd.v1.ProjectRef
+	(SessionStatus)(0),                       // 17: orchd.v1.SessionStatus
+	(*timestamppb.Timestamp)(nil),            // 18: google.protobuf.Timestamp
+	(*ArtifactRef)(nil),                      // 19: orchd.v1.ArtifactRef
+	(ApprovalDecision)(0),                    // 20: orchd.v1.ApprovalDecision
 }
 var file_orchd_v1_session_proto_depIdxs = []int32{
-	14, // 0: orchd.v1.Session.project:type_name -> orchd.v1.ProjectRef
-	15, // 1: orchd.v1.Session.status:type_name -> orchd.v1.SessionStatus
-	16, // 2: orchd.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
-	17, // 3: orchd.v1.Session.artifacts:type_name -> orchd.v1.ArtifactRef
-	14, // 4: orchd.v1.SessionListItem.project:type_name -> orchd.v1.ProjectRef
-	15, // 5: orchd.v1.SessionListItem.status:type_name -> orchd.v1.SessionStatus
-	16, // 6: orchd.v1.SessionListItem.updated_at:type_name -> google.protobuf.Timestamp
-	1,  // 7: orchd.v1.ListSessionsResponse.sessions:type_name -> orchd.v1.SessionListItem
-	0,  // 8: orchd.v1.GetSessionResponse.session:type_name -> orchd.v1.Session
-	0,  // 9: orchd.v1.CreateSessionResponse.session:type_name -> orchd.v1.Session
-	16, // 10: orchd.v1.SendSessionInputResponse.updated_at:type_name -> google.protobuf.Timestamp
-	18, // 11: orchd.v1.RespondToSessionApprovalRequest.decision:type_name -> orchd.v1.ApprovalDecision
-	16, // 12: orchd.v1.RespondToSessionApprovalResponse.updated_at:type_name -> google.protobuf.Timestamp
-	17, // 13: orchd.v1.ListSessionArtifactsResponse.artifacts:type_name -> orchd.v1.ArtifactRef
-	2,  // 14: orchd.v1.SessionService.ListSessions:input_type -> orchd.v1.ListSessionsRequest
-	4,  // 15: orchd.v1.SessionService.GetSession:input_type -> orchd.v1.GetSessionRequest
-	6,  // 16: orchd.v1.SessionService.CreateSession:input_type -> orchd.v1.CreateSessionRequest
-	8,  // 17: orchd.v1.SessionService.SendSessionInput:input_type -> orchd.v1.SendSessionInputRequest
-	10, // 18: orchd.v1.SessionService.RespondToSessionApproval:input_type -> orchd.v1.RespondToSessionApprovalRequest
-	12, // 19: orchd.v1.SessionService.ListSessionArtifacts:input_type -> orchd.v1.ListSessionArtifactsRequest
-	3,  // 20: orchd.v1.SessionService.ListSessions:output_type -> orchd.v1.ListSessionsResponse
-	5,  // 21: orchd.v1.SessionService.GetSession:output_type -> orchd.v1.GetSessionResponse
-	7,  // 22: orchd.v1.SessionService.CreateSession:output_type -> orchd.v1.CreateSessionResponse
-	9,  // 23: orchd.v1.SessionService.SendSessionInput:output_type -> orchd.v1.SendSessionInputResponse
-	11, // 24: orchd.v1.SessionService.RespondToSessionApproval:output_type -> orchd.v1.RespondToSessionApprovalResponse
-	13, // 25: orchd.v1.SessionService.ListSessionArtifacts:output_type -> orchd.v1.ListSessionArtifactsResponse
-	20, // [20:26] is the sub-list for method output_type
-	14, // [14:20] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	16, // 0: orchd.v1.Session.project:type_name -> orchd.v1.ProjectRef
+	17, // 1: orchd.v1.Session.status:type_name -> orchd.v1.SessionStatus
+	18, // 2: orchd.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 3: orchd.v1.Session.artifacts:type_name -> orchd.v1.ArtifactRef
+	2,  // 4: orchd.v1.Session.transcript_items:type_name -> orchd.v1.SessionTranscriptItem
+	0,  // 5: orchd.v1.SessionTranscriptItem.kind:type_name -> orchd.v1.SessionTranscriptItemKind
+	16, // 6: orchd.v1.SessionListItem.project:type_name -> orchd.v1.ProjectRef
+	17, // 7: orchd.v1.SessionListItem.status:type_name -> orchd.v1.SessionStatus
+	18, // 8: orchd.v1.SessionListItem.updated_at:type_name -> google.protobuf.Timestamp
+	3,  // 9: orchd.v1.ListSessionsResponse.sessions:type_name -> orchd.v1.SessionListItem
+	1,  // 10: orchd.v1.GetSessionResponse.session:type_name -> orchd.v1.Session
+	1,  // 11: orchd.v1.CreateSessionResponse.session:type_name -> orchd.v1.Session
+	18, // 12: orchd.v1.SendSessionInputResponse.updated_at:type_name -> google.protobuf.Timestamp
+	20, // 13: orchd.v1.RespondToSessionApprovalRequest.decision:type_name -> orchd.v1.ApprovalDecision
+	18, // 14: orchd.v1.RespondToSessionApprovalResponse.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 15: orchd.v1.ListSessionArtifactsResponse.artifacts:type_name -> orchd.v1.ArtifactRef
+	4,  // 16: orchd.v1.SessionService.ListSessions:input_type -> orchd.v1.ListSessionsRequest
+	6,  // 17: orchd.v1.SessionService.GetSession:input_type -> orchd.v1.GetSessionRequest
+	8,  // 18: orchd.v1.SessionService.CreateSession:input_type -> orchd.v1.CreateSessionRequest
+	10, // 19: orchd.v1.SessionService.SendSessionInput:input_type -> orchd.v1.SendSessionInputRequest
+	12, // 20: orchd.v1.SessionService.RespondToSessionApproval:input_type -> orchd.v1.RespondToSessionApprovalRequest
+	14, // 21: orchd.v1.SessionService.ListSessionArtifacts:input_type -> orchd.v1.ListSessionArtifactsRequest
+	5,  // 22: orchd.v1.SessionService.ListSessions:output_type -> orchd.v1.ListSessionsResponse
+	7,  // 23: orchd.v1.SessionService.GetSession:output_type -> orchd.v1.GetSessionResponse
+	9,  // 24: orchd.v1.SessionService.CreateSession:output_type -> orchd.v1.CreateSessionResponse
+	11, // 25: orchd.v1.SessionService.SendSessionInput:output_type -> orchd.v1.SendSessionInputResponse
+	13, // 26: orchd.v1.SessionService.RespondToSessionApproval:output_type -> orchd.v1.RespondToSessionApprovalResponse
+	15, // 27: orchd.v1.SessionService.ListSessionArtifacts:output_type -> orchd.v1.ListSessionArtifactsResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_orchd_v1_session_proto_init() }
@@ -999,21 +1164,22 @@ func file_orchd_v1_session_proto_init() {
 		return
 	}
 	file_orchd_v1_common_proto_init()
-	file_orchd_v1_session_proto_msgTypes[2].OneofWrappers = []any{}
-	file_orchd_v1_session_proto_msgTypes[6].OneofWrappers = []any{}
-	file_orchd_v1_session_proto_msgTypes[10].OneofWrappers = []any{}
+	file_orchd_v1_session_proto_msgTypes[3].OneofWrappers = []any{}
+	file_orchd_v1_session_proto_msgTypes[7].OneofWrappers = []any{}
+	file_orchd_v1_session_proto_msgTypes[11].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchd_v1_session_proto_rawDesc), len(file_orchd_v1_session_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   14,
+			NumEnums:      1,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_orchd_v1_session_proto_goTypes,
 		DependencyIndexes: file_orchd_v1_session_proto_depIdxs,
+		EnumInfos:         file_orchd_v1_session_proto_enumTypes,
 		MessageInfos:      file_orchd_v1_session_proto_msgTypes,
 	}.Build()
 	File_orchd_v1_session_proto = out.File

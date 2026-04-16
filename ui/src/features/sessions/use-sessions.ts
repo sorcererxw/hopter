@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+import { SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
+import type { Session } from "@/gen/proto/orchd/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -39,6 +41,15 @@ export function useSession(sessionId?: string) {
       const response = await sessionClient.getSession({ sessionId })
       return response.session
     },
+    refetchInterval: (query) => {
+      const session = query.state.data as Session | undefined
+      if (!session) {
+        return false
+      }
+
+      return shouldPollSession(session) ? 1500 : false
+    },
+    refetchIntervalInBackground: true,
   })
 }
 
@@ -59,7 +70,9 @@ export function useCreateSession() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
 
       if (session?.id) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.session(session.id) })
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.session(session.id),
+        })
       }
     },
   })
@@ -79,4 +92,15 @@ export function useSendSessionInput() {
       })
     },
   })
+}
+
+function shouldPollSession(session: Session) {
+  switch (session.status) {
+    case SessionStatus.PENDING:
+    case SessionStatus.RUNNING:
+    case SessionStatus.WAITING_APPROVAL:
+      return true
+    default:
+      return false
+  }
 }

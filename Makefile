@@ -1,8 +1,9 @@
-.PHONY: help dev go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-all
+.PHONY: help dev start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-all
 
 help:
 	@echo "Targets:"
 	@echo "  dev                Run Vite + Go together; if either exits, both stop"
+	@echo "  start              Build UI, then run the Go server"
 	@echo "  go-test            Run Go tests"
 	@echo "  go-run             Run the Go server"
 	@echo "  ui-dev             Start Vite dev server"
@@ -22,6 +23,9 @@ help:
 
 dev:
 	bash scripts/dev.sh
+
+start: ui-build
+	$(MAKE) go-run
 
 go-test:
 	go test ./...

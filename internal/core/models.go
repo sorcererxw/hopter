@@ -33,6 +33,25 @@ const (
 	ArtifactKindOther        ArtifactKind = "other"
 )
 
+type SessionTranscriptItemKind string
+
+const (
+	SessionTranscriptItemKindUserMessage      SessionTranscriptItemKind = "user_message"
+	SessionTranscriptItemKindAgentMessage     SessionTranscriptItemKind = "agent_message"
+	SessionTranscriptItemKindReasoning        SessionTranscriptItemKind = "reasoning"
+	SessionTranscriptItemKindToolCall         SessionTranscriptItemKind = "tool_call"
+	SessionTranscriptItemKindCommandExecution SessionTranscriptItemKind = "command_execution"
+	SessionTranscriptItemKindFileChange       SessionTranscriptItemKind = "file_change"
+)
+
+type SessionTranscriptItem struct {
+	ID     string
+	Kind   SessionTranscriptItemKind
+	Title  string
+	Body   string
+	Status string
+}
+
 type Backend struct {
 	Key       string
 	Available bool
@@ -113,6 +132,7 @@ type Session struct {
 	LastInputHint     string
 	UpdatedAt         time.Time
 	Artifacts         []Artifact
+	TranscriptItems   []SessionTranscriptItem
 }
 
 type EventKind string
