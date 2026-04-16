@@ -2,9 +2,14 @@ import { useMemo, useState } from "react"
 import {
   Bot,
   ChevronDown,
+  ChevronRight,
+  FileCode,
   FileText,
+  Lightbulb,
   PenLine,
   Sparkles,
+  Terminal,
+  Wrench,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -399,131 +404,210 @@ function TranscriptTimeline({ items }: { items: ActivityItem[] }) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="text-[11px] font-semibold tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
-        Activity
-      </div>
+    <div className="space-y-5">
       {items.map((item) =>
         item.kind === "transcript" ? (
-          <TranscriptItemCard key={item.key} item={item.item} />
+          <TranscriptEntry key={item.key} item={item.item} />
         ) : (
-          <PendingInputCard key={item.key} text={item.text} />
+          <PendingInputEntry key={item.key} text={item.text} />
         )
       )}
     </div>
   )
 }
 
-function PendingInputCard({ text }: { text: string }) {
+function PendingInputEntry({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
-        <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
-          You
-        </div>
+      <div className="max-w-[85%]">
         <SessionRichText
           text={text}
-          className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
+          className="space-y-2 rounded-2xl bg-[var(--workspace-hover-bg)] px-4 py-3 text-[14px] leading-7 text-[var(--workspace-text-primary)]"
         />
       </div>
     </div>
   )
 }
 
-function TranscriptItemCard({ item }: { item: SessionTranscriptItem }) {
-  const label = item.title || transcriptItemLabel(item.kind)
-
+function TranscriptEntry({ item }: { item: SessionTranscriptItem }) {
   switch (item.kind) {
     case SessionTranscriptItemKind.USER_MESSAGE:
-      return (
-        <div className="flex justify-end">
-          <div className="max-w-[560px] rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)] px-4 py-3">
-            <div className="mb-2 text-[12px] text-[var(--workspace-text-muted)]">
-              {label}
-            </div>
-            <SessionRichText
-              text={item.body}
-              className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
-            />
-          </div>
-        </div>
-      )
+      return <UserMessageEntry item={item} />
     case SessionTranscriptItemKind.AGENT_MESSAGE:
-      return (
-        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-muted)]">
-              {label}
-            </div>
-            <TranscriptStatus status={item.status} />
-          </div>
-          <SessionRichText
-            text={item.body}
-            className="space-y-3 text-[13.5px] leading-7 text-[var(--workspace-text-primary)]"
-          />
-        </div>
-      )
+      return <AgentMessageEntry item={item} />
     case SessionTranscriptItemKind.REASONING:
-      return (
-        <div className="rounded-[1rem] border border-dashed border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-4 py-4">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-muted)]">
-              {label}
-            </div>
-            <TranscriptStatus status={item.status} />
-          </div>
-          <SessionRichText
-            text={item.body}
-            className="space-y-3 text-[13px] leading-7 text-[var(--workspace-text-secondary)]"
-          />
-        </div>
-      )
+      return <ReasoningEntry item={item} />
+    case SessionTranscriptItemKind.TOOL_CALL:
+      return <ToolCallEntry item={item} />
+    case SessionTranscriptItemKind.COMMAND_EXECUTION:
+      return <CommandEntry item={item} />
+    case SessionTranscriptItemKind.FILE_CHANGE:
+      return <FileChangeEntry item={item} />
     default:
-      return (
-        <div className="rounded-[1rem] border border-[color:var(--workspace-border)] bg-[var(--workspace-surface-bg)] px-4 py-4">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div className="text-[12px] text-[var(--workspace-text-secondary)]">
-              {label}
-            </div>
-            <TranscriptStatus status={item.status} />
-          </div>
-          <pre className="workspace-scrollbar m-0 overflow-x-auto font-mono text-[12px] leading-6 break-words whitespace-pre-wrap text-[var(--workspace-text-primary)]">
-            {item.body}
-          </pre>
-        </div>
-      )
+      return <AgentMessageEntry item={item} />
   }
 }
 
-function TranscriptStatus({ status }: { status: string }) {
-  if (!status.trim()) {
-    return null
-  }
-
+function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <span className="rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-tag-bg)] px-2 py-0.5 text-[10px] tracking-[0.08em] text-[var(--workspace-text-muted)] uppercase">
-      {status}
-    </span>
+    <div className="flex justify-end">
+      <div className="max-w-[85%]">
+        <SessionRichText
+          text={item.body}
+          className="space-y-2 rounded-2xl bg-[var(--workspace-hover-bg)] px-4 py-3 text-[14px] leading-7 text-[var(--workspace-text-primary)]"
+        />
+      </div>
+    </div>
   )
 }
 
-function transcriptItemLabel(kind: SessionTranscriptItemKind) {
-  switch (kind) {
-    case SessionTranscriptItemKind.USER_MESSAGE:
-      return "You"
-    case SessionTranscriptItemKind.AGENT_MESSAGE:
-      return "Codex"
-    case SessionTranscriptItemKind.REASONING:
-      return "Thinking"
-    case SessionTranscriptItemKind.TOOL_CALL:
-      return "Tool call"
-    case SessionTranscriptItemKind.COMMAND_EXECUTION:
-      return "Command"
-    case SessionTranscriptItemKind.FILE_CHANGE:
-      return "File change"
-    default:
-      return "Activity"
-  }
+function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
+  return (
+    <div className="flex gap-3">
+      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg)]">
+        <Bot className="size-3.5 text-[var(--workspace-text-secondary)]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <SessionRichText
+          text={item.body}
+          className="space-y-3 text-[14px] leading-7 text-[var(--workspace-text-primary)]"
+        />
+      </div>
+    </div>
+  )
+}
+
+function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = item.title || "Thinking"
+  const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
+
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
+        <Lightbulb className="size-3.5 text-[var(--workspace-text-muted)]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex items-center gap-1.5 text-[12px] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+        >
+          {expanded ? (
+            <ChevronDown className="size-3" />
+          ) : (
+            <ChevronRight className="size-3" />
+          )}
+          <span className="font-medium">{label}</span>
+          {!expanded && preview ? (
+            <span className="truncate opacity-60">— {preview}</span>
+          ) : null}
+        </button>
+        {expanded ? (
+          <SessionRichText
+            text={item.body}
+            className="mt-2 space-y-2 text-[13px] leading-6 text-[var(--workspace-text-secondary)]"
+          />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = item.title || "Tool call"
+
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
+        <Wrench className="size-3.5 text-[var(--workspace-text-muted)]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex items-center gap-1.5 text-[12px] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+        >
+          {expanded ? (
+            <ChevronDown className="size-3" />
+          ) : (
+            <ChevronRight className="size-3" />
+          )}
+          <span className="font-medium">{label}</span>
+        </button>
+        {expanded ? (
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-[var(--workspace-hover-bg-soft)] p-3 font-mono text-[12px] leading-5 break-words whitespace-pre-wrap text-[var(--workspace-text-secondary)]">
+            {item.body}
+          </pre>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function CommandEntry({ item }: { item: SessionTranscriptItem }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = item.title || "Command"
+
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
+        <Terminal className="size-3.5 text-[var(--workspace-text-muted)]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex items-center gap-1.5 text-[12px] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+        >
+          {expanded ? (
+            <ChevronDown className="size-3" />
+          ) : (
+            <ChevronRight className="size-3" />
+          )}
+          <span className="font-medium">{label}</span>
+        </button>
+        {expanded ? (
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-[var(--workspace-hover-bg-soft)] p-3 font-mono text-[12px] leading-5 break-words whitespace-pre-wrap text-[var(--workspace-text-secondary)]">
+            {item.body}
+          </pre>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = item.title || "File change"
+
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--workspace-hover-bg-soft)]">
+        <FileCode className="size-3.5 text-[var(--workspace-text-muted)]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex items-center gap-1.5 text-[12px] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+        >
+          {expanded ? (
+            <ChevronDown className="size-3" />
+          ) : (
+            <ChevronRight className="size-3" />
+          )}
+          <span className="font-medium">{label}</span>
+        </button>
+        {expanded ? (
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-[var(--workspace-hover-bg-soft)] p-3 font-mono text-[12px] leading-5 break-words whitespace-pre-wrap text-[var(--workspace-text-secondary)]">
+            {item.body}
+          </pre>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 function normalizeTranscriptText(value: string) {
