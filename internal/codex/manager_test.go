@@ -1,12 +1,15 @@
 package codex
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
+	codexsdk "orchd/internal/codex/sdk"
 	"orchd/internal/core"
 )
 
@@ -21,6 +24,17 @@ type fakeCodexClient struct {
 	readResult   *ReadThreadResult
 	resumeResult *ResumeThreadResult
 	readErr      error
+}
+
+type fakeTurnExecutor struct {
+	runCalls []fakeTurnCall
+	runFn    func(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error)
+}
+
+type fakeTurnCall struct {
+	Project  core.Project
+	ThreadID string
+	Input    string
 }
 
 func (f *fakeCodexClient) Close() error { return nil }
@@ -72,6 +86,18 @@ func (f *fakeCodexClient) SteerTurn(_, _, _ string) (*StartTurnResult, error) {
 	out := &StartTurnResult{}
 	out.Turn.ID = "turn-steered"
 	return out, nil
+}
+
+func (f *fakeTurnExecutor) Run(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error) {
+	f.runCalls = append(f.runCalls, fakeTurnCall{
+		Project:  project,
+		ThreadID: threadID,
+		Input:    input,
+	})
+	if f.runFn != nil {
+		return f.runFn(ctx, project, threadID, input, onEvent)
+	}
+	return threadID, nil
 }
 
 func TestGetSessionUsesLiveClientWithoutResume(t *testing.T) {
@@ -142,6 +168,121 @@ func TestGetSessionUsesLiveClientWithoutResume(t *testing.T) {
 	}
 	if got.LastInputHint != lastInput {
 		t.Fatalf("last input hint = %q, want %q", got.LastInputHint, lastInput)
+	}
+}
+
+func TestCreateSessionRunsThroughTurnExecutorAndUpdatesSession(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+
+	executor := &fakeTurnExecutor{
+		runFn: func(_ context.Context, _ core.Project, _ string, _ string, onEvent func(codexsdk.Event)) (string, error) {
+			onEvent(&codexsdk.ThreadStartedEvent{ThreadID: "thread-sdk"})
+			onEvent(&codexsdk.ItemCompletedEvent{
+				Item: &codexsdk.AgentMessageItem{ID: "msg-1", Text: "Implemented from SDK path."},
+			})
+			onEvent(&codexsdk.TurnCompletedEvent{
+				Usage: codexsdk.Usage{InputTokens: 1, CachedInputTokens: 0, OutputTokens: 1},
+			})
+			return "thread-sdk", nil
+		},
+	}
+
+	manager := NewManager(workspace)
+	manager.execTurns = executor
+
+	session, err := manager.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "build something",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	waitFor(t, func() bool {
+		current, ok := workspace.GetSession(session.ID)
+		return ok &&
+			current.BackendThreadID == "thread-sdk" &&
+			current.Status == core.SessionStateCompleted &&
+			current.Summary == "Implemented from SDK path."
+	})
+
+	if len(executor.runCalls) != 1 {
+		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))
+	}
+	if executor.runCalls[0].ThreadID != "" {
+		t.Fatalf("thread id = %q, want empty for new session", executor.runCalls[0].ThreadID)
+	}
+	if executor.runCalls[0].Input != "build something" {
+		t.Fatalf("input = %q", executor.runCalls[0].Input)
+	}
+}
+
+func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	threadID := "thread-existing"
+	completed := core.SessionStateCompleted
+	summary := "ready"
+	session, err = workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		Status:          &completed,
+		Summary:         &summary,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	executor := &fakeTurnExecutor{
+		runFn: func(_ context.Context, _ core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error) {
+			if threadID != "thread-existing" {
+				t.Fatalf("threadID = %q, want thread-existing", threadID)
+			}
+			if input != "follow up" {
+				t.Fatalf("input = %q, want follow up", input)
+			}
+			onEvent(&codexsdk.ItemCompletedEvent{
+				Item: &codexsdk.AgentMessageItem{ID: "msg-2", Text: "Follow-up handled."},
+			})
+			onEvent(&codexsdk.TurnCompletedEvent{
+				Usage: codexsdk.Usage{InputTokens: 1, CachedInputTokens: 0, OutputTokens: 1},
+			})
+			return threadID, nil
+		},
+	}
+
+	manager := NewManager(workspace)
+	manager.execTurns = executor
+
+	updated, err := manager.SendSessionInput(session.ID, "follow up")
+	if err != nil {
+		t.Fatalf("SendSessionInput: %v", err)
+	}
+	if updated.LastInputHint != "follow up" {
+		t.Fatalf("updated last input = %q", updated.LastInputHint)
+	}
+
+	waitFor(t, func() bool {
+		current, ok := workspace.GetSession(session.ID)
+		return ok &&
+			current.Status == core.SessionStateCompleted &&
+			current.Summary == "Follow-up handled." &&
+			current.LastInputHint == "follow up"
+	})
+
+	if len(executor.runCalls) != 1 {
+		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))
 	}
 }
 
@@ -379,4 +520,16 @@ type errThreadNotReady struct{}
 
 func (errThreadNotReady) Error() string {
 	return "thread is not materialized yet"
+}
+
+func waitFor(t *testing.T, condition func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("condition not met before timeout")
 }
