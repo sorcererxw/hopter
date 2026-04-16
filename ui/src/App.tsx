@@ -20,15 +20,15 @@ function WorkspaceRouteFrame() {
 
 export default function App() {
   return (
-    <ThemeProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="orchd-theme">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
+            <Route path="settings" element={<SettingsRoute />} />
             <Route element={<WorkspaceRouteFrame />}>
               <Route index element={<HomeRoute />} />
               <Route path="sessions/:sessionId" element={<SessionRoute />} />
               <Route path="projects/new" element={<ProjectNewRoute />} />
-              <Route path="settings" element={<SettingsRoute />} />
             </Route>
             <Route path="login" element={<LoginRoute />} />
           </Routes>

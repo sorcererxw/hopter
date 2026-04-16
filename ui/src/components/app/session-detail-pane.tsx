@@ -1,187 +1,309 @@
-import { Link, useNavigate } from "react-router-dom"
+import { useMemo, useState } from "react"
+import {
+  AlertTriangle,
+  Bot,
+  ChevronDown,
+  FileText,
+  FolderGit2,
+  Sparkles,
+} from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/session-composer"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useCreateSession, useSendSessionInput, useSession } from "@/features/sessions/use-sessions"
+import { SessionInspectorPane } from "@/components/app/session-inspector-pane"
+import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
+import { useProjects } from "@/features/projects/use-projects"
+import {
+  useCreateSession,
+  useSendSessionInput,
+  useSession,
+} from "@/features/sessions/use-sessions"
+import { formatArtifactKind, formatSessionStatus, formatUpdatedAt } from "@/lib/format/proto"
+
+function deriveTitle(prompt: string) {
+  const normalized = prompt.trim().replace(/\s+/g, " ")
+  return normalized.slice(0, 72)
+}
+
+const HOME_SUGGESTIONS = [
+  "Build a playable Tetris flow in this project.",
+  "Create a one-page summary of this app and its architecture.",
+  "Make a plan to finish the next milestone in this repo.",
+]
 
 export function HomeWorkspacePane() {
   const navigate = useNavigate()
   const createSession = useCreateSession()
+  const { data: projects, isLoading: projectsLoading } = useProjects()
+  const [selectedProjectIdState, setSelectedProjectIdState] = useState("")
+  const [prompt, setPrompt] = useState("")
+  const selectedProjectId = selectedProjectIdState || projects?.[0]?.id || ""
+
+  const selectedProject = useMemo(
+    () => projects?.find((project) => project.id === selectedProjectId),
+    [projects, selectedProjectId]
+  )
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 md:px-6 md:py-8" data-testid="home-workspace-pane">
-      <div className="space-y-2">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Workspace shell
-        </p>
-        <h2 className="text-3xl font-semibold tracking-tight">Pick up work or start a fresh session</h2>
-        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-          The left rail stays mounted for session re-entry. The right pane is reserved for steering the selected
-          session or launching a new one against a project.
-        </p>
-      </div>
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <WorkspaceTopbar
+        title="新线程"
+        tag={selectedProject?.name}
+        onOpenProject={() => navigate("/projects/new")}
+      />
 
-      <Card className="border-border/70 shadow-sm">
-        <CardHeader>
-          <CardTitle>New session</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SessionComposer
-            mode="create"
-            busy={createSession.isPending}
-            onSubmit={async ({ projectId, prompt, title }) => {
-              if (!projectId) {
-                return
-              }
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="thin-scrollbar flex-1 overflow-y-auto">
+          <div className="mx-auto flex min-h-full max-w-5xl flex-col items-center justify-center px-6 py-10">
+            <div className="mb-5 flex size-18 items-center justify-center rounded-[28px] border border-white/10 bg-white/4">
+              <Bot className="size-9 text-[#f0f0f0]" />
+            </div>
 
-              const session = await createSession.mutateAsync({ projectId, prompt, title })
-              if (session?.id) {
-                navigate(`/sessions/${session.id}`)
-              }
-            }}
-          />
-        </CardContent>
-      </Card>
+            <h2 className="text-center text-5xl font-semibold tracking-tight text-white">
+              开始构建
+            </h2>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Why this rebuild exists</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Go owns the browser entrypoint in dev and production, while the UI remains a lightweight React control surface.</p>
-            <p>Connect handles control-plane requests, and a single SSE stream fans out state refresh hints.</p>
-          </CardContent>
-        </Card>
+            <label className="relative mt-4 inline-flex items-center rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-[18px] text-[#8e8e8e]">
+              <select
+                value={selectedProjectId}
+                onChange={(event) => setSelectedProjectIdState(event.target.value)}
+                className="min-w-56 appearance-none bg-transparent pr-8 text-center outline-none"
+              >
+                <option value="">
+                  {projectsLoading ? "加载项目中…" : "选择项目"}
+                </option>
+                {projects?.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 size-4 text-[#777]" />
+            </label>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Need a new local project?</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Projects replace the older binding concept and define where Codex sessions run.</p>
-            <Button asChild variant="outline">
-              <Link to="/projects/new">Create project</Link>
-            </Button>
-          </CardContent>
-        </Card>
+            <div className="mt-10 grid w-full max-w-5xl gap-3 xl:grid-cols-3">
+              {HOME_SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => setPrompt(suggestion)}
+                  className="rounded-[28px] border border-white/8 bg-white/4 px-5 py-5 text-left transition hover:bg-white/8"
+                >
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-2xl bg-white/6 text-[#dddddd]">
+                    <Sparkles className="size-5" />
+                  </div>
+                  <p className="text-[17px] leading-8 text-[#efefef]">{suggestion}</p>
+                </button>
+              ))}
+            </div>
+
+            {!selectedProjectId ? (
+              <div className="mt-8 rounded-2xl border border-dashed border-white/10 bg-white/2 px-5 py-4 text-sm text-[#8a8a8a]">
+                先打开一个项目，再从这个工作区直接创建会话。
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <SessionComposer
+          busy={createSession.isPending}
+          disabled={!selectedProjectId}
+          modelLabel="GPT-5.4"
+          placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
+          projectLabel={selectedProject?.name || "本地"}
+          branchLabel="main"
+          onValueChange={setPrompt}
+          onSubmit={async () => {
+            if (!selectedProjectId || !prompt.trim()) {
+              return
+            }
+
+            const normalizedPrompt = prompt.trim()
+            const session = await createSession.mutateAsync({
+              projectId: selectedProjectId,
+              prompt: normalizedPrompt,
+              title: deriveTitle(normalizedPrompt),
+            })
+
+            setPrompt("")
+
+            if (session?.id) {
+              navigate(`/sessions/${session.id}`)
+            }
+          }}
+          value={prompt}
+        />
       </div>
     </div>
   )
 }
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
+  const navigate = useNavigate()
   const sessionQuery = useSession(sessionId)
   const sendInput = useSendSessionInput()
+  const [prompt, setPrompt] = useState("")
+  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const [activeTab, setActiveTab] = useState<"summary" | "review">("summary")
 
-  if (sessionQuery.isLoading) {
-    return (
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
-        <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    )
-  }
-
-  if (sessionQuery.isError || !sessionQuery.data) {
-    return (
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-6 md:px-6 md:py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Session unavailable</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>The route is mounted and ready, but the backend has not returned the selected session yet.</p>
-            <Button asChild variant="outline">
-              <Link to="/">Back to workspace</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const selectedSession = sessionQuery.data
+  const session = sessionQuery.data
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 md:px-6 md:py-8" data-testid="session-workspace-pane">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3" data-testid="session-header">
-          <h2 className="text-3xl font-semibold tracking-tight">{selectedSession.title || "Untitled session"}</h2>
-          <Badge data-testid="session-status" variant={selectedSession.attentionRequired ? "destructive" : "secondary"}>
-            {selectedSession.status.toString().replaceAll("_", " ").toLowerCase()}
-          </Badge>
-          <Badge variant="outline">{selectedSession.project?.name || "Project pending"}</Badge>
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <WorkspaceTopbar
+        title={session?.title || "会话"}
+        tag={session?.project?.name}
+        inspectorOpen={inspectorOpen}
+        onOpenProject={() => navigate("/projects/new")}
+        onOpenReview={() => {
+          setActiveTab("review")
+          setInspectorOpen(true)
+        }}
+        onToggleInspector={() => setInspectorOpen((current) => !current)}
+        showInspectorToggle
+        showReview
+      />
+
+      {sessionQuery.isLoading ? (
+        <div className="flex flex-1 items-center justify-center px-6 text-[#8d8d8d]">
+          正在加载会话…
         </div>
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground" data-testid="session-summary">
-          {selectedSession.summary ||
-            "This session has not emitted a summary yet. Use the composer below to keep steering Codex from the same workspace."}
-        </p>
-      </div>
-
-      {selectedSession.attentionRequired ? (
-        <Card className="border-destructive/25 bg-destructive/5">
-          <CardHeader>
-            <CardTitle>Attention required</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {selectedSession.attentionReason || "The backend marked this session as requiring user input."}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Continue session</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SessionComposer
-            mode="follow-up"
-            busy={sendInput.isPending}
-            onSubmit={async ({ prompt }) => {
-              await sendInput.mutateAsync({ sessionId, input: prompt })
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Latest summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>{selectedSession.summary || "No summary has been published yet."}</p>
-            <Separator />
-            <p>Last input hint: {selectedSession.lastInputHint || "No prior input recorded"}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Artifacts</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {selectedSession.artifacts.length > 0 ? (
-              selectedSession.artifacts.map((artifact) => (
-                <div key={artifact.id} className="rounded-xl border border-border/70 p-3 text-sm">
-                  <p className="font-medium">{artifact.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{artifact.kind.toString().replaceAll("_", " ").toLowerCase()}</p>
+      ) : sessionQuery.isError || !session ? (
+        <div className="flex flex-1 items-center justify-center px-6">
+          <div className="rounded-[28px] border border-white/10 bg-white/3 px-6 py-5 text-sm text-[#8d8d8d]">
+            当前会话暂时不可用。等 Go 服务返回数据后，这里会自动恢复。
+          </div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="thin-scrollbar flex-1 overflow-y-auto">
+              <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-6">
+                <div className="flex items-center gap-2 text-[12px] text-[#6f6f6f]">
+                  <span>{formatUpdatedAt(session.updatedAt)}</span>
+                  <span>·</span>
+                  <span>{formatSessionStatus(session.status)}</span>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Artifact metadata will appear here once the backend starts returning session outputs.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+                {session.lastInputHint ? (
+                  <div className="flex justify-end">
+                    <div className="max-w-2xl rounded-[28px] border border-white/10 bg-white/7 px-5 py-4 text-[16px] leading-8 text-[#efefef]">
+                      {session.lastInputHint}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="space-y-4 rounded-[30px] border border-white/8 bg-[#151515] px-6 py-5">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/6 px-3 py-1.5 text-[12px] text-[#8f8f8f]">
+                    <FolderGit2 className="size-4" />
+                    <span>{session.project?.name || "本地项目"}</span>
+                  </div>
+
+                  <div className="space-y-4 text-[15px] leading-8 text-[#e7e7e7]">
+                    {session.summary ? (
+                      session.summary.split(/\n{2,}/).map((paragraph, index) => (
+                        <p key={index}>{paragraph}</p>
+                      ))
+                    ) : (
+                      <p className="text-[#8a8a8a]">
+                        这个会话还没有输出摘要。你可以直接在下面继续引导它。
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {session.attentionRequired ? (
+                  <div className="rounded-[28px] border border-amber-400/20 bg-amber-400/8 px-5 py-4">
+                    <div className="mb-2 flex items-center gap-2 text-[13px] font-medium text-amber-100">
+                      <AlertTriangle className="size-4" />
+                      <span>需要注意</span>
+                    </div>
+                    <p className="text-[14px] leading-7 text-amber-50/90">
+                      {session.attentionReason || "后端标记了一个需要你处理的状态。"}
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="rounded-[28px] border border-white/8 bg-[#171717] px-5 py-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-[13px] text-[#d7d7d7]">
+                      <FileText className="size-4 text-[#8c8c8c]" />
+                      <span>Artifacts</span>
+                    </div>
+                    <span className="text-[12px] text-[#727272]">
+                      {session.artifacts.length} 项
+                    </span>
+                  </div>
+
+                  {session.artifacts.length > 0 ? (
+                    <div className="space-y-3">
+                      {session.artifacts.map((artifact) => (
+                        <div
+                          key={artifact.id}
+                          className="rounded-2xl border border-white/7 bg-white/3 px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-[14px] font-medium text-[#efefef]">
+                                {artifact.label}
+                              </p>
+                              <p className="mt-1 text-[12px] text-[#7f7f7f]">
+                                {formatArtifactKind(artifact.kind)}
+                              </p>
+                            </div>
+                            {artifact.downloadUrl ? (
+                              <a
+                                href={artifact.downloadUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[12px] text-[#d0d0d0] underline decoration-white/15 underline-offset-4 transition hover:text-white"
+                              >
+                                下载
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[14px] leading-7 text-[#858585]">
+                      一旦后端开始发布摘要、文件变化、测试结果或截图元数据，这里会出现在会话流里。
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <SessionComposer
+              busy={sendInput.isPending}
+              placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
+              projectLabel={session.project?.name || "本地"}
+              branchLabel={formatSessionStatus(session.status)}
+              settingsLabel="当前会话"
+              onValueChange={setPrompt}
+              onSubmit={async () => {
+                if (!prompt.trim()) {
+                  return
+                }
+
+                const normalizedPrompt = prompt.trim()
+                await sendInput.mutateAsync({ input: normalizedPrompt, sessionId })
+                setPrompt("")
+              }}
+              value={prompt}
+            />
+          </div>
+
+          {inspectorOpen ? (
+            <SessionInspectorPane
+              activeTab={activeTab}
+              onClose={() => setInspectorOpen(false)}
+              onTabChange={setActiveTab}
+              session={session}
+            />
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }

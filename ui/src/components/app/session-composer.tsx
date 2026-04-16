@@ -1,115 +1,145 @@
-import { useMemo, useState, type FormEvent } from "react"
-import { LoaderCircle, SendHorizonal } from "lucide-react"
+import type { ButtonHTMLAttributes, ReactNode } from "react"
+import { LoaderCircle, Mic, Plus, SendHorizonal } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { useProjects } from "@/features/projects/use-projects"
 import { cn } from "@/lib/utils"
 
 type SessionComposerProps = {
   busy?: boolean
-  initialProjectId?: string
-  mode: "create" | "follow-up"
-  onSubmit: (payload: { projectId?: string; prompt: string; title?: string }) => Promise<void> | void
+  disabled?: boolean
+  placeholder: string
+  projectLabel?: string
+  branchLabel?: string
+  settingsLabel?: string
+  reasoningLabel?: string
+  modelLabel?: string
+  onSubmit: () => Promise<void> | void
+  onValueChange: (value: string) => void
+  value: string
 }
 
 export function SessionComposer({
   busy = false,
-  initialProjectId,
-  mode,
+  disabled = false,
+  placeholder,
+  projectLabel = "本地",
+  branchLabel = "codex",
+  settingsLabel = "自定义 (config.toml)",
+  reasoningLabel = "高",
+  modelLabel = "GPT-5.4",
   onSubmit,
+  onValueChange,
+  value,
 }: SessionComposerProps) {
-  const { data: projects } = useProjects()
-  const [projectId, setProjectId] = useState(initialProjectId ?? "")
-  const [title, setTitle] = useState("")
-  const [prompt, setPrompt] = useState("")
+  const canSubmit = value.trim().length > 0 && !busy && !disabled
 
-  const preferredProjectId = useMemo(() => {
-    if (initialProjectId) {
-      return initialProjectId
-    }
-
-    return projects?.[0]?.id ?? ""
-  }, [initialProjectId, projects])
-  const selectedProjectId = projectId || preferredProjectId
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!prompt.trim()) {
+  async function handleSubmit() {
+    if (!canSubmit) {
       return
     }
 
-    await onSubmit({
-      projectId: mode === "create" ? selectedProjectId : undefined,
-      prompt: prompt.trim(),
-      title: mode === "create" && title.trim().length > 0 ? title.trim() : undefined,
-    })
-
-    setPrompt("")
-    if (mode === "create") {
-      setTitle("")
-    }
+    await onSubmit()
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3" data-testid="session-composer">
-      {mode === "create" ? (
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-          <Input
-            data-testid="session-title-input"
-            placeholder="Optional title, e.g. Build a playable Tetris"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
+    <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4">
+      <div className="rounded-[24px] border border-white/10 bg-[#1d1d1d] shadow-[0_16px_48px_rgba(0,0,0,0.32)]">
+        <div className="px-4 pt-4 pb-3">
+          <textarea
+            rows={2}
+            value={value}
+            onChange={(event) => onValueChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault()
+                void handleSubmit()
+              }
+            }}
+            placeholder={placeholder}
+            className="min-h-14 w-full resize-none bg-transparent text-[15px] leading-7 text-[#ececec] outline-none placeholder:text-[#5d5d5d]"
           />
-          <label className="flex items-center rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground focus-within:ring-2 focus-within:ring-ring/40">
-            <span className="mr-2 shrink-0">Project</span>
-            <select
-              data-testid="session-project-select"
-              className="h-10 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none"
-              value={selectedProjectId}
-              onChange={(event) => setProjectId(event.target.value)}
-            >
-              <option value="">Select a project</option>
-              {projects?.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
-      ) : null}
 
-      <Textarea
-        data-testid="session-prompt-input"
-        value={prompt}
-        onChange={(event) => setPrompt(event.target.value)}
-        placeholder={
-          mode === "create"
-            ? "Ask Codex to create or continue something in this project…"
-            : "Continue steering the current session…"
-        }
-        className="min-h-32 resize-y"
-      />
+        <div className="flex items-center justify-between px-3 pb-3">
+          <div className="flex items-center gap-1.5">
+            <GhostIconButton aria-label="Add context">
+              <Plus className="size-4" />
+            </GhostIconButton>
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          {mode === "create"
-            ? "The first runnable rebuild shell is wired to create sessions from the workspace."
-            : "Follow-up input stays in the same shell so you can keep iterating without context switching."}
-        </p>
-        <Button
-          data-testid={mode === "create" ? "session-create-submit" : "session-followup-submit"}
-          type="submit"
-          disabled={busy || !prompt.trim() || (mode === "create" && !selectedProjectId)}
-          className={cn("min-w-32", busy && "opacity-80")}
-        >
-          {busy ? <LoaderCircle className="size-4 animate-spin" /> : <SendHorizonal className="size-4" />}
-          {mode === "create" ? "Start session" : "Send input"}
-        </Button>
+            <ChipButton>{modelLabel}</ChipButton>
+            <ChipButton>{reasoningLabel}</ChipButton>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <GhostIconButton aria-label="Voice input">
+              <Mic className="size-4" />
+            </GhostIconButton>
+
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={!canSubmit}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full transition md:size-9",
+                canSubmit
+                  ? "bg-[#f0f0f0] text-[#121212] hover:bg-white"
+                  : "bg-white/8 text-[#4f4f4f]"
+              )}
+            >
+              {busy ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <SendHorizonal className="size-4" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
-    </form>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-1">
+          <MetaButton>{projectLabel}</MetaButton>
+          <MetaButton>{branchLabel}</MetaButton>
+        </div>
+
+        <MetaButton>{settingsLabel}</MetaButton>
+      </div>
+    </div>
+  )
+}
+
+function GhostIconButton({
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className="flex size-8 items-center justify-center rounded-lg text-[#6d6d6d] transition hover:bg-white/6 hover:text-[#bdbdbd] md:size-9"
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+function ChipButton({ children }: { children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      className="workspace-chip inline-flex min-h-8 items-center rounded-xl px-3 text-[12px] text-[#cfcfcf] transition hover:bg-white/10"
+    >
+      {children}
+    </button>
+  )
+}
+
+function MetaButton({ children }: { children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center rounded-md px-2 py-1 text-[11.5px] text-[#666] transition hover:bg-white/5 hover:text-[#9a9a9a]"
+    >
+      {children}
+    </button>
   )
 }

@@ -225,6 +225,15 @@ export function ProjectPickerDialog() {
   const filteredSearch = search.trim().toLowerCase()
   const isBusy = createProject.isPending
 
+  function navigateBack() {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+
+    navigate("/")
+  }
+
   function selectRoot(rootPath: string) {
     setFormError("")
     setSelectedPath(rootPath)
@@ -299,7 +308,7 @@ export function ProjectPickerDialog() {
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && navigate("/")}>
+    <Dialog open onOpenChange={(open) => !open && navigateBack()}>
       <DialogContent
         showCloseButton={false}
         data-testid="project-picker-dialog"
@@ -599,7 +608,7 @@ export function ProjectPickerDialog() {
                 type="button"
                 variant="outline"
                 className="border-white/10 bg-white/4 text-zinc-100 hover:bg-white/10 hover:text-white"
-                onClick={() => navigate("/")}
+                  onClick={() => navigateBack()}
               >
                 Cancel
               </Button>
