@@ -1,18 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react"
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  Folder,
-  FolderOpen,
-  Grid2x2,
-  Plus,
-  Search,
-  Settings,
-  SquarePen,
-} from "lucide-react"
-import { Link, NavLink } from "react-router-dom"
+import { useMemo, type ReactNode } from "react"
+import { ArrowUpDown, ChevronDown, FolderOpen, FolderPlus, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
+import { Link, NavLink, useLocation } from "react-router-dom"
 
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
@@ -44,7 +32,7 @@ function formatRelativeTime(date?: Date) {
   return `${diffDays}d`
 }
 
-function groupWeight(updatedAt?: Date) {
+function sessionWeight(updatedAt?: Date) {
   if (!updatedAt) {
     return 0
   }
@@ -52,262 +40,203 @@ function groupWeight(updatedAt?: Date) {
   return updatedAt.getTime()
 }
 
-function syntheticProjectPath(projectID: string) {
-  if (!projectID.startsWith("cwd:")) {
-    return ""
+function sessionDot(status: string) {
+  switch (status.toLowerCase()) {
+    case "running":
+      return "bg-emerald-400/75"
+    case "completed":
+      return "bg-sky-400/75"
+    case "waiting":
+      return "bg-amber-300/70"
+    default:
+      return "bg-[var(--workspace-text-muted)]/70"
   }
-
-  return projectID.slice(4)
 }
 
-function disambiguateProjectLabel(projectID: string, projectName: string, duplicateNames: Set<string>) {
-  if (!duplicateNames.has(projectName)) {
-    return projectName
-  }
-
-  const rawPath = syntheticProjectPath(projectID)
-  if (!rawPath) {
-    return projectName
-  }
-
-  const parts = rawPath.split(/[\\/]/).filter(Boolean)
-  if (parts.length === 0) {
-    return projectName
-  }
-
-  const genericNames = new Set(["repo", "app", "ui", "src", "project", "workspace", "tmp"])
-  let segmentCount = 2
-  if (parts.length >= 3 && genericNames.has(parts[parts.length - 2])) {
-    segmentCount = 3
-  }
-
-  return parts.slice(-Math.min(segmentCount, parts.length)).join("/")
+type SessionRailProps = {
+  onNavigate?: () => void
+  onOpenSearch: () => void
 }
 
-export function SessionRail({ onOpenSearch }: { onOpenSearch: () => void }) {
+export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
+  const location = useLocation()
   const { data: projects } = useProjects()
   const { data: sessions, isError, isLoading } = useSessions()
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
-  const groups = useMemo(() => {
-    const map = new Map<
-      string,
-      { id: string; name: string; sessions: NonNullable<typeof sessions>[number][] }
-    >()
+  const activeSession = useMemo(() => {
+    const sessionId = location.pathname.startsWith("/sessions/")
+      ? location.pathname.slice("/sessions/".length)
+      : ""
+    return (sessions ?? []).find((session) => session.id === sessionId)
+  }, [location.pathname, sessions])
 
-    for (const project of projects ?? []) {
-      map.set(project.id, { id: project.id, name: project.name, sessions: [] })
-    }
+  const workspaceName =
+    activeSession?.project?.name ||
+    projects?.[0]?.name ||
+    sessions?.[0]?.project?.name ||
+    "workspace"
 
-    for (const session of sessions ?? []) {
-      const projectId = session.project?.id || "unassigned"
-      const projectName = session.project?.name || "Unassigned"
-      const group = map.get(projectId) ?? {
-        id: projectId,
-        name: projectName,
-        sessions: [],
-      }
-
-      group.sessions.push(session)
-      map.set(projectId, group)
-    }
-
-    return [...map.values()]
-      .map((group) => ({
-        ...group,
-        sessions: [...group.sessions].sort((left, right) => {
-          const leftDate = timestampToDate(left.updatedAt)
-          const rightDate = timestampToDate(right.updatedAt)
-          return groupWeight(rightDate) - groupWeight(leftDate)
-        }),
-      }))
-      .sort((left, right) => {
-        const leftLatest = left.sessions[0]
-          ? groupWeight(timestampToDate(left.sessions[0].updatedAt))
-          : 0
-        const rightLatest = right.sessions[0]
-          ? groupWeight(timestampToDate(right.sessions[0].updatedAt))
-          : 0
-        return rightLatest - leftLatest
-      })
-  }, [projects, sessions])
-
-  useEffect(() => {
-    setCollapsedGroups((current) => {
-      const next = { ...current }
-      for (const group of groups) {
-        if (!(group.id in next)) {
-          next[group.id] = false
-        }
-      }
-      for (const groupID of Object.keys(next)) {
-        if (!groups.some((group) => group.id === groupID)) {
-          delete next[groupID]
-        }
-      }
-      return next
-    })
-  }, [groups])
-
-  const duplicateProjectNames = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const group of groups) {
-      counts.set(group.name, (counts.get(group.name) ?? 0) + 1)
-    }
-
-    return new Set(
-      [...counts.entries()]
-        .filter(([, count]) => count > 1)
-        .map(([name]) => name)
+  const visibleSessions = useMemo(() => {
+    const projectId = activeSession?.project?.id || projects?.[0]?.id
+    const filtered = (sessions ?? []).filter((session) =>
+      projectId ? session.project?.id === projectId : true
     )
-  }, [groups])
 
-  function toggleGroup(groupID: string) {
-    setCollapsedGroups((current) => ({
-      ...current,
-      [groupID]: !current[groupID],
-    }))
-  }
+    return [...filtered]
+      .sort((left, right) => {
+        const leftDate = timestampToDate(left.updatedAt)
+        const rightDate = timestampToDate(right.updatedAt)
+        return sessionWeight(rightDate) - sessionWeight(leftDate)
+      })
+      .slice(0, 14)
+  }, [activeSession?.project?.id, projects, sessions])
 
   return (
-    <div className="flex h-full flex-col bg-[#141414] text-[#c8c8c8]">
-      <div className="space-y-0.5 px-3 pt-4 pb-2">
-        <RailAction icon={SquarePen} label="Quick chat" to="/" />
-        <RailAction icon={Search} label="Search" onClick={onOpenSearch} />
+    <div className="flex h-full flex-col bg-[var(--workspace-sidebar-bg)] text-[var(--workspace-text-primary)]">
+      <div className="px-3 pb-2 pt-3">
+        <button
+          type="button"
+          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-[var(--workspace-hover-bg)]"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-5 shrink-0 items-center justify-center rounded bg-emerald-900/50 text-[10px]">
+              🌿
+            </div>
+            <span className="truncate text-[13px] font-semibold text-[var(--workspace-text-primary)]">
+              {workspaceName}
+            </span>
+          </div>
+          <ChevronDown className="size-[13px] text-[var(--workspace-text-muted)]" />
+        </button>
+      </div>
+
+      <div className="space-y-1 px-3 pb-3">
+        <RailAction
+          active={location.pathname === "/"}
+          icon={SquarePen}
+          label="New chat"
+          onClick={onNavigate}
+          to="/"
+        />
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
+        >
+          <Search className="size-[14px] shrink-0" />
+          <span className="flex-1 text-left">Search</span>
+          <span className="workspace-kbd">⌘K</span>
+        </button>
         <RailAction icon={Grid2x2} label="Skills & Apps" />
       </div>
 
-      <div className="mx-3 my-1 h-px bg-white/6" />
+      <div className="mx-3 mb-1 h-px bg-[var(--workspace-border)]" />
 
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="text-[11px] uppercase tracking-[0.06em] text-[#555]">Threads</span>
-        <div className="flex items-center gap-1">
-          <ThreadHeaderButton to="/" title="New thread">
-            <Plus className="size-[13px]" />
+      <div className="flex items-center justify-between px-3 pb-1 pt-2">
+        <button
+          type="button"
+          className="flex items-center gap-1.5 rounded text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--workspace-text-muted)] transition hover:text-[var(--workspace-text-secondary)]"
+        >
+          <FolderOpen className="size-[11px]" />
+          <span>Threads</span>
+        </button>
+        <div className="flex items-center gap-0.5">
+          <ThreadHeaderButton onClick={onNavigate} title="New thread" to="/">
+            <SquarePen className="size-[11px]" />
           </ThreadHeaderButton>
           <ThreadHeaderButton title="Sort">
-            <ArrowUpDown className="size-3" />
+            <ArrowUpDown className="size-[11px]" />
           </ThreadHeaderButton>
-          <ThreadHeaderButton title="Filter">
-            <Filter className="size-3" />
+          <ThreadHeaderButton title="Add new project" to="/projects/new">
+            <FolderPlus className="size-[11px]" />
           </ThreadHeaderButton>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-1.5 pb-2">
-        <div className="thin-scrollbar h-0 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1">
-          {isLoading ? (
-            <div className="px-3 py-3 text-[12px] text-[#555]">Loading threads…</div>
-          ) : null}
-
-          {isError ? (
-            <div className="px-3 py-3 text-[12px] text-[#666]">
-              The shell is ready. Session data will appear when the backend responds.
-            </div>
-          ) : null}
-
-          {!isLoading && !isError && groups.length === 0 ? (
-            <div className="px-3 py-3 text-[12px] leading-5 text-[#666]">
-              No threads yet. Open a repo and continue from the same workspace.
-            </div>
-          ) : null}
-
-          <div className="space-y-3">
-            {groups.map((group) => (
-              <div key={group.id}>
-                <div className="flex items-center px-2.5 pb-1">
-                  {(() => {
-                    const displayName = disambiguateProjectLabel(
-                      group.id,
-                      group.name,
-                      duplicateProjectNames
-                    )
-                    const rawPath = syntheticProjectPath(group.id)
-
-                    return (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(group.id)}
-                    title={rawPath || group.name}
-                    className="flex flex-1 items-center gap-1.5 rounded-md px-2 py-1 text-left text-[12px] text-[#777] transition hover:bg-white/5"
-                  >
-                    {collapsedGroups[group.id] ? (
-                      <ChevronRight className="size-3 shrink-0" />
-                    ) : (
-                      <ChevronDown className="size-3 shrink-0" />
-                    )}
-                    {group.sessions.length > 0 && !collapsedGroups[group.id] ? (
-                      <FolderOpen className="size-3 shrink-0" />
-                    ) : (
-                      <Folder className="size-3 shrink-0" />
-                    )}
-                    <span className="truncate">{displayName}</span>
-                  </button>
-                    )
-                  })()}
-                </div>
-
-                {group.sessions.length > 0 && !collapsedGroups[group.id] ? (
-                  <div className="ml-4 border-l border-white/8 pl-3">
-                    {group.sessions.map((session) => {
-                      const updatedAt = timestampToDate(session.updatedAt)
-
-                      return (
-                        <NavLink
-                          key={session.id}
-                          to={`/sessions/${session.id}`}
-                          className={({ isActive }) =>
-                            cn(
-                              "mb-1 flex items-start justify-between gap-2 rounded-md border px-3 py-2 transition",
-                              isActive
-                                ? "border-white/10 bg-white/10 text-[#f0f0f0]"
-                                : "border-transparent text-[#aaa] hover:border-white/8 hover:bg-white/6"
-                            )
-                          }
-                        >
-                          {({ isActive }) => (
-                            <>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-[12.5px] leading-5">
-                                  {session.title || "Untitled thread"}
-                                </p>
-                                <p
-                                  className={cn(
-                                    "truncate text-[11px] leading-4",
-                                    isActive ? "text-[#888]" : "text-[#666]"
-                                  )}
-                                >
-                                  {formatSessionStatus(session.status).toLowerCase()}
-                                </p>
-                              </div>
-
-                              <span
-                                className={cn(
-                                  "mt-0.5 shrink-0 text-[11px]",
-                                  isActive ? "text-[#777]" : "text-[#555]"
-                                )}
-                              >
-                                {formatRelativeTime(updatedAt)}
-                              </span>
-                            </>
-                          )}
-                        </NavLink>
-                      )
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+        {isLoading ? (
+          <div className="px-3 py-3 text-[12px] text-[var(--workspace-text-muted)]">
+            Loading threads...
           </div>
-        </div>
+        ) : null}
+
+        {isError ? (
+          <div className="px-3 py-3 text-[12px] leading-5 text-[var(--workspace-text-muted)]">
+            The shell is ready. Session data will appear when the backend responds.
+          </div>
+        ) : null}
+
+        {!isLoading && !isError && visibleSessions.length === 0 ? (
+          <div className="px-3 py-3 text-[12px] leading-5 text-[var(--workspace-text-muted)]">
+            No threads yet. Open a repo and continue from the same workspace.
+          </div>
+        ) : null}
+
+        {visibleSessions.length > 0 ? (
+          <div className="mt-1 border-l border-[color:var(--workspace-thread-guide)] pl-3">
+            {visibleSessions.map((session) => {
+              const updatedAt = timestampToDate(session.updatedAt)
+              const status = formatSessionStatus(session.status).toLowerCase()
+
+              return (
+                <NavLink
+                  key={session.id}
+                  to={`/sessions/${session.id}`}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    cn(
+                      "mb-1 flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition",
+                      isActive
+                        ? "border-[color:var(--workspace-border-strong)] bg-[var(--workspace-hover-bg)]"
+                        : "border-transparent hover:bg-[var(--workspace-hover-bg-soft)]"
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className={cn("mt-[0.35rem] size-1.5 shrink-0 rounded-full", sessionDot(status))}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "truncate text-[13px]",
+                            isActive
+                              ? "text-[var(--workspace-text-primary)]"
+                              : "text-[var(--workspace-text-secondary)]"
+                          )}
+                        >
+                          {session.title || "Untitled thread"}
+                        </p>
+                        <div
+                          className={cn(
+                            "mt-1 flex items-center gap-2 text-[11px]",
+                            isActive
+                              ? "text-[var(--workspace-text-secondary)]"
+                              : "text-[var(--workspace-text-muted)]"
+                          )}
+                        >
+                          <span className="truncate">{status}</span>
+                          <span>•</span>
+                          <span className="shrink-0">{formatRelativeTime(updatedAt)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </NavLink>
+              )
+            })}
+          </div>
+        ) : null}
       </div>
 
-      <div className="border-t border-white/6 px-3 py-3.5">
+      <div className="border-t border-[color:var(--workspace-border)] px-3 py-2">
         <Link
           to="/settings"
-          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[13.5px] text-[#888] transition hover:bg-white/7 hover:text-[#bbb]"
+          onClick={onNavigate}
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
         >
-          <Settings className="size-[15px]" />
+          <Settings className="size-[14px]" />
           <span>Settings</span>
         </Link>
       </div>
@@ -316,58 +245,71 @@ export function SessionRail({ onOpenSearch }: { onOpenSearch: () => void }) {
 }
 
 function RailAction({
+  active = false,
   icon: Icon,
   label,
   onClick,
   to,
 }: {
+  active?: boolean
   icon: typeof Search
   label: string
   onClick?: () => void
   to?: string
 }) {
-  const classes =
-    "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2.5 text-[13.5px] text-[#c8c8c8] transition hover:bg-white/7"
+  const className = cn(
+    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] transition",
+    active
+      ? "border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-tag-bg)] text-[var(--workspace-text-primary)]"
+      : "text-[var(--workspace-text-secondary)] hover:bg-[var(--workspace-hover-bg)]"
+  )
+
+  const content = (
+    <>
+      <Icon className="size-[14px] shrink-0 text-[var(--workspace-text-muted)]" />
+      <span>{label}</span>
+    </>
+  )
 
   if (to) {
     return (
-      <Link to={to} className={classes}>
-        <Icon className="size-[15px] text-[#888]" />
-        <span>{label}</span>
+      <Link to={to} onClick={onClick} className={className}>
+        {content}
       </Link>
     )
   }
 
   return (
-    <button type="button" className={classes} onClick={onClick}>
-      <Icon className="size-[15px] text-[#888]" />
-      <span>{label}</span>
+    <button type="button" onClick={onClick} className={className}>
+      {content}
     </button>
   )
 }
 
 function ThreadHeaderButton({
   children,
+  onClick,
   title,
   to,
 }: {
   children: ReactNode
+  onClick?: () => void
   title: string
   to?: string
 }) {
   const className =
-    "flex size-6 items-center justify-center rounded-md text-[#555] transition hover:bg-white/7 hover:text-[#888]"
+    "flex size-6 items-center justify-center rounded text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)]"
 
   if (to) {
     return (
-      <Link to={to} className={className} title={title}>
+      <Link to={to} onClick={onClick} className={className} title={title}>
         {children}
       </Link>
     )
   }
 
   return (
-    <button type="button" className={className} title={title}>
+    <button type="button" onClick={onClick} className={className} title={title}>
       {children}
     </button>
   )

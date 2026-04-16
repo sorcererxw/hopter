@@ -52,18 +52,18 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[680px] gap-0 overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e] p-0 text-[#d0d0d0] ring-0"
+        className="max-w-[680px] gap-0 overflow-hidden rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-panel-bg)] p-0 text-[var(--workspace-text-primary)] ring-0"
       >
-        <div className="flex items-center gap-3 border-b border-white/8 px-4 py-3">
-          <Search className="size-4 text-[#666]" />
+        <div className="flex items-center gap-3 border-b border-[color:var(--workspace-border)] px-4 py-3">
+          <Search className="size-4 text-[var(--workspace-text-muted)]" />
           <Input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search threads, projects, and actions"
-            className="h-auto border-0 bg-transparent px-0 py-0 text-[14px] text-[#e0e0e0] shadow-none focus-visible:ring-0"
+            className="h-auto border-0 bg-transparent px-0 py-0 text-[14px] text-[var(--workspace-text-primary)] shadow-none focus-visible:ring-0"
           />
-          <span className="rounded-md border border-white/8 bg-white/4 px-2 py-1 text-[11px] text-[#666]">
+          <span className="workspace-kbd">
             esc
           </span>
         </div>
@@ -101,11 +101,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   key={session.id}
                   type="button"
                   onClick={() => closeAndNavigate(`/sessions/${session.id}`)}
-                  className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-white/8 hover:bg-white/6"
+                  className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-[color:var(--workspace-border)] hover:bg-[var(--workspace-hover-bg)]"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] text-[#e0e0e0]">{session.title}</div>
-                    <div className="mt-1 text-[12px] text-[#666]">
+                    <div className="truncate text-[13px] text-[var(--workspace-text-primary)]">
+                      {session.title}
+                    </div>
+                    <div className="mt-1 text-[12px] text-[var(--workspace-text-muted)]">
                       {session.project?.name || "Local"} · {formatSessionStatus(session.status)}
                     </div>
                   </div>
@@ -122,11 +124,15 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   key={project.id}
                   type="button"
                   onClick={() => closeAndNavigate("/")}
-                  className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-white/8 hover:bg-white/6"
+                  className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-[color:var(--workspace-border)] hover:bg-[var(--workspace-hover-bg)]"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] text-[#e0e0e0]">{project.name}</div>
-                    <div className="mt-1 truncate text-[12px] text-[#666]">{project.rootPath}</div>
+                    <div className="truncate text-[13px] text-[var(--workspace-text-primary)]">
+                      {project.name}
+                    </div>
+                    <div className="mt-1 truncate text-[12px] text-[var(--workspace-text-muted)]">
+                      {project.rootPath}
+                    </div>
                   </div>
                 </button>
               ))}
@@ -134,7 +140,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           ) : null}
 
           {normalized && filtered.sessions.length === 0 && filtered.projects.length === 0 ? (
-            <div className="px-3 py-6 text-[12px] text-[#666]">
+            <div className="px-3 py-6 text-[12px] text-[var(--workspace-text-muted)]">
               No matches. Try a thread title, project name, or "settings".
             </div>
           ) : null}
@@ -145,7 +151,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 }
 
 function SectionLabel({ children }: { children: string }) {
-  return <div className="px-3 text-[11px] uppercase tracking-[0.06em] text-[#555]">{children}</div>
+  return (
+    <div className="px-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--workspace-text-muted)]">
+      {children}
+    </div>
+  )
 }
 
 function ActionRow({
@@ -163,12 +173,12 @@ function ActionRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-white/8 hover:bg-white/6"
+      className="flex w-full items-start gap-3 rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-[color:var(--workspace-border)] hover:bg-[var(--workspace-hover-bg)]"
     >
-      <Icon className="mt-0.5 size-4 text-[#666]" />
+      <Icon className="mt-0.5 size-4 text-[var(--workspace-text-muted)]" />
       <div>
-        <div className="text-[13px] text-[#e0e0e0]">{label}</div>
-        <div className="mt-1 text-[12px] text-[#666]">{detail}</div>
+        <div className="text-[13px] text-[var(--workspace-text-primary)]">{label}</div>
+        <div className="mt-1 text-[12px] text-[var(--workspace-text-muted)]">{detail}</div>
       </div>
     </button>
   )

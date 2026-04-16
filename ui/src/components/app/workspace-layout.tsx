@@ -1,12 +1,14 @@
-import { useEffect, useState, type PropsWithChildren } from "react"
+import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
 
 import { SearchDialog } from "@/components/app/search-dialog"
 import { SessionRail } from "@/components/app/session-rail"
+import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
 
 export function WorkspaceLayout({ children }: PropsWithChildren) {
   useWorkspaceEvents()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -20,17 +22,51 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
 
-  return (
-    <div className="h-screen overflow-hidden bg-[#0f0f0f] text-foreground">
-      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+  const shellContext = useMemo(
+    () => ({
+      closeSidebar: () => setSidebarOpen(false),
+      openSearch: () => setSearchOpen(true),
+      openSidebar: () => setSidebarOpen(true),
+      sidebarOpen,
+    }),
+    [sidebarOpen]
+  )
 
-      <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[248px_minmax(0,1fr)]">
-        <aside className="hidden min-h-0 h-full border-r border-white/7 bg-[#141414] md:flex md:flex-col">
-          <SessionRail onOpenSearch={() => setSearchOpen(true)} />
+  return (
+    <WorkspaceShellContext.Provider value={shellContext}>
+      <div className="h-screen overflow-hidden bg-[var(--workspace-page-bg)] text-[var(--workspace-text-primary)]">
+        <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+
+        {sidebarOpen ? (
+          <button
+            type="button"
+            aria-label="Close navigation"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        ) : null}
+
+        <aside
+          className={`fixed left-0 top-0 z-50 h-full w-[248px] border-r border-[color:var(--workspace-border)] bg-[var(--workspace-sidebar-bg)] transition-transform duration-300 md:hidden ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <SessionRail
+            onNavigate={() => setSidebarOpen(false)}
+            onOpenSearch={() => setSearchOpen(true)}
+          />
         </aside>
 
-        <main className="min-h-0 min-w-0 overflow-hidden bg-[#0f0f0f]">{children}</main>
+        <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[248px_minmax(0,1fr)]">
+          <aside className="hidden min-h-0 h-full border-r border-[color:var(--workspace-border)] bg-[var(--workspace-sidebar-bg)] md:flex md:flex-col">
+            <SessionRail onOpenSearch={() => setSearchOpen(true)} />
+          </aside>
+
+          <main className="min-h-0 min-w-0 overflow-hidden bg-[var(--workspace-page-bg)]">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </WorkspaceShellContext.Provider>
   )
 }

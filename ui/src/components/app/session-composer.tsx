@@ -42,8 +42,8 @@ export function SessionComposer({
 
   return (
     <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4">
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e] shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <div className="px-4 pt-4 pb-3">
+      <div className="overflow-hidden rounded-[1rem] border border-[color:var(--workspace-border-strong)] bg-[var(--workspace-panel-bg)] shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="px-4 pb-3 pt-3">
           <textarea
             rows={2}
             value={value}
@@ -55,7 +55,7 @@ export function SessionComposer({
               }
             }}
             placeholder={placeholder}
-            className="min-h-14 w-full resize-none bg-transparent text-[14px] leading-7 text-[#e0e0e0] outline-none placeholder:text-[#3d3d3d]"
+            className="min-h-14 w-full resize-none bg-transparent text-[14px] leading-[1.6] text-[var(--workspace-text-primary)] outline-none placeholder:text-[var(--workspace-text-disabled)]"
           />
         </div>
 
@@ -81,8 +81,8 @@ export function SessionComposer({
               className={cn(
                 "flex size-8 items-center justify-center rounded-lg transition md:size-7",
                 canSubmit
-                  ? "bg-[#e0e0e0] text-[#0f0f0f] hover:bg-white"
-                  : "bg-white/8 text-[#4f4f4f]"
+                  ? "bg-[var(--workspace-text-primary)] text-[var(--workspace-page-bg)] hover:brightness-110"
+                  : "bg-[var(--workspace-hover-bg)] text-[var(--workspace-text-muted)]"
               )}
             >
               {busy ? (
@@ -114,7 +114,7 @@ function GhostIconButton({
   return (
     <button
       type="button"
-      className="flex size-8 items-center justify-center rounded-md text-[#666] transition hover:bg-white/7 hover:text-[#aaa] md:size-7"
+      className="flex size-8 items-center justify-center rounded-md text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-text-secondary)] md:size-7"
       {...props}
     >
       {children}
@@ -126,10 +126,10 @@ function ChipButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-[12px] text-[#aaa] transition hover:bg-white/9"
+      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-[12px] text-[var(--workspace-text-secondary)] transition hover:bg-[var(--workspace-hover-bg)]"
     >
       {children}
-      <ChevronDown className="size-[11px] text-[#666]" />
+      <ChevronDown className="size-[11px] text-[var(--workspace-text-muted)]" />
     </button>
   )
 }
@@ -138,7 +138,7 @@ function MetaButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center rounded-md px-2 py-1 text-[11.5px] text-[#555] transition hover:bg-white/5 hover:text-[#888]"
+      className="inline-flex items-center rounded-md px-2 py-1 text-[11.5px] text-[var(--workspace-text-muted)] transition hover:bg-[var(--workspace-hover-bg-soft)] hover:text-[var(--workspace-text-secondary)]"
     >
       {children}
     </button>

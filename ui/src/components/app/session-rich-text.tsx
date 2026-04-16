@@ -41,7 +41,10 @@ function renderInline(text: string) {
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={`${part}-${index}`} className="font-semibold text-[#efefef]">
+        <strong
+          key={`${part}-${index}`}
+          className="font-semibold text-[var(--workspace-text-primary)]"
+        >
           {part.slice(2, -2)}
         </strong>
       )
@@ -49,10 +52,7 @@ function renderInline(text: string) {
 
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code
-          key={`${part}-${index}`}
-          className="rounded bg-white/6 px-1.5 py-0.5 font-mono text-[0.92em] text-[#d7d7d7]"
-        >
+        <code key={`${part}-${index}`} className="workspace-inline-code font-mono text-[0.92em]">
           {part.slice(1, -1)}
         </code>
       )
@@ -70,7 +70,7 @@ function renderInline(text: string) {
             href={href}
             target="_blank"
             rel="noreferrer"
-            className="text-[#d6d6d6] underline decoration-white/20 underline-offset-4 transition hover:text-white"
+            className="text-[var(--workspace-text-primary)] underline decoration-white/20 underline-offset-4 transition hover:text-white"
           >
             {label}
           </a>
@@ -78,11 +78,7 @@ function renderInline(text: string) {
       }
 
       return (
-        <span
-          key={`${part}-${index}`}
-          title={href}
-          className="rounded bg-white/6 px-1.5 py-0.5 font-mono text-[0.92em] text-[#d7d7d7]"
-        >
+        <span key={`${part}-${index}`} title={href} className="workspace-inline-code font-mono text-[0.92em]">
           {label}
         </span>
       )

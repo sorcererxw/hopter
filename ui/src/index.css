@@ -41,35 +41,58 @@
 }
 
 :root {
-  --background: #0f0f0f;
-  --foreground: #f3f3f3;
+  --background: #101010;
+  --foreground: #e0e0e0;
   --card: #1a1a1a;
-  --card-foreground: #f3f3f3;
-  --popover: #1a1a1a;
-  --popover-foreground: #f3f3f3;
-  --primary: #ececec;
+  --card-foreground: #e0e0e0;
+  --popover: #1e1e1e;
+  --popover-foreground: #e0e0e0;
+  --primary: #f0f0f0;
   --primary-foreground: #0f0f0f;
-  --secondary: rgba(255, 255, 255, 0.07);
-  --secondary-foreground: #d8d8d8;
+  --secondary: rgba(255, 255, 255, 0.06);
+  --secondary-foreground: #bdbdbd;
   --muted: rgba(255, 255, 255, 0.05);
-  --muted-foreground: #8c8c8c;
-  --accent: rgba(255, 255, 255, 0.09);
+  --muted-foreground: #8b8b8b;
+  --accent: rgba(255, 255, 255, 0.08);
   --accent-foreground: #f3f3f3;
   --destructive: #ef4444;
   --destructive-foreground: #fff7f7;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: rgba(255, 255, 255, 0.2);
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: rgba(255, 255, 255, 0.22);
   --sidebar: #141414;
   --sidebar-foreground: #d8d8d8;
   --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-accent: rgba(255, 255, 255, 0.07);
   --sidebar-accent-foreground: #f3f3f3;
   --radius: 0.625rem;
+  --workspace-page-bg: #0f0f0f;
+  --workspace-sidebar-bg: #141414;
+  --workspace-panel-bg: #1e1e1e;
+  --workspace-surface-bg: #1a1a1a;
+  --workspace-elevated-bg: #242424;
+  --workspace-border: rgba(255, 255, 255, 0.07);
+  --workspace-border-strong: rgba(255, 255, 255, 0.12);
+  --workspace-text-primary: #e0e0e0;
+  --workspace-text-secondary: #888;
+  --workspace-text-muted: #555;
+  --workspace-text-disabled: #3a3a3a;
+  --workspace-hover-bg: rgba(255, 255, 255, 0.07);
+  --workspace-hover-bg-soft: rgba(255, 255, 255, 0.04);
+  --workspace-active-bg: rgba(255, 255, 255, 0.1);
+  --workspace-tag-bg: rgba(255, 255, 255, 0.06);
+  --workspace-tag-border: rgba(255, 255, 255, 0.08);
+  --workspace-tool-bg: rgba(255, 255, 255, 0.04);
+  --workspace-tool-border: rgba(255, 255, 255, 0.07);
+  --workspace-thread-guide: rgba(255, 255, 255, 0.08);
+  --workspace-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --workspace-scrollbar-thumb-hover: rgba(255, 255, 255, 0.16);
+  --workspace-inline-code-bg: rgba(99, 183, 255, 0.1);
+  --workspace-inline-code-text: #63b7ff;
 }
 
 .light {
-  --background: #f5f5f5;
+  --background: #f3f3f3;
   --foreground: #141414;
   --card: #ffffff;
   --card-foreground: #141414;
@@ -93,6 +116,29 @@
   --sidebar-border: rgba(15, 15, 15, 0.08);
   --sidebar-accent: rgba(15, 15, 15, 0.06);
   --sidebar-accent-foreground: #141414;
+  --workspace-page-bg: #f0f0f0;
+  --workspace-sidebar-bg: #e4e4e4;
+  --workspace-panel-bg: #ffffff;
+  --workspace-surface-bg: #f7f7f7;
+  --workspace-elevated-bg: #efefef;
+  --workspace-border: rgba(0, 0, 0, 0.07);
+  --workspace-border-strong: rgba(0, 0, 0, 0.12);
+  --workspace-text-primary: #1a1a1a;
+  --workspace-text-secondary: #666;
+  --workspace-text-muted: #999;
+  --workspace-text-disabled: #c3c3c3;
+  --workspace-hover-bg: rgba(0, 0, 0, 0.06);
+  --workspace-hover-bg-soft: rgba(0, 0, 0, 0.03);
+  --workspace-active-bg: rgba(0, 0, 0, 0.09);
+  --workspace-tag-bg: rgba(0, 0, 0, 0.05);
+  --workspace-tag-border: rgba(0, 0, 0, 0.08);
+  --workspace-tool-bg: rgba(0, 0, 0, 0.04);
+  --workspace-tool-border: rgba(0, 0, 0, 0.07);
+  --workspace-thread-guide: rgba(0, 0, 0, 0.1);
+  --workspace-scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --workspace-scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+  --workspace-inline-code-bg: rgba(0, 100, 220, 0.07);
+  --workspace-inline-code-text: #0055cc;
 }
 
 @layer base {
@@ -142,19 +188,37 @@
 
 @layer utilities {
   .surface-panel {
-    background: #171717;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--workspace-surface-bg);
+    border: 1px solid var(--workspace-border-strong);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   }
 
   .workspace-chip {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--workspace-tag-bg);
+    border: 1px solid var(--workspace-tag-border);
   }
 
+  .workspace-scrollbar,
   .thin-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: var(--workspace-scrollbar-thumb) transparent;
+  }
+
+  .workspace-kbd {
+    border-radius: 0.375rem;
+    border: 1px solid var(--workspace-tag-border);
+    background: var(--workspace-tag-bg);
+    color: var(--workspace-text-disabled);
+    font-size: 10px;
+    line-height: 1.4;
+    padding: 1px 5px;
+  }
+
+  .workspace-inline-code {
+    background: var(--workspace-inline-code-bg);
+    border-radius: 0.5rem;
+    color: var(--workspace-inline-code-text);
+    padding: 0.1rem 0.45rem;
   }
 }
 
@@ -168,10 +232,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--workspace-scrollbar-thumb);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--workspace-scrollbar-thumb-hover);
 }

@@ -18,14 +18,32 @@ type Manager struct {
 	mu        sync.Mutex
 	workspace core.WorkspaceService
 	live      map[string]*liveSession
+	start     clientStarter
 }
 
 type liveSession struct {
 	project core.Project
-	client  *Client
+	client  codexClient
 	thread  string
 	active  string
 }
+
+type codexClient interface {
+	Close() error
+	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
+	ReadThread(threadID string) (*ReadThreadResult, error)
+	ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
+	StartThread(cwd string) (*StartThreadResult, error)
+	StartTurn(threadID string, text string) (*StartTurnResult, error)
+	SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error)
+}
+
+type clientStarter func(
+	ctx context.Context,
+	cwd string,
+	onNotification func(Notification),
+	onExit func(),
+) (codexClient, error)
 
 type ResolvedSession struct {
 	Project core.Project
@@ -36,6 +54,14 @@ func NewManager(workspace core.WorkspaceService) *Manager {
 	return &Manager{
 		workspace: workspace,
 		live:      make(map[string]*liveSession),
+		start: func(
+			ctx context.Context,
+			cwd string,
+			onNotification func(Notification),
+			onExit func(),
+		) (codexClient, error) {
+			return Start(ctx, cwd, onNotification, onExit)
+		},
 	}
 }
 
@@ -83,7 +109,11 @@ func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, erro
 		if strings.TrimSpace(local.BackendThreadID) == "" {
 			return local, project, nil
 		}
-		return m.fetchThreadSession(sessionID, local.BackendThreadID, project, local, true)
+		session, resolvedProject, err := m.fetchThreadSession(sessionID, local.BackendThreadID, project, local, true)
+		if err != nil {
+			return local, project, nil
+		}
+		return session, resolvedProject, nil
 	}
 
 	if session, project, err := m.fetchRawThreadSession(sessionID); err == nil {
@@ -317,11 +347,11 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		m.mu.Unlock()
 
 		active := ""
-		status := core.SessionStateCompleted
-		if payload.Turn.Status == "failed" {
-			status = core.SessionStateFailed
-		}
+		status := finalSessionState(payload.Turn.Status, core.SessionStateCompleted)
 		summary := "Codex completed the turn."
+		if payload.Turn.Status == "interrupted" {
+			summary = "Codex stopped before completing the turn."
+		}
 
 		if live != nil {
 			if read, err := live.client.ReadThread(live.thread); err == nil {
@@ -408,13 +438,14 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 		}
 
 		active := ""
-		status := core.SessionStateCompleted
-		if statusText == "failed" {
-			status = core.SessionStateFailed
-		}
+		status := finalSessionState(statusText, core.SessionStateCompleted)
 		summary := latestAgentSummary(read)
 		if summary == "" {
-			summary = "Codex completed the turn."
+			if statusText == "interrupted" {
+				summary = "Codex stopped before completing the turn."
+			} else {
+				summary = "Codex completed the turn."
+			}
 		}
 		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			ActiveTurnID: &active,
@@ -467,14 +498,14 @@ func truncate(value string, limit int) string {
 	return strings.TrimSpace(value[:limit])
 }
 
-func (m *Manager) startEphemeralClient() (*Client, string, error) {
+func (m *Manager) startEphemeralClient() (codexClient, string, error) {
 	cwd := "."
 	projects := m.workspace.ListProjects()
 	if len(projects) > 0 {
 		cwd = projects[0].RootPath
 	}
 
-	client, err := Start(context.Background(), cwd, nil, nil)
+	client, err := m.start(context.Background(), cwd, nil, nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -488,7 +519,44 @@ func (m *Manager) fetchThreadSession(
 	local core.Session,
 	hasLocal bool,
 ) (core.Session, core.Project, error) {
-	client, err := Start(context.Background(), project.RootPath, nil, nil)
+	if live := m.liveSession(sessionID); live != nil && live.thread == threadID {
+		read, err := live.client.ReadThread(threadID)
+		if err != nil {
+			return core.Session{}, core.Project{}, err
+		}
+
+		session := local
+		session.ProjectID = project.ID
+		session.BackendThreadID = threadID
+		session.Summary = latestAgentSummary(read)
+		session.ActiveTurnID = latestActiveTurnID(read)
+		latestStatus := latestTerminalTurnStatus(read)
+		optimisticPendingStart :=
+			local.Status == core.SessionStateRunning &&
+				strings.TrimSpace(local.ActiveTurnID) == "" &&
+				session.ActiveTurnID == "" &&
+				latestStatus != "failed"
+
+		if session.Summary == "" || optimisticPendingStart {
+			session.Summary = local.Summary
+		}
+		if session.Summary == "" {
+			session.Summary = "Codex thread loaded."
+		}
+		if session.ActiveTurnID != "" {
+			session.Status = core.SessionStateRunning
+		} else if optimisticPendingStart {
+			session.Status = local.Status
+		} else {
+			session.Status = finalSessionState(latestStatus, local.Status)
+		}
+		if hasLocal && strings.TrimSpace(local.LastInputHint) != "" {
+			session.LastInputHint = local.LastInputHint
+		}
+		return session, project, nil
+	}
+
+	client, err := m.start(context.Background(), project.RootPath, nil, nil)
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -552,14 +620,12 @@ func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Pro
 }
 
 func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, threadID string) (*liveSession, error) {
-	m.mu.Lock()
-	live := m.live[sessionKey]
-	m.mu.Unlock()
+	live := m.liveSession(sessionKey)
 	if live != nil {
 		return live, nil
 	}
 
-	client, err := Start(context.Background(), project.RootPath, func(n Notification) {
+	client, err := m.start(context.Background(), project.RootPath, func(n Notification) {
 		m.handleNotification(sessionKey, n)
 	}, func() {
 		summary := "Codex runtime exited unexpectedly."
@@ -601,6 +667,12 @@ func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, thr
 	m.live[sessionKey] = live
 	m.mu.Unlock()
 	return live, nil
+}
+
+func (m *Manager) liveSession(sessionID string) *liveSession {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.live[sessionID]
 }
 
 func (m *Manager) sessionByThreadID(threadID string) (core.Session, bool) {
@@ -689,6 +761,36 @@ func latestActiveTurnID(read *ReadThreadResult) string {
 		}
 	}
 	return ""
+}
+
+func latestTerminalTurnStatus(read *ReadThreadResult) string {
+	if read == nil {
+		return ""
+	}
+	for i := len(read.Thread.Turns) - 1; i >= 0; i-- {
+		turn := read.Thread.Turns[i]
+		if turn.Status == "" || turn.Status == "inProgress" {
+			continue
+		}
+		return turn.Status
+	}
+	return ""
+}
+
+func finalSessionState(turnStatus string, fallback core.SessionState) core.SessionState {
+	switch turnStatus {
+	case "failed":
+		return core.SessionStateFailed
+	case "interrupted":
+		return core.SessionStateWaitingInput
+	case "completed":
+		return core.SessionStateCompleted
+	default:
+		if fallback == "" {
+			return core.SessionStatePending
+		}
+		return fallback
+	}
 }
 
 func projectForThread(projects []core.Project, cwd string) (core.Project, bool) {

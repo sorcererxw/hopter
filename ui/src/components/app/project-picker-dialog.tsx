@@ -1,30 +1,46 @@
-import { useMemo, useState, type FormEvent } from "react"
-import { useQueries, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import {
+  ChevronLeft,
   ChevronRight,
+  Cloud,
+  Download,
   File,
+  FileText,
+  Film,
   Folder,
   FolderGit2,
+  Grid2x2,
   HardDrive,
   Home,
+  Image,
+  List,
+  Monitor,
+  Music,
   RefreshCcw,
   Search,
+  X,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-import type { DirectoryEntry, DirectoryListing, DirectoryRoot, PathMetadata } from "@/gen/proto/orchd/v1/host_pb"
-import { useDirectoryRoots, usePathMetadata, useRecentRepos } from "@/features/host/use-host-browser"
+import type { DirectoryEntry, DirectoryRoot } from "@/gen/proto/orchd/v1/host_pb"
+import {
+  useDirectoryListing,
+  useDirectoryRoots,
+  usePathMetadata,
+} from "@/features/host/use-host-browser"
 import { useCreateProject } from "@/features/projects/use-projects"
-import { hostClient } from "@/lib/connect/clients"
-import { queryKeys } from "@/lib/query/keys"
+import { queryClient } from "@/lib/query/client"
 import { cn } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type Breadcrumb = {
+  label: string
+  path: string
+}
+
+type SidebarItemDef = {
+  icon: ReactNode
   label: string
   path: string
 }
@@ -43,95 +59,31 @@ function normalizePath(value: string) {
   return value
 }
 
-function parentPath(value: string) {
-  const normalized = normalizePath(value)
-  if (!normalized || normalized === "/") {
-    return ""
+function joinPath(base: string, segment: string) {
+  const normalizedBase = normalizePath(base)
+  if (!normalizedBase || normalizedBase === "/") {
+    return `/${segment}`
   }
-
-  const lastSlashIndex = normalized.lastIndexOf("/")
-  if (lastSlashIndex <= 0) {
-    return "/"
-  }
-
-  return normalized.slice(0, lastSlashIndex)
+  return `${normalizedBase}/${segment}`
 }
 
-function isWithinRoot(rootPath: string, targetPath: string) {
-  const normalizedRoot = normalizePath(rootPath)
-  const normalizedTarget = normalizePath(targetPath)
+function buildBreadcrumbs(path: string): Breadcrumb[] {
+  const normalized = normalizePath(path)
+  const segments = normalized.split("/").filter(Boolean)
+  let current = ""
 
-  return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(`${normalizedRoot}/`)
+  return segments.map((segment) => {
+    current = `${current}/${segment}`
+    return { label: segment, path: current }
+  })
 }
 
-function findContainingRoot(roots: DirectoryRoot[], targetPath: string) {
-  const normalizedTarget = normalizePath(targetPath)
-
-  return [...roots]
-    .sort((left, right) => right.path.length - left.path.length)
-    .find((root) => isWithinRoot(root.path, normalizedTarget))
-}
-
-function buildColumnPaths(roots: DirectoryRoot[], targetPath: string, isDirectory: boolean) {
-  const normalizedTarget = normalizePath(targetPath)
-  const root = findContainingRoot(roots, normalizedTarget)
-  if (!root) {
-    return []
+function inferDefaultPath(roots: DirectoryRoot[]) {
+  const homeRoot = roots.find((root) => root.kind === "home")
+  if (homeRoot) {
+    return joinPath(homeRoot.path, "Downloads")
   }
-
-  const browsingPath = isDirectory ? normalizedTarget : parentPath(normalizedTarget)
-  if (!browsingPath) {
-    return [root.path]
-  }
-
-  if (normalizePath(root.path) === browsingPath) {
-    return [root.path]
-  }
-
-  const relativePath = browsingPath.slice(normalizePath(root.path).length).replace(/^\/+/, "")
-  if (!relativePath) {
-    return [root.path]
-  }
-
-  const segments = relativePath.split("/").filter(Boolean)
-  const columnPaths = [root.path]
-  let currentPath = normalizePath(root.path)
-
-  for (const segment of segments) {
-    currentPath = currentPath === "/" ? `/${segment}` : `${currentPath}/${segment}`
-    columnPaths.push(currentPath)
-  }
-
-  return columnPaths
-}
-
-function buildBreadcrumbs(roots: DirectoryRoot[], metadata?: PathMetadata): Breadcrumb[] {
-  if (!metadata?.canonicalPath) {
-    return []
-  }
-
-  const root = findContainingRoot(roots, metadata.canonicalPath)
-  if (!root) {
-    return []
-  }
-
-  const browsingPath = metadata.isDirectory ? metadata.canonicalPath : parentPath(metadata.canonicalPath)
-  const breadcrumbs: Breadcrumb[] = [{ label: root.label, path: root.path }]
-
-  if (!browsingPath || normalizePath(browsingPath) === normalizePath(root.path)) {
-    return breadcrumbs
-  }
-
-  const relativePath = browsingPath.slice(normalizePath(root.path).length).replace(/^\/+/, "")
-  const segments = relativePath.split("/").filter(Boolean)
-  let currentPath = normalizePath(root.path)
-
-  for (const segment of segments) {
-    currentPath = currentPath === "/" ? `/${segment}` : `${currentPath}/${segment}`
-    breadcrumbs.push({ label: segment, path: currentPath })
-  }
-
-  return breadcrumbs
+  return roots[0]?.path || ""
 }
 
 function errorMessage(error: unknown) {
@@ -139,36 +91,6 @@ function errorMessage(error: unknown) {
     return error.message
   }
   return "The host could not finish that request."
-}
-
-function formatCounts(metadata?: PathMetadata) {
-  if (!metadata?.isDirectory) {
-    return ""
-  }
-
-  const directoryCount = metadata.childDirectoryCount
-  const fileCount = metadata.childFileCount
-
-  if (!directoryCount && !fileCount) {
-    return "Empty folder"
-  }
-
-  const parts = []
-  if (directoryCount) {
-    parts.push(`${directoryCount} folder${directoryCount === 1 ? "" : "s"}`)
-  }
-  if (fileCount) {
-    parts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`)
-  }
-
-  return parts.join(" · ")
-}
-
-function rootIcon(root: DirectoryRoot) {
-  if (root.kind === "home") {
-    return Home
-  }
-  return HardDrive
 }
 
 function entryIcon(entry: DirectoryEntry) {
@@ -181,449 +103,587 @@ function entryIcon(entry: DirectoryEntry) {
   return File
 }
 
+function makeFavorites(roots: DirectoryRoot[]) {
+  const homeRoot = roots.find((root) => root.kind === "home")
+  if (!homeRoot) {
+    return []
+  }
+
+  return [
+    { icon: <Home className="size-[13px] text-[#5ea0ef]" />, label: "Home", path: homeRoot.path },
+    {
+      icon: <Monitor className="size-[13px] text-[#5ea0ef]" />,
+      label: "Desktop",
+      path: joinPath(homeRoot.path, "Desktop"),
+    },
+    {
+      icon: <FileText className="size-[13px] text-[#5ea0ef]" />,
+      label: "Documents",
+      path: joinPath(homeRoot.path, "Documents"),
+    },
+    {
+      icon: <Download className="size-[13px] text-[#5ea0ef]" />,
+      label: "Downloads",
+      path: joinPath(homeRoot.path, "Downloads"),
+    },
+    {
+      icon: <Image className="size-[13px] text-[#5ea0ef]" />,
+      label: "Pictures",
+      path: joinPath(homeRoot.path, "Pictures"),
+    },
+    {
+      icon: <Music className="size-[13px] text-[#5ea0ef]" />,
+      label: "Music",
+      path: joinPath(homeRoot.path, "Music"),
+    },
+    {
+      icon: <Film className="size-[13px] text-[#5ea0ef]" />,
+      label: "Movies",
+      path: joinPath(homeRoot.path, "Movies"),
+    },
+  ] satisfies SidebarItemDef[]
+}
+
+function makeLocations(roots: DirectoryRoot[]) {
+  const systemRoot = roots.find((root) => root.kind !== "home") ?? roots[0]
+  const homeRoot = roots.find((root) => root.kind === "home")
+
+  return [
+    systemRoot
+      ? {
+          icon: <HardDrive className="size-[13px] text-zinc-400" />,
+          label: "Macintosh HD",
+          path: systemRoot.path,
+        }
+      : null,
+    homeRoot
+      ? {
+          icon: <Cloud className="size-[13px] text-zinc-400" />,
+          label: "iCloud Drive",
+          path: joinPath(homeRoot.path, "Documents"),
+        }
+      : null,
+  ].filter(Boolean) as SidebarItemDef[]
+}
+
 export function ProjectPickerDialog() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const createProject = useCreateProject()
   const rootsQuery = useDirectoryRoots()
-  const recentReposQuery = useRecentRepos()
-
-  const [columnPaths, setColumnPaths] = useState<string[]>([])
-  const [selectedPath, setSelectedPath] = useState("")
-  const [pathInput, setPathInput] = useState("")
-  const [name, setName] = useState("")
-  const [nameDirty, setNameDirty] = useState(false)
-  const [search, setSearch] = useState("")
-  const [formError, setFormError] = useState("")
 
   const roots = useMemo(() => rootsQuery.data ?? EMPTY_ROOTS, [rootsQuery.data])
-  const activeSelectedPath = selectedPath || roots[0]?.path || ""
-  const activeColumnPaths = columnPaths.length > 0 ? columnPaths : activeSelectedPath ? [activeSelectedPath] : []
+  const defaultPath = useMemo(() => inferDefaultPath(roots), [roots])
 
-  const columnQueries = useQueries({
-    queries: activeColumnPaths.map((path) => ({
-      queryKey: queryKeys.hostDirectory(path),
-      enabled: path.trim().length > 0,
-      queryFn: async () => {
-        const response = await hostClient.listDirectory({ path })
-        return response.listing as DirectoryListing | undefined
-      },
-    })),
-  })
+  const [currentPath, setCurrentPath] = useState("")
+  const [selectedPath, setSelectedPath] = useState("")
+  const [history, setHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list")
+  const [formError, setFormError] = useState("")
 
-  const previewQuery = usePathMetadata(activeSelectedPath, Boolean(activeSelectedPath))
+  const activePath = currentPath || defaultPath
+  const listingQuery = useDirectoryListing(activePath, Boolean(activePath))
+  const previewPath = selectedPath || activePath
+  const previewQuery = usePathMetadata(previewPath, Boolean(previewPath))
   const previewMetadata = previewQuery.data
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(roots, previewMetadata), [previewMetadata, roots])
+  const breadcrumbs = useMemo(() => buildBreadcrumbs(activePath), [activePath])
+  const favorites = useMemo(() => makeFavorites(roots), [roots])
+  const locations = useMemo(() => makeLocations(roots), [roots])
+
+  const canOpenFolder = Boolean(previewMetadata?.isDirectory && previewMetadata?.isAllowed)
   const selectedRepoPath =
     previewMetadata?.isDirectory && previewMetadata.isRepo && previewMetadata.isAllowed
       ? previewMetadata.canonicalPath
       : ""
-  const displayedPathInput = pathInput || activeSelectedPath
-  const displayedName = !nameDirty && previewMetadata?.isRepo ? previewMetadata.basename : name
+  const entries = useMemo(() => {
+    const allEntries = listingQuery.data?.entries ?? []
+    const query = searchQuery.trim().toLowerCase()
+    return query
+      ? allEntries.filter((entry) => entry.name.toLowerCase().includes(query))
+      : allEntries
+  }, [listingQuery.data?.entries, searchQuery])
 
-  const activeBrowserError = formError || rootsQuery.error || previewQuery.error || columnQueries.find((query) => query.error)?.error
-  const filteredSearch = search.trim().toLowerCase()
-  const isBusy = createProject.isPending
-
-  function navigateBack() {
+  const navigateBack = useCallback(() => {
     if (window.history.length > 1) {
       navigate(-1)
       return
     }
 
     navigate("/")
-  }
+  }, [navigate])
 
-  function selectRoot(rootPath: string) {
+  const openDirectory = useCallback((path: string, options?: { fromHistory?: boolean }) => {
+    const normalized = normalizePath(path)
     setFormError("")
-    setSelectedPath(rootPath)
-    setColumnPaths([rootPath])
-    setPathInput(rootPath)
-  }
+    setCurrentPath(normalized)
+    setSelectedPath("")
 
-  function selectEntry(columnIndex: number, entry: DirectoryEntry) {
-    setFormError("")
-    setSelectedPath(entry.path)
-    setColumnPaths((current) => {
-      const next = current.slice(0, columnIndex + 1)
-      if (entry.isDirectory) {
-        next.push(entry.path)
-      }
-      return next
-    })
-    setPathInput(entry.path)
-  }
-
-  async function selectPathFromInput(path: string) {
-    if (!path.trim()) {
+    if (options?.fromHistory) {
       return
     }
 
-    try {
-      const response = await hostClient.getPathMetadata({ path: path.trim() })
-      const metadata = response.metadata
-      if (!metadata?.canonicalPath) {
-        return
-      }
+    setHistory((current) => {
+      const base = historyIndex >= 0 ? current.slice(0, historyIndex + 1) : []
+      const next = [...base, normalized]
+      return next
+    })
+    setHistoryIndex((current) => current + 1)
+  }, [historyIndex])
 
-      const nextColumnPaths = buildColumnPaths(roots, metadata.canonicalPath, metadata.isDirectory)
-      if (!nextColumnPaths.length) {
-        setFormError("That path is outside the locations this host exposes to the browser.")
-        return
-      }
-
-      setFormError("")
-      setSelectedPath(metadata.canonicalPath)
-      setColumnPaths(nextColumnPaths)
-      setPathInput(metadata.canonicalPath)
-    } catch (error) {
-      setFormError(errorMessage(error))
+  const goBack = useCallback(() => {
+    if (historyIndex <= 0) {
+      return
     }
-  }
 
-  async function handleRefresh() {
+    const nextIndex = historyIndex - 1
+    const nextPath = history[nextIndex]
+    setHistoryIndex(nextIndex)
+    openDirectory(nextPath, { fromHistory: true })
+  }, [history, historyIndex, openDirectory])
+
+  const goForward = useCallback(() => {
+    if (historyIndex >= history.length - 1) {
+      return
+    }
+
+    const nextIndex = historyIndex + 1
+    const nextPath = history[nextIndex]
+    setHistoryIndex(nextIndex)
+    openDirectory(nextPath, { fromHistory: true })
+  }, [history, historyIndex, openDirectory])
+
+  const handleSelectEntry = useCallback((entry: DirectoryEntry) => {
+    setSelectedPath(entry.path)
+  }, [])
+
+  const handleOpenEntry = useCallback((entry: DirectoryEntry) => {
+    setSelectedPath(entry.path)
+    if (entry.isDirectory) {
+      openDirectory(entry.path)
+    }
+  }, [openDirectory])
+
+  const handleRefresh = useCallback(async () => {
     setFormError("")
     await queryClient.invalidateQueries({ queryKey: ["host"] })
-  }
+  }, [])
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const handleOpen = useCallback(async () => {
     setFormError("")
 
+    if (!canOpenFolder) {
+      setFormError("Pick a visible folder before opening the project.")
+      return
+    }
+
     if (!selectedRepoPath) {
-      setFormError("Pick a git repository before opening the project.")
+      setFormError("This folder is visible, but it is not a git repository.")
       return
     }
 
     try {
       await createProject.mutateAsync({
-        name: name.trim() || previewMetadata?.basename || "Project",
-        rootPath: selectedRepoPath,
         defaultBackend: "codex",
+        name: previewMetadata?.basename || "Project",
+        rootPath: selectedRepoPath,
       })
       navigate("/")
     } catch (error) {
       setFormError(errorMessage(error))
     }
-  }
+  }, [canOpenFolder, createProject, navigate, previewMetadata, selectedRepoPath])
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        navigateBack()
+      }
+      if (event.key === "Enter" && canOpenFolder) {
+        void handleOpen()
+      }
+    }
+
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [canOpenFolder, handleOpen, navigateBack])
+
+  const footerText = selectedPath
+    ? previewMetadata?.basename || selectedPath
+    : `${entries.length} item${entries.length === 1 ? "" : "s"}`
+
+  const activeError = formError || rootsQuery.error || listingQuery.error || previewQuery.error
 
   return (
     <Dialog open onOpenChange={(open) => !open && navigateBack()}>
       <DialogContent
         showCloseButton={false}
         data-testid="project-picker-dialog"
-        className="h-[min(760px,calc(100vh-2rem))] w-[min(1120px,calc(100vw-2rem))] max-w-[min(1120px,calc(100vw-2rem))] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-lg border border-white/8 bg-[#1f1f1f] p-0 text-zinc-100 shadow-2xl ring-0 sm:max-w-[min(1120px,calc(100vw-2rem))]"
+        className="h-[min(960px,calc(100vh-48px))] !w-[min(1412px,calc(100vw-72px))] !max-w-[calc(100vw-72px)] gap-0 overflow-hidden rounded-[18px] border-0 bg-[#1e1e1e] p-0 text-zinc-100 shadow-[0_32px_80px_rgba(0,0,0,0.8)] ring-0 sm:!max-w-[calc(100vw-72px)]"
       >
-        <DialogHeader className="border-b border-white/8 px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <DialogTitle className="text-xl font-semibold text-white">Add repo</DialogTitle>
-              <DialogDescription className="text-sm text-zinc-400">
-                Pick a git repository from the host machine, then open new Codex work from the same folder.
-              </DialogDescription>
-            </div>
-            <div className="hidden items-center gap-2 rounded-md border border-white/8 bg-white/4 px-3 py-2 text-xs text-zinc-400 md:flex">
-              <Search className="size-3.5" />
-              Host-backed browser
-            </div>
-          </div>
-        </DialogHeader>
+        <div className="flex h-full min-h-0 flex-col bg-[#1e1e1e]">
+          <div className="flex h-[52px] items-center gap-2 border-b border-white/8 bg-[#1a1a1a] px-3">
+            <button
+              type="button"
+              onClick={navigateBack}
+              className="flex size-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+              title="Close"
+            >
+              <X className="size-[14px]" />
+            </button>
 
-        <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-          <div className="border-b border-white/8 px-6 py-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-white/8 bg-white/4 px-3 py-2">
-                {breadcrumbs.length > 0 ? (
-                  <div className="flex min-w-0 flex-wrap items-center gap-1 text-sm">
-                    {breadcrumbs.map((crumb, index) => (
-                      <div key={crumb.path} className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          className="rounded px-1.5 py-0.5 text-zinc-300 transition hover:bg-white/8 hover:text-white"
-                          onClick={() => {
-                            setSelectedPath(crumb.path)
-                            setColumnPaths(buildColumnPaths(roots, crumb.path, true))
-                          }}
-                        >
-                          {crumb.label}
-                        </button>
-                        {index < breadcrumbs.length - 1 ? <ChevronRight className="size-3 text-zinc-500" /> : null}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-zinc-500">Browse the host machine</p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  value={displayedPathInput}
-                  onChange={(event) => setPathInput(event.target.value)}
-                  onKeyDown={async (event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault()
-                      await selectPathFromInput(displayedPathInput)
-                    }
-                  }}
-                  className="h-10 min-w-0 border-white/10 bg-black/20 text-zinc-100 placeholder:text-zinc-500 md:w-[26rem]"
-                  placeholder="/Users/me/repo/orchd"
-                  data-testid="project-picker-path-input"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-white/10 bg-white/4 text-zinc-100 hover:bg-white/10 hover:text-white"
-                  onClick={() => void selectPathFromInput(displayedPathInput)}
-                >
-                  Go
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="border-white/10 bg-white/4 text-zinc-100 hover:bg-white/10 hover:text-white"
-                  onClick={() => void handleRefresh()}
-                >
-                  <RefreshCcw className="size-4" />
-                  <span className="sr-only">Refresh</span>
-                </Button>
-              </div>
+            <div className="flex items-center gap-[2px]">
+              <ToolbarButton disabled={historyIndex <= 0} onClick={goBack}>
+                <ChevronLeft className="size-[14px]" />
+              </ToolbarButton>
+              <ToolbarButton disabled={historyIndex >= history.length - 1} onClick={goForward}>
+                <ChevronRight className="size-[14px]" />
+              </ToolbarButton>
             </div>
 
-            <div className="mt-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {recentReposQuery.data?.map((repo) => (
+            <div className="flex min-w-0 flex-1 items-center gap-[2px] overflow-hidden">
+              {breadcrumbs.map((crumb, index) => (
+                <div key={crumb.path} className="flex min-w-0 items-center gap-[2px]">
                   <button
-                    key={repo.canonicalPath}
                     type="button"
-                    className="inline-flex max-w-full items-center gap-2 rounded-md border border-white/8 bg-white/4 px-3 py-1.5 text-xs text-zinc-300 transition hover:bg-white/10 hover:text-white"
-                    onClick={() => void selectPathFromInput(repo.canonicalPath)}
+                    onClick={() => openDirectory(crumb.path)}
+                    className={cn(
+                      "max-w-[120px] truncate rounded px-1 py-0.5 text-[12px] transition hover:bg-white/8",
+                      index === breadcrumbs.length - 1
+                        ? "font-semibold text-zinc-100"
+                        : "text-zinc-400"
+                    )}
                   >
-                    <FolderGit2 className="size-3.5 shrink-0" />
-                    <span className="truncate">{repo.basename}</span>
+                    {crumb.label}
                   </button>
-                ))}
-              </div>
-
-              <div className="flex w-full items-center gap-2 rounded-md border border-white/8 bg-white/4 px-3 py-2 xl:max-w-xs">
-                <Search className="size-4 text-zinc-500" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="w-full bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
-                  placeholder="Search visible items"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid min-h-0 flex-1 gap-0 xl:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="min-h-0 overflow-hidden border-b border-white/8 xl:border-r xl:border-b-0">
-              <div className="h-full overflow-x-auto overflow-y-hidden">
-                <div className="flex h-full min-w-max gap-0">
-                  <div className="flex h-full w-64 shrink-0 flex-col border-r border-white/8">
-                    <div className="border-b border-white/8 px-4 py-3 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
-                      Favorites
-                    </div>
-                    <div className="flex-1 overflow-y-auto px-2 py-2" data-testid="project-picker-roots-column">
-                      {rootsQuery.isLoading ? (
-                        <div className="space-y-2 px-2 pt-2">
-                          <Skeleton className="h-8 w-full bg-white/8" />
-                          <Skeleton className="h-8 w-full bg-white/8" />
-                          <Skeleton className="h-8 w-full bg-white/8" />
-                        </div>
-                      ) : (
-                        roots.map((root) => {
-                          const Icon = rootIcon(root)
-                          const selected = activeColumnPaths[0] === root.path
-                          return (
-                            <button
-                              key={root.path}
-                              type="button"
-                              className={cn(
-                                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-white/8 hover:text-white",
-                                selected && "bg-[#0a61d0] text-white hover:bg-[#0a61d0]"
-                              )}
-                              onClick={() => selectRoot(root.path)}
-                            >
-                              <Icon className="size-4 shrink-0" />
-                              <span className="truncate">{root.label}</span>
-                            </button>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
-
-                  {activeColumnPaths.map((path, columnIndex) => {
-                    const query = columnQueries[columnIndex]
-                    const listing = query?.data
-                    const entries =
-                      listing?.entries.filter((entry) =>
-                        filteredSearch ? entry.name.toLowerCase().includes(filteredSearch) : true
-                      ) ?? []
-
-                    return (
-                      <div
-                        key={path}
-                        className="flex h-full w-72 shrink-0 flex-col border-r border-white/8"
-                        data-testid={`project-picker-column-${columnIndex}`}
-                      >
-                        <div className="border-b border-white/8 px-4 py-3 text-sm font-medium text-zinc-300">
-                          {listing?.currentPath || path}
-                        </div>
-                        <div className="flex-1 overflow-y-auto px-2 py-2">
-                          {query?.isLoading ? (
-                            <div className="space-y-2 px-2 pt-2">
-                              <Skeleton className="h-8 w-full bg-white/8" />
-                              <Skeleton className="h-8 w-full bg-white/8" />
-                              <Skeleton className="h-8 w-full bg-white/8" />
-                            </div>
-                          ) : entries.length > 0 ? (
-                            entries.map((entry) => {
-                              const Icon = entryIcon(entry)
-                              const selected = activeSelectedPath === entry.path || activeColumnPaths[columnIndex + 1] === entry.path
-
-                              return (
-                                <button
-                                  key={entry.path}
-                                  type="button"
-                                  className={cn(
-                                    "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-white/8 hover:text-white",
-                                    selected && "bg-[#0a61d0] text-white hover:bg-[#0a61d0]"
-                                  )}
-                                  onClick={() => selectEntry(columnIndex, entry)}
-                                >
-                                  <Icon className="size-4 shrink-0" />
-                                  <span className="min-w-0 flex-1 truncate">{entry.name}</span>
-                                  {entry.isRepo ? (
-                                    <Badge className="border-0 bg-emerald-500/20 text-emerald-200">Repo</Badge>
-                                  ) : null}
-                                  {entry.isDirectory ? <ChevronRight className="size-3.5 shrink-0 text-current/70" /> : null}
-                                </button>
-                              )
-                            })
-                          ) : (
-                            <div className="px-3 py-4 text-sm text-zinc-500">
-                              {filteredSearch ? "No visible items match this search." : "Nothing to show here."}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {index < breadcrumbs.length - 1 ? (
+                    <ChevronRight className="size-[11px] shrink-0 text-zinc-500" />
+                  ) : null}
                 </div>
-              </div>
+              ))}
             </div>
 
-            <aside className="flex min-h-0 flex-col bg-black/12">
-              <div className="border-b border-white/8 px-5 py-4">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">Preview</p>
-              </div>
-              <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4" data-testid="project-picker-preview">
-                {previewQuery.isLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-6 w-32 bg-white/8" />
-                    <Skeleton className="h-20 w-full bg-white/8" />
-                    <Skeleton className="h-24 w-full bg-white/8" />
-                  </div>
-                ) : previewMetadata ? (
-                  <>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        {previewMetadata.isRepo ? (
-                          <FolderGit2 className="size-5 text-emerald-300" />
-                        ) : previewMetadata.isDirectory ? (
-                          <Folder className="size-5 text-sky-300" />
-                        ) : (
-                          <File className="size-5 text-zinc-400" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-base font-semibold text-white">{previewMetadata.basename}</p>
-                          <p className="truncate text-xs text-zinc-500">{previewMetadata.canonicalPath}</p>
-                        </div>
-                      </div>
-                    </div>
+            <div className="mr-1 flex items-center gap-[2px]">
+              <ToolbarButton active={viewMode === "list"} onClick={() => setViewMode("list")}>
+                <List className="size-[13px]" />
+              </ToolbarButton>
+              <ToolbarButton active={viewMode === "grid"} onClick={() => setViewMode("grid")}>
+                <Grid2x2 className="size-[13px]" />
+              </ToolbarButton>
+            </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className={cn("border-0", previewMetadata.isAllowed ? "bg-sky-500/20 text-sky-100" : "bg-amber-500/20 text-amber-100")}>
-                        {previewMetadata.isAllowed ? "Visible to browser" : "Outside allowed roots"}
-                      </Badge>
-                      {previewMetadata.isRepo ? (
-                        <Badge className="border-0 bg-emerald-500/20 text-emerald-100">Git repository</Badge>
-                      ) : previewMetadata.isDirectory ? (
-                        <Badge className="border-0 bg-white/8 text-zinc-200">Folder only</Badge>
-                      ) : (
-                        <Badge className="border-0 bg-white/8 text-zinc-200">File</Badge>
-                      )}
-                    </div>
+            <div className="flex w-[272px] items-center gap-[8px] rounded-[12px] bg-white/8 px-4 py-[10px]">
+              <Search className="size-[14px] shrink-0 text-zinc-500" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="w-full bg-transparent text-[14px] text-zinc-100 outline-none placeholder:text-zinc-500"
+                placeholder="Search"
+              />
+            </div>
 
-                    <div className="rounded-md border border-white/8 bg-white/4 p-4">
-                      <p className="text-sm font-medium text-white">
-                        {selectedRepoPath
-                          ? "Ready to open as a project."
-                          : previewMetadata.isDirectory
-                            ? "This folder is visible, but it is not a git repository yet."
-                            : "Pick a folder to open a project."}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-zinc-400">{formatCounts(previewMetadata) || "No folder details yet."}</p>
-                    </div>
-
-                    <div className="space-y-2 rounded-md border border-white/8 bg-white/4 p-4 text-sm text-zinc-300">
-                      <p className="font-medium text-white">Project name</p>
-                      <Input
-                        value={displayedName}
-                        onChange={(event) => {
-                          setNameDirty(true)
-                          setName(event.target.value)
-                        }}
-                        className="border-white/10 bg-black/20 text-zinc-100 placeholder:text-zinc-500"
-                        placeholder="Use the repo folder name"
-                        data-testid="project-name-input"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="rounded-md border border-dashed border-white/10 bg-white/3 p-4 text-sm leading-6 text-zinc-500">
-                    Pick a folder in the browser to inspect it here.
-                  </div>
-                )}
-              </div>
-            </aside>
+            <ToolbarButton onClick={() => void handleRefresh()} title="Refresh">
+              <RefreshCcw className="size-[13px]" />
+            </ToolbarButton>
           </div>
 
-          {activeBrowserError ? (
-            <div className="border-t border-amber-500/20 bg-amber-500/8 px-6 py-3 text-sm text-amber-100">
-              {typeof activeBrowserError === "string" ? activeBrowserError : errorMessage(activeBrowserError)}
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <div className="flex w-[320px] shrink-0 flex-col overflow-y-auto border-r border-white/8 bg-[#161616] py-6">
+              <SidebarSection label="Favorites">
+                {favorites.map((item) => (
+                  <SidebarItem
+                    key={item.path}
+                    active={normalizePath(activePath) === normalizePath(item.path)}
+                    icon={item.icon}
+                    label={item.label}
+                    onClick={() => openDirectory(item.path)}
+                  />
+                ))}
+              </SidebarSection>
+
+              <SidebarSection label="Locations">
+                {locations.map((item) => (
+                  <SidebarItem
+                    key={item.path}
+                    active={normalizePath(activePath) === normalizePath(item.path)}
+                    icon={item.icon}
+                    label={item.label}
+                    onClick={() => openDirectory(item.path)}
+                  />
+                ))}
+              </SidebarSection>
+            </div>
+
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#252525]">
+              {listingQuery.isLoading ? (
+                <div className="space-y-2 px-4 py-4">
+                  <Skeleton className="h-10 w-full bg-white/8" />
+                  <Skeleton className="h-10 w-full bg-white/8" />
+                  <Skeleton className="h-10 w-full bg-white/8" />
+                </div>
+              ) : viewMode === "list" ? (
+                <ListView
+                  entries={entries}
+                  onDoubleOpen={handleOpenEntry}
+                  onSelect={handleSelectEntry}
+                  selectedPath={selectedPath}
+                />
+              ) : (
+                <GridView
+                  entries={entries}
+                  onDoubleOpen={handleOpenEntry}
+                  onSelect={handleSelectEntry}
+                  selectedPath={selectedPath}
+                />
+              )}
+            </div>
+          </div>
+
+          {activeError ? (
+            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-[12px] text-amber-100">
+              {typeof activeError === "string" ? activeError : errorMessage(activeError)}
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t border-white/8 bg-[#181818] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 text-sm text-zinc-400">
-              <p className="truncate">{selectedRepoPath || previewMetadata?.canonicalPath || "No folder selected"}</p>
+          <div className="flex h-[52px] items-center justify-between border-t border-white/8 bg-[#1a1a1a] px-5">
+            <div className="min-w-0 flex-1 overflow-hidden text-[12px] text-zinc-500">
+              <span className="truncate">{footerText}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
+
+            <div className="ml-4 flex shrink-0 items-center gap-2">
+              <button
                 type="button"
-                variant="outline"
-                className="border-white/10 bg-white/4 text-zinc-100 hover:bg-white/10 hover:text-white"
-                  onClick={() => navigateBack()}
+                onClick={navigateBack}
+                className="rounded-md bg-white/10 px-4 py-1.5 text-[13px] text-zinc-100 transition hover:bg-white/15"
               >
                 Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isBusy || !selectedRepoPath}
-                className="bg-[#0a61d0] text-white hover:bg-[#0a61d0]/90"
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleOpen()}
+                className={cn(
+                  "rounded-md px-4 py-1.5 text-[13px] font-medium text-white transition",
+                  createProject.isPending
+                    ? "cursor-wait bg-[#2a5cb8]/70"
+                    : "bg-[#2a5cb8] hover:bg-[#1e4fa0]"
+                )}
                 data-testid="project-create-submit"
               >
-                Open project
-              </Button>
+                Open
+              </button>
             </div>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function SidebarSection({
+  children,
+  label,
+}: {
+  children: ReactNode
+  label: string
+}) {
+  return (
+    <div className="mb-3">
+      <div className="px-6 pb-2 pt-2 text-[16px] font-semibold uppercase tracking-[0.04em] text-zinc-400">
+        {label}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function SidebarItem({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean
+  icon: ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-4 px-6 py-3 text-left text-[22px] transition",
+        active ? "bg-[#2a5cb8]/25 text-zinc-100" : "text-zinc-400 hover:bg-white/6 hover:text-zinc-200"
+      )}
+      style={{ borderRadius: 0 }}
+    >
+      {icon}
+      <span className={cn("truncate", active ? "font-semibold text-zinc-100" : "text-zinc-400")}>
+        {label}
+      </span>
+    </button>
+  )
+}
+
+function ToolbarButton({
+  active = false,
+  children,
+  disabled = false,
+  onClick,
+  title,
+}: {
+  active?: boolean
+  children: ReactNode
+  disabled?: boolean
+  onClick?: () => void
+  title?: string
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "flex size-10 items-center justify-center rounded-[10px] text-zinc-400 transition",
+        disabled
+          ? "cursor-not-allowed opacity-30"
+          : active
+            ? "bg-white/15 text-zinc-100"
+            : "hover:bg-white/8 hover:text-zinc-100"
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function ListView({
+  entries,
+  onDoubleOpen,
+  onSelect,
+  selectedPath,
+}: {
+  entries: DirectoryEntry[]
+  onDoubleOpen: (entry: DirectoryEntry) => void
+  onSelect: (entry: DirectoryEntry) => void
+  selectedPath: string
+}) {
+  if (entries.length === 0) {
+    return <EmptyState />
+  }
+
+  return (
+    <table className="w-full border-collapse text-[13px]">
+      <colgroup>
+        <col className="w-[52%]" />
+        <col className="w-[30%]" />
+        <col className="w-[18%]" />
+      </colgroup>
+      <thead>
+        <tr className="border-b border-white/8">
+          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+            Name
+          </th>
+          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+            Date Modified
+          </th>
+          <th className="sticky top-0 bg-[#252525] px-6 py-4 text-left text-[16px] font-medium text-zinc-500">
+            Size
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((entry) => {
+          const Icon = entryIcon(entry)
+          const selected = normalizePath(selectedPath) === normalizePath(entry.path)
+
+          return (
+            <tr
+              key={entry.path}
+              onClick={() => onSelect(entry)}
+              onDoubleClick={() => onDoubleOpen(entry)}
+              className={cn("cursor-pointer transition", selected ? "bg-[#2a5cb8]" : "hover:bg-white/5")}
+            >
+              <td className="px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <Icon
+                    className={cn(
+                      "size-[22px] shrink-0",
+                      selected ? "text-white" : entry.isDirectory ? "text-[#5ea0ef]" : "text-zinc-400"
+                    )}
+                  />
+                  <span className={cn("text-[18px]", selected ? "text-white" : "text-zinc-100")}>
+                    {entry.name}
+                  </span>
+                </div>
+              </td>
+              <td className={cn("px-6 py-4 text-[18px]", selected ? "text-white/75" : "text-zinc-400")}>
+                —
+              </td>
+              <td className={cn("px-6 py-4 text-[18px]", selected ? "text-white/75" : "text-zinc-500")}>
+                —
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}
+
+function GridView({
+  entries,
+  onDoubleOpen,
+  onSelect,
+  selectedPath,
+}: {
+  entries: DirectoryEntry[]
+  onDoubleOpen: (entry: DirectoryEntry) => void
+  onSelect: (entry: DirectoryEntry) => void
+  selectedPath: string
+}) {
+  if (entries.length === 0) {
+    return <EmptyState />
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 p-4">
+      {entries.map((entry) => {
+        const Icon = entryIcon(entry)
+        const selected = normalizePath(selectedPath) === normalizePath(entry.path)
+
+        return (
+          <button
+            key={entry.path}
+            type="button"
+            onClick={() => onSelect(entry)}
+            onDoubleClick={() => onDoubleOpen(entry)}
+            className={cn(
+              "flex flex-col items-center gap-[8px] px-3 pb-3 pt-3 text-center transition",
+              selected ? "rounded-lg bg-[#2a5cb8] text-white" : "text-zinc-100 hover:rounded-lg hover:bg-white/5"
+            )}
+            style={{ width: "104px" }}
+          >
+            <Icon
+              className={cn(
+                "size-10",
+                selected ? "text-white" : entry.isDirectory ? "text-[#5ea0ef]" : "text-zinc-400"
+              )}
+            />
+            <span className="line-clamp-2 text-[12px] leading-[1.3]">{entry.name}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-[13px] text-zinc-500">
+      <Folder className="size-8 opacity-30" />
+      <span>No results</span>
+    </div>
   )
 }
