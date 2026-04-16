@@ -96,6 +96,7 @@ type Session struct {
 	UpdatedAt         *timestamppb.Timestamp   `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	Artifacts         []*ArtifactRef           `protobuf:"bytes,10,rep,name=artifacts,proto3" json:"artifacts,omitempty"`
 	TranscriptItems   []*SessionTranscriptItem `protobuf:"bytes,11,rep,name=transcript_items,json=transcriptItems,proto3" json:"transcript_items,omitempty"`
+	BackendKey        string                   `protobuf:"bytes,12,opt,name=backend_key,json=backendKey,proto3" json:"backend_key,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -207,6 +208,13 @@ func (x *Session) GetTranscriptItems() []*SessionTranscriptItem {
 	return nil
 }
 
+func (x *Session) GetBackendKey() string {
+	if x != nil {
+		return x.BackendKey
+	}
+	return ""
+}
+
 type SessionTranscriptItem struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Id            string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -291,6 +299,7 @@ type SessionListItem struct {
 	Status            SessionStatus          `protobuf:"varint,4,opt,name=status,proto3,enum=orchd.v1.SessionStatus" json:"status,omitempty"`
 	UpdatedAt         *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	AttentionRequired bool                   `protobuf:"varint,6,opt,name=attention_required,json=attentionRequired,proto3" json:"attention_required,omitempty"`
+	BackendKey        string                 `protobuf:"bytes,7,opt,name=backend_key,json=backendKey,proto3" json:"backend_key,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -365,6 +374,13 @@ func (x *SessionListItem) GetAttentionRequired() bool {
 		return x.AttentionRequired
 	}
 	return false
+}
+
+func (x *SessionListItem) GetBackendKey() string {
+	if x != nil {
+		return x.BackendKey
+	}
+	return ""
 }
 
 type ListSessionsRequest struct {
@@ -556,6 +572,7 @@ type CreateSessionRequest struct {
 	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
 	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	Prompt        string                 `protobuf:"bytes,3,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	BackendKey    *string                `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -607,6 +624,13 @@ func (x *CreateSessionRequest) GetTitle() string {
 func (x *CreateSessionRequest) GetPrompt() string {
 	if x != nil {
 		return x.Prompt
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetBackendKey() string {
+	if x != nil && x.BackendKey != nil {
+		return *x.BackendKey
 	}
 	return ""
 }
@@ -987,7 +1011,7 @@ var File_orchd_v1_session_proto protoreflect.FileDescriptor
 
 const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\xe8\x03\n" +
+	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\x89\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -1001,13 +1025,15 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
 	"\tartifacts\x18\n" +
 	" \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts\x12J\n" +
-	"\x10transcript_items\x18\v \x03(\v2\x1f.orchd.v1.SessionTranscriptItemR\x0ftranscriptItems\"\xa2\x01\n" +
+	"\x10transcript_items\x18\v \x03(\v2\x1f.orchd.v1.SessionTranscriptItemR\x0ftranscriptItems\x12\x1f\n" +
+	"\vbackend_key\x18\f \x01(\tR\n" +
+	"backendKey\"\xa2\x01\n" +
 	"\x15SessionTranscriptItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x127\n" +
 	"\x04kind\x18\x02 \x01(\x0e2#.orchd.v1.SessionTranscriptItemKindR\x04kind\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x12\n" +
 	"\x04body\x18\x04 \x01(\tR\x04body\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\"\x82\x02\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\"\xa3\x02\n" +
 	"\x0fSessionListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -1015,7 +1041,9 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"\x06status\x18\x04 \x01(\x0e2\x17.orchd.v1.SessionStatusR\x06status\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12-\n" +
-	"\x12attention_required\x18\x06 \x01(\bR\x11attentionRequired\"m\n" +
+	"\x12attention_required\x18\x06 \x01(\bR\x11attentionRequired\x12\x1f\n" +
+	"\vbackend_key\x18\a \x01(\tR\n" +
+	"backendKey\"m\n" +
 	"\x13ListSessionsRequest\x12\"\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tH\x00R\tprojectId\x88\x01\x01\x12\x19\n" +
@@ -1028,13 +1056,16 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"A\n" +
 	"\x12GetSessionResponse\x12+\n" +
-	"\asession\x18\x01 \x01(\v2\x11.orchd.v1.SessionR\asession\"r\n" +
+	"\asession\x18\x01 \x01(\v2\x11.orchd.v1.SessionR\asession\"\xa8\x01\n" +
 	"\x14CreateSessionRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x19\n" +
 	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x16\n" +
-	"\x06prompt\x18\x03 \x01(\tR\x06promptB\b\n" +
-	"\x06_title\"D\n" +
+	"\x06prompt\x18\x03 \x01(\tR\x06prompt\x12$\n" +
+	"\vbackend_key\x18\x04 \x01(\tH\x01R\n" +
+	"backendKey\x88\x01\x01B\b\n" +
+	"\x06_titleB\x0e\n" +
+	"\f_backend_key\"D\n" +
 	"\x15CreateSessionResponse\x12+\n" +
 	"\asession\x18\x01 \x01(\v2\x11.orchd.v1.SessionR\asession\"N\n" +
 	"\x17SendSessionInputRequest\x12\x1d\n" +

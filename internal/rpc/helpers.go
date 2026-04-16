@@ -178,6 +178,7 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 	return &orchdv1.Session{
 		Id:                session.ID,
 		Title:             validUTF8(session.Title),
+		BackendKey:        validUTF8(session.BackendKey),
 		Project:           projectRef(project),
 		Status:            mapSessionState(session.Status),
 		Summary:           validUTF8(session.Summary),
@@ -194,6 +195,7 @@ func sessionListItemToProto(project core.Project, session core.Session) *orchdv1
 	return &orchdv1.SessionListItem{
 		Id:                session.ID,
 		Title:             validUTF8(session.Title),
+		BackendKey:        validUTF8(session.BackendKey),
 		Project:           projectRef(project),
 		Status:            mapSessionState(session.Status),
 		UpdatedAt:         timestamp(session.UpdatedAt),

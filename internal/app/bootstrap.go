@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"orchd/internal/backend"
+	copilotbackend "orchd/internal/backend/copilot"
 	"orchd/internal/codex"
 	"orchd/internal/core"
 	"orchd/internal/events"
@@ -22,6 +24,10 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
 	codexManager := codex.NewManager(workspace)
+	backendManager := backend.NewManager(workspace, map[string]backend.Runtime{
+		backend.DefaultBackendKey: backend.NewCodexRuntime(codexManager),
+		"copilot":                 copilotbackend.NewManager(workspace),
+	})
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
 		Version:               cfg.Version,
@@ -29,7 +35,7 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		EventHub:              eventHub,
 		HostServiceHandler:    rpcserver.NewHostService(workspace),
 		ProjectServiceHandler: rpcserver.NewProjectService(workspace),
-		SessionServiceHandler: rpcserver.NewSessionService(workspace, codexManager),
+		SessionServiceHandler: rpcserver.NewSessionService(workspace, backendManager),
 	})
 	if err != nil {
 		return nil, err

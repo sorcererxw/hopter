@@ -6,7 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/codex"
+	"orchd/internal/backend"
 	"orchd/internal/core"
 	orchdv1 "orchd/internal/gen/proto/orchd/v1"
 )
@@ -17,7 +17,7 @@ type SessionService struct {
 }
 
 type sessionRuntime interface {
-	ListSessions(projectID string, limit uint32) ([]codex.ResolvedSession, error)
+	ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error)
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string) (core.Session, error)
@@ -34,13 +34,13 @@ func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[or
 			ProjectID: req.Msg.GetProjectId(),
 			Limit:     req.Msg.GetLimit(),
 		})
-		resolvedSessions = make([]codex.ResolvedSession, 0, len(sessions))
+		resolvedSessions = make([]backend.ResolvedSession, 0, len(sessions))
 		for _, session := range sessions {
 			project, ok := s.workspace.GetProject(session.ProjectID)
 			if !ok {
 				continue
 			}
-			resolvedSessions = append(resolvedSessions, codex.ResolvedSession{
+			resolvedSessions = append(resolvedSessions, backend.ResolvedSession{
 				Project: project,
 				Session: session,
 			})
@@ -67,9 +67,10 @@ func (s *SessionService) GetSession(_ context.Context, req *connect.Request[orch
 
 func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[orchdv1.CreateSessionRequest]) (*connect.Response[orchdv1.CreateSessionResponse], error) {
 	session, err := s.codex.CreateSession(core.CreateSessionInput{
-		ProjectID: req.Msg.GetProjectId(),
-		Title:     req.Msg.GetTitle(),
-		Prompt:    req.Msg.GetPrompt(),
+		ProjectID:  req.Msg.GetProjectId(),
+		BackendKey: req.Msg.GetBackendKey(),
+		Title:      req.Msg.GetTitle(),
+		Prompt:     req.Msg.GetPrompt(),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)

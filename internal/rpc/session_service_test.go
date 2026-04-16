@@ -7,18 +7,18 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/codex"
+	"orchd/internal/backend"
 	"orchd/internal/core"
 	orchdv1 "orchd/internal/gen/proto/orchd/v1"
 )
 
 type fakeSessionRuntime struct {
-	listSessionsResult []codex.ResolvedSession
+	listSessionsResult []backend.ResolvedSession
 	getSession         core.Session
 	getProject         core.Project
 }
 
-func (f *fakeSessionRuntime) ListSessions(projectID string, limit uint32) ([]codex.ResolvedSession, error) {
+func (f *fakeSessionRuntime) ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error) {
 	return f.listSessionsResult, nil
 }
 

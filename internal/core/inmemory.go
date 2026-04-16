@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -45,12 +46,8 @@ func (w *InMemoryWorkspace) GetHostStatus() HostSnapshot {
 
 func (w *InMemoryWorkspace) ListBackends() []Backend {
 	return []Backend{
-		{
-			Key:       "codex",
-			Available: false,
-			Version:   "",
-			Reason:    "Go rebuild skeleton: Codex bridge not wired yet",
-		},
+		detectBackend("codex"),
+		detectBackend("copilot"),
 	}
 }
 
@@ -181,6 +178,7 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 	session := Session{
 		ID:              fmt.Sprintf("sess_%04d", w.sessionSeq),
 		ProjectID:       project.ID,
+		BackendKey:      firstNonEmpty(strings.TrimSpace(input.BackendKey), project.DefaultBackend),
 		Title:           title,
 		BackendThreadID: "",
 		ActiveTurnID:    "",
@@ -224,6 +222,9 @@ func (w *InMemoryWorkspace) UpdateSession(sessionID string, patch SessionPatch) 
 
 	if patch.BackendThreadID != nil {
 		session.BackendThreadID = *patch.BackendThreadID
+	}
+	if patch.BackendKey != nil {
+		session.BackendKey = *patch.BackendKey
 	}
 	if patch.ActiveTurnID != nil {
 		session.ActiveTurnID = *patch.ActiveTurnID
@@ -285,4 +286,28 @@ func truncate(value string, limit int) string {
 		return value
 	}
 	return value[:limit-1] + "…"
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func detectBackend(key string) Backend {
+	if _, err := exec.LookPath(key); err == nil {
+		return Backend{
+			Key:       key,
+			Available: true,
+			Reason:    "",
+		}
+	}
+	return Backend{
+		Key:       key,
+		Available: false,
+		Reason:    fmt.Sprintf("%s CLI not found on PATH", key),
+	}
 }

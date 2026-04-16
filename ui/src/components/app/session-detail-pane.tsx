@@ -31,6 +31,7 @@ import {
   type SessionTranscriptItem,
 } from "@/gen/proto/orchd/v1/session_pb"
 import {
+  formatBackendKey,
   formatArtifactKind,
   formatSessionStatus,
 } from "@/lib/format/proto"
@@ -66,6 +67,7 @@ export function HomeWorkspacePane() {
   const navigate = useNavigate()
   const createSession = useCreateSession()
   const { data: projects, isLoading: projectsLoading } = useProjects()
+  const [selectedBackendKeyState, setSelectedBackendKeyState] = useState("")
   const [selectedProjectIdState, setSelectedProjectIdState] = useState("")
   const [prompt, setPrompt] = useState("")
   const selectedProjectId = selectedProjectIdState || projects?.[0]?.id || ""
@@ -74,6 +76,8 @@ export function HomeWorkspacePane() {
     () => projects?.find((project) => project.id === selectedProjectId),
     [projects, selectedProjectId]
   )
+  const selectedBackendKey =
+    selectedBackendKeyState || selectedProject?.defaultBackend || "codex"
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -114,6 +118,18 @@ export function HomeWorkspacePane() {
               <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
             </label>
 
+            <label className="relative mt-2 inline-flex items-center gap-1 text-[12px] uppercase tracking-[0.04em] text-[var(--workspace-text-muted)]">
+              <select
+                value={selectedBackendKey}
+                onChange={(event) => setSelectedBackendKeyState(event.target.value)}
+                className="min-w-32 appearance-none bg-transparent pr-5 text-center outline-none"
+              >
+                <option value="codex">codex</option>
+                <option value="copilot">copilot</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-[var(--workspace-text-muted)]" />
+            </label>
+
             <div className="mt-8 grid w-full max-w-[700px] gap-3 md:grid-cols-3">
               {HOME_SUGGESTIONS.map(({ icon: Icon, text, tone }) => (
                 <button
@@ -148,6 +164,7 @@ export function HomeWorkspacePane() {
 
             const normalizedPrompt = prompt.trim()
             const session = await createSession.mutateAsync({
+              backendKey: selectedBackendKey,
               projectId: selectedProjectId,
               prompt: normalizedPrompt,
               title: deriveTitle(normalizedPrompt),
@@ -220,7 +237,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
         title={session?.title || "Thread"}
-        tag={session?.project?.name}
+        tag={
+          session
+            ? `${session.project?.name || "Local"} · ${formatBackendKey(
+                session.backendKey
+              )}`
+            : undefined
+        }
         inspectorOpen={inspectorOpen}
         onOpenProject={() => navigate("/projects/new")}
         onOpenReview={() => {

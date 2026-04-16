@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom"
 
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
-import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
+import { formatBackendKey, formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
 function formatRelativeTime(date?: Date) {
@@ -239,6 +239,11 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                         >
                           {session.title || "Untitled thread"}
                         </p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="inline-flex rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.04em] text-[var(--workspace-text-muted)]">
+                            {formatBackendKey(session.backendKey)}
+                          </span>
+                        </div>
                         <p
                           className={cn(
                             "mt-1 truncate font-mono text-xs",

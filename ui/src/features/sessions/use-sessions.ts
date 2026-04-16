@@ -6,6 +6,7 @@ import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
 type CreateSessionInput = {
+  backendKey?: string
   projectId: string
   prompt: string
   title?: string
@@ -57,8 +58,9 @@ export function useCreateSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ projectId, prompt, title }: CreateSessionInput) => {
+    mutationFn: async ({ backendKey, projectId, prompt, title }: CreateSessionInput) => {
       const response = await sessionClient.createSession({
+        backendKey,
         projectId,
         prompt,
         title,
