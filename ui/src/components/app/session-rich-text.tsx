@@ -1,4 +1,5 @@
-import { Fragment } from "react"
+import { Fragment, useCallback, useEffect, useRef, useState } from "react"
+import { Check, Copy } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -34,14 +35,11 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
       {blocks.map((block, index) => {
         if (block.type === "code") {
           return (
-            <pre
+            <CodeBlock
               key={`${block.language || "plain"}-${index}`}
-              className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 py-3 font-mono text-sm leading-6 text-foreground"
-            >
-              <code data-language={block.language || undefined}>
-                {block.code}
-              </code>
-            </pre>
+              code={block.code}
+              language={block.language}
+            />
           )
         }
 
@@ -81,6 +79,58 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
           </p>
         )
       })}
+    </div>
+  )
+}
+
+function CodeBlock({ code, language }: { code: string; language?: string }) {
+  const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleCopy = useCallback(() => {
+    if (!navigator.clipboard) {
+      return
+    }
+
+    navigator.clipboard.writeText(code).then(
+      () => {
+        setCopied(true)
+        if (copiedTimerRef.current) {
+          clearTimeout(copiedTimerRef.current)
+        }
+        copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
+      },
+      () => {
+        // Clipboard write failed; silently ignore.
+      }
+    )
+  }, [code])
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+        aria-label={copied ? "Copied code" : "Copy code"}
+        data-testid="session-code-copy"
+      >
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        <span>{copied ? "Copied" : "Copy"}</span>
+      </button>
+      <pre className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 pt-10 pb-3 font-mono text-sm leading-6 text-foreground">
+        <code data-language={language || undefined}>
+          {code}
+        </code>
+      </pre>
     </div>
   )
 }

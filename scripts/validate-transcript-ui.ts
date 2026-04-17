@@ -263,6 +263,7 @@ async function main() {
       .first()
     await codeBlock.waitFor()
     await codeBlock.getByText("Please make another follow-up pass on the workspace UI implementation in this repo root:").waitFor()
+    await page.getByTestId("session-code-copy").waitFor()
 
     await page.screenshot({
       fullPage: true,
@@ -277,7 +278,7 @@ async function main() {
     checks.push({
       name: "fenced code block render",
       status: "pass",
-      detail: "agent markdown fence rendered as a local preformatted code block",
+      detail: "agent markdown fence rendered as a local preformatted code block with a copy action",
     })
   } catch (error) {
     checks.push({

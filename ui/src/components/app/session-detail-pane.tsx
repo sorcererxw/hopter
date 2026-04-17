@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   Bot,
   ChevronDown,
@@ -150,6 +150,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const [inspectorOpen, setInspectorOpen] = useState(true)
   const [activeTab, setActiveTab] = useState<"summary" | "review">("review")
   const [inspectorMode, setInspectorMode] = useState<"code" | "diff">("code")
+  const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
+  const shouldStickToBottomRef = useRef(true)
+  const lastSessionIdRef = useRef(sessionId)
+  const lastActivityCountRef = useRef(0)
 
   const session = sessionQuery.data
   const transcriptItems = useMemo(() => {
@@ -191,6 +195,35 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     return items
   }, [session, showPendingInputHint, transcriptItems])
 
+  useEffect(() => {
+    const container = transcriptScrollRef.current
+    if (!container) {
+      return
+    }
+
+    const nextCount = activityItems.length
+    const sessionChanged = lastSessionIdRef.current !== sessionId
+    const countChanged = nextCount !== lastActivityCountRef.current
+
+    if (sessionChanged || (countChanged && shouldStickToBottomRef.current)) {
+      container.scrollTop = container.scrollHeight
+    }
+
+    lastSessionIdRef.current = sessionId
+    lastActivityCountRef.current = nextCount
+  }, [activityItems.length, sessionId])
+
+  function handleTranscriptScroll() {
+    const container = transcriptScrollRef.current
+    if (!container) {
+      return
+    }
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight
+    shouldStickToBottomRef.current = distanceFromBottom < 120
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
@@ -227,7 +260,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       ) : (
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="workspace-scrollbar flex-1 overflow-y-auto px-6 py-4">
+            <div
+              ref={transcriptScrollRef}
+              onScroll={handleTranscriptScroll}
+              className="workspace-scrollbar flex-1 overflow-y-auto px-6 py-4"
+            >
               <div className="mx-auto max-w-[720px] space-y-5">
                 <ArtifactPills session={session} />
 
