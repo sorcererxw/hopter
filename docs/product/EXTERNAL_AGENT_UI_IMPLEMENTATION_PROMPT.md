@@ -13,6 +13,7 @@ Before making changes, read and follow these files:
 - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md
 - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md
 - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md
+- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
 - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md
 
 Task:
@@ -128,15 +129,13 @@ Acceptance criteria:
 - Long-form reading blocks are easier to read without becoming cards.
 
 Validation requirements:
-- Use the repo’s live dev loop instructions from AGENTS.md and DEV_LOOP.md.
+- Use the repo’s live dev loop instructions from AGENTS.md, DEV_LOOP.md, and RUNTIME_ARTIFACTS_AND_VALIDATION.md.
 - Prefer:
   - `make reset`
   - `make dev`
   - `make verify-live`
-- Read machine state from:
-  - /Users/sorcererxw/.orchd/devlogs/codeshell/state.json
-- Read logs from:
-  - /Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl
+- Use the runtime artifact paths documented in:
+  - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
 - Validate both large-screen and phone-like layouts.
 - Report concrete evidence paths and commands run.
 
