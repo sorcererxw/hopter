@@ -424,6 +424,111 @@ func TestGetSessionIncludesTranscriptItems(t *testing.T) {
 	}
 }
 
+func TestNormalizeTranscriptItemsPreservesChronologicalReadOrder(t *testing.T) {
+	read := &ReadThreadResult{
+		Thread: struct {
+			Turns []ReadThreadTurn `json:"turns"`
+		}{
+			Turns: []ReadThreadTurn{
+				{
+					ID:     "turn-1",
+					Status: "completed",
+					Items: []ReadThreadItem{
+						{
+							Type:    "userMessage",
+							ID:      "user-1",
+							Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
+						},
+						{
+							Type:  "agentMessage",
+							ID:    "agent-1",
+							Text:  "earliest reply",
+							Phase: "completed",
+						},
+					},
+				},
+				{
+					ID:     "turn-2",
+					Status: "completed",
+					Items: []ReadThreadItem{
+						{
+							Type:    "userMessage",
+							ID:      "user-2",
+							Content: json.RawMessage(`[{"type":"text","text":"second"}]`),
+						},
+						{
+							Type:  "agentMessage",
+							ID:    "agent-2",
+							Text:  "latest reply",
+							Phase: "completed",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := normalizeTranscriptItems(read)
+	if len(got) != 4 {
+		t.Fatalf("transcript items = %d, want 4", len(got))
+	}
+
+	wantBodies := []string{"first", "earliest reply", "second", "latest reply"}
+	for i, want := range wantBodies {
+		if got[i].Body != want {
+			t.Fatalf("transcript item %d body = %q, want %q", i, got[i].Body, want)
+		}
+	}
+}
+
+func TestLatestDerivedValuesUseMostRecentChronologicalTurn(t *testing.T) {
+	read := &ReadThreadResult{
+		Thread: struct {
+			Turns []ReadThreadTurn `json:"turns"`
+		}{
+			Turns: []ReadThreadTurn{
+				{
+					ID:     "turn-1",
+					Status: "failed",
+					Items: []ReadThreadItem{
+						{
+							Type:  "agentMessage",
+							ID:    "agent-1",
+							Text:  "earliest reply",
+							Phase: "failed",
+						},
+					},
+				},
+				{
+					ID:     "turn-2",
+					Status: "inProgress",
+					Items: []ReadThreadItem{
+						{
+							Type:  "agentMessage",
+							ID:    "agent-2",
+							Text:  "latest reply",
+							Phase: "in_progress",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if got := latestAgentSummary(read); got != "latest reply" {
+		t.Fatalf("latestAgentSummary = %q, want %q", got, "latest reply")
+	}
+	if got := latestActiveTurnID(read); got != "turn-2" {
+		t.Fatalf("latestActiveTurnID = %q, want %q", got, "turn-2")
+	}
+	if got := latestTurnStatus(read, "turn-2"); got != "inProgress" {
+		t.Fatalf("latestTurnStatus(turn-2) = %q, want %q", got, "inProgress")
+	}
+	if got := latestTerminalTurnStatus(read); got != "failed" {
+		t.Fatalf("latestTerminalTurnStatus = %q, want %q", got, "failed")
+	}
+}
+
 func TestFinalSessionStateTreatsInterruptedAsWaitingInput(t *testing.T) {
 	if got := finalSessionState("interrupted", core.SessionStateCompleted); got != core.SessionStateWaitingInput {
 		t.Fatalf("finalSessionState(interrupted) = %q, want %q", got, core.SessionStateWaitingInput)

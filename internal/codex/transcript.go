@@ -199,19 +199,7 @@ func formatFileChange(item ReadThreadItem) string {
 	if len(item.Changes) == 0 {
 		return ""
 	}
-
-	lines := make([]string, 0, len(item.Changes))
-	for _, change := range item.Changes {
-		line := change.Path
-		if change.Kind.MovePath != nil && strings.TrimSpace(*change.Kind.MovePath) != "" {
-			line += " -> " + strings.TrimSpace(*change.Kind.MovePath)
-		}
-		if strings.TrimSpace(change.Kind.Type) != "" {
-			line += " (" + strings.TrimSpace(change.Kind.Type) + ")"
-		}
-		lines = append(lines, line)
-	}
-	return strings.Join(lines, "\n")
+	return formatReadThreadFileChanges(item.Changes)
 }
 
 func extractText(raw json.RawMessage) string {
