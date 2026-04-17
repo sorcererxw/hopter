@@ -226,7 +226,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
                 {session.attentionRequired ? (
                   <div className="rounded-lg border border-amber-300/15 bg-amber-300/8 px-4 py-3">
-                    <div className="mb-1 text-xs font-semibold text-amber-100/80">
+                    <div className="mb-1 text-sm font-semibold text-amber-100/80">
                       Attention
                     </div>
                     <p className="text-base font-medium leading-7 text-amber-50/85">
