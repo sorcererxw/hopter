@@ -3,11 +3,7 @@ import {
   Bot,
   ChevronDown,
   ChevronRight,
-  FileCode,
   FileText,
-  Lightbulb,
-  Terminal,
-  Wrench,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -228,7 +224,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="workspace-scrollbar flex-1 overflow-y-auto px-6 py-4">
-              <div className="mx-auto max-w-[720px] space-y-5">
+              <div className="conversation-overflow-safe mx-auto max-w-[720px] space-y-5">
                 <ArtifactPills session={session} />
 
                 {session.attentionRequired ? (
@@ -236,7 +232,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                     <div className="mb-1 text-sm font-semibold text-amber-100/80">
                       Attention
                     </div>
-                    <p className="text-base font-medium leading-7 text-amber-50/85">
+                    <p className="text-base leading-7 text-amber-50/85">
                       {session.attentionReason ||
                         "This session requires user input."}
                     </p>
@@ -451,13 +447,8 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
 
 function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <div className="flex gap-3">
-      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-accent">
-        <Bot className="size-3.5 text-foreground/60" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <SessionRichText text={item.body} />
-      </div>
+    <div className="min-w-0">
+      <SessionRichText text={item.body} />
     </div>
   )
 }
@@ -468,33 +459,28 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
   const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
 
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Lightbulb className="size-3.5 text-foreground/50" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
-        >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span className="font-medium">{label}</span>
-          {!expanded && preview ? (
-            <span className="truncate text-muted-foreground">— {preview}</span>
-          ) : null}
-        </button>
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+      >
         {expanded ? (
-          <SessionRichText
-            text={item.body}
-            className="mt-2 text-foreground/70"
-          />
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronRight className="size-3" />
+        )}
+        <span className="font-medium">{label}</span>
+        {!expanded && preview ? (
+          <span className="truncate text-muted-foreground">— {preview}</span>
         ) : null}
-      </div>
+      </button>
+      {expanded ? (
+        <SessionRichText
+          text={item.body}
+          className="mt-2 text-foreground/70"
+        />
+      ) : null}
     </div>
   )
 }
@@ -504,29 +490,24 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Tool call"
 
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Wrench className="size-3.5 text-foreground/50" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
-        >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span className="font-medium">{label}</span>
-        </button>
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+      >
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
-            {item.body}
-          </pre>
-        ) : null}
-      </div>
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronRight className="size-3" />
+        )}
+        <span className="font-medium">{label}</span>
+      </button>
+      {expanded ? (
+        <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+          {item.body}
+        </pre>
+      ) : null}
     </div>
   )
 }
@@ -536,29 +517,24 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Command"
 
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Terminal className="size-3.5 text-foreground/50" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
-        >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span className="font-medium">{label}</span>
-        </button>
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+      >
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
-            {item.body}
-          </pre>
-        ) : null}
-      </div>
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronRight className="size-3" />
+        )}
+        <span className="font-medium">{label}</span>
+      </button>
+      {expanded ? (
+        <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+          {item.body}
+        </pre>
+      ) : null}
     </div>
   )
 }
@@ -568,29 +544,24 @@ function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "File change"
 
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-        <FileCode className="size-3.5 text-foreground/50" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
-        >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span className="font-medium">{label}</span>
-        </button>
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+      >
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
-            {item.body}
-          </pre>
-        ) : null}
-      </div>
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronRight className="size-3" />
+        )}
+        <span className="font-medium">{label}</span>
+      </button>
+      {expanded ? (
+        <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+          {item.body}
+        </pre>
+      ) : null}
     </div>
   )
 }

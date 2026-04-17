@@ -272,6 +272,27 @@
     color: var(--workspace-inline-code-text);
     padding: 0.1rem 0.45rem;
   }
+
+  /* Prevent conversation container from scrolling horizontally */
+  .conversation-overflow-safe {
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Allow long tokens/URLs/paths to break within prose blocks */
+  .conversation-overflow-safe p,
+  .conversation-overflow-safe li,
+  .conversation-overflow-safe span {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Code blocks keep local horizontal scroll */
+  .conversation-overflow-safe pre {
+    overflow-x: auto;
+    max-width: 100%;
+  }
 }
 
 ::-webkit-scrollbar {

@@ -80,9 +80,10 @@ export function SessionComposer({
   return (
     <>
       <div
-        className="composer-foreground px-3 pb-3 pt-2 md:px-4 md:pb-4"
+        className="composer-foreground px-6 pb-3 pt-2 md:pb-4"
         data-testid={composerTestId}
       >
+        <div className="mx-auto max-w-[720px]">
         <div className="overflow-hidden rounded-lg border border-ws-border-strong bg-popover shadow-lg">
           {/* Main action row */}
           <div className="px-4 pb-3 pt-3">
@@ -229,6 +230,7 @@ export function SessionComposer({
           </div>
 
           <MetaButton>{settingsLabel}</MetaButton>
+        </div>
         </div>
       </div>
 

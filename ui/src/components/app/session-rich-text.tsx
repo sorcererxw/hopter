@@ -18,7 +18,7 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
   return (
     <div
       className={cn(
-        "text-base leading-7 font-medium text-foreground",
+        "text-base leading-7 text-foreground",
         isLongForm ? "space-y-4" : "space-y-2.5",
         className
       )}
