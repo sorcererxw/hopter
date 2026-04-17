@@ -3,18 +3,18 @@
 Use the following prompt with an external agent that does not share local Codex context.
 
 ```text
-You are working in this repository:
+You are working in this repository root:
 
-/Users/sorcererxw/repo/sorcererxw/codeshell
+.
 
 Before making changes, read and follow these files:
 
-- /Users/sorcererxw/repo/sorcererxw/codeshell/AGENTS.md
-- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md
-- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md
-- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md
-- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
-- /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md
+- AGENTS.md
+- docs/README.md
+- docs/product/UI_REBUILD_DESIGN_DOC.md
+- docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md
+- docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
+- docs/operations/UI_SYSTEM_RULES.md
 
 Task:
 Implement the approved workspace UI refinement spec from WORKSPACE_UI_REFINEMENT_SPEC.md.
@@ -28,12 +28,12 @@ Important constraints:
 - Completion requires validation evidence. Do not claim “done” without running validation and reporting evidence paths.
 
 Primary files likely to change:
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/index.css
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/workspace-topbar.tsx
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-composer.tsx
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-rail.tsx
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-detail-pane.tsx
-- /Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-rich-text.tsx
+- ui/src/index.css
+- ui/src/components/app/workspace-topbar.tsx
+- ui/src/components/app/session-composer.tsx
+- ui/src/components/app/session-rail.tsx
+- ui/src/components/app/session-detail-pane.tsx
+- ui/src/components/app/session-rich-text.tsx
 - Possibly related route/layout files if needed for phone-vs-large-screen behavior
 
 Implement these approved decisions:
@@ -135,7 +135,7 @@ Validation requirements:
   - `make dev`
   - `make verify-live`
 - Use the runtime artifact paths documented in:
-  - /Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
+  - docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md
 - Validate both large-screen and phone-like layouts.
 - Report concrete evidence paths and commands run.
 

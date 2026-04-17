@@ -13,8 +13,8 @@ What matters is that the contract for reading them lives in the repository, not 
 
 The local dev loop writes machine state and timeline logs here:
 
-- state: `/Users/sorcererxw/.orchd/devlogs/codeshell/state.json`
-- timeline: `/Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl`
+- state: `~/.orchd/devlogs/codeshell/state.json`
+- timeline: `~/.orchd/devlogs/codeshell/timeline.jsonl`
 
 These files are the authority for the live stack state.
 Do not rely only on terminal memory when validating the running app.
@@ -25,7 +25,7 @@ Do not rely only on terminal memory when validating the running app.
 
 Path:
 
-- `/Users/sorcererxw/.orchd/devlogs/codeshell/state.json`
+- `~/.orchd/devlogs/codeshell/state.json`
 
 Use it to check:
 
@@ -40,7 +40,7 @@ Use it to check:
 
 Path:
 
-- `/Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl`
+- `~/.orchd/devlogs/codeshell/timeline.jsonl`
 
 Use it to check:
 
@@ -59,8 +59,8 @@ When validating live UI work, prefer this sequence:
 
 Then inspect:
 
-- `/Users/sorcererxw/.orchd/devlogs/codeshell/state.json`
-- `/Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl`
+- `~/.orchd/devlogs/codeshell/state.json`
+- `~/.orchd/devlogs/codeshell/timeline.jsonl`
 
 ## Minimum evidence expected
 
