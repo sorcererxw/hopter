@@ -18,6 +18,7 @@ import { SessionComposer } from "@/components/app/session-composer"
 import { parseReferencedFiles } from "@/components/app/session-derived"
 import { SessionInspectorPane } from "@/components/app/session-inspector-pane"
 import { SessionRichText } from "@/components/app/session-rich-text"
+import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
 import { useProjects } from "@/features/projects/use-projects"
 import {
@@ -64,6 +65,7 @@ const HOME_SUGGESTIONS: Array<{
 ]
 
 export function HomeWorkspacePane() {
+  const { openProjectPicker } = useWorkspaceShell()
   const navigate = useNavigate()
   const createSession = useCreateSession()
   const { data: projects, isLoading: projectsLoading } = useProjects()
@@ -84,7 +86,7 @@ export function HomeWorkspacePane() {
       <WorkspaceTopbar
         title="New Thread"
         tag={selectedProject?.name}
-        onOpenProject={() => navigate("/projects/new")}
+        onOpenProject={openProjectPicker}
       />
 
       <div className="flex min-h-0 flex-1 flex-col">
@@ -185,7 +187,7 @@ export function HomeWorkspacePane() {
 }
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
-  const navigate = useNavigate()
+  const { openProjectPicker } = useWorkspaceShell()
   const sessionQuery = useSession(sessionId)
   const sendInput = useSendSessionInput()
   const [prompt, setPrompt] = useState("")
@@ -245,7 +247,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             : undefined
         }
         inspectorOpen={inspectorOpen}
-        onOpenProject={() => navigate("/projects/new")}
+        onOpenProject={openProjectPicker}
         onOpenReview={() => {
           setActiveTab("review")
           setInspectorOpen(true)

@@ -1,9 +1,12 @@
 import { createContext, useContext } from "react"
 
 export type WorkspaceShellContextValue = {
+  closeProjectPicker: () => void
   closeSidebar: () => void
+  openProjectPicker: () => void
   openSearch: () => void
   openSidebar: () => void
+  projectPickerOpen: boolean
   sidebarOpen: boolean
 }
 

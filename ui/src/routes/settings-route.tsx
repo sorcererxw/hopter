@@ -52,7 +52,7 @@ export function SettingsRoute() {
   const { data: sessions } = useSessions()
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-dvh bg-background text-foreground">
       <div className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar py-4">
         <button
           type="button"

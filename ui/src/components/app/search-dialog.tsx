@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
+import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useProjects } from "@/features/projects/use-projects"
@@ -19,6 +20,7 @@ type SearchDialogProps = {
 }
 
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
+  const { openProjectPicker } = useWorkspaceShell()
   const navigate = useNavigate()
   const { data: projects } = useProjects()
   const { data: sessions } = useSessions()
@@ -46,6 +48,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     onOpenChange(false)
     setQuery("")
     navigate(path)
+  }
+
+  function closeAndOpenProjectPicker() {
+    onOpenChange(false)
+    setQuery("")
+    openProjectPicker()
   }
 
   return (
@@ -82,7 +90,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 icon={FolderGit2}
                 label="Add repo"
                 detail="Open the host-backed repo picker"
-                onClick={() => closeAndNavigate("/projects/new")}
+                onClick={closeAndOpenProjectPicker}
               />
               <ActionRow
                 icon={Settings}

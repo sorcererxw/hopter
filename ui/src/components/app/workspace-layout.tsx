@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
 
+import { ProjectPickerDialog } from "@/components/app/project-picker-dialog"
 import { SearchDialog } from "@/components/app/search-dialog"
 import { SessionRail } from "@/components/app/session-rail"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
 
 export function WorkspaceLayout({ children }: PropsWithChildren) {
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false)
   useWorkspaceEvents()
   const [searchOpen, setSearchOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -24,17 +26,21 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
   const shellContext = useMemo(
     () => ({
+      closeProjectPicker: () => setProjectPickerOpen(false),
       closeSidebar: () => setSidebarOpen(false),
+      openProjectPicker: () => setProjectPickerOpen(true),
       openSearch: () => setSearchOpen(true),
       openSidebar: () => setSidebarOpen(true),
+      projectPickerOpen,
       sidebarOpen,
     }),
-    [sidebarOpen]
+    [projectPickerOpen, sidebarOpen]
   )
 
   return (
     <WorkspaceShellContext.Provider value={shellContext}>
-      <div className="h-screen overflow-hidden bg-background text-foreground">
+      <div className="h-dvh overflow-hidden bg-background text-foreground">
+        <ProjectPickerDialog open={projectPickerOpen} />
         <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
         {sidebarOpen ? (

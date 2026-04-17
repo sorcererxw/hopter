@@ -20,8 +20,8 @@ import {
   Search,
   X,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 
+import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import type { DirectoryEntry, DirectoryRoot } from "@/gen/proto/orchd/v1/host_pb"
 import {
   useDirectoryListing,
@@ -151,14 +151,14 @@ function makeLocations(roots: DirectoryRoot[]) {
   return [
     systemRoot
       ? {
-          icon: <HardDrive className="size-3.5 text-zinc-400" />,
+          icon: <HardDrive className="size-3.5 text-muted-foreground" />,
           label: "Macintosh HD",
           path: systemRoot.path,
         }
       : null,
     homeRoot
       ? {
-          icon: <Cloud className="size-3.5 text-zinc-400" />,
+          icon: <Cloud className="size-3.5 text-muted-foreground" />,
           label: "iCloud Drive",
           path: joinPath(homeRoot.path, "Documents"),
         }
@@ -166,8 +166,8 @@ function makeLocations(roots: DirectoryRoot[]) {
   ].filter(Boolean) as SidebarItemDef[]
 }
 
-export function ProjectPickerDialog() {
-  const navigate = useNavigate()
+export function ProjectPickerDialog({ open }: { open: boolean }) {
+  const { closeProjectPicker } = useWorkspaceShell()
   const createProject = useCreateProject()
   const rootsQuery = useDirectoryRoots()
 
@@ -203,15 +203,6 @@ export function ProjectPickerDialog() {
       ? allEntries.filter((entry) => entry.name.toLowerCase().includes(query))
       : allEntries
   }, [listingQuery.data?.entries, searchQuery])
-
-  const navigateBack = useCallback(() => {
-    if (window.history.length > 1) {
-      navigate(-1)
-      return
-    }
-
-    navigate("/")
-  }, [navigate])
 
   const openDirectory = useCallback((path: string, options?: { fromHistory?: boolean }) => {
     const normalized = normalizePath(path)
@@ -288,16 +279,16 @@ export function ProjectPickerDialog() {
         name: previewMetadata?.basename || "Project",
         rootPath: selectedRepoPath,
       })
-      navigate("/")
+      closeProjectPicker()
     } catch (error) {
       setFormError(errorMessage(error))
     }
-  }, [canOpenFolder, createProject, navigate, previewMetadata, selectedRepoPath])
+  }, [canOpenFolder, closeProjectPicker, createProject, previewMetadata, selectedRepoPath])
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        navigateBack()
+        closeProjectPicker()
       }
       if (event.key === "Enter" && canOpenFolder) {
         void handleOpen()
@@ -306,7 +297,7 @@ export function ProjectPickerDialog() {
 
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [canOpenFolder, handleOpen, navigateBack])
+  }, [canOpenFolder, closeProjectPicker, handleOpen])
 
   const footerText = selectedPath
     ? previewMetadata?.basename || selectedPath
@@ -315,18 +306,18 @@ export function ProjectPickerDialog() {
   const activeError = formError || rootsQuery.error || listingQuery.error || previewQuery.error
 
   return (
-    <Dialog open onOpenChange={(open) => !open && navigateBack()}>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && closeProjectPicker()}>
       <DialogContent
         showCloseButton={false}
         data-testid="project-picker-dialog"
-        className="h-[min(960px,calc(100vh-48px))] !w-[min(1412px,calc(100vw-72px))] !max-w-[calc(100vw-72px)] gap-0 overflow-hidden rounded-[18px] border-0 bg-popover p-0 text-zinc-100 shadow-[0_32px_80px_rgba(0,0,0,0.8)] ring-0 sm:!max-w-[calc(100vw-72px)]"
+        className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-base text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
       >
-        <div className="flex h-full min-h-0 flex-col bg-popover">
+        <div className="flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden rounded-xl border border-border bg-popover">
           <div className="flex h-13 items-center gap-2 border-b border-border bg-card px-3">
             <button
               type="button"
-              onClick={navigateBack}
-              className="flex size-6 items-center justify-center rounded-md text-zinc-400 transition hover:bg-secondary hover:text-zinc-200"
+              onClick={closeProjectPicker}
+              className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground"
               title="Close"
             >
               <X className="size-3.5" />
@@ -348,16 +339,16 @@ export function ProjectPickerDialog() {
                     type="button"
                     onClick={() => openDirectory(crumb.path)}
                     className={cn(
-                      "max-w-30 truncate rounded px-1 py-0.5 text-xs transition hover:bg-accent",
+                      "max-w-30 truncate rounded px-1 py-0.5 transition hover:bg-accent",
                       index === breadcrumbs.length - 1
-                        ? "font-semibold text-zinc-100"
-                        : "text-zinc-400"
+                        ? "font-semibold text-foreground"
+                        : "text-muted-foreground"
                     )}
                   >
                     {crumb.label}
                   </button>
                   {index < breadcrumbs.length - 1 ? (
-                    <ChevronRight className="size-3 shrink-0 text-zinc-500" />
+                    <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
                   ) : null}
                 </div>
               ))}
@@ -373,11 +364,11 @@ export function ProjectPickerDialog() {
             </div>
 
             <div className="flex w-68 items-center gap-2 rounded-xl bg-accent px-4 py-2.5">
-              <Search className="size-3.5 shrink-0 text-zinc-500" />
+              <Search className="size-3.5 shrink-0 text-muted-foreground" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-full bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+                className="w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
                 placeholder="Search"
               />
             </div>
@@ -440,21 +431,21 @@ export function ProjectPickerDialog() {
           </div>
 
           {activeError ? (
-            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-100">
+            <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-amber-700 dark:text-amber-100">
               {typeof activeError === "string" ? activeError : errorMessage(activeError)}
             </div>
           ) : null}
 
           <div className="flex h-13 items-center justify-between border-t border-border bg-card px-5">
-            <div className="min-w-0 flex-1 overflow-hidden text-xs text-muted-foreground">
+            <div className="min-w-0 flex-1 overflow-hidden text-muted-foreground">
               <span className="truncate">{footerText}</span>
             </div>
 
             <div className="ml-4 flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={navigateBack}
-                className="rounded-md bg-secondary px-4 py-1.5 text-sm text-foreground transition hover:bg-accent"
+                onClick={closeProjectPicker}
+                className="rounded-md bg-secondary px-4 py-1.5 text-foreground transition hover:bg-accent"
               >
                 Cancel
               </button>
@@ -462,7 +453,7 @@ export function ProjectPickerDialog() {
                 type="button"
                 onClick={() => void handleOpen()}
                 className={cn(
-                  "rounded-md px-4 py-1.5 text-sm font-medium text-white transition",
+                  "rounded-md px-4 py-1.5 font-medium text-white transition",
                   createProject.isPending
                     ? "cursor-wait bg-picker/70"
                     : "bg-picker hover:bg-picker-hover"
@@ -488,7 +479,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="px-6 pb-2 pt-2 text-base font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="px-6 pb-2 pt-2 font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       {children}
@@ -512,12 +503,11 @@ function SidebarItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-4 px-6 py-3 text-left text-2xl transition",
+        "flex w-full items-center gap-4 rounded-none px-6 py-3 text-left transition",
         active
           ? "bg-picker/25 text-foreground"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
-      style={{ borderRadius: 0 }}
     >
       {icon}
       <span
@@ -581,21 +571,21 @@ function ListView({
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
+    <table className="w-full border-collapse">
       <colgroup>
-        <col className="w-[52%]" />
-        <col className="w-[30%]" />
-        <col className="w-[18%]" />
+        <col className="w-1/2" />
+        <col className="w-1/3" />
+        <col className="w-1/6" />
       </colgroup>
       <thead>
         <tr className="border-b border-border">
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
             Name
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
             Date Modified
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left text-base font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
             Size
           </th>
         </tr>
@@ -626,7 +616,6 @@ function ListView({
                   />
                   <span
                     className={cn(
-                      "text-lg",
                       selected ? "text-white" : "text-foreground"
                     )}
                   >
@@ -636,7 +625,7 @@ function ListView({
               </td>
               <td
                 className={cn(
-                  "px-6 py-4 text-lg",
+                  "px-6 py-4",
                   selected ? "text-white/75" : "text-muted-foreground"
                 )}
               >
@@ -644,7 +633,7 @@ function ListView({
               </td>
               <td
                 className={cn(
-                  "px-6 py-4 text-lg",
+                  "px-6 py-4",
                   selected ? "text-white/75" : "text-muted-foreground"
                 )}
               >
@@ -686,12 +675,11 @@ function GridView({
             onClick={() => onSelect(entry)}
             onDoubleClick={() => onDoubleOpen(entry)}
             className={cn(
-              "flex flex-col items-center gap-2 px-3 pb-3 pt-3 text-center transition",
+              "flex w-26 flex-col items-center gap-2 px-3 pb-3 pt-3 text-center transition",
               selected
                 ? "rounded-lg bg-picker text-white"
                 : "text-foreground hover:rounded-lg hover:bg-muted"
             )}
-            style={{ width: "104px" }}
           >
             <Icon
               className={cn(
@@ -703,7 +691,7 @@ function GridView({
                     : "text-muted-foreground"
               )}
             />
-            <span className="line-clamp-2 text-xs leading-[1.3]">{entry.name}</span>
+            <span className="line-clamp-2 leading-tight">{entry.name}</span>
           </button>
         )
       })}
@@ -713,7 +701,7 @@ function GridView({
 
 function EmptyState() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-sm text-muted-foreground">
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-muted-foreground">
       <Folder className="size-8 opacity-30" />
       <span>No results</span>
     </div>

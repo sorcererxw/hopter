@@ -6,6 +6,7 @@ import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatBackendKey, formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
+import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 
 function formatRelativeTime(date?: Date) {
   if (!date) {
@@ -76,6 +77,7 @@ type SessionRailProps = {
 }
 
 export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
+  const { openProjectPicker } = useWorkspaceShell()
   const location = useLocation()
   const { data: projects } = useProjects()
   const { data: sessions, isError, isLoading } = useSessions()
@@ -164,7 +166,13 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           <ThreadHeaderButton title="Sort">
             <ArrowUpDown className="size-3" />
           </ThreadHeaderButton>
-          <ThreadHeaderButton title="Add new project" to="/projects/new">
+          <ThreadHeaderButton
+            title="Add new project"
+            onClick={() => {
+              onNavigate?.()
+              openProjectPicker()
+            }}
+          >
             <FolderPlus className="size-3" />
           </ThreadHeaderButton>
         </div>
