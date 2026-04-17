@@ -4,39 +4,48 @@ import {
   ChevronDown,
   Copy,
   MoreHorizontal,
+  PanelLeft,
   PanelRight,
   Terminal,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
 
+import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
+import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
 
 type WorkspaceTopbarProps = {
+  leadingAction?: "back" | "toggle-rail"
   inspectorOpen?: boolean
   onCommit?: () => void
   onCommitAndReview?: () => void
+  onLeadingAction?: () => void
   onOpenReview?: () => void
   onToggleInspector?: () => void
   projectName?: string
   sessionId?: string
   showInspectorToggle?: boolean
   showReview?: boolean
+  syncState?: WorkspaceEventStreamState
   title: string
+  toolbarMode?: WorkspaceToolbarMode
 }
 
 export function WorkspaceTopbar({
+  leadingAction,
   inspectorOpen = false,
   onCommit,
   onCommitAndReview,
+  onLeadingAction,
   onOpenReview,
   onToggleInspector,
   projectName,
   sessionId,
   showInspectorToggle = false,
   showReview = false,
+  syncState,
   title,
+  toolbarMode = "desktop",
 }: WorkspaceTopbarProps) {
-  const navigate = useNavigate()
   const [commitOpen, setCommitOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -86,209 +95,288 @@ export function WorkspaceTopbar({
     setOverflowOpen(false)
   }, [sessionId])
 
+  const leadingButton =
+    leadingAction === "back" ? (
+      <TopbarLeadingButton
+        icon={<ArrowLeft className="size-4.5" />}
+        label="Back"
+        onClick={onLeadingAction}
+        testId="workspace-topbar-back"
+      />
+    ) : leadingAction === "toggle-rail" ? (
+      <TopbarLeadingButton
+        icon={<PanelLeft className="size-4.5" />}
+        label="Toggle navigation"
+        onClick={onLeadingAction}
+        testId="workspace-topbar-rail-toggle"
+      />
+    ) : null
+
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5">
-      {/* Phone topbar: back + stacked title + overflow */}
-      <div className="flex min-w-0 items-center gap-2 md:hidden">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
-        >
-          <ArrowLeft className="size-4.5" />
-        </button>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">{title}</p>
-          {projectName ? (
-            <p className="truncate text-xs text-muted-foreground">{projectName}</p>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex items-center gap-1.5 md:hidden">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOverflowOpen((prev) => !prev)}
-            className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
-          >
-            <MoreHorizontal className="size-4.5" />
-          </button>
-          {overflowOpen ? (
-            <>
-              <div
-                aria-hidden="true"
-                className="fixed inset-0 z-40"
-                onClick={() => setOverflowOpen(false)}
-              />
-              <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                {showReview ? (
+    <div
+      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5"
+      data-testid="workspace-topbar"
+      data-toolbar-mode={toolbarMode}
+    >
+      {toolbarMode === "mobile" ? (
+        <>
+          <div className="flex min-w-0 items-center gap-2">
+            {leadingButton}
+            <div className="min-w-0">
+              <p className="truncate text-base font-medium text-foreground">
+                {title}
+              </p>
+              {projectName ? (
+                <p className="truncate text-sm text-muted-foreground">
+                  {projectName}
+                </p>
+              ) : null}
+              {syncState ? <SyncStatusBadge state={syncState} /> : null}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOverflowOpen((prev) => !prev)}
+                className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+              >
+                <MoreHorizontal className="size-4.5" />
+              </button>
+              {overflowOpen ? (
+                <>
+                  <div
+                    aria-hidden="true"
+                    className="fixed inset-0 z-40"
+                    onClick={() => setOverflowOpen(false)}
+                  />
+                  <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    {showReview ? (
+                      <>
+                        <OverflowMenuItem
+                          onClick={() => {
+                            setOverflowOpen(false)
+                            onCommit?.()
+                          }}
+                        >
+                          Commit
+                        </OverflowMenuItem>
+                        <OverflowMenuItem
+                          onClick={() => {
+                            setOverflowOpen(false)
+                            onOpenReview?.()
+                          }}
+                        >
+                          Review
+                        </OverflowMenuItem>
+                        <OverflowMenuItem
+                          onClick={() => {
+                            setOverflowOpen(false)
+                            onCommitAndReview?.()
+                          }}
+                        >
+                          Commit &amp; Review
+                        </OverflowMenuItem>
+                        <OverflowMenuItem
+                          icon={<Terminal className="size-3.5" />}
+                          onClick={() => setOverflowOpen(false)}
+                        >
+                          Terminal
+                        </OverflowMenuItem>
+                      </>
+                    ) : null}
+                    {showInspectorToggle ? (
+                      <OverflowMenuItem
+                        icon={<PanelRight className="size-3.5" />}
+                        onClick={() => {
+                          setOverflowOpen(false)
+                          onToggleInspector?.()
+                        }}
+                      >
+                        {inspectorOpen ? "Close inspector" : "Open inspector"}
+                      </OverflowMenuItem>
+                    ) : null}
+                    {sessionId ? (
+                      <OverflowMenuItem
+                        icon={<Copy className="size-3.5" />}
+                        onClick={handleCopySessionId}
+                      >
+                        {copied ? "Copied!" : "Copy session ID"}
+                      </OverflowMenuItem>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex min-w-0 items-center gap-2">
+            {leadingButton}
+            <h1 className="truncate text-sm font-medium text-foreground">
+              {title}
+            </h1>
+            {projectName ? (
+              <span className="truncate text-sm text-muted-foreground">
+                {projectName}
+              </span>
+            ) : null}
+            {syncState ? <SyncStatusBadge state={syncState} /> : null}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOverflowOpen((prev) => !prev)}
+                className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              >
+                <MoreHorizontal className="size-4" />
+              </button>
+              {overflowOpen ? (
+                <>
+                  <div
+                    aria-hidden="true"
+                    className="fixed inset-0 z-40"
+                    onClick={() => setOverflowOpen(false)}
+                  />
+                  <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    {sessionId ? (
+                      <OverflowMenuItem
+                        icon={<Copy className="size-3.5" />}
+                        onClick={handleCopySessionId}
+                      >
+                        {copied ? "Copied!" : "Copy session ID"}
+                      </OverflowMenuItem>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {showReview ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setCommitOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
+                >
+                  <span>Commit</span>
+                  <ChevronDown className="size-3 text-muted-foreground" />
+                </button>
+                {commitOpen ? (
                   <>
-                    <OverflowMenuItem
-                      onClick={() => {
-                        setOverflowOpen(false)
-                        onCommit?.()
-                      }}
-                    >
-                      Commit
-                    </OverflowMenuItem>
-                    <OverflowMenuItem
-                      onClick={() => {
-                        setOverflowOpen(false)
-                        onOpenReview?.()
-                      }}
-                    >
-                      Review
-                    </OverflowMenuItem>
-                    <OverflowMenuItem
-                      onClick={() => {
-                        setOverflowOpen(false)
-                        onCommitAndReview?.()
-                      }}
-                    >
-                      Commit &amp; Review
-                    </OverflowMenuItem>
-                    <OverflowMenuItem
-                      icon={<Terminal className="size-3.5" />}
-                      onClick={() => setOverflowOpen(false)}
-                    >
-                      Terminal
-                    </OverflowMenuItem>
+                    <div
+                      aria-hidden="true"
+                      className="fixed inset-0 z-40"
+                      onClick={() => setCommitOpen(false)}
+                    />
+                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                      <CommitMenuItem
+                        onClick={() => {
+                          setCommitOpen(false)
+                          onCommit?.()
+                        }}
+                      >
+                        Commit
+                      </CommitMenuItem>
+                      <CommitMenuItem
+                        onClick={() => {
+                          setCommitOpen(false)
+                          onOpenReview?.()
+                        }}
+                      >
+                        Review
+                      </CommitMenuItem>
+                      <CommitMenuItem
+                        onClick={() => {
+                          setCommitOpen(false)
+                          onCommitAndReview?.()
+                        }}
+                      >
+                        Commit &amp; Review
+                      </CommitMenuItem>
+                    </div>
                   </>
                 ) : null}
-                {showInspectorToggle ? (
-                  <OverflowMenuItem
-                    icon={<PanelRight className="size-3.5" />}
-                    onClick={() => {
-                      setOverflowOpen(false)
-                      onToggleInspector?.()
-                    }}
-                  >
-                    {inspectorOpen ? "Close inspector" : "Open inspector"}
-                  </OverflowMenuItem>
-                ) : null}
-                {sessionId ? (
-                  <OverflowMenuItem
-                    icon={<Copy className="size-3.5" />}
-                    onClick={handleCopySessionId}
-                  >
-                    {copied ? "Copied!" : "Copy session ID"}
-                  </OverflowMenuItem>
-                ) : null}
               </div>
-            </>
-          ) : null}
-        </div>
-      </div>
+            ) : null}
 
-      {/* Large-screen topbar: inline title + project + overflow, right actions */}
-      <div className="hidden min-w-0 items-center gap-2 md:flex">
-        <h1 className="truncate text-sm font-medium text-foreground">
-          {title}
-        </h1>
-        {projectName ? (
-          <span className="truncate text-sm text-muted-foreground">
-            {projectName}
-          </span>
-        ) : null}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOverflowOpen((prev) => !prev)}
-            className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-          {overflowOpen ? (
-            <>
-              <div
-                aria-hidden="true"
-                className="fixed inset-0 z-40"
-                onClick={() => setOverflowOpen(false)}
-              />
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                {sessionId ? (
-                  <OverflowMenuItem
-                    icon={<Copy className="size-3.5" />}
-                    onClick={handleCopySessionId}
-                  >
-                    {copied ? "Copied!" : "Copy session ID"}
-                  </OverflowMenuItem>
-                ) : null}
-              </div>
-            </>
-          ) : null}
-        </div>
-      </div>
+            <TopbarIconButton label="Terminal">
+              <Terminal className="size-3.5" />
+            </TopbarIconButton>
 
-      <div className="hidden items-center gap-1.5 md:flex">
-        {showReview ? (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setCommitOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
-            >
-              <span>Commit</span>
-              <ChevronDown className="size-3 text-muted-foreground" />
-            </button>
-            {commitOpen ? (
-              <>
-                <div
-                  aria-hidden="true"
-                  className="fixed inset-0 z-40"
-                  onClick={() => setCommitOpen(false)}
-                />
-                <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                  <CommitMenuItem
-                    onClick={() => {
-                      setCommitOpen(false)
-                      onCommit?.()
-                    }}
-                  >
-                    Commit
-                  </CommitMenuItem>
-                  <CommitMenuItem
-                    onClick={() => {
-                      setCommitOpen(false)
-                      onOpenReview?.()
-                    }}
-                  >
-                    Review
-                  </CommitMenuItem>
-                  <CommitMenuItem
-                    onClick={() => {
-                      setCommitOpen(false)
-                      onCommitAndReview?.()
-                    }}
-                  >
-                    Commit &amp; Review
-                  </CommitMenuItem>
-                </div>
-              </>
+            {showInspectorToggle ? (
+              <button
+                type="button"
+                onClick={onToggleInspector}
+                className={cn(
+                  "inline-flex size-8 items-center justify-center rounded-md transition",
+                  inspectorOpen
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <PanelRight className="size-3.5" />
+              </button>
             ) : null}
           </div>
-        ) : null}
-
-        <TopbarIconButton label="Terminal">
-          <Terminal className="size-3.5" />
-        </TopbarIconButton>
-
-        {showInspectorToggle ? (
-          <button
-            type="button"
-            onClick={onToggleInspector}
-            className={cn(
-              "inline-flex size-8 items-center justify-center rounded-md transition",
-              inspectorOpen
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            )}
-          >
-            <PanelRight className="size-3.5" />
-          </button>
-        ) : null}
-      </div>
+        </>
+      )}
     </div>
+  )
+}
+
+function SyncStatusBadge({
+  state,
+}: {
+  state: WorkspaceEventStreamState
+}) {
+  const label =
+    state === "connected"
+      ? "Live"
+      : state === "reconnecting"
+        ? "Reconnecting"
+        : state === "offline"
+          ? "Offline"
+          : "Connecting"
+  const dotClassName =
+    state === "connected"
+      ? "bg-emerald-400"
+      : state === "reconnecting"
+        ? "bg-amber-400"
+        : "bg-rose-400"
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+      <span className={cn("size-1.5 rounded-full", dotClassName)} />
+      <span>{label}</span>
+    </span>
+  )
+}
+
+function TopbarLeadingButton({
+  icon,
+  label,
+  onClick,
+  testId,
+}: {
+  icon: ReactNode
+  label: string
+  onClick?: () => void
+  testId: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      data-testid={testId}
+      onClick={onClick}
+      className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+    >
+      {icon}
+    </button>
   )
 }
 

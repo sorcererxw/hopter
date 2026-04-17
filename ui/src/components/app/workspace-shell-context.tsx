@@ -1,14 +1,30 @@
 import { createContext, useContext } from "react"
 
+import type {
+  WorkspacePosture,
+  WorkspaceToolbarMode,
+} from "@/components/app/workspace-posture"
+
 export type WorkspaceShellContextValue = {
   closeProjectPicker: () => void
-  closeSidebar: () => void
+  eventStreamState: WorkspaceEventStreamState
+  hideRail: () => void
+  lastEventAt: number | null
   openProjectPicker: () => void
   openSearch: () => void
-  openSidebar: () => void
+  showRail: () => void
   projectPickerOpen: boolean
-  sidebarOpen: boolean
+  posture: WorkspacePosture
+  railVisible: boolean
+  toggleRail: () => void
+  toolbarMode: WorkspaceToolbarMode
 }
+
+export type WorkspaceEventStreamState =
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "offline"
 
 export const WorkspaceShellContext = createContext<
   WorkspaceShellContextValue | undefined

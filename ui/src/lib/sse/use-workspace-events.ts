@@ -1,16 +1,28 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 
 import {
   applyWorkspaceEventInvalidation,
   type WorkspaceEventEnvelope,
 } from "@/lib/query/invalidation"
+import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
 
 export function useWorkspaceEvents() {
   const queryClient = useQueryClient()
+  const [lastEventAt, setLastEventAt] = useState<number | null>(null)
+  const [status, setStatus] = useState<WorkspaceEventStreamState>("connecting")
 
   useEffect(() => {
+    let disposed = false
     const source = new EventSource("/events", { withCredentials: true })
+
+    const markConnected = () => {
+      if (disposed) {
+        return
+      }
+      setStatus("connected")
+      setLastEventAt(Date.now())
+    }
 
     const handleMessage = (event: MessageEvent<string>) => {
       let parsed: WorkspaceEventEnvelope = {}
@@ -21,14 +33,52 @@ export function useWorkspaceEvents() {
         parsed = {}
       }
 
+      markConnected()
       applyWorkspaceEventInvalidation(queryClient, parsed)
     }
 
+    source.onopen = () => {
+      markConnected()
+    }
+
+    source.onerror = () => {
+      if (disposed) {
+        return
+      }
+      setStatus(navigator.onLine ? "reconnecting" : "offline")
+    }
+
+    const handleOnline = () => {
+      if (disposed) {
+        return
+      }
+      setStatus("reconnecting")
+    }
+
+    const handleOffline = () => {
+      if (disposed) {
+        return
+      }
+      setStatus("offline")
+    }
+
     source.addEventListener("workspace", handleMessage as EventListener)
+    source.addEventListener("ready", handleMessage as EventListener)
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
 
     return () => {
+      disposed = true
       source.removeEventListener("workspace", handleMessage as EventListener)
+      source.removeEventListener("ready", handleMessage as EventListener)
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
       source.close()
     }
   }, [queryClient])
+
+  return {
+    lastEventAt,
+    status,
+  }
 }

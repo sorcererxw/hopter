@@ -25,8 +25,14 @@ type SendSessionInput = {
 }
 
 const defaultTranscriptPageSize = 50
+const activeSessionPollMs = 1500
+const passiveSessionPollMs = 5000
+const sessionListPollMs = 3000
 
-export function useSessions(projectId?: string) {
+export function useSessions(
+  projectId?: string,
+  pollInterval: number | false = sessionListPollMs
+) {
   return useQuery({
     queryKey: queryKeys.sessions(projectId),
     queryFn: async () => {
@@ -36,6 +42,8 @@ export function useSessions(projectId?: string) {
       })
       return response.sessions
     },
+    refetchInterval: pollInterval,
+    refetchIntervalInBackground: pollInterval !== false,
   })
 }
 
@@ -57,7 +65,9 @@ export function useSessionMeta(sessionId?: string) {
         return false
       }
 
-      return shouldPollSession(session) ? 1500 : false
+      return shouldPollSession(session)
+        ? activeSessionPollMs
+        : passiveSessionPollMs
     },
     refetchIntervalInBackground: true,
   })
@@ -81,7 +91,7 @@ export function useSessionTranscript(
   sessionId?: string,
   enabled = true,
   pageSize = defaultTranscriptPageSize,
-  poll = false
+  pollInterval: number | false = false
 ) {
   return useQuery({
     enabled: Boolean(sessionId) && enabled,
@@ -93,8 +103,8 @@ export function useSessionTranscript(
 
       return fetchSessionTranscriptPage(sessionId, undefined, pageSize)
     },
-    refetchInterval: poll ? 1500 : false,
-    refetchIntervalInBackground: poll,
+    refetchInterval: pollInterval,
+    refetchIntervalInBackground: pollInterval !== false,
   })
 }
 

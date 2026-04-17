@@ -45,11 +45,14 @@ function deriveTitle(prompt: string) {
 
 export function HomeWorkspacePane() {
   const navigate = useNavigate()
-  const { toggleRail, toolbarMode } = useWorkspaceShell()
+  const { eventStreamState, toggleRail, toolbarMode } = useWorkspaceShell()
   const [searchParams, setSearchParams] = useSearchParams()
   const createSession = useCreateSession()
   const { data: projects, isLoading: projectsLoading } = useProjects()
-  const { data: sessions } = useSessions()
+  const { data: sessions } = useSessions(
+    undefined,
+    eventStreamState === "connected" ? 10_000 : 3_000
+  )
   const [selectedBackendKeyState, setSelectedBackendKeyState] = useState("")
   const [prompt, setPrompt] = useState("")
   const selectedProjectId =
@@ -99,6 +102,7 @@ export function HomeWorkspacePane() {
         leadingAction="toggle-rail"
         onLeadingAction={toggleRail}
         projectName={selectedProject?.name}
+        syncState={eventStreamState}
         title="New Thread"
         toolbarMode={toolbarMode}
       />
@@ -202,23 +206,32 @@ export function HomeWorkspacePane() {
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const navigate = useNavigate()
-  const { posture, toggleRail, toolbarMode } = useWorkspaceShell()
+  const { eventStreamState, posture, toggleRail, toolbarMode } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
-  const shouldPollActiveSession = useMemo(
+  const transcriptPollInterval = useMemo(
     () =>
-      sessionMetaQuery.data
+      eventStreamState === "connected"
+        ? sessionMetaQuery.data
+          ? shouldPollSessionState(sessionMetaQuery.data.status)
+            ? 5_000
+            : 10_000
+          : 5_000
+        : sessionMetaQuery.data
         ? shouldPollSessionState(sessionMetaQuery.data.status)
-        : false,
-    [sessionMetaQuery.data]
+          ? 1500
+          : 5000
+        : 1500,
+    [eventStreamState, sessionMetaQuery.data]
   )
   const latestTranscriptQuery = useSessionTranscript(
     sessionId,
     Boolean(sessionMetaQuery.data),
     undefined,
-    shouldPollActiveSession
+    transcriptPollInterval
   )
   const sendInput = useSendSessionInput()
   const [prompt, setPrompt] = useState("")
+  const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
   const [inspectorOpen, setInspectorOpen] = useState(true)
   const [activeTab, setActiveTab] = useState<"summary" | "review">("review")
   const [inspectorMode, setInspectorMode] = useState<"code" | "diff">("code")
@@ -227,7 +240,9 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [transcriptVisible, setTranscriptVisible] = useState(false)
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
+  const transcriptContentRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
+  const lastScrollHeightRef = useRef(0)
   const lastSessionIdRef = useRef(sessionId)
   const lastActivityCountRef = useRef(0)
   const prependSnapshotRef = useRef<{
@@ -263,6 +278,25 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         normalizeTranscriptText(item.body).startsWith(normalizedHint)
     )
   }, [session, transcriptItems])
+  useEffect(() => {
+    if (!optimisticPendingInput) {
+      return
+    }
+
+    const normalizedPending = normalizeTranscriptText(optimisticPendingInput)
+    const transcriptHasPending = transcriptItems.some(
+      (item) =>
+        item.kind === SessionTranscriptItemKind.USER_MESSAGE &&
+        normalizeTranscriptText(item.body).startsWith(normalizedPending)
+    )
+    const serverHasPending =
+      session?.lastInputHint &&
+      normalizeTranscriptText(session.lastInputHint).startsWith(normalizedPending)
+
+    if (transcriptHasPending || serverHasPending) {
+      setOptimisticPendingInput("")
+    }
+  }, [optimisticPendingInput, session?.lastInputHint, transcriptItems])
   const activityItems = useMemo(() => {
     const items: ActivityItem[] = transcriptItems.map((item) => ({
       item,
@@ -270,7 +304,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       key: item.id,
     }))
 
-    if (session && showPendingInputHint) {
+    if (optimisticPendingInput) {
+      items.push({
+        kind: "pending-input" as const,
+        key: "optimistic-pending-input",
+        text: optimisticPendingInput,
+      })
+    } else if (session && showPendingInputHint) {
       items.push({
         kind: "pending-input" as const,
         key: "pending-input",
@@ -287,7 +327,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     }
 
     return items
-  }, [session, showPendingInputHint, transcriptItems])
+  }, [optimisticPendingInput, session, showPendingInputHint, transcriptItems])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
   const hasMoreBefore =
@@ -314,6 +354,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     setSelectedDiff(null)
     setSelectedPath(null)
+    setOptimisticPendingInput("")
     prependSnapshotRef.current = null
   }, [sessionId])
 
@@ -349,6 +390,32 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = nextCount
   }, [activityItems.length, lastActivityKey, sessionId])
+
+  useEffect(() => {
+    const container = transcriptScrollRef.current
+    const content = transcriptContentRef.current
+    if (!container || !content || typeof ResizeObserver === "undefined") {
+      return
+    }
+
+    lastScrollHeightRef.current = container.scrollHeight
+
+    const observer = new ResizeObserver(() => {
+      const nextScrollHeight = container.scrollHeight
+      const grew = nextScrollHeight > lastScrollHeightRef.current
+      lastScrollHeightRef.current = nextScrollHeight
+
+      if (!grew || prependSnapshotRef.current || !shouldStickToBottomRef.current) {
+        return
+      }
+
+      container.scrollTop = container.scrollHeight
+    })
+
+    observer.observe(content)
+
+    return () => observer.disconnect()
+  }, [sessionId])
 
   useEffect(() => {
     const container = transcriptScrollRef.current
@@ -436,6 +503,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         }
         showInspectorToggle={posture === "wide"}
         showReview
+        syncState={eventStreamState}
         toolbarMode={toolbarMode}
       />
 
@@ -456,6 +524,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               className="workspace-scrollbar relative flex-1 overflow-y-auto px-6 py-4"
             >
               <div
+                ref={transcriptContentRef}
                 className={cn(
                   "mx-auto max-w-[720px] space-y-5 transition-opacity duration-200 ease-out",
                   transcriptVisible ? "opacity-100" : "opacity-0"
@@ -522,11 +591,18 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 }
 
                 const normalizedPrompt = prompt.trim()
-                await sendInput.mutateAsync({
-                  input: normalizedPrompt,
-                  sessionId,
-                })
                 setPrompt("")
+                setOptimisticPendingInput(normalizedPrompt)
+                try {
+                  await sendInput.mutateAsync({
+                    input: normalizedPrompt,
+                    sessionId,
+                  })
+                } catch (error) {
+                  setOptimisticPendingInput("")
+                  setPrompt(normalizedPrompt)
+                  throw error
+                }
               }}
               submitTestId="session-followup-submit"
               value={prompt}

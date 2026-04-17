@@ -1,16 +1,46 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from "react"
+import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react"
+import { matchPath, useLocation } from "react-router-dom"
 
 import { ProjectPickerDialog } from "@/components/app/project-picker-dialog"
 import { SearchDialog } from "@/components/app/search-dialog"
+import {
+  getToolbarMode,
+  getWorkspacePosture,
+  type WorkspacePosture,
+} from "@/components/app/workspace-posture"
 import { SessionRail } from "@/components/app/session-rail"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
 
 export function WorkspaceLayout({ children }: PropsWithChildren) {
+  const location = useLocation()
   const [projectPickerOpen, setProjectPickerOpen] = useState(false)
-  useWorkspaceEvents()
+  const eventStream = useWorkspaceEvents()
   const [searchOpen, setSearchOpen] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [posture, setPosture] = useState<WorkspacePosture>(() => {
+    if (typeof window === "undefined") {
+      return "wide"
+    }
+
+    return getWorkspacePosture(window.innerWidth)
+  })
+  const [railVisible, setRailVisible] = useState(() => {
+    if (typeof window === "undefined") {
+      return true
+    }
+
+    return getWorkspacePosture(window.innerWidth) === "wide"
+  })
+  const explicitRailPreferenceRef = useRef(false)
+
+  const isSessionRoute = Boolean(
+    matchPath("/sessions/:sessionId", location.pathname)
+  )
+  const showPhoneDetail = posture === "phone" && isSessionRoute
+  const showPhoneList = posture === "phone" && !isSessionRoute
+  const showInlineRail =
+    posture !== "phone" && railVisible
+  const toolbarMode = getToolbarMode(posture, railVisible)
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -22,56 +52,119 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
+  }, [posture])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined
+    }
+
+    function syncPosture() {
+      setPosture(getWorkspacePosture(window.innerWidth))
+    }
+
+    syncPosture()
+    window.addEventListener("resize", syncPosture)
+    return () => window.removeEventListener("resize", syncPosture)
   }, [])
+
+  useEffect(() => {
+    if (posture === "phone") {
+      setRailVisible(false)
+      return
+    }
+
+    if (explicitRailPreferenceRef.current) {
+      return
+    }
+
+    setRailVisible(posture === "wide")
+  }, [posture])
 
   const shellContext = useMemo(
     () => ({
       closeProjectPicker: () => setProjectPickerOpen(false),
-      closeSidebar: () => setSidebarOpen(false),
+      eventStreamState: eventStream.status,
+      hideRail: () => {
+        explicitRailPreferenceRef.current = true
+        setRailVisible(false)
+      },
+      lastEventAt: eventStream.lastEventAt,
       openProjectPicker: () => setProjectPickerOpen(true),
       openSearch: () => setSearchOpen(true),
-      openSidebar: () => setSidebarOpen(true),
+      posture,
       projectPickerOpen,
-      sidebarOpen,
+      railVisible,
+      showRail: () => {
+        explicitRailPreferenceRef.current = true
+        setRailVisible(true)
+      },
+      toggleRail: () => {
+        explicitRailPreferenceRef.current = true
+        setRailVisible((current) => !current)
+      },
+      toolbarMode,
     }),
-    [projectPickerOpen, sidebarOpen]
+    [eventStream.lastEventAt, eventStream.status, posture, projectPickerOpen, railVisible, toolbarMode]
+  )
+
+  const rail = (
+    <SessionRail
+      onOpenSearch={() => setSearchOpen(true)}
+    />
   )
 
   return (
     <WorkspaceShellContext.Provider value={shellContext}>
-      <div className="h-dvh overflow-hidden bg-background text-foreground">
+      <div
+        className="h-dvh overflow-hidden bg-background text-foreground"
+        data-rail-visible={railVisible ? "true" : "false"}
+        data-shell-posture={posture}
+      >
         <ProjectPickerDialog open={projectPickerOpen} />
         <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
-        {sidebarOpen ? (
-          <button
-            type="button"
-            aria-label="Close navigation"
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
+        {showPhoneList ? (
+          <div
+            className="h-full min-h-0"
+            data-testid="workspace-phone-list"
+          >
+            {rail}
+          </div>
         ) : null}
 
-        <aside
-          className={`fixed left-0 top-0 z-50 h-full w-[248px] border-r border-border bg-sidebar transition-transform duration-300 md:hidden ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <SessionRail
-            onNavigate={() => setSidebarOpen(false)}
-            onOpenSearch={() => setSearchOpen(true)}
-          />
-        </aside>
+        {showPhoneList ? null : (
+          <>
+            <div
+              className="grid h-full min-h-0 min-w-0"
+              style={{
+                gridTemplateColumns: showInlineRail
+                  ? "248px minmax(0,1fr)"
+                  : "minmax(0,1fr)",
+              }}
+            >
+              {showInlineRail ? (
+                <aside
+                  className="h-full min-h-0 border-r border-border bg-sidebar"
+                  data-testid="workspace-rail-pane"
+                >
+                  {rail}
+                </aside>
+              ) : null}
 
-        <div className="grid h-full min-h-0 min-w-0 md:grid-cols-[248px_minmax(0,1fr)]">
-          <aside className="hidden min-h-0 h-full border-r border-border bg-sidebar md:flex md:flex-col">
-            <SessionRail onOpenSearch={() => setSearchOpen(true)} />
-          </aside>
-
-          <main className="min-h-0 min-w-0 overflow-hidden bg-background">
-            {children}
-          </main>
-        </div>
+              <main
+                className="min-h-0 min-w-0 overflow-hidden bg-background"
+                data-testid={
+                  showPhoneDetail
+                    ? "workspace-phone-detail"
+                    : "workspace-shell-detail"
+                }
+              >
+                {children}
+              </main>
+            </div>
+          </>
+        )}
       </div>
     </WorkspaceShellContext.Provider>
   )

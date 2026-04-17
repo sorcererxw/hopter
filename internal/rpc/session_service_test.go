@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -18,6 +20,11 @@ type fakeSessionRuntime struct {
 	getProject         core.Project
 }
 
+type fakeSessionDetailReader struct {
+	meta core.SessionMeta
+	page core.SessionTranscriptPage
+}
+
 func (f *fakeSessionRuntime) ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error) {
 	return f.listSessionsResult, nil
 }
@@ -32,6 +39,14 @@ func (f *fakeSessionRuntime) CreateSession(input core.CreateSessionInput) (core.
 
 func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
 	return core.Session{}, nil
+}
+
+func (f *fakeSessionDetailReader) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
+	return f.meta, nil
+}
+
+func (f *fakeSessionDetailReader) ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error) {
+	return f.page, nil
 }
 
 func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
@@ -72,7 +87,7 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 	service := NewSessionService(workspace, &fakeSessionRuntime{
 		getSession: session,
 		getProject: project,
-	})
+	}, &fakeSessionDetailReader{})
 
 	resp, err := service.GetSession(context.Background(), connect.NewRequest(&orchdv1.GetSessionRequest{
 		SessionId: session.ID,
@@ -96,5 +111,112 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 	}
 	if got.GetTranscriptItems()[1].GetStatus() != "completed" {
 		t.Fatalf("second transcript status = %q", got.GetTranscriptItems()[1].GetStatus())
+	}
+}
+
+func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := core.Project{
+		ID:             "proj_1",
+		Name:           "probe",
+		RootPath:       "/tmp/probe",
+		DefaultBackend: "codex",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	meta := core.SessionMeta{
+		Session: core.Session{
+			ID:        "sess_1",
+			ProjectID: project.ID,
+			Title:     "probe",
+			Status:    core.SessionStateCompleted,
+			Summary:   "done",
+			UpdatedAt: time.Now().UTC(),
+		},
+		Project:            project,
+		HasMoreBefore:      true,
+		LatestPageSizeHint: 50,
+	}
+	page := core.SessionTranscriptPage{
+		SessionID:         meta.Session.ID,
+		ProjectID:         project.ID,
+		HasMoreBefore:     true,
+		NextBeforeCursor:  "cursor-1",
+		SnapshotUpdatedAt: time.Now().UTC(),
+		Items: []core.SessionTranscriptItem{
+			{ID: "u1", Kind: core.SessionTranscriptItemKindUserMessage, Title: "You", Body: "hello"},
+		},
+	}
+
+	service := NewSessionService(workspace, &fakeSessionRuntime{}, &fakeSessionDetailReader{
+		meta: meta,
+		page: page,
+	})
+
+	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&orchdv1.GetSessionMetaRequest{
+		SessionId: meta.Session.ID,
+	}))
+	if err != nil {
+		t.Fatalf("GetSessionMeta: %v", err)
+	}
+	if metaResp.Msg.GetSession().GetId() != meta.Session.ID {
+		t.Fatalf("meta session id = %q", metaResp.Msg.GetSession().GetId())
+	}
+	if !metaResp.Msg.GetSession().GetHasMoreBefore() {
+		t.Fatalf("meta has_more_before = false, want true")
+	}
+
+	pageResp, err := service.ListSessionTranscript(context.Background(), connect.NewRequest(&orchdv1.ListSessionTranscriptRequest{
+		SessionId: meta.Session.ID,
+	}))
+	if err != nil {
+		t.Fatalf("ListSessionTranscript: %v", err)
+	}
+	if len(pageResp.Msg.GetPage().GetItems()) != 1 {
+		t.Fatalf("page item count = %d, want 1", len(pageResp.Msg.GetPage().GetItems()))
+	}
+	if pageResp.Msg.GetPage().GetNextBeforeCursor() != "cursor-1" {
+		t.Fatalf("next cursor = %q", pageResp.Msg.GetPage().GetNextBeforeCursor())
+	}
+}
+
+func TestListSessionsMergesLocalSessionsMissingFromRuntime(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+	project, err := workspace.CreateProject(core.CreateProjectInput{
+		Name:           "probe",
+		RootPath:       root,
+		DefaultBackend: "codex",
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "local pending",
+		Prompt:    "hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	service := NewSessionService(workspace, &fakeSessionRuntime{
+		listSessionsResult: nil,
+	}, &fakeSessionDetailReader{})
+
+	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&orchdv1.ListSessionsRequest{
+	}))
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+
+	if len(resp.Msg.GetSessions()) != 1 {
+		t.Fatalf("session count = %d, want 1", len(resp.Msg.GetSessions()))
+	}
+	if resp.Msg.GetSessions()[0].GetId() != session.ID {
+		t.Fatalf("first session id = %q, want %q", resp.Msg.GetSessions()[0].GetId(), session.ID)
 	}
 }

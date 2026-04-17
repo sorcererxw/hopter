@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"connectrpc.com/connect"
 
@@ -14,6 +15,7 @@ import (
 type SessionService struct {
 	workspace core.WorkspaceService
 	codex     sessionRuntime
+	reader    sessionDetailReader
 }
 
 type sessionRuntime interface {
@@ -23,29 +25,33 @@ type sessionRuntime interface {
 	SendSessionInput(sessionID, input string) (core.Session, error)
 }
 
-func NewSessionService(workspace core.WorkspaceService, codexManager sessionRuntime) *SessionService {
-	return &SessionService{workspace: workspace, codex: codexManager}
+type sessionDetailReader interface {
+	GetSessionMeta(sessionID string) (core.SessionMeta, error)
+	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
+}
+
+func NewSessionService(
+	workspace core.WorkspaceService,
+	codexManager sessionRuntime,
+	reader sessionDetailReader,
+) *SessionService {
+	return &SessionService{workspace: workspace, codex: codexManager, reader: reader}
 }
 
 func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[orchdv1.ListSessionsRequest]) (*connect.Response[orchdv1.ListSessionsResponse], error) {
 	resolvedSessions, err := s.codex.ListSessions(req.Msg.GetProjectId(), req.Msg.GetLimit())
 	if err != nil {
-		sessions := s.workspace.ListSessions(core.ListSessionsInput{
+		resolvedSessions = nil
+	}
+	resolvedSessions = mergeResolvedSessions(
+		resolvedSessions,
+		s.workspace.ListSessions(core.ListSessionsInput{
 			ProjectID: req.Msg.GetProjectId(),
 			Limit:     req.Msg.GetLimit(),
-		})
-		resolvedSessions = make([]backend.ResolvedSession, 0, len(sessions))
-		for _, session := range sessions {
-			project, ok := s.workspace.GetProject(session.ProjectID)
-			if !ok {
-				continue
-			}
-			resolvedSessions = append(resolvedSessions, backend.ResolvedSession{
-				Project: project,
-				Session: session,
-			})
-		}
-	}
+		}),
+		s.workspace,
+		req.Msg.GetLimit(),
+	)
 	response := &orchdv1.ListSessionsResponse{
 		Sessions: make([]*orchdv1.SessionListItem, 0, len(resolvedSessions)),
 	}
@@ -55,6 +61,53 @@ func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[or
 	return connect.NewResponse(response), nil
 }
 
+func mergeResolvedSessions(
+	remote []backend.ResolvedSession,
+	local []core.Session,
+	workspace core.WorkspaceService,
+	limit uint32,
+) []backend.ResolvedSession {
+	merged := make([]backend.ResolvedSession, 0, len(remote)+len(local))
+	seen := make(map[string]struct{}, len(remote)+len(local))
+
+	for _, resolved := range remote {
+		merged = append(merged, resolved)
+		seen[resolved.Session.ID] = struct{}{}
+	}
+
+	for _, session := range local {
+		if _, ok := seen[session.ID]; ok {
+			continue
+		}
+		project, ok := workspace.GetProject(session.ProjectID)
+		if !ok {
+			continue
+		}
+		merged = append(merged, backend.ResolvedSession{
+			Project: project,
+			Session: session,
+		})
+		seen[session.ID] = struct{}{}
+	}
+
+	slices.SortFunc(merged, func(left, right backend.ResolvedSession) int {
+		switch {
+		case left.Session.UpdatedAt.After(right.Session.UpdatedAt):
+			return -1
+		case left.Session.UpdatedAt.Before(right.Session.UpdatedAt):
+			return 1
+		default:
+			return 0
+		}
+	})
+
+	if limit > 0 && len(merged) > int(limit) {
+		return merged[:limit]
+	}
+
+	return merged
+}
+
 func (s *SessionService) GetSession(_ context.Context, req *connect.Request[orchdv1.GetSessionRequest]) (*connect.Response[orchdv1.GetSessionResponse], error) {
 	session, project, err := s.codex.GetSession(req.Msg.GetSessionId())
 	if err != nil {
@@ -62,6 +115,30 @@ func (s *SessionService) GetSession(_ context.Context, req *connect.Request[orch
 	}
 	return connect.NewResponse(&orchdv1.GetSessionResponse{
 		Session: sessionToProto(project, session),
+	}), nil
+}
+
+func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[orchdv1.GetSessionMetaRequest]) (*connect.Response[orchdv1.GetSessionMetaResponse], error) {
+	meta, err := s.reader.GetSessionMeta(req.Msg.GetSessionId())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
+	}
+	return connect.NewResponse(&orchdv1.GetSessionMetaResponse{
+		Session: sessionMetaToProto(meta),
+	}), nil
+}
+
+func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.Request[orchdv1.ListSessionTranscriptRequest]) (*connect.Response[orchdv1.ListSessionTranscriptResponse], error) {
+	page, err := s.reader.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID:    req.Msg.GetSessionId(),
+		BeforeCursor: req.Msg.GetBeforeCursor(),
+		Limit:        req.Msg.GetLimit(),
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q transcript not found", req.Msg.GetSessionId()))
+	}
+	return connect.NewResponse(&orchdv1.ListSessionTranscriptResponse{
+		Page: sessionTranscriptPageToProto(page),
 	}), nil
 }
 

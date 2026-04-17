@@ -1,8 +1,16 @@
-import { useMemo, type ReactNode } from "react"
-import { ArrowUpDown, ChevronDown, FolderOpen, FolderPlus, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
-import { Link, NavLink, useLocation } from "react-router-dom"
+import { Fragment, useMemo, useState, type ReactNode } from "react"
+import {
+  ChevronDown,
+  FolderOpen,
+  FolderPlus,
+  Grid2x2,
+  LoaderCircle,
+  Search,
+  Settings,
+  SquarePen,
+} from "lucide-react"
+import { Link, NavLink, useNavigate } from "react-router-dom"
 
-import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
@@ -17,7 +25,7 @@ function formatRelativeTime(date?: Date) {
   const diffMinutes = Math.floor(diffMs / 60_000)
 
   if (diffMinutes < 1) {
-    return "just now"
+    return "now"
   }
 
   if (diffMinutes < 60) {
@@ -60,23 +68,16 @@ type SessionRailProps = {
 }
 
 export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
-  const { openProjectPicker } = useWorkspaceShell()
-  const location = useLocation()
-  const { data: projects } = useProjects()
-  const { data: sessions, isError, isLoading } = useSessions()
-
-  const activeSession = useMemo(() => {
-    const sessionId = location.pathname.startsWith("/sessions/")
-      ? location.pathname.slice("/sessions/".length)
-      : ""
-    return (sessions ?? []).find((session) => session.id === sessionId)
-  }, [location.pathname, sessions])
-
-  const workspaceName =
-    activeSession?.project?.name ||
-    projects?.[0]?.name ||
-    sessions?.[0]?.project?.name ||
-    "workspace"
+  const { eventStreamState, openProjectPicker } = useWorkspaceShell()
+  const navigate = useNavigate()
+  const { data: sessions, isError, isLoading } = useSessions(
+    undefined,
+    eventStreamState === "connected" ? 10_000 : 3_000
+  )
+  const [collapsedProjectIds, setCollapsedProjectIds] = useState<
+    Record<string, boolean>
+  >({})
+  const [projectsCollapsed, setProjectsCollapsed] = useState(false)
 
   const groupedSessions = useMemo(() => {
     const sorted = [...(sessions ?? [])]
@@ -87,17 +88,31 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
       })
       .slice(0, 30)
 
-    const groups: { projectId: string; projectName: string; sessions: typeof sorted }[] = []
-    const groupMap = new Map<string, typeof groups[number]>()
+    const groups: {
+      projectId: string
+      projectName: string
+      projectRootPath: string
+      sessions: typeof sorted
+    }[] = []
+    const groupMap = new Map<string, (typeof groups)[number]>()
 
     for (const session of sorted) {
       const pid = session.project?.id || ""
       const pname = session.project?.name || "Unassigned"
+      const rootPath = session.project?.rootPath || ""
       let group = groupMap.get(pid)
       if (!group) {
-        group = { projectId: pid, projectName: pname, sessions: [] }
+        group = {
+          projectId: pid,
+          projectName: pname,
+          projectRootPath: rootPath,
+          sessions: [],
+        }
         groupMap.set(pid, group)
         groups.push(group)
+      }
+      if (!group.projectRootPath && rootPath) {
+        group.projectRootPath = rootPath
       }
       group.sessions.push(session)
     }
@@ -106,223 +121,345 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
   }, [sessions])
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-foreground">
-      <div className="px-3 pb-2 pt-3">
-        <button
-          type="button"
-          className="group flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-accent"
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex size-5 shrink-0 items-center justify-center rounded bg-emerald-900/50 text-xs">
-              🌿
-            </div>
-            <span className="truncate text-sm font-semibold text-foreground">
-              {workspaceName}
-            </span>
-          </div>
-          <ChevronDown className="size-3.5 text-muted-foreground" />
-        </button>
-      </div>
+    <div
+      className="flex h-full flex-col bg-sidebar text-base text-foreground"
+      data-testid="session-rail"
+    >
+      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-1.5">
+        <ul data-rail-list="true" className="flex min-h-full flex-col gap-1">
+          <li>
+            <RailRow
+              icon={<SquarePen className="size-3.5" />}
+              label="New chat"
+              onClick={onNavigate}
+              to="/"
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+            />
+          </li>
+          <li>
+            <RailRow
+              icon={<Search className="size-3.5" />}
+              label="Search"
+              onClick={onOpenSearch}
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+              right={
+                <span className="workspace-kbd text-base opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
+                  ⌘K
+                </span>
+              }
+            />
+          </li>
+          <li>
+            <RailRow
+              icon={<Grid2x2 className="size-3.5" />}
+              label="Skills & Apps"
+              interactive
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+            />
+          </li>
+          <li>
+            <RailRow
+              icon={<FolderPlus className="size-3.5" />}
+              label="New project"
+              onClick={() => {
+                onNavigate?.()
+                openProjectPicker()
+              }}
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+            />
+          </li>
+          <li>
+            <RailRow
+              icon={<Settings className="size-3.5" />}
+              label="Settings"
+              onClick={onNavigate}
+              to="/settings"
+              className="text-muted-foreground hover:bg-accent hover:text-foreground"
+            />
+          </li>
 
-      <div className="space-y-1 px-3 pb-3">
-        <RailAction
-          active={location.pathname === "/"}
-          icon={SquarePen}
-          label="New chat"
-          onClick={onNavigate}
-          to="/"
-        />
-        <button
-          type="button"
-          onClick={onOpenSearch}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
-        >
-          <Search className="size-3.5 shrink-0" />
-          <span className="flex-1 text-left">Search</span>
-          <span className="workspace-kbd">⌘K</span>
-        </button>
-        <RailAction icon={Grid2x2} label="Skills & Apps" />
-      </div>
+          <li className="h-3" aria-hidden="true" />
 
-      <div className="mx-3 mb-1 h-px bg-border" />
+          <li>
+            <RailRow
+              icon={null}
+              label="Projects"
+              onClick={() => setProjectsCollapsed((current) => !current)}
+              asDivInteractive
+              reserveIconSpace={false}
+              labelFill={false}
+              labelClassName="select-none text-sm font-medium tracking-tight text-muted-foreground/80 uppercase"
+              className="text-sm text-muted-foreground"
+              right={
+                <ChevronDown
+                  className={cn(
+                    "size-3 transition-transform",
+                    projectsCollapsed ? "-rotate-90" : "rotate-0"
+                  )}
+                />
+              }
+            />
+          </li>
 
-      <div className="flex items-center justify-between px-3 pb-1 pt-2">
-        <button
-          type="button"
-          className="flex items-center gap-1.5 rounded text-xs font-semibold uppercase tracking-wider text-muted-foreground transition hover:text-muted-foreground"
-        >
-          <FolderOpen className="size-3" />
-          <span>Threads</span>
-        </button>
-        <div className="flex items-center gap-0.5">
-          <ThreadHeaderButton onClick={onNavigate} title="New thread" to="/">
-            <SquarePen className="size-3" />
-          </ThreadHeaderButton>
-          <ThreadHeaderButton title="Sort">
-            <ArrowUpDown className="size-3" />
-          </ThreadHeaderButton>
-          <ThreadHeaderButton
-            title="Add new project"
-            onClick={() => {
-              onNavigate?.()
-              openProjectPicker()
-            }}
-          >
-            <FolderPlus className="size-3" />
-          </ThreadHeaderButton>
-        </div>
-      </div>
+          {isLoading ? (
+            <li>
+              <RailRow
+                icon={null}
+                label="Loading threads..."
+                labelClassName="text-sm text-muted-foreground"
+              />
+            </li>
+          ) : null}
 
-      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {isLoading ? (
-          <div className="px-3 py-3 text-xs text-muted-foreground">
-            Loading threads...
-          </div>
-        ) : null}
+          {isError ? (
+            <li>
+              <RailRow
+                icon={null}
+                label="The shell is ready. Session data will appear when the backend responds."
+                labelClassName="text-sm text-muted-foreground"
+              />
+            </li>
+          ) : null}
 
-        {isError ? (
-          <div className="px-3 py-3 text-xs leading-5 text-muted-foreground">
-            The shell is ready. Session data will appear when the backend responds.
-          </div>
-        ) : null}
+          {!isLoading && !isError && groupedSessions.length === 0 ? (
+            <li>
+              <RailRow
+                icon={null}
+                label="No threads yet. Open a repo and continue from the same workspace."
+                labelClassName="text-sm text-muted-foreground"
+              />
+            </li>
+          ) : null}
 
-        {!isLoading && !isError && groupedSessions.length === 0 ? (
-          <div className="px-3 py-3 text-xs leading-5 text-muted-foreground">
-            No threads yet. Open a repo and continue from the same workspace.
-          </div>
-        ) : null}
-
-        {groupedSessions.map((group) => (
-          <div key={group.projectId} className="mt-2 first:mt-1">
-            <div className="mb-0.5 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-              {group.projectName}
-            </div>
-            <div className="border-l border-border pl-3">
-              {group.sessions.map((session) => {
-                const updatedAt = timestampToDate(session.updatedAt)
-                const status = formatSessionStatus(session.status).toLowerCase()
-
-                return (
-                  <NavLink
-                    key={session.id}
-                    to={`/sessions/${session.id}`}
-                    onClick={onNavigate}
-                    className={({ isActive }) =>
-                      cn(
-                        "mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition",
-                        isActive
-                          ? "bg-accent text-foreground"
-                          : "text-foreground/80 hover:bg-muted"
-                      )
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <span
-                          className={cn("size-1.5 shrink-0 rounded-full", sessionDot(status))}
-                        />
-                        <span
-                          className={cn(
-                            "min-w-0 flex-1 truncate text-sm",
-                            isActive ? "font-medium" : ""
-                          )}
+          {projectsCollapsed
+            ? null
+            : groupedSessions.map((group) => (
+                <Fragment key={group.projectId || group.projectName}>
+                  <li>
+                    <RailRow
+                      asDivInteractive
+                      icon={<FolderOpen className="size-3.5" />}
+                      label={group.projectName}
+                      title={group.projectRootPath || group.projectName}
+                      onClick={() =>
+                        setCollapsedProjectIds((current) => ({
+                          ...current,
+                          [group.projectId || group.projectName]:
+                            !current[group.projectId || group.projectName],
+                        }))
+                      }
+                      right={
+                        <button
+                          type="button"
+                          title={`New thread in ${group.projectName}`}
+                          className="flex size-5 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onNavigate?.()
+                            navigate({
+                              pathname: "/",
+                              search: group.projectId
+                                ? `?projectId=${encodeURIComponent(group.projectId)}`
+                                : "",
+                            })
+                          }}
                         >
-                          {session.title || "Untitled thread"}
-                        </span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {formatRelativeTime(updatedAt)}
-                        </span>
-                      </>
-                    )}
-                  </NavLink>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+                          <SquarePen className="size-3" />
+                        </button>
+                      }
+                      rightClassName="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                      labelClassName="truncate whitespace-nowrap text-sm font-medium tracking-tight text-foreground/80 uppercase"
+                      className="text-sm hover:bg-accent/60 hover:text-foreground"
+                      ariaExpanded={
+                        !collapsedProjectIds[
+                          group.projectId || group.projectName
+                        ]
+                      }
+                    />
+                  </li>
+                  {collapsedProjectIds[group.projectId || group.projectName]
+                    ? null
+                    : group.sessions.map((session) => {
+                        const updatedAt = timestampToDate(session.updatedAt)
+                        const status = formatSessionStatus(
+                          session.status
+                        ).toLowerCase()
 
-      <div className="border-t border-border px-3 py-2">
-        <Link
-          to="/settings"
-          onClick={onNavigate}
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
-        >
-          <Settings className="size-3.5" />
-          <span>Settings</span>
-        </Link>
+                        return (
+                          <li key={session.id}>
+                            <RailRow
+                              icon={
+                                status === "running" ? (
+                                  <LoaderCircle className="size-3.5 animate-spin text-muted-foreground" />
+                                ) : (
+                                  <span
+                                    className={cn(
+                                      "size-1.5 rounded-full",
+                                      sessionDot(status)
+                                    )}
+                                  />
+                                )
+                              }
+                              label={session.title || "Untitled thread"}
+                              onClick={onNavigate}
+                              to={`/sessions/${session.id}`}
+                              labelClassName="truncate"
+                              right={
+                                <span className="text-sm text-muted-foreground">
+                                  {formatRelativeTime(updatedAt)}
+                                </span>
+                              }
+                              className="text-sm text-foreground/80 hover:bg-muted hover:text-foreground"
+                              activeClassName="bg-accent text-foreground"
+                              nav
+                            />
+                          </li>
+                        )
+                      })}
+                </Fragment>
+              ))}
+        </ul>
       </div>
     </div>
   )
 }
 
-function RailAction({
-  active = false,
-  icon: Icon,
+function RailRow({
+  activeClassName,
+  ariaExpanded,
+  asDivInteractive = false,
+  className,
+  fullWidth = true,
+  icon,
+  interactive = false,
   label,
+  labelFill = true,
+  labelClassName,
+  nav = false,
   onClick,
-  to,
-}: {
-  active?: boolean
-  icon: typeof Search
-  label: string
-  onClick?: () => void
-  to?: string
-}) {
-  const className = cn(
-    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition",
-    active
-      ? "border border-ws-border-strong bg-secondary text-foreground"
-      : "text-muted-foreground hover:bg-accent"
-  )
-
-  const content = (
-    <>
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-      <span>{label}</span>
-    </>
-  )
-
-  if (to) {
-    return (
-      <Link to={to} onClick={onClick} className={className}>
-        {content}
-      </Link>
-    )
-  }
-
-  return (
-    <button type="button" onClick={onClick} className={className}>
-      {content}
-    </button>
-  )
-}
-
-function ThreadHeaderButton({
-  children,
-  onClick,
+  right,
+  rightClassName,
+  reserveIconSpace = true,
   title,
   to,
 }: {
-  children: ReactNode
+  activeClassName?: string
+  ariaExpanded?: boolean
+  asDivInteractive?: boolean
+  className?: string
+  fullWidth?: boolean
+  icon: ReactNode
+  interactive?: boolean
+  label: ReactNode
+  labelFill?: boolean
+  labelClassName?: string
+  nav?: boolean
   onClick?: () => void
-  title: string
+  right?: ReactNode
+  rightClassName?: string
+  reserveIconSpace?: boolean
+  title?: string
   to?: string
 }) {
-  const className =
-    "flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
+  const isInteractive =
+    interactive || Boolean(to || onClick || ariaExpanded !== undefined)
+  const rowClassName = cn(
+    "group flex items-center gap-2.5 rounded-md px-3 py-1 text-left text-base leading-5 transition",
+    fullWidth ? "w-full" : "w-fit",
+    isInteractive ? "cursor-pointer" : undefined,
+    className
+  )
+
+  const content = (currentIcon: ReactNode) => (
+    <>
+      {reserveIconSpace ? (
+        <span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground">
+          {currentIcon}
+        </span>
+      ) : null}
+      <span
+        className={cn(
+          "min-w-0",
+          labelFill ? "flex-1" : "shrink-0",
+          labelClassName
+        )}
+      >
+        {label}
+      </span>
+      {right ? (
+        <span className={cn("shrink-0", rightClassName)}>{right}</span>
+      ) : null}
+    </>
+  )
+
+  if (to && nav) {
+    return (
+      <NavLink
+        to={to}
+        onClick={onClick}
+        title={title}
+        data-rail-row="true"
+        className={({ isActive }) =>
+          cn(rowClassName, isActive ? activeClassName : undefined)
+        }
+      >
+        {content(icon)}
+      </NavLink>
+    )
+  }
 
   if (to) {
     return (
-      <Link to={to} onClick={onClick} className={className} title={title}>
-        {children}
+      <Link
+        to={to}
+        onClick={onClick}
+        title={title}
+        data-rail-row="true"
+        className={rowClassName}
+      >
+        {content(icon)}
       </Link>
     )
   }
 
+  if (asDivInteractive && onClick) {
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        data-rail-row="true"
+        className={rowClassName}
+        onClick={onClick}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            onClick()
+          }
+        }}
+      >
+        {content(icon)}
+      </div>
+    )
+  }
+
+  if (onClick || ariaExpanded !== undefined) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        aria-expanded={ariaExpanded}
+        data-rail-row="true"
+        className={rowClassName}
+      >
+        {content(icon)}
+      </button>
+    )
+  }
+
   return (
-    <button type="button" onClick={onClick} className={className} title={title}>
-      {children}
-    </button>
+    <div data-rail-row="true" className={rowClassName}>
+      {content(icon)}
+    </div>
   )
 }
