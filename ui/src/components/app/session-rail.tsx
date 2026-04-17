@@ -194,7 +194,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
 
         {groupedSessions.map((group) => (
           <div key={group.projectId} className="mt-2 first:mt-1">
-            <div className="mb-0.5 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            <div className="mb-0.5 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
               {group.projectName}
             </div>
             <div className="border-l border-border pl-3">
