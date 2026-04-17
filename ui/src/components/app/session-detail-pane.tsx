@@ -552,21 +552,12 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
           ) : null}
         </button>
         {expanded ? (
-          <ChevronDown className="size-3" />
-        ) : (
-          <ChevronRight className="size-3" />
-        )}
-        <span className="font-medium">{label}</span>
-        {!expanded && preview ? (
-          <span className="truncate text-muted-foreground">— {preview}</span>
+          <SessionRichText
+            text={item.body}
+            className="mt-2 text-foreground/70"
+          />
         ) : null}
-      </button>
-      {expanded ? (
-        <SessionRichText
-          text={item.body}
-          className="mt-2 text-foreground/70"
-        />
-      ) : null}
+      </div>
     </div>
   )
 }
@@ -594,17 +585,11 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
           <span className="font-medium">{label}</span>
         </button>
         {expanded ? (
-          <ChevronDown className="size-3" />
-        ) : (
-          <ChevronRight className="size-3" />
-        )}
-        <span className="font-medium">{label}</span>
-      </button>
-      {expanded ? (
-        <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
-          {item.body}
-        </pre>
-      ) : null}
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+            {item.body}
+          </pre>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -629,17 +614,11 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
           <span className="font-medium">{label}</span>
         </button>
         {expanded ? (
-          <ChevronDown className="size-3" />
-        ) : (
-          <ChevronRight className="size-3" />
-        )}
-        <span className="font-medium">{label}</span>
-      </button>
-      {expanded ? (
-        <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
-          {item.body}
-        </pre>
-      ) : null}
+          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+            {item.body}
+          </pre>
+        ) : null}
+      </div>
     </div>
   )
 }
