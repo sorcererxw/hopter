@@ -142,17 +142,17 @@ export function SessionInspectorPane({
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
         {activeTab === "summary" ? (
           <div className="space-y-4 p-4">
-            <div className="rounded-2xl border border-border bg-card">
-              <div className="border-b border-border px-4 py-3 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-border bg-card">
+              <div className="border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
                 Current state
               </div>
               <SessionRichText
                 text={session.summary || "No summary yet."}
-                className="space-y-3 px-4 py-4 text-sm leading-7 text-foreground"
+                className="px-4 py-4 text-sm leading-6"
               />
             </div>
 
-            <div className="rounded-2xl border border-border bg-card">
+            <div className="rounded-lg border border-border bg-card">
               <InfoRow label="Status" value={formatSessionStatus(session.status)} />
               <InfoRow label="Project" value={session.project?.name || "Unassigned"} />
               <InfoRow label="Updated" value={formatUpdatedAt(session.updatedAt)} />
@@ -195,10 +195,10 @@ function CodeModePane({ session }: { session: Session }) {
           key={`${line}-${index}`}
           className="flex items-start px-0 transition hover:bg-muted"
         >
-          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-5 text-muted-foreground">
+          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-6 text-muted-foreground">
             {index + 1}
           </div>
-          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-xs leading-5 text-foreground">
+          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-sm leading-6 text-foreground">
             {tokenizeLine(line)}
           </pre>
         </div>
@@ -215,7 +215,7 @@ function DiffModePane({ session }: { session: Session }) {
   if (changedArtifacts.length === 0) {
     return (
       <div className="p-4">
-        <div className="rounded-2xl border border-dashed border-border bg-muted px-4 py-5 text-xs leading-6 text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
           No changed-files artifact yet. When the backend emits file changes or review metadata,
           the diff view will render them here.
         </div>
@@ -228,7 +228,7 @@ function DiffModePane({ session }: { session: Session }) {
       {changedArtifacts.map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-2xl border border-border bg-card px-4 py-4"
+          className="rounded-lg border border-border bg-card px-4 py-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -278,10 +278,10 @@ function InspectorTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "truncate rounded-md px-3 py-1.5 text-xs transition",
+        "truncate rounded-md px-3 py-1.5 text-sm transition",
         active
           ? "border-b border-ws-code bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-muted-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
       )}
     >
       {children}
@@ -303,10 +303,10 @@ function ModeButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md px-2.5 py-1 text-xs transition",
+        "rounded-md px-2.5 py-1 text-sm transition",
         active
           ? "bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-muted-foreground"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
       )}
     >
       {children}
@@ -325,13 +325,13 @@ function InfoRow({
 }) {
   return (
     <div className="border-b border-border px-4 py-3 last:border-b-0">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
       <p
         className={cn(
-          "mt-2 text-sm text-foreground",
-          multiline ? "leading-7" : "truncate"
+          "mt-1.5 text-sm leading-6 text-foreground",
+          multiline ? "" : "truncate"
         )}
       >
         {value}

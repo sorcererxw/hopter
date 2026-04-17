@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom"
 
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
-import { formatBackendKey, formatSessionStatus, timestampToDate } from "@/lib/format/proto"
+import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 
@@ -54,23 +54,6 @@ function sessionDot(status: string) {
   }
 }
 
-function projectFolderName(rootPath?: string, fallbackName?: string) {
-  const normalized = rootPath?.trim()
-  if (normalized) {
-    const segments = normalized.split(/[/\\]+/).filter(Boolean)
-    const lastSegment = segments.at(-1)
-    if (lastSegment) {
-      return lastSegment
-    }
-  }
-
-  return fallbackName || "Unassigned project"
-}
-
-function projectFolderPath(rootPath?: string, fallbackName?: string) {
-  return rootPath?.trim() || fallbackName || "Unassigned project"
-}
-
 type SessionRailProps = {
   onNavigate?: () => void
   onOpenSearch: () => void
@@ -95,20 +78,32 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     sessions?.[0]?.project?.name ||
     "workspace"
 
-  const visibleSessions = useMemo(() => {
-    const projectId = activeSession?.project?.id || projects?.[0]?.id
-    const filtered = (sessions ?? []).filter((session) =>
-      projectId ? session.project?.id === projectId : true
-    )
-
-    return [...filtered]
+  const groupedSessions = useMemo(() => {
+    const sorted = [...(sessions ?? [])]
       .sort((left, right) => {
         const leftDate = timestampToDate(left.updatedAt)
         const rightDate = timestampToDate(right.updatedAt)
         return sessionWeight(rightDate) - sessionWeight(leftDate)
       })
-      .slice(0, 14)
-  }, [activeSession?.project?.id, projects, sessions])
+      .slice(0, 30)
+
+    const groups: { projectId: string; projectName: string; sessions: typeof sorted }[] = []
+    const groupMap = new Map<string, typeof groups[number]>()
+
+    for (const session of sorted) {
+      const pid = session.project?.id || ""
+      const pname = session.project?.name || "Unassigned"
+      let group = groupMap.get(pid)
+      if (!group) {
+        group = { projectId: pid, projectName: pname, sessions: [] }
+        groupMap.set(pid, group)
+        groups.push(group)
+      }
+      group.sessions.push(session)
+    }
+
+    return groups
+  }, [sessions])
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-foreground">
@@ -191,98 +186,60 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           </div>
         ) : null}
 
-        {!isLoading && !isError && visibleSessions.length === 0 ? (
+        {!isLoading && !isError && groupedSessions.length === 0 ? (
           <div className="px-3 py-3 text-xs leading-5 text-muted-foreground">
             No threads yet. Open a repo and continue from the same workspace.
           </div>
         ) : null}
 
-        {visibleSessions.length > 0 ? (
-          <div className="mt-1 border-l border-border pl-3">
-            {visibleSessions.map((session) => {
-              const updatedAt = timestampToDate(session.updatedAt)
-              const status = formatSessionStatus(session.status).toLowerCase()
-              const folderName = projectFolderName(session.project?.rootPath, session.project?.name)
-              const folderPath = projectFolderPath(session.project?.rootPath, session.project?.name)
+        {groupedSessions.map((group) => (
+          <div key={group.projectId} className="mt-2 first:mt-1">
+            <div className="mb-0.5 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+              {group.projectName}
+            </div>
+            <div className="border-l border-border pl-3">
+              {group.sessions.map((session) => {
+                const updatedAt = timestampToDate(session.updatedAt)
+                const status = formatSessionStatus(session.status).toLowerCase()
 
-              return (
-                <NavLink
-                  key={session.id}
-                  to={`/sessions/${session.id}`}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    cn(
-                      "mb-1 flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition",
-                      isActive
-                        ? "border-ws-border-strong bg-accent"
-                        : "border-transparent hover:bg-muted"
-                    )
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <span
-                        className={cn("mt-[0.35rem] size-1.5 shrink-0 rounded-full", sessionDot(status))}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div
+                return (
+                  <NavLink
+                    key={session.id}
+                    to={`/sessions/${session.id}`}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      cn(
+                        "mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition",
+                        isActive
+                          ? "bg-accent text-foreground"
+                          : "text-foreground/80 hover:bg-muted"
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span
+                          className={cn("size-1.5 shrink-0 rounded-full", sessionDot(status))}
+                        />
+                        <span
                           className={cn(
-                            "flex items-center gap-1.5 truncate text-xs font-medium",
-                            isActive
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          )}
-                          title={folderPath}
-                        >
-                          <FolderOpen className="size-3 shrink-0" />
-                          <span className="truncate">{folderName}</span>
-                        </div>
-                        <p
-                          className={cn(
-                            "mt-1 truncate text-sm",
-                            isActive
-                              ? "text-foreground"
-                              : "text-muted-foreground"
+                            "min-w-0 flex-1 truncate text-sm",
+                            isActive ? "font-medium" : ""
                           )}
                         >
                           {session.title || "Untitled thread"}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="inline-flex rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.04em] text-[var(--workspace-text-muted)]">
-                            {formatBackendKey(session.backendKey)}
-                          </span>
-                        </div>
-                        <p
-                          className={cn(
-                            "mt-1 truncate font-mono text-xs",
-                            isActive
-                              ? "text-muted-foreground"
-                              : "text-muted-foreground"
-                          )}
-                          title={folderPath}
-                        >
-                          {folderPath}
-                        </p>
-                        <div
-                          className={cn(
-                            "mt-1 flex items-center gap-2 text-xs",
-                            isActive
-                              ? "text-muted-foreground"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          <span className="truncate">{status}</span>
-                          <span>•</span>
-                          <span className="shrink-0">{formatRelativeTime(updatedAt)}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </NavLink>
-              )
-            })}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {formatRelativeTime(updatedAt)}
+                        </span>
+                      </>
+                    )}
+                  </NavLink>
+                )
+              })}
+            </div>
           </div>
-        ) : null}
+        ))}
       </div>
 
       <div className="border-t border-border px-3 py-2">

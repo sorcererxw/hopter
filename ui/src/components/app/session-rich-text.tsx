@@ -1,5 +1,7 @@
 import { Fragment } from "react"
 
+import { cn } from "@/lib/utils"
+
 type SessionRichTextProps = {
   text: string
   className?: string
@@ -11,17 +13,28 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
     .map((block) => block.trim())
     .filter(Boolean)
 
+  const isLongForm = blocks.length > 3
+
   return (
-    <div className={className}>
+    <div
+      className={cn(
+        "text-base leading-7 text-foreground",
+        isLongForm ? "space-y-4" : "space-y-2.5",
+        className
+      )}
+    >
       {blocks.map((block, index) => {
         const lines = block.split("\n").map((line) => line.trimEnd())
         const isList = lines.every((line) => /^[-*]\s+/.test(line))
 
+        // Detect heading-like lead lines: "Status:", "Next:", etc.
+        const isLeadIn = /^[A-Z][A-Za-z\s]+:/.test(block) && lines.length === 1
+
         if (isList) {
           return (
-            <ul key={`${block}-${index}`} className="space-y-2 pl-5">
+            <ul key={`${block.slice(0, 32)}-${index}`} className="space-y-1.5 pl-5">
               {lines.map((line, itemIndex) => (
-                <li key={`${line}-${itemIndex}`} className="list-disc">
+                <li key={`${line.slice(0, 32)}-${itemIndex}`} className="list-disc text-foreground">
                   {renderInline(line.replace(/^[-*]\s+/, ""))}
                 </li>
               ))}
@@ -29,7 +42,23 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
           )
         }
 
-        return <p key={`${block}-${index}`}>{renderInline(block)}</p>
+        if (isLeadIn) {
+          const colonIndex = block.indexOf(":")
+          const label = block.slice(0, colonIndex)
+          const rest = block.slice(colonIndex + 1).trim()
+          return (
+            <p key={`${block.slice(0, 32)}-${index}`}>
+              <span className="font-semibold text-foreground">{label}:</span>
+              {rest ? <> {renderInline(rest)}</> : null}
+            </p>
+          )
+        }
+
+        return (
+          <p key={`${block.slice(0, 32)}-${index}`}>
+            {renderInline(block)}
+          </p>
+        )
       })}
     </div>
   )
@@ -42,7 +71,7 @@ function renderInline(text: string) {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong
-          key={`${part}-${index}`}
+          key={`${part.slice(0, 16)}-${index}`}
           className="font-semibold text-foreground"
         >
           {part.slice(2, -2)}
@@ -52,7 +81,10 @@ function renderInline(text: string) {
 
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={`${part}-${index}`} className="workspace-inline-code font-mono text-[0.92em]">
+        <code
+          key={`${part.slice(0, 16)}-${index}`}
+          className="workspace-inline-code font-mono text-[0.92em]"
+        >
           {part.slice(1, -1)}
         </code>
       )
@@ -66,7 +98,7 @@ function renderInline(text: string) {
       if (isWeb) {
         return (
           <a
-            key={`${part}-${index}`}
+            key={`${part.slice(0, 16)}-${index}`}
             href={href}
             target="_blank"
             rel="noreferrer"
@@ -78,12 +110,16 @@ function renderInline(text: string) {
       }
 
       return (
-        <span key={`${part}-${index}`} title={href} className="workspace-inline-code font-mono text-[0.92em]">
+        <span
+          key={`${part.slice(0, 16)}-${index}`}
+          title={href}
+          className="workspace-inline-code font-mono text-[0.92em]"
+        >
           {label}
         </span>
       )
     }
 
-    return <Fragment key={`${part}-${index}`}>{part}</Fragment>
+    return <Fragment key={`${part.slice(0, 16)}-${index}`}>{part}</Fragment>
   })
 }
