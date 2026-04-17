@@ -451,7 +451,7 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
 
 function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-agent">
       <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-accent">
         <Bot className="size-3.5 text-foreground/60" />
       </div>
@@ -468,7 +468,7 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
   const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-reasoning">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
         <Lightbulb className="size-3.5 text-foreground/50" />
       </div>
@@ -504,7 +504,7 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Tool call"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-tool">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
         <Wrench className="size-3.5 text-foreground/50" />
       </div>
@@ -536,7 +536,7 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "Command"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-command">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
         <Terminal className="size-3.5 text-foreground/50" />
       </div>
@@ -568,7 +568,7 @@ function FileChangeEntry({ item }: { item: SessionTranscriptItem }) {
   const label = item.title || "File change"
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3" data-testid="session-transcript-file-change">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
         <FileCode className="size-3.5 text-foreground/50" />
       </div>

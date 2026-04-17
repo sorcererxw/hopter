@@ -65,7 +65,8 @@ function buildSessionResponse(state: "initial" | "afterFollowup") {
             id: "agent-2",
             kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
             title: "Codex",
-            body: "Captured command output and updated the session transcript.",
+            body:
+              "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
             status: "",
           },
         ]
@@ -253,6 +254,16 @@ async function main() {
       .filter({ hasText: "Captured command output and updated the session transcript." })
       .waitFor()
 
+    const codeBlock = page
+      .locator("pre")
+      .filter({
+        hasText:
+          "Please make another follow-up pass on the workspace UI implementation in this repo root:",
+      })
+      .first()
+    await codeBlock.waitFor()
+    await codeBlock.getByText("Please make another follow-up pass on the workspace UI implementation in this repo root:").waitFor()
+
     await page.screenshot({
       fullPage: true,
       path: path.join(run.rootDir, "session-followup.png"),
@@ -262,6 +273,11 @@ async function main() {
       name: "follow-up transcript render",
       status: "pass",
       detail: "follow-up input appended user, command, and agent transcript entries",
+    })
+    checks.push({
+      name: "fenced code block render",
+      status: "pass",
+      detail: "agent markdown fence rendered as a local preformatted code block",
     })
   } catch (error) {
     checks.push({
