@@ -50,6 +50,22 @@ export function WorkspaceTopbar({
     }
   }, [])
 
+  useEffect(() => {
+    if (!overflowOpen && !commitOpen) {
+      return undefined
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOverflowOpen(false)
+        setCommitOpen(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [overflowOpen, commitOpen])
+
   const handleCopySessionId = useCallback(() => {
     if (!sessionId) {
       return
@@ -103,11 +119,6 @@ export function WorkspaceTopbar({
                 aria-hidden="true"
                 className="fixed inset-0 z-40"
                 onClick={() => setOverflowOpen(false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setOverflowOpen(false)
-                  }
-                }}
               />
               <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
                 {showReview ? (
@@ -193,11 +204,6 @@ export function WorkspaceTopbar({
                 aria-hidden="true"
                 className="fixed inset-0 z-40"
                 onClick={() => setOverflowOpen(false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    setOverflowOpen(false)
-                  }
-                }}
               />
               <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
                 {sessionId ? (
@@ -231,11 +237,6 @@ export function WorkspaceTopbar({
                   aria-hidden="true"
                   className="fixed inset-0 z-40"
                   onClick={() => setCommitOpen(false)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      setCommitOpen(false)
-                    }
-                  }}
                 />
                 <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
                   <CommitMenuItem

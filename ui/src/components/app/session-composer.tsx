@@ -4,6 +4,9 @@ import { ArrowUp, Check, ChevronDown, LoaderCircle, Mic, Plus } from "lucide-rea
 import { BottomSheet, BottomSheetItem } from "@/components/app/bottom-sheet"
 import { cn } from "@/lib/utils"
 
+/** Matches Tailwind `md` breakpoint (768px) */
+const MD_BREAKPOINT = 768
+
 const MODEL_OPTIONS = [
   { label: "GPT-5.4", value: "gpt-5.4" },
   { label: "o3", value: "o3" },
@@ -114,7 +117,7 @@ export function SessionComposer({
                   }}
                   onTouchEnd={(event) => {
                     // Phone: open bottom sheet instead
-                    if (window.innerWidth < 768) {
+                    if (window.innerWidth < MD_BREAKPOINT) {
                       event.preventDefault()
                       setModelSheetOpen(true)
                       setModelMenuOpen(false)
@@ -155,7 +158,7 @@ export function SessionComposer({
                     setReasoningMenuOpen((prev) => !prev)
                   }}
                   onTouchEnd={(event) => {
-                    if (window.innerWidth < 768) {
+                    if (window.innerWidth < MD_BREAKPOINT) {
                       event.preventDefault()
                       setReasoningSheetOpen(true)
                       setReasoningMenuOpen(false)
