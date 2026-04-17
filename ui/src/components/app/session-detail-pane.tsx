@@ -278,6 +278,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         normalizeTranscriptText(item.body).startsWith(normalizedHint)
     )
   }, [session, transcriptItems])
+  const shouldShowWorkingStatus = Boolean(
+    optimisticPendingInput ||
+      sendInput.isPending ||
+      (session && shouldShowThinkingState(session.status))
+  )
   useEffect(() => {
     if (!optimisticPendingInput) {
       return
@@ -318,16 +323,29 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       })
     }
 
-    if (session && shouldShowThinkingState(session.status)) {
+    if (session && shouldShowWorkingStatus) {
+      const localRoundInFlight = sendInput.isPending || Boolean(optimisticPendingInput)
       items.push({
         kind: "thinking" as const,
         key: "thinking",
-        summary: session.summary?.trim() || "Codex is thinking…",
+        summary:
+          localRoundInFlight
+            ? "Codex is working on your latest message…"
+            : session.summary?.trim() || "Codex is thinking…",
+      })
+    } else if (session) {
+      items.push({
+        kind: "round-status" as const,
+        key: "round-status",
+        state: shouldShowAttentionState(session.status) ? "attention" : "finished",
+        summary: shouldShowAttentionState(session.status)
+          ? session.attentionReason?.trim() || "This round needs attention."
+          : "This round has finished.",
       })
     }
 
     return items
-  }, [optimisticPendingInput, session, showPendingInputHint, transcriptItems])
+  }, [optimisticPendingInput, sendInput.isPending, session, shouldShowWorkingStatus, showPendingInputHint, transcriptItems])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
   const hasMoreBefore =
@@ -752,6 +770,12 @@ type ActivityItem =
     }
   | {
       key: string
+      kind: "round-status"
+      state: "finished" | "attention"
+      summary: string
+    }
+  | {
+      key: string
       kind: "pending-input"
       text: string
     }
@@ -765,6 +789,12 @@ type TimelineItem =
   | {
       key: string
       kind: "thinking"
+      summary: string
+    }
+  | {
+      key: string
+      kind: "round-status"
+      state: "finished" | "attention"
       summary: string
     }
   | {
@@ -786,6 +816,11 @@ type TimelineItem =
       items: SessionTranscriptItem[]
       key: string
       kind: "tool-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "thought-group"
     }
 
 function isTranscriptActivityItem(
@@ -829,6 +864,14 @@ function TranscriptTimeline({
             )
           case "thinking":
             return <ThinkingEntry key={item.key} summary={item.summary} />
+          case "round-status":
+            return (
+              <RoundStatusEntry
+                key={item.key}
+                state={item.state}
+                summary={item.summary}
+              />
+            )
           case "pending-input":
             return <PendingInputEntry key={item.key} text={item.text} />
           case "command-group":
@@ -843,6 +886,15 @@ function TranscriptTimeline({
             )
           case "tool-group":
             return <ToolGroupEntry key={item.key} items={item.items} />
+          case "thought-group":
+            return (
+              <ThoughtProcessGroupEntry
+                key={item.key}
+                items={item.items}
+                onSelectDiff={onSelectDiff}
+                onSelectPath={onSelectPath}
+              />
+            )
         }
       })}
     </div>
@@ -892,6 +944,38 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
       timelineItems.push(current)
       cursor += 1
       continue
+    }
+
+    if (isThoughtProcessTranscriptItem(current.item)) {
+      const thoughtItems: SessionTranscriptItem[] = [current.item]
+      let next = cursor + 1
+      while (next < items.length) {
+        const candidate = items[next]
+        if (
+          !isTranscriptActivityItem(candidate) ||
+          !isThoughtProcessTranscriptItem(candidate.item)
+        ) {
+          break
+        }
+        thoughtItems.push(candidate.item)
+        next += 1
+      }
+
+      const previousItem = cursor > 0 ? items[cursor - 1] : null
+      if (
+        previousItem &&
+        previousItem.kind !== "thinking" &&
+        (!isTranscriptActivityItem(previousItem) ||
+          previousItem.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE)
+      ) {
+        timelineItems.push({
+          items: thoughtItems,
+          key: thoughtItems.map((item) => item.id).join(":"),
+          kind: "thought-group",
+        })
+        cursor = next
+        continue
+      }
     }
 
     if (current.item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
@@ -994,6 +1078,30 @@ function ThinkingEntry({ summary }: { summary: string }) {
     <div className="min-w-0" data-testid="session-transcript-thinking">
       <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3">
         <TypingIndicator label={summary} />
+      </div>
+    </div>
+  )
+}
+
+function RoundStatusEntry({
+  state,
+  summary,
+}: {
+  state: "finished" | "attention"
+  summary: string
+}) {
+  return (
+    <div className="min-w-0" data-testid="session-transcript-round-status">
+      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              state === "attention" ? "bg-amber-400" : "bg-sky-400"
+            )}
+          />
+          <span>{summary}</span>
+        </div>
       </div>
     </div>
   )
@@ -1156,6 +1264,39 @@ function ToolGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
   )
 }
 
+function ThoughtProcessGroupEntry({
+  items,
+  onSelectDiff,
+  onSelectPath,
+}: {
+  items: SessionTranscriptItem[]
+  onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectPath: (path: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const summary = summarizeThoughtProcess(items)
+
+  return (
+    <TranscriptBatchEntry
+      expanded={expanded}
+      label={summary}
+      onToggle={() => setExpanded((prev) => !prev)}
+      testId="session-transcript-thought-group"
+    >
+      <div className="space-y-4 border-l border-border pl-4">
+        {items.map((item) => (
+          <TranscriptEntry
+            key={item.id}
+            item={item}
+            onSelectDiff={onSelectDiff}
+            onSelectPath={onSelectPath}
+          />
+        ))}
+      </div>
+    </TranscriptBatchEntry>
+  )
+}
+
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const [expanded, setExpanded] = useState(false)
   const label = item.title || "Command"
@@ -1277,15 +1418,18 @@ function TranscriptBatchEntry({
         <button
           type="button"
           onClick={onToggle}
-          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+          className="group inline-flex max-w-full items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
         >
           <span className="font-medium">{label}</span>
+          <span className="rounded-md border border-border bg-secondary px-2 py-0.5 text-xs text-foreground/85 transition group-hover:bg-accent">
+            {expanded ? "Collapse" : "Expand"}
+          </span>
           <ChevronRight
             className={cn(
               "size-3 shrink-0 transition",
               expanded
                 ? "rotate-90 opacity-100"
-                : "opacity-0 group-hover:opacity-100"
+                : "opacity-60 group-hover:opacity-100"
             )}
           />
         </button>
@@ -1382,6 +1526,57 @@ function normalizeTranscriptText(value: string) {
 function shouldShowThinkingState(status: Session["status"]) {
   const normalized = formatSessionStatus(status).toLowerCase()
   return normalized === "pending" || normalized === "running"
+}
+
+function isThoughtProcessTranscriptItem(item: SessionTranscriptItem) {
+  return (
+    item.kind === SessionTranscriptItemKind.REASONING ||
+    item.kind === SessionTranscriptItemKind.TOOL_CALL ||
+    item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION ||
+    item.kind === SessionTranscriptItemKind.FILE_CHANGE
+  )
+}
+
+function shouldShowAttentionState(status: Session["status"]) {
+  const normalized = formatSessionStatus(status).toLowerCase()
+  return normalized === "failed" || normalized === "degraded"
+}
+
+function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
+  let reasoningCount = 0
+  let toolCount = 0
+  let commandCount = 0
+  let fileChangeCount = 0
+
+  for (const item of items) {
+    switch (item.kind) {
+      case SessionTranscriptItemKind.REASONING:
+        reasoningCount += 1
+        break
+      case SessionTranscriptItemKind.TOOL_CALL:
+        toolCount += 1
+        break
+      case SessionTranscriptItemKind.COMMAND_EXECUTION:
+        commandCount += 1
+        break
+      case SessionTranscriptItemKind.FILE_CHANGE:
+        fileChangeCount += 1
+        break
+    }
+  }
+
+  const parts = [
+    reasoningCount > 0 ? `${reasoningCount} thought${reasoningCount === 1 ? "" : "s"}` : null,
+    toolCount > 0 ? `${toolCount} tool${toolCount === 1 ? "" : "s"}` : null,
+    commandCount > 0 ? `${commandCount} command${commandCount === 1 ? "" : "s"}` : null,
+    fileChangeCount > 0 ? `${fileChangeCount} file change${fileChangeCount === 1 ? "" : "s"}` : null,
+  ].filter(Boolean)
+
+  if (parts.length === 0) {
+    return "Thought process"
+  }
+
+  return `Thought process: ${parts.join(", ")}`
 }
 
 function TypingIndicator({ label = "Thinking..." }: { label?: string }) {
