@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom"
 
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
-import { formatBackendKey, formatSessionStatus, timestampToDate } from "@/lib/format/proto"
+import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 
@@ -52,23 +52,6 @@ function sessionDot(status: string) {
     default:
       return "bg-primary-muted/70"
   }
-}
-
-function projectFolderName(rootPath?: string, fallbackName?: string) {
-  const normalized = rootPath?.trim()
-  if (normalized) {
-    const segments = normalized.split(/[/\\]+/).filter(Boolean)
-    const lastSegment = segments.at(-1)
-    if (lastSegment) {
-      return lastSegment
-    }
-  }
-
-  return fallbackName || "Unassigned project"
-}
-
-function projectFolderPath(rootPath?: string, fallbackName?: string) {
-  return rootPath?.trim() || fallbackName || "Unassigned project"
 }
 
 type SessionRailProps = {
@@ -202,8 +185,6 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
             {visibleSessions.map((session) => {
               const updatedAt = timestampToDate(session.updatedAt)
               const status = formatSessionStatus(session.status).toLowerCase()
-              const folderName = projectFolderName(session.project?.rootPath, session.project?.name)
-              const folderPath = projectFolderPath(session.project?.rootPath, session.project?.name)
 
               return (
                 <NavLink
@@ -212,70 +193,29 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     cn(
-                      "mb-1 flex items-start gap-2 rounded-lg border px-3 py-2 text-left transition",
+                      "mb-0.5 flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition",
                       isActive
-                        ? "border-ws-border-strong bg-accent"
-                        : "border-transparent hover:bg-muted"
+                        ? "bg-accent text-foreground"
+                        : "text-foreground/80 hover:bg-muted"
                     )
                   }
                 >
                   {({ isActive }) => (
                     <>
                       <span
-                        className={cn("mt-[0.35rem] size-1.5 shrink-0 rounded-full", sessionDot(status))}
+                        className={cn("size-1.5 shrink-0 rounded-full", sessionDot(status))}
                       />
-                      <div className="min-w-0 flex-1">
-                        <div
-                          className={cn(
-                            "flex items-center gap-1.5 truncate text-xs font-medium",
-                            isActive
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          )}
-                          title={folderPath}
-                        >
-                          <FolderOpen className="size-3 shrink-0" />
-                          <span className="truncate">{folderName}</span>
-                        </div>
-                        <p
-                          className={cn(
-                            "mt-1 truncate text-sm",
-                            isActive
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          {session.title || "Untitled thread"}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="inline-flex rounded-md border border-[color:var(--workspace-border)] bg-[var(--workspace-hover-bg-soft)] px-1.5 py-0.5 text-[10px] uppercase tracking-[0.04em] text-[var(--workspace-text-muted)]">
-                            {formatBackendKey(session.backendKey)}
-                          </span>
-                        </div>
-                        <p
-                          className={cn(
-                            "mt-1 truncate font-mono text-xs",
-                            isActive
-                              ? "text-muted-foreground"
-                              : "text-muted-foreground"
-                          )}
-                          title={folderPath}
-                        >
-                          {folderPath}
-                        </p>
-                        <div
-                          className={cn(
-                            "mt-1 flex items-center gap-2 text-xs",
-                            isActive
-                              ? "text-muted-foreground"
-                              : "text-muted-foreground"
-                          )}
-                        >
-                          <span className="truncate">{status}</span>
-                          <span>•</span>
-                          <span className="shrink-0">{formatRelativeTime(updatedAt)}</span>
-                        </div>
-                      </div>
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate text-sm",
+                          isActive ? "font-medium" : ""
+                        )}
+                      >
+                        {session.title || "Untitled thread"}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatRelativeTime(updatedAt)}
+                      </span>
                     </>
                   )}
                 </NavLink>

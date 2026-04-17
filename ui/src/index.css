@@ -203,7 +203,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-base text-foreground antialiased;
   }
 
   body,
@@ -232,6 +232,13 @@
 }
 
 @layer utilities {
+  .composer-foreground {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    background: var(--background);
+  }
+
   .surface-panel {
     background: var(--workspace-surface-bg);
     border: 1px solid var(--workspace-border-strong);

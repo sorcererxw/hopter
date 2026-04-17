@@ -142,17 +142,17 @@ export function SessionInspectorPane({
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
         {activeTab === "summary" ? (
           <div className="space-y-4 p-4">
-            <div className="rounded-2xl border border-border bg-card">
+            <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border px-4 py-3 text-xs text-muted-foreground">
                 Current state
               </div>
               <SessionRichText
                 text={session.summary || "No summary yet."}
-                className="space-y-3 px-4 py-4 text-sm leading-7 text-foreground"
+                className="px-4 py-4"
               />
             </div>
 
-            <div className="rounded-2xl border border-border bg-card">
+            <div className="rounded-lg border border-border bg-card">
               <InfoRow label="Status" value={formatSessionStatus(session.status)} />
               <InfoRow label="Project" value={session.project?.name || "Unassigned"} />
               <InfoRow label="Updated" value={formatUpdatedAt(session.updatedAt)} />
@@ -215,7 +215,7 @@ function DiffModePane({ session }: { session: Session }) {
   if (changedArtifacts.length === 0) {
     return (
       <div className="p-4">
-        <div className="rounded-2xl border border-dashed border-border bg-muted px-4 py-5 text-xs leading-6 text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
           No changed-files artifact yet. When the backend emits file changes or review metadata,
           the diff view will render them here.
         </div>
@@ -228,7 +228,7 @@ function DiffModePane({ session }: { session: Session }) {
       {changedArtifacts.map((artifact) => (
         <div
           key={artifact.id}
-          className="rounded-2xl border border-border bg-card px-4 py-4"
+          className="rounded-lg border border-border bg-card px-4 py-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

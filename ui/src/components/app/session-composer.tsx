@@ -26,9 +26,9 @@ export function SessionComposer({
   placeholder,
   composerTestId,
   inputTestId,
-  projectLabel = "本地",
+  projectLabel = "Local",
   branchLabel = "main",
-  settingsLabel = "自定义 (config.toml)",
+  settingsLabel = "Custom (config.toml)",
   reasoningLabel = "High",
   modelLabel = "GPT-5.4",
   onSubmit,
@@ -47,8 +47,12 @@ export function SessionComposer({
   }
 
   return (
-    <div className="px-3 pb-3 pt-2 md:px-4 md:pb-4" data-testid={composerTestId}>
-      <div className="overflow-hidden rounded-2xl border border-ws-border-strong bg-popover shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+    <div
+      className="composer-foreground px-3 pb-3 pt-2 md:px-4 md:pb-4"
+      data-testid={composerTestId}
+    >
+      <div className="overflow-hidden rounded-lg border border-ws-border-strong bg-popover shadow-lg">
+        {/* Main action row */}
         <div className="px-4 pb-3 pt-3">
           <textarea
             data-testid={inputTestId}
@@ -62,22 +66,22 @@ export function SessionComposer({
               }
             }}
             placeholder={placeholder}
-            className="min-h-14 w-full resize-none bg-transparent text-sm leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground"
+            className="min-h-14 w-full resize-none bg-transparent text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 
         <div className="flex items-center justify-between px-2.5 pb-2.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <GhostIconButton aria-label="Add context">
               <Plus className="size-4" />
             </GhostIconButton>
 
-            <ChipButton>{modelLabel}</ChipButton>
-            <ChipButton>{reasoningLabel}</ChipButton>
+            <GhostTextButton>{modelLabel}</GhostTextButton>
+            <GhostTextButton>{reasoningLabel}</GhostTextButton>
           </div>
 
           <div className="flex items-center gap-2">
-            <GhostIconButton aria-label="Voice input">
+            <GhostIconButton aria-label="Voice input" className="hidden md:flex">
               <Mic className="size-4" />
             </GhostIconButton>
 
@@ -87,7 +91,8 @@ export function SessionComposer({
               disabled={!canSubmit}
               data-testid={submitTestId}
               className={cn(
-                "flex size-8 items-center justify-center rounded-lg transition md:size-7",
+                "flex items-center justify-center rounded-lg transition",
+                "size-9 md:size-8",
                 canSubmit
                   ? "bg-primary text-primary-foreground hover:brightness-110"
                   : "bg-accent text-muted-foreground"
@@ -96,14 +101,15 @@ export function SessionComposer({
               {busy ? (
                 <LoaderCircle className="size-4 animate-spin" />
               ) : (
-                <ArrowUp className="size-3.5" />
+                <ArrowUp className="size-4" />
               )}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1">
+      {/* Lower metadata row – subordinate */}
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 px-1">
         <div className="flex flex-wrap items-center gap-1">
           <MetaButton>{projectLabel}</MetaButton>
           <MetaButton>{branchLabel}</MetaButton>
@@ -117,12 +123,16 @@ export function SessionComposer({
 
 function GhostIconButton({
   children,
+  className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
-      className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-muted-foreground md:size-7"
+      className={cn(
+        "flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground md:size-7",
+        className
+      )}
       {...props}
     >
       {children}
@@ -130,14 +140,14 @@ function GhostIconButton({
   )
 }
 
-function ChipButton({ children }: { children: ReactNode }) {
+function GhostTextButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="workspace-chip inline-flex min-h-8 items-center gap-1 rounded-md px-2.5 text-xs text-muted-foreground transition hover:bg-accent"
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
     >
       {children}
-      <ChevronDown className="size-3 text-muted-foreground" />
+      <ChevronDown className="size-3 opacity-50" />
     </button>
   )
 }
@@ -146,7 +156,7 @@ function MetaButton({ children }: { children: ReactNode }) {
   return (
     <button
       type="button"
-      className="inline-flex items-center rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-muted-foreground"
+      className="inline-flex items-center rounded-md px-2 py-1 text-xs text-ws-text-muted transition hover:bg-muted hover:text-muted-foreground"
     >
       {children}
     </button>

@@ -1,120 +1,209 @@
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import {
+  ArrowLeft,
   ChevronDown,
-  FolderOpen,
-  Menu,
-  MoonStar,
+  Copy,
   MoreHorizontal,
   PanelRight,
-  Play,
-  Rocket,
-  SunMedium,
+  Terminal,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
-import { useTheme } from "@/components/theme-provider"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
 
 type WorkspaceTopbarProps = {
   inspectorOpen?: boolean
-  onOpenProject?: () => void
   onOpenReview?: () => void
   onToggleInspector?: () => void
+  projectName?: string
+  sessionId?: string
   showInspectorToggle?: boolean
   showReview?: boolean
-  tag?: string
   title: string
 }
 
 export function WorkspaceTopbar({
   inspectorOpen = false,
-  onOpenProject,
   onOpenReview,
   onToggleInspector,
+  projectName,
+  sessionId,
   showInspectorToggle = false,
   showReview = false,
-  tag,
   title,
 }: WorkspaceTopbarProps) {
   const { openSidebar } = useWorkspaceShell()
-  const { resolvedTheme, setTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+  const navigate = useNavigate()
+  const [commitOpen, setCommitOpen] = useState(false)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function handleCopySessionId() {
+    if (sessionId) {
+      void navigator.clipboard.writeText(sessionId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }
+    setOverflowOpen(false)
+  }
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5">
+      {/* Phone topbar: back + stacked title + overflow */}
+      <div className="flex min-w-0 items-center gap-2 md:hidden">
         <button
           type="button"
-          onClick={openSidebar}
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-accent hover:text-muted-foreground md:hidden"
+          onClick={() => {
+            openSidebar()
+            navigate("/")
+          }}
+          className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
         >
-          <Menu className="size-4.5" />
+          <ArrowLeft className="size-4.5" />
         </button>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{title}</p>
+          {projectName ? (
+            <p className="truncate text-xs text-muted-foreground">{projectName}</p>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 md:hidden">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setOverflowOpen((prev) => !prev)}
+            className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+          >
+            <MoreHorizontal className="size-4.5" />
+          </button>
+          {overflowOpen ? (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-40"
+                onClick={() => setOverflowOpen(false)}
+              />
+              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={handleCopySessionId}
+                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-foreground transition hover:bg-accent"
+                >
+                  <Copy className="size-3.5" />
+                  <span>{copied ? "Copied!" : "Copy session ID"}</span>
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Large-screen topbar: inline title + project + overflow, right actions */}
+      <div className="hidden min-w-0 items-center gap-2 md:flex">
         <h1 className="truncate text-sm font-medium text-foreground">
           {title}
         </h1>
-        {tag ? (
+        {projectName ? (
+          <span className="truncate text-sm text-muted-foreground">
+            {projectName}
+          </span>
+        ) : null}
+        <div className="relative">
           <button
             type="button"
-            className="workspace-chip hidden max-w-44 truncate rounded-md px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-accent sm:inline-flex"
+            onClick={() => setOverflowOpen((prev) => !prev)}
+            className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
           >
-            {tag}
+            <MoreHorizontal className="size-4" />
           </button>
-        ) : null}
-        <button
-          type="button"
-          className="hidden size-6 items-center justify-center rounded transition hover:bg-accent hover:text-muted-foreground sm:inline-flex text-muted-foreground"
-        >
-          <MoreHorizontal className="size-4" />
-        </button>
+          {overflowOpen ? (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-40"
+                onClick={() => setOverflowOpen(false)}
+              />
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                {sessionId ? (
+                  <button
+                    type="button"
+                    onClick={handleCopySessionId}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                  >
+                    <Copy className="size-3.5" />
+                    <span>{copied ? "Copied!" : "Copy session ID"}</span>
+                  </button>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
-        <TopbarIconButton
-          label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-        >
-          {isDark ? (
-            <SunMedium className="size-3.5" />
-          ) : (
-            <MoonStar className="size-3.5" />
-          )}
-        </TopbarIconButton>
-
-        <TopbarIconButton label="Run">
-          <Play className="size-3.5" />
-        </TopbarIconButton>
-
-        <button
-          type="button"
-          onClick={onOpenProject}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-        >
-          <FolderOpen className="size-3.5 text-muted-foreground" />
-          <span>Open</span>
-        </button>
-
+      <div className="hidden items-center gap-1.5 md:flex">
         {showReview ? (
-          <button
-            type="button"
-            onClick={onOpenReview}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          >
-            <Rocket className="size-3 text-muted-foreground" />
-            <span>Commit</span>
-            <ChevronDown className="size-3 text-muted-foreground" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setCommitOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
+            >
+              <span>Commit</span>
+              <ChevronDown className="size-3 text-muted-foreground" />
+            </button>
+            {commitOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40"
+                  onClick={() => setCommitOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                  <CommitMenuItem
+                    onClick={() => {
+                      setCommitOpen(false)
+                      onOpenReview?.()
+                    }}
+                  >
+                    Commit
+                  </CommitMenuItem>
+                  <CommitMenuItem
+                    onClick={() => {
+                      setCommitOpen(false)
+                      onOpenReview?.()
+                    }}
+                  >
+                    Review
+                  </CommitMenuItem>
+                  <CommitMenuItem
+                    onClick={() => {
+                      setCommitOpen(false)
+                      onOpenReview?.()
+                    }}
+                  >
+                    Commit &amp; Review
+                  </CommitMenuItem>
+                </div>
+              </>
+            ) : null}
+          </div>
         ) : null}
+
+        <TopbarIconButton label="Terminal">
+          <Terminal className="size-3.5" />
+        </TopbarIconButton>
 
         {showInspectorToggle ? (
           <button
             type="button"
             onClick={onToggleInspector}
             className={cn(
-              "inline-flex size-8 items-center justify-center rounded-md border transition",
+              "inline-flex size-8 items-center justify-center rounded-md transition",
               inspectorOpen
-                ? "border-border bg-accent text-foreground"
-                : "border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-muted-foreground"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
             <PanelRight className="size-3.5" />
@@ -122,6 +211,24 @@ export function WorkspaceTopbar({
         ) : null}
       </div>
     </div>
+  )
+}
+
+function CommitMenuItem({
+  children,
+  onClick,
+}: {
+  children: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+    >
+      {children}
+    </button>
   )
 }
 
@@ -140,7 +247,7 @@ function TopbarIconButton({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
+      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
     >
       {children}
     </button>
