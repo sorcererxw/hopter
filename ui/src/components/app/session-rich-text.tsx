@@ -27,7 +27,7 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
   return (
     <div
       className={cn(
-        "min-w-0 break-words text-base leading-7 font-medium text-foreground",
+        "min-w-0 text-base leading-7 font-medium break-words text-foreground",
         isLongForm ? "space-y-4" : "space-y-2.5",
         className
       )}
@@ -45,15 +45,26 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
 
         const lines = block.text.split("\n").map((line) => line.trimEnd())
         const isList = lines.every((line) => /^[-*]\s+/.test(line))
+        const leadInListLines =
+          lines.length > 1 && /[:：]\s*$/.test(lines[0]) ? lines.slice(1) : []
+        const hasLeadInList =
+          leadInListLines.length > 0 &&
+          leadInListLines.every((line) => /^[-*]\s+/.test(line))
 
         // Detect heading-like lead lines: "Status:", "Next:", etc.
-        const isLeadIn = /^[A-Z][A-Za-z\s]+:/.test(block.text) && lines.length === 1
+        const isLeadIn = /.+[:：]\s*.+/.test(block.text) && lines.length === 1
 
         if (isList) {
           return (
-            <ul key={`${block.text.slice(0, 32)}-${index}`} className="space-y-1.5 pl-5">
+            <ul
+              key={`${block.text.slice(0, 32)}-${index}`}
+              className="space-y-1.5 pl-5"
+            >
               {lines.map((line, itemIndex) => (
-                <li key={`${line.slice(0, 32)}-${itemIndex}`} className="list-disc text-foreground">
+                <li
+                  key={`${line.slice(0, 32)}-${itemIndex}`}
+                  className="list-disc text-foreground"
+                >
                   {renderInline(line.replace(/^[-*]\s+/, ""))}
                 </li>
               ))}
@@ -61,14 +72,28 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
           )
         }
 
+        if (hasLeadInList) {
+          return (
+            <Fragment key={`${block.text.slice(0, 32)}-${index}`}>
+              <p>{renderLeadIn(lines[0])}</p>
+              <ul className="space-y-1.5 pl-5">
+                {leadInListLines.map((line, itemIndex) => (
+                  <li
+                    key={`${line.slice(0, 32)}-${itemIndex}`}
+                    className="list-disc text-foreground"
+                  >
+                    {renderInline(line.replace(/^[-*]\s+/, ""))}
+                  </li>
+                ))}
+              </ul>
+            </Fragment>
+          )
+        }
+
         if (isLeadIn) {
-          const colonIndex = block.text.indexOf(":")
-          const label = block.text.slice(0, colonIndex)
-          const rest = block.text.slice(colonIndex + 1).trim()
           return (
             <p key={`${block.text.slice(0, 32)}-${index}`}>
-              <span className="font-semibold text-foreground">{label}:</span>
-              {rest ? <> {renderInline(rest)}</> : null}
+              {renderLeadIn(block.text)}
             </p>
           )
         }
@@ -80,6 +105,27 @@ export function SessionRichText({ className, text }: SessionRichTextProps) {
         )
       })}
     </div>
+  )
+}
+
+function renderLeadIn(text: string) {
+  const separatorIndex = Math.max(text.indexOf(":"), text.indexOf("："))
+  if (separatorIndex < 0) {
+    return renderInline(text)
+  }
+
+  const label = text.slice(0, separatorIndex)
+  const separator = text.slice(separatorIndex, separatorIndex + 1)
+  const rest = text.slice(separatorIndex + 1).trim()
+
+  return (
+    <>
+      <span className="font-semibold text-foreground">
+        {label}
+        {separator}
+      </span>
+      {rest ? <> {renderInline(rest)}</> : null}
+    </>
   )
 }
 
@@ -123,13 +169,15 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         aria-label={copied ? "Copied code" : "Copy code"}
         data-testid="session-code-copy"
       >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        {copied ? (
+          <Check className="size-3.5" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
         <span>{copied ? "Copied" : "Copy"}</span>
       </button>
       <pre className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 pt-10 pb-3 font-mono text-sm leading-6 text-foreground">
-        <code data-language={language || undefined}>
-          {code}
-        </code>
+        <code data-language={language || undefined}>{code}</code>
       </pre>
     </div>
   )
@@ -200,7 +248,9 @@ function parseRichTextBlocks(text: string): RichTextBlock[] {
 }
 
 function renderInline(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g).filter(Boolean)
+  const parts = text
+    .split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g)
+    .filter(Boolean)
 
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {

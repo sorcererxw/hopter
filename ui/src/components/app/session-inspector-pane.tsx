@@ -3,11 +3,23 @@ import { ArtifactKind } from "@/gen/proto/orchd/v1/common_pb"
 
 import { SessionRichText } from "@/components/app/session-rich-text"
 import type { Session } from "@/gen/proto/orchd/v1/session_pb"
-import { formatArtifactKind, formatSessionStatus, formatUpdatedAt } from "@/lib/format/proto"
+import {
+  formatArtifactKind,
+  formatSessionStatus,
+  formatUpdatedAt,
+} from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
 type InspectorTab = "summary" | "review"
 type InspectorMode = "code" | "diff"
+
+export type InspectorSelectedDiff = {
+  additions: number
+  deletions: number
+  diff?: string
+  kindLabel: string
+  path: string
+}
 
 type SessionInspectorPaneProps = {
   activeTab: InspectorTab
@@ -15,6 +27,7 @@ type SessionInspectorPaneProps = {
   onClose: () => void
   onModeChange: (mode: InspectorMode) => void
   onTabChange: (tab: InspectorTab) => void
+  selectedDiff?: InspectorSelectedDiff | null
   session: Session
 }
 
@@ -45,7 +58,10 @@ function tokenizeLine(line: string) {
         j += 1
       }
       j += 1
-      result.push({ color: "var(--workspace-inline-code-text)", text: line.slice(i, j) })
+      result.push({
+        color: "var(--workspace-inline-code-text)",
+        text: line.slice(i, j),
+      })
       i = j
       continue
     }
@@ -74,7 +90,11 @@ function tokenizeLine(line: string) {
       let color = "#d4d4d4"
       if (keywords.has(word.replace(/:$/, ""))) {
         color = "#569cd6"
-      } else if (word.includes(".proto") || word.includes(".go") || word.includes(".md")) {
+      } else if (
+        word.includes(".proto") ||
+        word.includes(".go") ||
+        word.includes(".md")
+      ) {
         color = "#9cdcfe"
       }
       result.push({ color, text: word })
@@ -103,6 +123,7 @@ export function SessionInspectorPane({
   onClose,
   onModeChange,
   onTabChange,
+  selectedDiff,
   session,
 }: SessionInspectorPaneProps) {
   const reviewLabel = "summary.md"
@@ -111,22 +132,37 @@ export function SessionInspectorPane({
     <aside className="hidden h-full w-[404px] shrink-0 border-l border-border bg-card lg:flex lg:flex-col">
       <div className="flex items-center gap-1 border-b border-border bg-popover px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-          <InspectorTabButton active={activeTab === "summary"} onClick={() => onTabChange("summary")}>
+          <InspectorTabButton
+            active={activeTab === "summary"}
+            onClick={() => onTabChange("summary")}
+          >
             Summary
           </InspectorTabButton>
-          <InspectorTabButton active={false} onClick={() => onTabChange("review")}>
+          <InspectorTabButton
+            active={false}
+            onClick={() => onTabChange("review")}
+          >
             Review
           </InspectorTabButton>
-          <InspectorTabButton active={activeTab === "review"} onClick={() => onTabChange("review")}>
+          <InspectorTabButton
+            active={activeTab === "review"}
+            onClick={() => onTabChange("review")}
+          >
             {reviewLabel}
           </InspectorTabButton>
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <ModeButton active={mode === "code"} onClick={() => onModeChange("code")}>
+          <ModeButton
+            active={mode === "code"}
+            onClick={() => onModeChange("code")}
+          >
             Code
           </ModeButton>
-          <ModeButton active={mode === "diff"} onClick={() => onModeChange("diff")}>
+          <ModeButton
+            active={mode === "diff"}
+            onClick={() => onModeChange("diff")}
+          >
             Diff
           </ModeButton>
           <button
@@ -153,9 +189,18 @@ export function SessionInspectorPane({
             </div>
 
             <div className="rounded-lg border border-border bg-card">
-              <InfoRow label="Status" value={formatSessionStatus(session.status)} />
-              <InfoRow label="Project" value={session.project?.name || "Unassigned"} />
-              <InfoRow label="Updated" value={formatUpdatedAt(session.updatedAt)} />
+              <InfoRow
+                label="Status"
+                value={formatSessionStatus(session.status)}
+              />
+              <InfoRow
+                label="Project"
+                value={session.project?.name || "Unassigned"}
+              />
+              <InfoRow
+                label="Updated"
+                value={formatUpdatedAt(session.updatedAt)}
+              />
               <InfoRow
                 label="Attention"
                 multiline
@@ -170,7 +215,7 @@ export function SessionInspectorPane({
         ) : mode === "code" ? (
           <CodeModePane session={session} />
         ) : (
-          <DiffModePane session={session} />
+          <DiffModePane selectedDiff={selectedDiff} session={session} />
         )}
       </div>
     </aside>
@@ -195,10 +240,10 @@ function CodeModePane({ session }: { session: Session }) {
           key={`${line}-${index}`}
           className="flex items-start px-0 transition hover:bg-muted"
         >
-          <div className="w-12 shrink-0 select-none pr-4 text-right font-mono text-xs leading-5 text-muted-foreground">
+          <div className="w-12 shrink-0 pr-4 text-right font-mono text-xs leading-5 text-muted-foreground select-none">
             {index + 1}
           </div>
-          <pre className="m-0 flex-1 whitespace-pre-wrap pr-4 font-mono text-xs leading-5 text-foreground">
+          <pre className="m-0 flex-1 pr-4 font-mono text-xs leading-5 whitespace-pre-wrap text-foreground">
             {tokenizeLine(line)}
           </pre>
         </div>
@@ -207,7 +252,45 @@ function CodeModePane({ session }: { session: Session }) {
   )
 }
 
-function DiffModePane({ session }: { session: Session }) {
+function DiffModePane({
+  selectedDiff,
+  session,
+}: {
+  selectedDiff?: InspectorSelectedDiff | null
+  session: Session
+}) {
+  if (selectedDiff) {
+    return (
+      <div className="space-y-4 p-4">
+        <div className="rounded-lg border border-border bg-card px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-mono text-sm text-ws-code">
+                {selectedDiff.path}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {selectedDiff.kindLabel}
+                {selectedDiff.additions || selectedDiff.deletions
+                  ? `  +${selectedDiff.additions} -${selectedDiff.deletions}`
+                  : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {selectedDiff.diff ? (
+          <pre className="workspace-scrollbar overflow-x-auto rounded-lg border border-border bg-card p-4 font-mono text-xs leading-6 whitespace-pre">
+            {selectedDiff.diff}
+          </pre>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
+            This file change does not currently include inline diff content.
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const changedArtifacts = session.artifacts.filter(
     (artifact) => artifact.kind === ArtifactKind.CHANGED_FILES
   )
@@ -216,8 +299,8 @@ function DiffModePane({ session }: { session: Session }) {
     return (
       <div className="p-4">
         <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
-          No changed-files artifact yet. When the backend emits file changes or review metadata,
-          the diff view will render them here.
+          No changed-files artifact yet. When the backend emits file changes or
+          review metadata, the diff view will render them here.
         </div>
       </div>
     )
@@ -325,7 +408,7 @@ function InfoRow({
 }) {
   return (
     <div className="border-b border-border px-4 py-3 last:border-b-0">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
         {label}
       </p>
       <p

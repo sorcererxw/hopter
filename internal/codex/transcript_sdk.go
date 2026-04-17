@@ -171,18 +171,7 @@ func formatSDKFileChange(item *codexsdk.FileChangeItem) string {
 	if len(item.Changes) == 0 {
 		return ""
 	}
-	lines := make([]string, 0, len(item.Changes))
-	for _, change := range item.Changes {
-		line := strings.TrimSpace(change.Path)
-		if line == "" {
-			continue
-		}
-		if strings.TrimSpace(string(change.Kind)) != "" {
-			line += " (" + strings.TrimSpace(string(change.Kind)) + ")"
-		}
-		lines = append(lines, line)
-	}
-	return strings.Join(lines, "\n")
+	return formatSDKFileChanges(item.Changes)
 }
 
 func compactAnyJSON(value any, limit int) string {
