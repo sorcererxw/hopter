@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   ArrowLeft,
   ChevronDown,
@@ -9,11 +9,12 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
 
 type WorkspaceTopbarProps = {
   inspectorOpen?: boolean
+  onCommit?: () => void
+  onCommitAndReview?: () => void
   onOpenReview?: () => void
   onToggleInspector?: () => void
   projectName?: string
@@ -25,6 +26,8 @@ type WorkspaceTopbarProps = {
 
 export function WorkspaceTopbar({
   inspectorOpen = false,
+  onCommit,
+  onCommitAndReview,
   onOpenReview,
   onToggleInspector,
   projectName,
@@ -33,20 +36,39 @@ export function WorkspaceTopbar({
   showReview = false,
   title,
 }: WorkspaceTopbarProps) {
-  const { openSidebar } = useWorkspaceShell()
   const navigate = useNavigate()
   const [commitOpen, setCommitOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function handleCopySessionId() {
-    if (sessionId) {
-      void navigator.clipboard.writeText(sessionId)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current)
+      }
     }
+  }, [])
+
+  const handleCopySessionId = useCallback(() => {
+    if (!sessionId) {
+      return
+    }
+
+    navigator.clipboard.writeText(sessionId).then(
+      () => {
+        setCopied(true)
+        if (copiedTimerRef.current) {
+          clearTimeout(copiedTimerRef.current)
+        }
+        copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
+      },
+      () => {
+        // Clipboard write failed; silently ignore
+      }
+    )
     setOverflowOpen(false)
-  }
+  }, [sessionId])
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5">
@@ -54,10 +76,7 @@ export function WorkspaceTopbar({
       <div className="flex min-w-0 items-center gap-2 md:hidden">
         <button
           type="button"
-          onClick={() => {
-            openSidebar()
-            navigate("/")
-          }}
+          onClick={() => navigate("/")}
           className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
         >
           <ArrowLeft className="size-4.5" />
@@ -80,20 +99,70 @@ export function WorkspaceTopbar({
           </button>
           {overflowOpen ? (
             <>
-              <button
-                type="button"
+              <div
+                aria-hidden="true"
                 className="fixed inset-0 z-40"
                 onClick={() => setOverflowOpen(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setOverflowOpen(false)
+                  }
+                }}
               />
-              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={handleCopySessionId}
-                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-foreground transition hover:bg-accent"
-                >
-                  <Copy className="size-3.5" />
-                  <span>{copied ? "Copied!" : "Copy session ID"}</span>
-                </button>
+              <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                {showReview ? (
+                  <>
+                    <OverflowMenuItem
+                      onClick={() => {
+                        setOverflowOpen(false)
+                        onCommit?.()
+                      }}
+                    >
+                      Commit
+                    </OverflowMenuItem>
+                    <OverflowMenuItem
+                      onClick={() => {
+                        setOverflowOpen(false)
+                        onOpenReview?.()
+                      }}
+                    >
+                      Review
+                    </OverflowMenuItem>
+                    <OverflowMenuItem
+                      onClick={() => {
+                        setOverflowOpen(false)
+                        onCommitAndReview?.()
+                      }}
+                    >
+                      Commit &amp; Review
+                    </OverflowMenuItem>
+                    <OverflowMenuItem
+                      icon={<Terminal className="size-3.5" />}
+                      onClick={() => setOverflowOpen(false)}
+                    >
+                      Terminal
+                    </OverflowMenuItem>
+                  </>
+                ) : null}
+                {showInspectorToggle ? (
+                  <OverflowMenuItem
+                    icon={<PanelRight className="size-3.5" />}
+                    onClick={() => {
+                      setOverflowOpen(false)
+                      onToggleInspector?.()
+                    }}
+                  >
+                    {inspectorOpen ? "Close inspector" : "Open inspector"}
+                  </OverflowMenuItem>
+                ) : null}
+                {sessionId ? (
+                  <OverflowMenuItem
+                    icon={<Copy className="size-3.5" />}
+                    onClick={handleCopySessionId}
+                  >
+                    {copied ? "Copied!" : "Copy session ID"}
+                  </OverflowMenuItem>
+                ) : null}
               </div>
             </>
           ) : null}
@@ -120,21 +189,24 @@ export function WorkspaceTopbar({
           </button>
           {overflowOpen ? (
             <>
-              <button
-                type="button"
+              <div
+                aria-hidden="true"
                 className="fixed inset-0 z-40"
                 onClick={() => setOverflowOpen(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    setOverflowOpen(false)
+                  }
+                }}
               />
               <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
                 {sessionId ? (
-                  <button
-                    type="button"
+                  <OverflowMenuItem
+                    icon={<Copy className="size-3.5" />}
                     onClick={handleCopySessionId}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition hover:bg-accent"
                   >
-                    <Copy className="size-3.5" />
-                    <span>{copied ? "Copied!" : "Copy session ID"}</span>
-                  </button>
+                    {copied ? "Copied!" : "Copy session ID"}
+                  </OverflowMenuItem>
                 ) : null}
               </div>
             </>
@@ -155,16 +227,21 @@ export function WorkspaceTopbar({
             </button>
             {commitOpen ? (
               <>
-                <button
-                  type="button"
+                <div
+                  aria-hidden="true"
                   className="fixed inset-0 z-40"
                   onClick={() => setCommitOpen(false)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setCommitOpen(false)
+                    }
+                  }}
                 />
                 <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
                   <CommitMenuItem
                     onClick={() => {
                       setCommitOpen(false)
-                      onOpenReview?.()
+                      onCommit?.()
                     }}
                   >
                     Commit
@@ -180,7 +257,7 @@ export function WorkspaceTopbar({
                   <CommitMenuItem
                     onClick={() => {
                       setCommitOpen(false)
-                      onOpenReview?.()
+                      onCommitAndReview?.()
                     }}
                   >
                     Commit &amp; Review
@@ -211,6 +288,27 @@ export function WorkspaceTopbar({
         ) : null}
       </div>
     </div>
+  )
+}
+
+function OverflowMenuItem({
+  children,
+  icon,
+  onClick,
+}: {
+  children: ReactNode
+  icon?: ReactNode
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-foreground transition hover:bg-accent"
+    >
+      {icon ?? <span className="size-3.5" />}
+      <span>{children}</span>
+    </button>
   )
 }
 

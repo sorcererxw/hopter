@@ -198,6 +198,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         projectName={session?.project?.name || "Local"}
         sessionId={sessionId}
         inspectorOpen={inspectorOpen}
+        onCommit={() => {
+          // TODO: wire commit action
+        }}
+        onCommitAndReview={() => {
+          setActiveTab("review")
+          setInspectorOpen(true)
+        }}
         onOpenReview={() => {
           setActiveTab("review")
           setInspectorOpen(true)
