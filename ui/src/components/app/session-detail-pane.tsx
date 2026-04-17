@@ -5,8 +5,10 @@ import {
   ChevronRight,
   FileText,
   Lightbulb,
+  LoaderCircle,
+  Wrench,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/session-composer"
 import { parseReferencedFiles } from "@/components/app/session-derived"
@@ -15,16 +17,22 @@ import {
   type InspectorSelectedDiff,
 } from "@/components/app/session-inspector-pane"
 import { SessionRichText } from "@/components/app/session-rich-text"
+import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
 import { useProjects } from "@/features/projects/use-projects"
 import {
   useCreateSession,
+  fetchSessionTranscriptPage,
   useSendSessionInput,
-  useSession,
+  useSessionMeta,
+  useSessions,
+  useSessionTranscript,
 } from "@/features/sessions/use-sessions"
 import {
   SessionTranscriptItemKind,
   type Session,
+  type SessionMeta,
+  type SessionTranscriptPage,
   type SessionTranscriptItem,
 } from "@/gen/proto/orchd/v1/session_pb"
 import { formatArtifactKind, formatSessionStatus } from "@/lib/format/proto"
@@ -37,23 +45,63 @@ function deriveTitle(prompt: string) {
 
 export function HomeWorkspacePane() {
   const navigate = useNavigate()
+  const { toggleRail, toolbarMode } = useWorkspaceShell()
+  const [searchParams, setSearchParams] = useSearchParams()
   const createSession = useCreateSession()
   const { data: projects, isLoading: projectsLoading } = useProjects()
+  const { data: sessions } = useSessions()
   const [selectedBackendKeyState, setSelectedBackendKeyState] = useState("")
-  const [selectedProjectIdState, setSelectedProjectIdState] = useState("")
   const [prompt, setPrompt] = useState("")
-  const selectedProjectId = selectedProjectIdState || projects?.[0]?.id || ""
+  const selectedProjectId =
+    searchParams.get("projectId") || projects?.[0]?.id || ""
+  const fallbackProject = useMemo(() => {
+    if (!selectedProjectId) {
+      return undefined
+    }
+
+    const project = sessions?.find(
+      (session) => session.project?.id === selectedProjectId
+    )?.project
+
+    if (!project) {
+      return undefined
+    }
+
+    return {
+      id: project.id,
+      name: project.name,
+      rootPath: project.rootPath,
+      defaultBackend: "codex",
+    }
+  }, [selectedProjectId, sessions])
+  const projectOptions = useMemo(() => {
+    if (!fallbackProject) {
+      return projects ?? []
+    }
+
+    if ((projects ?? []).some((project) => project.id === fallbackProject.id)) {
+      return projects ?? []
+    }
+
+    return [fallbackProject, ...(projects ?? [])]
+  }, [fallbackProject, projects])
 
   const selectedProject = useMemo(
-    () => projects?.find((project) => project.id === selectedProjectId),
-    [projects, selectedProjectId]
+    () => projectOptions.find((project) => project.id === selectedProjectId),
+    [projectOptions, selectedProjectId]
   )
   const selectedBackendKey =
     selectedBackendKeyState || selectedProject?.defaultBackend || "codex"
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <WorkspaceTopbar title="New Thread" projectName={selectedProject?.name} />
+      <WorkspaceTopbar
+        leadingAction="toggle-rail"
+        onLeadingAction={toggleRail}
+        projectName={selectedProject?.name}
+        title="New Thread"
+        toolbarMode={toolbarMode}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="workspace-scrollbar flex-1 overflow-y-auto">
@@ -69,15 +117,24 @@ export function HomeWorkspacePane() {
             <label className="relative mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">
               <select
                 value={selectedProjectId}
-                onChange={(event) =>
-                  setSelectedProjectIdState(event.target.value)
-                }
+                onChange={(event) => {
+                  const nextProjectId = event.target.value
+                  setSearchParams((current) => {
+                    const next = new URLSearchParams(current)
+                    if (nextProjectId) {
+                      next.set("projectId", nextProjectId)
+                    } else {
+                      next.delete("projectId")
+                    }
+                    return next
+                  })
+                }}
                 className="min-w-52 appearance-none bg-transparent pr-5 text-center outline-none"
               >
                 <option value="">
                   {projectsLoading ? "Loading projects..." : "Select project"}
                 </option>
-                {projects?.map((project) => (
+                {projectOptions.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
                   </option>
@@ -127,6 +184,11 @@ export function HomeWorkspacePane() {
             setPrompt("")
 
             if (session?.id) {
+              setSearchParams((current) => {
+                const next = new URLSearchParams(current)
+                next.delete("projectId")
+                return next
+              })
               navigate(`/sessions/${session.id}`)
             }
           }}
@@ -139,7 +201,22 @@ export function HomeWorkspacePane() {
 }
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
-  const sessionQuery = useSession(sessionId)
+  const navigate = useNavigate()
+  const { posture, toggleRail, toolbarMode } = useWorkspaceShell()
+  const sessionMetaQuery = useSessionMeta(sessionId)
+  const shouldPollActiveSession = useMemo(
+    () =>
+      sessionMetaQuery.data
+        ? shouldPollSessionState(sessionMetaQuery.data.status)
+        : false,
+    [sessionMetaQuery.data]
+  )
+  const latestTranscriptQuery = useSessionTranscript(
+    sessionId,
+    Boolean(sessionMetaQuery.data),
+    undefined,
+    shouldPollActiveSession
+  )
   const sendInput = useSendSessionInput()
   const [prompt, setPrompt] = useState("")
   const [inspectorOpen, setInspectorOpen] = useState(true)
@@ -147,12 +224,24 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const [inspectorMode, setInspectorMode] = useState<"code" | "diff">("code")
   const [selectedDiff, setSelectedDiff] =
     useState<InspectorSelectedDiff | null>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [transcriptVisible, setTranscriptVisible] = useState(false)
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
   const lastSessionIdRef = useRef(sessionId)
   const lastActivityCountRef = useRef(0)
+  const prependSnapshotRef = useRef<{
+    scrollHeight: number
+  } | null>(null)
+  const [transcriptPages, setTranscriptPages] = useState<
+    SessionTranscriptPage[]
+  >([])
+  const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(false)
 
-  const session = sessionQuery.data
+  const session = useMemo(
+    () => buildSessionDetail(sessionMetaQuery.data, transcriptPages),
+    [sessionMetaQuery.data, transcriptPages]
+  )
   const transcriptItems = useMemo(() => {
     return (session?.transcriptItems ?? []).filter(
       (item) => item.body.trim().length > 0
@@ -189,12 +278,57 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       })
     }
 
+    if (session && shouldShowThinkingState(session.status)) {
+      items.push({
+        kind: "thinking" as const,
+        key: "thinking",
+        summary: session.summary?.trim() || "Codex is thinking…",
+      })
+    }
+
     return items
   }, [session, showPendingInputHint, transcriptItems])
+  const transcriptPageCount = transcriptPages.length
+  const lastActivityKey = activityItems.at(-1)?.key ?? ""
+  const hasMoreBefore =
+    transcriptPages[0]?.hasMoreBefore ??
+    sessionMetaQuery.data?.hasMoreBefore ??
+    false
+  const isLoadingInitialTranscript =
+    latestTranscriptQuery.isLoading && activityItems.length === 0
+
+  useEffect(() => {
+    if (posture !== "wide") {
+      setInspectorOpen(false)
+    }
+  }, [posture])
+
+  useEffect(() => {
+    if (!latestTranscriptQuery.data) {
+      setTranscriptPages([])
+      return
+    }
+    setTranscriptPages([latestTranscriptQuery.data])
+  }, [latestTranscriptQuery.data, sessionId])
 
   useEffect(() => {
     setSelectedDiff(null)
+    setSelectedPath(null)
+    prependSnapshotRef.current = null
   }, [sessionId])
+
+  useEffect(() => {
+    if (isLoadingInitialTranscript) {
+      setTranscriptVisible(false)
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setTranscriptVisible(true)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [activityItems.length, isLoadingInitialTranscript, sessionId])
 
   useEffect(() => {
     const container = transcriptScrollRef.current
@@ -205,14 +339,34 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     const nextCount = activityItems.length
     const sessionChanged = lastSessionIdRef.current !== sessionId
     const countChanged = nextCount !== lastActivityCountRef.current
+    const lastKeyChanged =
+      !sessionChanged && countChanged && lastActivityKey !== ""
 
-    if (sessionChanged || (countChanged && shouldStickToBottomRef.current)) {
+    if (sessionChanged || (lastKeyChanged && shouldStickToBottomRef.current)) {
       container.scrollTop = container.scrollHeight
     }
 
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = nextCount
-  }, [activityItems.length, sessionId])
+  }, [activityItems.length, lastActivityKey, sessionId])
+
+  useEffect(() => {
+    const container = transcriptScrollRef.current
+    const snapshot = prependSnapshotRef.current
+    if (!container || !snapshot) {
+      return
+    }
+    if (isFetchingPreviousPage) {
+      return
+    }
+    if (transcriptPageCount < 2) {
+      return
+    }
+
+    const delta = container.scrollHeight - snapshot.scrollHeight
+    container.scrollTop += delta
+    prependSnapshotRef.current = null
+  }, [transcriptPageCount, isFetchingPreviousPage])
 
   function handleTranscriptScroll() {
     const container = transcriptScrollRef.current
@@ -223,11 +377,41 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight
     shouldStickToBottomRef.current = distanceFromBottom < 120
+
+    if (container.scrollTop <= 80 && hasMoreBefore && !isFetchingPreviousPage) {
+      const beforeCursor = transcriptPages[0]?.nextBeforeCursor
+      if (!beforeCursor) {
+        return
+      }
+      prependSnapshotRef.current = {
+        scrollHeight: container.scrollHeight,
+      }
+      setIsFetchingPreviousPage(true)
+      void fetchSessionTranscriptPage(sessionId, beforeCursor)
+        .then((page) => {
+          if (!page) {
+            return
+          }
+          setTranscriptPages((current) => [page, ...current])
+        })
+        .finally(() => {
+          setIsFetchingPreviousPage(false)
+        })
+    }
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
+        leadingAction={posture === "phone" ? "back" : "toggle-rail"}
+        onLeadingAction={() => {
+          if (posture === "phone") {
+            navigate("/")
+            return
+          }
+
+          toggleRail()
+        }}
         title={session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
         sessionId={sessionId}
@@ -241,18 +425,23 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         }}
         onOpenReview={() => {
           setActiveTab("review")
-          setInspectorOpen(true)
+          if (posture === "wide") {
+            setInspectorOpen(true)
+          }
         }}
-        onToggleInspector={() => setInspectorOpen((current) => !current)}
-        showInspectorToggle
+        onToggleInspector={
+          posture === "wide"
+            ? () => setInspectorOpen((current) => !current)
+            : undefined
+        }
+        showInspectorToggle={posture === "wide"}
         showReview
+        toolbarMode={toolbarMode}
       />
 
-      {sessionQuery.isLoading ? (
-        <div className="flex flex-1 items-center justify-center px-6 text-sm text-muted-foreground">
-          Loading thread...
-        </div>
-      ) : sessionQuery.isError || !session ? (
+      {sessionMetaQuery.isLoading ? (
+        <CenteredTranscriptLoader />
+      ) : sessionMetaQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
           <div className="rounded-lg border border-border bg-muted px-6 py-4 text-sm text-foreground">
             This thread is temporarily unavailable.
@@ -264,9 +453,14 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             <div
               ref={transcriptScrollRef}
               onScroll={handleTranscriptScroll}
-              className="workspace-scrollbar flex-1 overflow-y-auto px-6 py-4"
+              className="workspace-scrollbar relative flex-1 overflow-y-auto px-6 py-4"
             >
-              <div className="mx-auto max-w-[720px] space-y-5">
+              <div
+                className={cn(
+                  "mx-auto max-w-[720px] space-y-5 transition-opacity duration-200 ease-out",
+                  transcriptVisible ? "opacity-100" : "opacity-0"
+                )}
+              >
                 <ArtifactPills session={session} />
 
                 {session.attentionRequired ? (
@@ -283,20 +477,34 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
                 <TranscriptTimeline
                   items={activityItems}
+                  isFetchingPreviousPage={isFetchingPreviousPage}
+                  isLoadingInitialTranscript={isLoadingInitialTranscript}
                   onSelectDiff={(diff) => {
                     setSelectedDiff(diff)
+                    setSelectedPath(null)
                     setActiveTab("review")
                     setInspectorMode("diff")
-                    setInspectorOpen(true)
+                    if (posture === "wide") {
+                      setInspectorOpen(true)
+                    }
+                  }}
+                  onSelectPath={(path) => {
+                    setSelectedPath(path)
+                    setSelectedDiff(null)
+                    setActiveTab("summary")
+                    setInspectorMode("code")
+                    if (posture === "wide") {
+                      setInspectorOpen(true)
+                    }
                   }}
                 />
                 <ArtifactStrip session={session} />
-
-                {formatSessionStatus(session.status).toLowerCase() !==
-                "completed" ? (
-                  <TypingIndicator />
-                ) : null}
               </div>
+              {!transcriptVisible ? (
+                <div className="pointer-events-none absolute inset-x-0 top-0 flex min-h-full items-center justify-center">
+                  <InitialTranscriptLoader />
+                </div>
+              ) : null}
             </div>
 
             <SessionComposer
@@ -325,7 +533,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             />
           </div>
 
-          {inspectorOpen ? (
+          {posture === "wide" && inspectorOpen ? (
             <SessionInspectorPane
               activeTab={activeTab}
               mode={inspectorMode}
@@ -333,6 +541,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               onModeChange={setInspectorMode}
               onTabChange={setActiveTab}
               selectedDiff={selectedDiff}
+              selectedPath={selectedPath}
               session={session}
             />
           ) : null}
@@ -340,6 +549,39 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       )}
     </div>
   )
+}
+
+function buildSessionDetail(
+  meta: SessionMeta | undefined,
+  pages:
+    | Array<
+        | {
+            items?: SessionTranscriptItem[]
+          }
+        | undefined
+      >
+    | undefined
+): Session | undefined {
+  if (!meta) {
+    return undefined
+  }
+
+  const transcriptItems = (pages ?? []).flatMap((page) => page?.items ?? [])
+
+  return {
+    id: meta.id,
+    title: meta.title,
+    project: meta.project,
+    status: meta.status,
+    summary: meta.summary,
+    attentionRequired: meta.attentionRequired,
+    attentionReason: meta.attentionReason,
+    lastInputHint: meta.lastInputHint,
+    updatedAt: meta.updatedAt,
+    artifacts: meta.artifacts,
+    transcriptItems,
+    backendKey: meta.backendKey,
+  } as Session
 }
 
 function ArtifactPills({ session }: { session: Session }) {
@@ -429,36 +671,233 @@ type ActivityItem =
     }
   | {
       key: string
+      kind: "thinking"
+      summary: string
+    }
+  | {
+      key: string
       kind: "pending-input"
       text: string
     }
 
+type TimelineItem =
+  | {
+      item: SessionTranscriptItem
+      kind: "transcript"
+      key: string
+    }
+  | {
+      key: string
+      kind: "thinking"
+      summary: string
+    }
+  | {
+      key: string
+      kind: "pending-input"
+      text: string
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "command-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "file-change-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "tool-group"
+    }
+
+function isTranscriptActivityItem(
+  item: ActivityItem
+): item is Extract<ActivityItem, { kind: "transcript" }> {
+  return item.kind === "transcript"
+}
+
 function TranscriptTimeline({
   items,
+  isFetchingPreviousPage,
+  isLoadingInitialTranscript,
   onSelectDiff,
+  onSelectPath,
 }: {
   items: ActivityItem[]
+  isFetchingPreviousPage: boolean
+  isLoadingInitialTranscript: boolean
   onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectPath: (path: string) => void
 }) {
-  if (items.length === 0) {
+  const timelineItems = groupTimelineItems(items)
+
+  if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return null
   }
 
   return (
     <div className="space-y-5" data-testid="session-transcript">
-      {items.map((item) =>
-        item.kind === "transcript" ? (
-          <TranscriptEntry
-            key={item.key}
-            item={item.item}
-            onSelectDiff={onSelectDiff}
-          />
-        ) : (
-          <PendingInputEntry key={item.key} text={item.text} />
-        )
-      )}
+      {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
+      {timelineItems.map((item) => {
+        switch (item.kind) {
+          case "transcript":
+            return (
+              <TranscriptEntry
+                key={item.key}
+                item={item.item}
+                onSelectDiff={onSelectDiff}
+                onSelectPath={onSelectPath}
+              />
+            )
+          case "thinking":
+            return <ThinkingEntry key={item.key} summary={item.summary} />
+          case "pending-input":
+            return <PendingInputEntry key={item.key} text={item.text} />
+          case "command-group":
+            return <CommandGroupEntry key={item.key} items={item.items} />
+          case "file-change-group":
+            return (
+              <FileChangeGroupEntry
+                key={item.key}
+                items={item.items}
+                onSelectDiff={onSelectDiff}
+              />
+            )
+          case "tool-group":
+            return <ToolGroupEntry key={item.key} items={item.items} />
+        }
+      })}
     </div>
   )
+}
+
+function TranscriptLoadingRow() {
+  return (
+    <div
+      className="flex items-center justify-center py-2"
+      data-testid="session-transcript-loading"
+    >
+      <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm">
+        <LoaderCircle className="size-4 animate-spin" />
+      </div>
+    </div>
+  )
+}
+
+function InitialTranscriptLoader() {
+  return (
+    <div
+      className="inline-flex size-12 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm"
+      data-testid="session-transcript-loading-initial"
+    >
+      <LoaderCircle className="size-5 animate-spin" />
+    </div>
+  )
+}
+
+function CenteredTranscriptLoader() {
+  return (
+    <div className="flex flex-1 items-center justify-center px-6">
+      <InitialTranscriptLoader />
+    </div>
+  )
+}
+
+function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
+  const timelineItems: TimelineItem[] = []
+  let cursor = 0
+
+  while (cursor < items.length) {
+    const current = items[cursor]
+
+    if (!isTranscriptActivityItem(current)) {
+      timelineItems.push(current)
+      cursor += 1
+      continue
+    }
+
+    if (current.item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
+      const groupedItems: SessionTranscriptItem[] = [current.item]
+      let next = cursor + 1
+      while (
+        next < items.length
+      ) {
+        const candidate = items[next]
+        if (
+          !isTranscriptActivityItem(candidate) ||
+          candidate.item.kind !== SessionTranscriptItemKind.COMMAND_EXECUTION
+        ) {
+          break
+        }
+        groupedItems.push(candidate.item)
+        next += 1
+      }
+      timelineItems.push({
+        items: groupedItems,
+        key: groupedItems.map((item) => item.id).join(":"),
+        kind: "command-group",
+      })
+      cursor = next
+      continue
+    }
+
+    if (current.item.kind === SessionTranscriptItemKind.FILE_CHANGE) {
+      const groupedItems: SessionTranscriptItem[] = [current.item]
+      let next = cursor + 1
+      while (
+        next < items.length
+      ) {
+        const candidate = items[next]
+        if (
+          !isTranscriptActivityItem(candidate) ||
+          candidate.item.kind !== SessionTranscriptItemKind.FILE_CHANGE
+        ) {
+          break
+        }
+        groupedItems.push(candidate.item)
+        next += 1
+      }
+      timelineItems.push({
+        items: groupedItems,
+        key: groupedItems.map((item) => item.id).join(":"),
+        kind: "file-change-group",
+      })
+      cursor = next
+      continue
+    }
+
+    if (current.item.kind === SessionTranscriptItemKind.TOOL_CALL) {
+      const groupedItems: SessionTranscriptItem[] = [current.item]
+      let next = cursor + 1
+      while (
+        next < items.length
+      ) {
+        const candidate = items[next]
+        if (
+          !isTranscriptActivityItem(candidate) ||
+          candidate.item.kind !== SessionTranscriptItemKind.TOOL_CALL
+        ) {
+          break
+        }
+        groupedItems.push(candidate.item)
+        next += 1
+      }
+      timelineItems.push({
+        items: groupedItems,
+        key: groupedItems.map((item) => item.id).join(":"),
+        kind: "tool-group",
+      })
+      cursor = next
+      continue
+    }
+
+    timelineItems.push(current)
+    cursor += 1
+  }
+
+  return timelineItems
 }
 
 function PendingInputEntry({ text }: { text: string }) {
@@ -474,28 +913,40 @@ function PendingInputEntry({ text }: { text: string }) {
   )
 }
 
+function ThinkingEntry({ summary }: { summary: string }) {
+  return (
+    <div className="min-w-0" data-testid="session-transcript-thinking">
+      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3">
+        <TypingIndicator label={summary} />
+      </div>
+    </div>
+  )
+}
+
 function TranscriptEntry({
   item,
   onSelectDiff,
+  onSelectPath,
 }: {
   item: SessionTranscriptItem
   onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectPath: (path: string) => void
 }) {
   switch (item.kind) {
     case SessionTranscriptItemKind.USER_MESSAGE:
       return <UserMessageEntry item={item} />
     case SessionTranscriptItemKind.AGENT_MESSAGE:
-      return <AgentMessageEntry item={item} />
+      return <AgentMessageEntry item={item} onSelectPath={onSelectPath} />
     case SessionTranscriptItemKind.REASONING:
-      return <ReasoningEntry item={item} />
+      return <ReasoningEntry item={item} onSelectPath={onSelectPath} />
     case SessionTranscriptItemKind.TOOL_CALL:
       return <ToolCallEntry item={item} />
     case SessionTranscriptItemKind.COMMAND_EXECUTION:
       return <CommandEntry item={item} />
     case SessionTranscriptItemKind.FILE_CHANGE:
-      return <FileChangeEntry item={item} onSelectDiff={onSelectDiff} />
+      return <FileChangeGroupEntry items={[item]} onSelectDiff={onSelectDiff} />
     default:
-      return <AgentMessageEntry item={item} />
+      return <AgentMessageEntry item={item} onSelectPath={onSelectPath} />
   }
 }
 
@@ -512,20 +963,29 @@ function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
   )
 }
 
-function AgentMessageEntry({ item }: { item: SessionTranscriptItem }) {
+function AgentMessageEntry({
+  item,
+  onSelectPath,
+}: {
+  item: SessionTranscriptItem
+  onSelectPath: (path: string) => void
+}) {
   return (
-    <div className="flex gap-3" data-testid="session-transcript-agent">
-      <div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-accent">
-        <Bot className="size-3.5 text-foreground/60" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <SessionRichText text={item.body} />
+    <div className="min-w-0" data-testid="session-transcript-agent">
+      <div className="min-w-0">
+        <SessionRichText text={item.body} onLocalPathClick={onSelectPath} />
       </div>
     </div>
   )
 }
 
-function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
+function ReasoningEntry({
+  item,
+  onSelectPath,
+}: {
+  item: SessionTranscriptItem
+  onSelectPath: (path: string) => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const label = item.title || "Thinking"
   const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
@@ -555,6 +1015,7 @@ function ReasoningEntry({ item }: { item: SessionTranscriptItem }) {
           <SessionRichText
             text={item.body}
             className="mt-2 text-foreground/70"
+            onLocalPathClick={onSelectPath}
           />
         ) : null}
       </div>
@@ -594,6 +1055,31 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
   )
 }
 
+function ToolGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
+  const [expanded, setExpanded] = useState(false)
+  const count = items.length
+
+  return (
+    <TranscriptBatchEntry
+      expanded={expanded}
+      label={`Used ${count} tools`}
+      onToggle={() => setExpanded((prev) => !prev)}
+      testId="session-transcript-tool"
+    >
+      <div className="space-y-2">
+        {items.map((item) => (
+          <pre
+            key={item.id}
+            className="workspace-scrollbar overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70"
+          >
+            {item.body}
+          </pre>
+        ))}
+      </div>
+    </TranscriptBatchEntry>
+  )
+}
+
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const [expanded, setExpanded] = useState(false)
   const label = item.title || "Command"
@@ -604,14 +1090,17 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+          className="group flex w-full items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
         >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span className="font-medium">{label}</span>
+          <span>{label}</span>
+          <ChevronRight
+            className={cn(
+              "ml-auto size-3 transition",
+              expanded
+                ? "rotate-90 opacity-100"
+                : "opacity-0 group-hover:opacity-100"
+            )}
+          />
         </button>
         {expanded ? (
           <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
@@ -623,63 +1112,108 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   )
 }
 
-function FileChangeEntry({
-  item,
+function CommandGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
+  const [expanded, setExpanded] = useState(false)
+  const count = items.length
+
+  return (
+    <TranscriptBatchEntry
+      expanded={expanded}
+      label={`Ran ${count} commands`}
+      onToggle={() => setExpanded((prev) => !prev)}
+      testId="session-transcript-command"
+    >
+      <div className="space-y-2">
+        {items.map((item) => (
+          <pre
+            key={item.id}
+            className="workspace-scrollbar overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70"
+          >
+            {item.body}
+          </pre>
+        ))}
+      </div>
+    </TranscriptBatchEntry>
+  )
+}
+
+function FileChangeGroupEntry({
+  items,
   onSelectDiff,
 }: {
-  item: SessionTranscriptItem
+  items: SessionTranscriptItem[]
   onSelectDiff: (diff: InspectorSelectedDiff) => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const changes = parseFileChangeBody(item.body)
+  const changes = items.flatMap((item) => parseFileChangeBody(item.body))
   const count = changes.length
 
   return (
-    <div className="min-w-0" data-testid="session-transcript-file-change">
+    <TranscriptBatchEntry
+      expanded={expanded}
+      label={`Changed ${count} files`}
+      onToggle={() => setExpanded((prev) => !prev)}
+      testId="session-transcript-file-change"
+    >
+      <div className="space-y-1.5">
+        {changes.map((change) => (
+          <button
+            key={`${change.path}-${change.kindLabel}`}
+            type="button"
+            onClick={() => onSelectDiff(change)}
+            className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-accent"
+          >
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {change.kindLabel}
+            </span>
+            <span className="min-w-0 truncate font-mono text-sm text-ws-code">
+              {change.path}
+            </span>
+            {change.additions || change.deletions ? (
+              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                +{change.additions} -{change.deletions}
+              </span>
+            ) : null}
+            <ChevronRight className="size-3 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+          </button>
+        ))}
+      </div>
+    </TranscriptBatchEntry>
+  )
+}
+
+function TranscriptBatchEntry({
+  children,
+  expanded,
+  label,
+  onToggle,
+  testId,
+}: {
+  children: React.ReactNode
+  expanded: boolean
+  label: string
+  onToggle: () => void
+  testId: string
+}) {
+  return (
+    <div className="min-w-0" data-testid={testId}>
       <div className="min-w-0">
         <button
           type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="group flex w-full items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+          onClick={onToggle}
+          className="group inline-flex max-w-full items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
         >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
-          <span>{`Changed ${count} file${count === 1 ? "" : "s"}`}</span>
+          <span className="font-medium">{label}</span>
           <ChevronRight
             className={cn(
-              "ml-auto size-3 transition",
-              expanded ? "opacity-0" : "opacity-0 group-hover:opacity-100"
+              "size-3 shrink-0 transition",
+              expanded
+                ? "rotate-90 opacity-100"
+                : "opacity-0 group-hover:opacity-100"
             )}
           />
         </button>
-        {expanded ? (
-          <div className="mt-2 space-y-1.5">
-            {changes.map((change) => (
-              <button
-                key={`${change.path}-${change.kindLabel}`}
-                type="button"
-                onClick={() => onSelectDiff(change)}
-                className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-accent"
-              >
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {change.kindLabel}
-                </span>
-                <span className="min-w-0 truncate font-mono text-sm text-ws-code">
-                  {change.path}
-                </span>
-                {change.additions || change.deletions ? (
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    +{change.additions} -{change.deletions}
-                  </span>
-                ) : null}
-                <ChevronRight className="size-3 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-              </button>
-            ))}
-          </div>
-        ) : null}
+        {expanded ? <div className="mt-2">{children}</div> : null}
       </div>
     </div>
   )
@@ -769,15 +1303,29 @@ function normalizeTranscriptText(value: string) {
   return value.trim().replace(/\s+/g, " ")
 }
 
-function TypingIndicator() {
+function shouldShowThinkingState(status: Session["status"]) {
+  const normalized = formatSessionStatus(status).toLowerCase()
+  return normalized === "pending" || normalized === "running"
+}
+
+function TypingIndicator({ label = "Thinking..." }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 pb-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <div className="flex items-center gap-1">
         <span className="bg-primary-muted size-1.5 animate-pulse rounded-full" />
         <span className="bg-primary-muted size-1.5 animate-pulse rounded-full [animation-delay:140ms]" />
         <span className="bg-primary-muted size-1.5 animate-pulse rounded-full [animation-delay:280ms]" />
       </div>
-      <span>Thinking...</span>
+      <span>{label}</span>
     </div>
+  )
+}
+
+function shouldPollSessionState(status: Session["status"]) {
+  const normalized = formatSessionStatus(status).toLowerCase()
+  return (
+    normalized === "pending" ||
+    normalized === "running" ||
+    normalized === "waiting approval"
   )
 }

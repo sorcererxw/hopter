@@ -15,6 +15,9 @@ type fakeRuntime struct {
 	getProject   core.Project
 	createResult core.Session
 	sendResult   core.Session
+	lastCreate   core.CreateSessionInput
+	lastSendID   string
+	lastSendText string
 }
 
 func (f *fakeRuntime) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
@@ -26,10 +29,13 @@ func (f *fakeRuntime) GetSession(sessionID string) (core.Session, core.Project, 
 }
 
 func (f *fakeRuntime) CreateSession(input core.CreateSessionInput) (core.Session, error) {
+	f.lastCreate = input
 	return f.createResult, nil
 }
 
 func (f *fakeRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
+	f.lastSendID = sessionID
+	f.lastSendText = input
 	return f.sendResult, nil
 }
 
@@ -88,12 +94,106 @@ func TestManagerGetSessionStampsFallbackBackendKey(t *testing.T) {
 	}
 }
 
-func mustCreateProject(t *testing.T, workspace core.WorkspaceService, defaultBackend string) core.Project {
+func TestManagerCreateSessionMaterializesSyntheticProject(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := makeRepoRoot(t)
+	runtime := &fakeRuntime{
+		createResult: core.Session{
+			ID:        "sess_1",
+			Title:     "probe",
+			Status:    core.SessionStatePending,
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	manager := NewManager(workspace, map[string]Runtime{
+		"codex": runtime,
+	})
+
+	session, err := manager.CreateSession(core.CreateSessionInput{
+		ProjectID:  "cwd:" + root,
+		BackendKey: "codex",
+		Prompt:     "hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	projects := workspace.ListProjects()
+	if len(projects) != 1 {
+		t.Fatalf("project count = %d, want 1", len(projects))
+	}
+	if runtime.lastCreate.ProjectID != projects[0].ID {
+		t.Fatalf("runtime project id = %q, want %q", runtime.lastCreate.ProjectID, projects[0].ID)
+	}
+	if session.ProjectID != projects[0].ID {
+		t.Fatalf("session project id = %q, want %q", session.ProjectID, projects[0].ID)
+	}
+}
+
+func TestManagerSendSessionInputMaterializesSyntheticProject(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := makeRepoRoot(t)
+	syntheticProject := core.Project{
+		ID:             "cwd:" + root,
+		Name:           filepath.Base(root),
+		RootPath:       root,
+		DefaultBackend: "codex",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	runtime := &fakeRuntime{
+		getSession: core.Session{
+			ID:         "sess_remote",
+			ProjectID:  syntheticProject.ID,
+			BackendKey: "codex",
+			Title:      "probe",
+			Status:     core.SessionStateCompleted,
+			UpdatedAt:  time.Now().UTC(),
+		},
+		getProject: syntheticProject,
+		sendResult: core.Session{
+			ID:        "sess_remote",
+			ProjectID: syntheticProject.ID,
+			Status:    core.SessionStateRunning,
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	manager := NewManager(workspace, map[string]Runtime{
+		"codex": runtime,
+	})
+
+	updated, err := manager.SendSessionInput("sess_remote", "follow up")
+	if err != nil {
+		t.Fatalf("SendSessionInput: %v", err)
+	}
+
+	projects := workspace.ListProjects()
+	if len(projects) != 1 {
+		t.Fatalf("project count = %d, want 1", len(projects))
+	}
+	if runtime.lastSendID != "sess_remote" {
+		t.Fatalf("send session id = %q, want sess_remote", runtime.lastSendID)
+	}
+	if runtime.lastSendText != "follow up" {
+		t.Fatalf("send text = %q, want follow up", runtime.lastSendText)
+	}
+	if updated.ID != "sess_remote" {
+		t.Fatalf("updated session id = %q, want sess_remote", updated.ID)
+	}
+}
+
+func makeRepoRoot(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
 		t.Fatalf("mkdir repo .git: %v", err)
 	}
+	return root
+}
+
+func mustCreateProject(t *testing.T, workspace core.WorkspaceService, defaultBackend string) core.Project {
+	t.Helper()
+	root := makeRepoRoot(t)
 	project, err := workspace.CreateProject(core.CreateProjectInput{
 		Name:           "probe",
 		RootPath:       root,

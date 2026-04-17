@@ -1,4 +1,4 @@
-.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-transcript-ui validate-all
+.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-all
 
 help:
 	@echo "Targets:"
@@ -22,6 +22,7 @@ help:
 	@echo "  validate-go-ui     Run Go UI validation"
 	@echo "  validate-go-tetris Run end-to-end Tetris proof"
 	@echo "  validate-transcript-ui Run browser transcript rendering validation"
+	@echo "  validate-session-roundtrip Run fresh-session + 4 follow-up Codex roundtrip validation"
 	@echo "  validate-all       Run all current validations"
 
 dev:
@@ -82,5 +83,8 @@ validate-go-tetris:
 
 validate-transcript-ui:
 	bun scripts/validate-transcript-ui.ts
+
+validate-session-roundtrip:
+	bun scripts/validate-session-roundtrip.ts
 
 validate-all: docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris

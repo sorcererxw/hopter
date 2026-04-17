@@ -1,7 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import { SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
-import type { Session } from "@/gen/proto/orchd/v1/session_pb"
+import type {
+  SessionMeta,
+  SessionTranscriptPage,
+} from "@/gen/proto/orchd/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -17,6 +24,8 @@ type SendSessionInput = {
   input: string
 }
 
+const defaultTranscriptPageSize = 50
+
 export function useSessions(projectId?: string) {
   return useQuery({
     queryKey: queryKeys.sessions(projectId),
@@ -30,20 +39,20 @@ export function useSessions(projectId?: string) {
   })
 }
 
-export function useSession(sessionId?: string) {
+export function useSessionMeta(sessionId?: string) {
   return useQuery({
     enabled: Boolean(sessionId),
-    queryKey: queryKeys.session(sessionId ?? "pending"),
+    queryKey: queryKeys.sessionMeta(sessionId ?? "pending"),
     queryFn: async () => {
       if (!sessionId) {
         throw new Error("sessionId is required")
       }
 
-      const response = await sessionClient.getSession({ sessionId })
+      const response = await sessionClient.getSessionMeta({ sessionId })
       return response.session
     },
     refetchInterval: (query) => {
-      const session = query.state.data as Session | undefined
+      const session = query.state.data as SessionMeta | undefined
       if (!session) {
         return false
       }
@@ -54,11 +63,72 @@ export function useSession(sessionId?: string) {
   })
 }
 
+export async function fetchSessionTranscriptPage(
+  sessionId: string,
+  beforeCursor?: string,
+  pageSize = defaultTranscriptPageSize
+) {
+  const response = await sessionClient.listSessionTranscript({
+    sessionId,
+    beforeCursor: beforeCursor || undefined,
+    limit: pageSize,
+  })
+
+  return normalizeSessionTranscriptPage(response.page)
+}
+
+export function useSessionTranscript(
+  sessionId?: string,
+  enabled = true,
+  pageSize = defaultTranscriptPageSize,
+  poll = false
+) {
+  return useQuery({
+    enabled: Boolean(sessionId) && enabled,
+    queryKey: queryKeys.sessionTranscriptLatest(sessionId ?? "pending", pageSize),
+    queryFn: async () => {
+      if (!sessionId) {
+        throw new Error("sessionId is required")
+      }
+
+      return fetchSessionTranscriptPage(sessionId, undefined, pageSize)
+    },
+    refetchInterval: poll ? 1500 : false,
+    refetchIntervalInBackground: poll,
+  })
+}
+
+function normalizeSessionTranscriptPage(
+  page: SessionTranscriptPage | undefined
+): SessionTranscriptPage | undefined {
+  if (!page) {
+    return undefined
+  }
+
+  return {
+    items: page.items.map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      body: item.body,
+      status: item.status,
+    })),
+    nextBeforeCursor: page.nextBeforeCursor,
+    hasMoreBefore: page.hasMoreBefore,
+    snapshotUpdatedAt: page.snapshotUpdatedAt,
+  } as SessionTranscriptPage
+}
+
 export function useCreateSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ backendKey, projectId, prompt, title }: CreateSessionInput) => {
+    mutationFn: async ({
+      backendKey,
+      projectId,
+      prompt,
+      title,
+    }: CreateSessionInput) => {
       const response = await sessionClient.createSession({
         backendKey,
         projectId,
@@ -73,7 +143,10 @@ export function useCreateSession() {
 
       if (session?.id) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.session(session.id),
+          queryKey: queryKeys.sessionMeta(session.id),
+        })
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.sessionTranscript(session.id),
         })
       }
     },
@@ -90,13 +163,18 @@ export function useSendSessionInput() {
     onSuccess: async (_response, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.session(variables.sessionId),
+        queryKey: queryKeys.sessionMeta(variables.sessionId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionTranscript(variables.sessionId),
       })
     },
   })
 }
 
-function shouldPollSession(session: Session) {
+function shouldPollSession(
+  session: Pick<SessionMeta, "status">
+) {
   switch (session.status) {
     case SessionStatus.PENDING:
     case SessionStatus.RUNNING:

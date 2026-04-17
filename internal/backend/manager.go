@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"orchd/internal/core"
@@ -87,10 +88,11 @@ func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, erro
 }
 
 func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, error) {
-	project, ok := m.workspace.GetProject(input.ProjectID)
-	if !ok {
-		return core.Session{}, fmt.Errorf("project %q not found", input.ProjectID)
+	project, err := m.resolveProject(input.ProjectID, input.BackendKey)
+	if err != nil {
+		return core.Session{}, err
 	}
+	input.ProjectID = project.ID
 	backendKey := normalizeBackendKey(input.BackendKey, project.DefaultBackend)
 	runtime, ok := m.runtimes[backendKey]
 	if !ok {
@@ -116,9 +118,9 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 			session.ProjectID = project.ID
 		}
 	}
-	project, ok := m.workspace.GetProject(session.ProjectID)
-	if !ok {
-		return core.Session{}, fmt.Errorf("project %q not found", session.ProjectID)
+	project, err := m.resolveProject(session.ProjectID, session.BackendKey)
+	if err != nil {
+		return core.Session{}, err
 	}
 	backendKey := normalizeBackendKey(session.BackendKey, project.DefaultBackend)
 	runtime, ok := m.runtimes[backendKey]
@@ -155,6 +157,56 @@ func (m *Manager) normalizeResolvedSessionsWithKey(resolved []ResolvedSession, b
 		})
 	}
 	return normalized
+}
+
+func (m *Manager) resolveProject(projectID, backendKey string) (core.Project, error) {
+	if project, ok := m.workspace.GetProject(projectID); ok {
+		return project, nil
+	}
+
+	projectID = strings.TrimSpace(projectID)
+	if !strings.HasPrefix(projectID, "cwd:") {
+		return core.Project{}, fmt.Errorf("project %q not found", projectID)
+	}
+
+	rootPath := strings.TrimSpace(strings.TrimPrefix(projectID, "cwd:"))
+	if rootPath == "" {
+		return core.Project{}, fmt.Errorf("project %q not found", projectID)
+	}
+
+	if project, ok := projectByRootPath(m.workspace.ListProjects(), rootPath); ok {
+		return project, nil
+	}
+
+	name := filepath.Base(rootPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = rootPath
+	}
+
+	project, err := m.workspace.CreateProject(core.CreateProjectInput{
+		Name:           name,
+		RootPath:       rootPath,
+		DefaultBackend: normalizeBackendKey(backendKey),
+	})
+	if err == nil {
+		return project, nil
+	}
+
+	if project, ok := projectByRootPath(m.workspace.ListProjects(), rootPath); ok {
+		return project, nil
+	}
+
+	return core.Project{}, err
+}
+
+func projectByRootPath(projects []core.Project, rootPath string) (core.Project, bool) {
+	normalizedRoot := filepath.Clean(strings.TrimSpace(rootPath))
+	for _, project := range projects {
+		if filepath.Clean(strings.TrimSpace(project.RootPath)) == normalizedRoot {
+			return project, true
+		}
+	}
+	return core.Project{}, false
 }
 
 func (m *Manager) normalizeSession(session core.Session, project core.Project, fallbackBackendKey string) (core.Session, core.Project) {

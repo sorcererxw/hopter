@@ -28,14 +28,15 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		backend.DefaultBackendKey: backend.NewCodexRuntime(codexManager),
 		"copilot":                 copilotbackend.NewManager(workspace),
 	})
+	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, backendManager)
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
 		Version:               cfg.Version,
 		UI:                    serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
 		EventHub:              eventHub,
 		HostServiceHandler:    rpcserver.NewHostService(workspace),
-		ProjectServiceHandler: rpcserver.NewProjectService(workspace),
-		SessionServiceHandler: rpcserver.NewSessionService(workspace, backendManager),
+		ProjectServiceHandler: rpcserver.NewProjectService(workspace, backendManager),
+		SessionServiceHandler: rpcserver.NewSessionService(workspace, backendManager, sessionReadModel),
 	})
 	if err != nil {
 		return nil, err
