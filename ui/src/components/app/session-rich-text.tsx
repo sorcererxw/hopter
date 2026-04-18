@@ -7,6 +7,7 @@ import type {
 } from "react"
 import { Check, Copy } from "lucide-react"
 
+import { CodeContainer } from "@/components/app/code-container"
 import { cn } from "@/lib/utils"
 
 type SessionRichTextProps = {
@@ -120,19 +121,13 @@ export function SessionRichText({
               {children}
             </MarkdownLink>
           ),
-          code: ({ children, className: _codeClassName, inline }: MarkdownCodeProps) => {
+          code: ({ children, className: _codeClassName }: MarkdownCodeProps) => {
             const code = flattenMarkdownChildren(children)
 
-            if (inline) {
-              return (
-                <code className="rounded-md border border-border bg-secondary px-1.5 py-0.5 font-mono text-[0.92em] text-foreground">
-                  {code}
-                </code>
-              )
-            }
-
             return (
-              <code className="font-mono text-[0.92em] text-foreground">{code}</code>
+              <code className="workspace-inline-code font-mono text-sm">
+                {code}
+              </code>
             )
           },
           pre: ({ children }: MarkdownPreProps) => {
@@ -223,7 +218,7 @@ function MarkdownLink({
         event.preventDefault()
         onLocalPathClick(href, label)
       }}
-      className="font-mono text-[0.92em] text-ws-code underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+      className="font-mono text-sm text-ws-code underline decoration-border underline-offset-4 transition hover:text-foreground/80"
       {...props}
     >
       {children}
@@ -275,9 +270,9 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         <span>{copied ? "Copied" : "Copy"}</span>
       </button>
-      <pre className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 pt-4 pb-3 font-mono text-sm leading-6 text-foreground">
+      <CodeContainer as="pre" className="pt-4 pb-3">
         <code data-language={language || undefined}>{displayCode}</code>
-      </pre>
+      </CodeContainer>
     </div>
   )
 }

@@ -1,13 +1,7 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
-import type {
-  SessionTranscriptPage,
-} from "@/gen/proto/orchd/v1/session_pb"
+import type { SessionTranscriptPage } from "@/gen/proto/orchd/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -21,6 +15,17 @@ type CreateSessionInput = {
 type SendSessionInput = {
   sessionId: string
   input: string
+}
+
+type GetSessionFileInput = {
+  sessionId: string
+  path: string
+  line?: number
+  column?: number
+}
+
+type InterruptSessionInput = {
+  sessionId: string
 }
 
 type RespondToApprovalInput = {
@@ -66,6 +71,50 @@ export function useSessionMeta(sessionId?: string) {
   })
 }
 
+export function useSessionReview(sessionId?: string, enabled = true) {
+  return useQuery({
+    enabled: Boolean(sessionId) && enabled,
+    queryKey: queryKeys.sessionReview(sessionId ?? "pending"),
+    queryFn: async () => {
+      if (!sessionId) {
+        throw new Error("sessionId is required")
+      }
+
+      const response = await sessionClient.getSessionReview({ sessionId })
+      return response.review
+    },
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+  })
+}
+
+export function useSessionFile(input?: GetSessionFileInput, enabled = true) {
+  const sessionId = input?.sessionId ?? ""
+  const path = input?.path ?? ""
+  const line = input?.line
+  const column = input?.column
+
+  return useQuery({
+    enabled: Boolean(sessionId) && path.trim().length > 0 && enabled,
+    queryKey: queryKeys.sessionFile(sessionId || "pending", path, line, column),
+    queryFn: async () => {
+      if (!sessionId || !path.trim()) {
+        throw new Error("sessionId and path are required")
+      }
+
+      const response = await sessionClient.getSessionFile({
+        sessionId,
+        path,
+        line,
+        column,
+      })
+      return response.file
+    },
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+  })
+}
+
 export async function fetchSessionTranscriptPage(
   sessionId: string,
   beforeCursor?: string,
@@ -88,7 +137,10 @@ export function useSessionTranscript(
 ) {
   return useQuery({
     enabled: Boolean(sessionId) && enabled,
-    queryKey: queryKeys.sessionTranscriptLatest(sessionId ?? "pending", pageSize),
+    queryKey: queryKeys.sessionTranscriptLatest(
+      sessionId ?? "pending",
+      pageSize
+    ),
     queryFn: async () => {
       if (!sessionId) {
         throw new Error("sessionId is required")
@@ -162,6 +214,25 @@ export function useSendSessionInput() {
   return useMutation({
     mutationFn: async ({ sessionId, input }: SendSessionInput) => {
       return sessionClient.sendSessionInput({ sessionId, input })
+    },
+    onSuccess: async (_response, variables) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionMeta(variables.sessionId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionTranscript(variables.sessionId),
+      })
+    },
+  })
+}
+
+export function useInterruptSession() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ sessionId }: InterruptSessionInput) => {
+      return sessionClient.interruptSession({ sessionId })
     },
     onSuccess: async (_response, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })

@@ -63,20 +63,20 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         className="max-w-[680px] gap-0 overflow-hidden rounded-2xl border border-ws-border-strong bg-popover p-0 text-foreground ring-0"
       >
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-          <Search className="size-4 text-muted-foreground" />
-          <Input
+            <Search className="size-4 text-muted-foreground" />
+            <Input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search threads, projects, and actions"
-            className="h-auto border-0 bg-transparent px-0 py-0 text-sm text-foreground shadow-none focus-visible:ring-0"
-          />
+              className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
+            />
           <span className="workspace-kbd">
             esc
           </span>
         </div>
 
-        <div className="max-h-[560px] overflow-y-auto p-3">
+        <div className="max-h-[560px] overflow-y-auto p-3 text-sm text-foreground">
           {!normalized ? (
             <div className="space-y-2">
               <SectionLabel>Quick actions</SectionLabel>
@@ -112,10 +112,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm text-foreground">
+                    <div className="truncate font-medium">
                       {session.title}
                     </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
+                    <div className="mt-1 text-muted-foreground">
                       {session.project?.name || "Local"} · {formatSessionStatus(session.status)}
                     </div>
                   </div>
@@ -135,10 +135,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm text-foreground">
+                    <div className="truncate font-medium">
                       {project.name}
                     </div>
-                    <div className="mt-1 truncate text-xs text-muted-foreground">
+                    <div className="mt-1 truncate text-muted-foreground">
                       {project.rootPath}
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           ) : null}
 
           {normalized && filtered.sessions.length === 0 && filtered.projects.length === 0 ? (
-            <div className="px-3 py-6 text-xs text-muted-foreground">
+            <div className="px-3 py-6 text-muted-foreground">
               No matches. Try a thread title, project name, or "settings".
             </div>
           ) : null}
@@ -160,7 +160,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <div className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="px-3 uppercase tracking-wider text-muted-foreground">
       {children}
     </div>
   )
@@ -185,8 +185,8 @@ function ActionRow({
     >
       <Icon className="mt-0.5 size-4 text-muted-foreground" />
       <div>
-        <div className="text-sm text-foreground">{label}</div>
-        <div className="mt-1 text-xs text-muted-foreground">{detail}</div>
+        <div className="text-foreground">{label}</div>
+        <div className="mt-1 text-muted-foreground">{detail}</div>
       </div>
     </button>
   )

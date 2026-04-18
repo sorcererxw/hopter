@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package orchd.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service TerminalService {
+  rpc CreateTerminalSession(CreateTerminalSessionRequest) returns (CreateTerminalSessionResponse);
+  rpc GetTerminalSession(GetTerminalSessionRequest) returns (GetTerminalSessionResponse);
+  rpc TerminateTerminalSession(TerminateTerminalSessionRequest) returns (TerminateTerminalSessionResponse);
+  rpc TerminateTerminalTab(TerminateTerminalTabRequest) returns (TerminateTerminalTabResponse);
+}
+
+enum TerminalStatus {
+  TERMINAL_STATUS_UNSPECIFIED = 0;
+  TERMINAL_STATUS_STARTING = 1;
+  TERMINAL_STATUS_LIVE = 2;
+  TERMINAL_STATUS_EXITED = 3;
+  TERMINAL_STATUS_TERMINATED = 4;
+  TERMINAL_STATUS_DEGRADED = 5;
+  TERMINAL_STATUS_FAILED = 6;
+}
+
+message TerminalSession {
+  string id = 1;
+  string project_id = 2;
+  string session_id = 3;
+  string browser_instance_id = 4;
+  string tab_id = 5;
+  string cwd = 6;
+  string shell = 7;
+  TerminalStatus status = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp last_activity_at = 10;
+  google.protobuf.Timestamp last_output_at = 11;
+  optional int32 exit_code = 12;
+  bool detached = 13;
+  string last_foreground_command_summary = 14;
+  bool last_foreground_command_exited = 15;
+}
+
+message CreateTerminalSessionRequest {
+  string session_id = 1;
+  string browser_instance_id = 2;
+  string tab_id = 3;
+  optional uint32 cols = 4;
+  optional uint32 rows = 5;
+}
+
+message CreateTerminalSessionResponse {
+  TerminalSession terminal = 1;
+}
+
+message GetTerminalSessionRequest {
+  string session_id = 1;
+  string browser_instance_id = 2;
+  string tab_id = 3;
+}
+
+message GetTerminalSessionResponse {
+  TerminalSession terminal = 1;
+}
+
+message TerminateTerminalSessionRequest {
+  string terminal_id = 1;
+}
+
+message TerminateTerminalSessionResponse {
+  TerminalSession terminal = 1;
+}
+
+message TerminateTerminalTabRequest {
+  string browser_instance_id = 1;
+  string tab_id = 2;
+}
+
+message TerminateTerminalTabResponse {
+  uint32 terminated_count = 1;
+}

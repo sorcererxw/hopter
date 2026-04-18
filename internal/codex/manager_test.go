@@ -20,6 +20,7 @@ type fakeCodexClient struct {
 	startThreadCalls int
 	startTurnCalls   int
 	steerTurnCalls   int
+	interruptTurnCalls []string
 
 	readResult   *ReadThreadResult
 	resumeResult *ResumeThreadResult
@@ -95,6 +96,11 @@ func (f *fakeCodexClient) SteerTurn(_, _, _ string) (*StartTurnResult, error) {
 	out := &StartTurnResult{}
 	out.Turn.ID = "turn-steered"
 	return out, nil
+}
+
+func (f *fakeCodexClient) InterruptTurn(threadID, turnID string) error {
+	f.interruptTurnCalls = append(f.interruptTurnCalls, threadID+":"+turnID)
+	return nil
 }
 
 func (f *fakeEventSink) Publish(event core.Event) {
@@ -713,6 +719,9 @@ func TestRespondToSessionApprovalUsesOriginalRequestIdentity(t *testing.T) {
 	}
 
 	client := &fakeCodexClient{}
+	client.readResult = readThreadResultWithTurns(
+		ReadThreadTurn{ID: "turn-1", Status: "inProgress"},
+	)
 	manager := NewManager(workspace)
 	manager.live[session.ID] = &liveSession{
 		project: project,
@@ -755,6 +764,58 @@ func TestRespondToSessionApprovalUsesOriginalRequestIdentity(t *testing.T) {
 	}
 	if updated.Status != core.SessionStateRunning {
 		t.Fatalf("status = %q, want %q", updated.Status, core.SessionStateRunning)
+	}
+}
+
+func TestInterruptSessionUsesActiveTurnAndClearsState(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	threadID := "thread-1"
+	turnID := "turn-1"
+	running := core.SessionStateRunning
+	summary := "Codex is working…"
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		ActiveTurnID:    &turnID,
+		Status:          &running,
+		Summary:         &summary,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  threadID,
+		active:  turnID,
+	}
+
+	updated, err := manager.InterruptSession(session.ID)
+	if err != nil {
+		t.Fatalf("InterruptSession: %v", err)
+	}
+	if len(client.interruptTurnCalls) != 1 {
+		t.Fatalf("interrupt turn calls = %d, want 1", len(client.interruptTurnCalls))
+	}
+	if client.interruptTurnCalls[0] != "thread-1:turn-1" {
+		t.Fatalf("interrupt turn call = %q", client.interruptTurnCalls[0])
+	}
+	if updated.Status != core.SessionStateWaitingInput {
+		t.Fatalf("status = %q, want %q", updated.Status, core.SessionStateWaitingInput)
+	}
+	if updated.ActiveTurnID != "" {
+		t.Fatalf("active turn id = %q, want empty", updated.ActiveTurnID)
 	}
 }
 

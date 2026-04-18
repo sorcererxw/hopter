@@ -333,6 +333,17 @@ func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnRes
 	return &out, nil
 }
 
+func (c *Client) InterruptTurn(threadID, turnID string) error {
+	_, err := c.request("turn/interrupt", map[string]any{
+		"threadId": threadID,
+		"turnId":   turnID,
+	})
+	if err != nil {
+		return fmt.Errorf("interrupt turn: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) ReadThread(threadID string) (*ReadThreadResult, error) {
 	return c.readThread(threadID, true)
 }

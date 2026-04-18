@@ -106,6 +106,59 @@ The evidence should include screenshots and at least one interaction proof for:
 - compact rail inline expand / collapse behavior
 - desktop toolbar persistence in wide mode
 
+## Typography rules
+
+These rules apply to `ui/**` outside `ui/src/components/ui/*` primitives unless a file has a clear, local semantic reason to differ.
+
+### Font families
+
+- Default UI and reading font is `Geist`.
+- Use mono only for actual code semantics:
+  - inline code in rich text
+  - code blocks
+  - command output
+  - logs
+- Do not switch a label, path, or link to mono just because it "looks technical". If it behaves like normal UI text, keep the UI font.
+
+### Ownership
+
+- Prefer putting text size and font weight on the nearest meaningful container.
+- Do not repeat `text-sm` / `text-base` / `font-medium` on child nodes when the parent already establishes the same baseline.
+- Keep local overrides only when the child truly has different semantics, for example:
+  - metadata
+  - section labels
+  - page titles
+  - inline code
+  - code containers
+
+### Size scale
+
+- `text-2xl`: page-level titles
+- `text-base`: reading surfaces, primary input text, main body copy
+- `text-sm`: standard controls, rows, dialogs, secondary panes
+- `text-xs`: metadata, timestamps, compact labels, uppercase section markers
+
+Avoid ad hoc sizes in app-layer code.
+
+### Weight scale
+
+- Default readable UI baseline should be `font-medium` where the surface is meant to be actively read.
+- Use normal inherited weight for child text when the container already carries `font-medium`.
+- Reserve heavier emphasis for real semantic emphasis only. Do not stack extra `font-medium` on children just to make them "feel clearer".
+
+### Inline code
+
+- Rich-text inline code must use the dedicated inline-code treatment:
+  - mono
+  - `text-sm`
+  - muted gray chip background
+- Reuse the existing inline-code styling instead of inventing per-component variants.
+
+### Code containers
+
+- Reuse a shared code-container owner for block code where practical.
+- Keep technical density decisions local to the owning surface when needed, but do not fork font family, base size, border, and spacing rules without a reason.
+
 ## Tailwind usage note
 
 For shell posture, do not assume Tailwind default `md` means "tablet/desktop boundary".

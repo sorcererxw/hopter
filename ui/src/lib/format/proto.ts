@@ -2,23 +2,31 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt"
 
 import { ArtifactKind, SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
 
-export function formatSessionStatus(status: SessionStatus) {
+export function formatSessionStatus(status: SessionStatus | string | number) {
   switch (status) {
     case SessionStatus.PENDING:
+    case "SESSION_STATUS_PENDING":
       return "pending"
     case SessionStatus.RUNNING:
+    case "SESSION_STATUS_RUNNING":
       return "running"
     case SessionStatus.WAITING_INPUT:
+    case "SESSION_STATUS_WAITING_INPUT":
       return "waiting for input"
     case SessionStatus.WAITING_APPROVAL:
+    case "SESSION_STATUS_WAITING_APPROVAL":
       return "waiting for approval"
     case SessionStatus.COMPLETED:
+    case "SESSION_STATUS_COMPLETED":
       return "completed"
     case SessionStatus.FAILED:
+    case "SESSION_STATUS_FAILED":
       return "failed"
     case SessionStatus.DEGRADED:
+    case "SESSION_STATUS_DEGRADED":
       return "degraded"
     case SessionStatus.UNSPECIFIED:
+    case "SESSION_STATUS_UNSPECIFIED":
     default:
       return "unspecified"
   }

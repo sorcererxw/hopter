@@ -51,6 +51,10 @@ func (w *InMemoryWorkspace) ListBackends() []Backend {
 	}
 }
 
+func (w *InMemoryWorkspace) ListSkills() ([]Skill, error) {
+	return discoverSkills()
+}
+
 func (w *InMemoryWorkspace) ListDirectoryRoots() ([]DirectoryRoot, error) {
 	return discoverDirectoryRoots()
 }

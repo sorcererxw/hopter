@@ -32,6 +32,7 @@ import { useCreateProject } from "@/features/projects/use-projects"
 import { queryClient } from "@/lib/query/client"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type Breadcrumb = {
@@ -313,15 +314,17 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
         className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-base text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
       >
         <div className="flex h-full min-h-0 w-full max-w-7xl flex-col overflow-hidden rounded-xl border border-border bg-popover">
-          <div className="flex h-13 items-center gap-2 border-b border-border bg-card px-3">
-            <button
+          <div className="flex h-13 items-center gap-2 border-b border-border bg-card px-3 text-sm font-medium text-foreground">
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={closeProjectPicker}
-              className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              className="text-muted-foreground"
               title="Close"
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
 
             <div className="flex items-center gap-0.5">
               <ToolbarButton disabled={historyIndex <= 0} onClick={goBack}>
@@ -335,18 +338,20 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
             <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
               {breadcrumbs.map((crumb, index) => (
                 <div key={crumb.path} className="flex min-w-0 items-center gap-0.5">
-                  <button
+                  <Button
                     type="button"
+                    variant={index === breadcrumbs.length - 1 ? "secondary" : "ghost"}
+                    size="xs"
                     onClick={() => openDirectory(crumb.path)}
                     className={cn(
-                      "max-w-30 truncate rounded px-1 py-0.5 transition hover:bg-accent",
+                      "max-w-30 justify-start truncate px-1 py-0.5",
                       index === breadcrumbs.length - 1
-                        ? "font-semibold text-foreground"
+                        ? "text-foreground"
                         : "text-muted-foreground"
                     )}
                   >
                     {crumb.label}
-                  </button>
+                  </Button>
                   {index < breadcrumbs.length - 1 ? (
                     <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
                   ) : null}
@@ -442,18 +447,18 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
             </div>
 
             <div className="ml-4 flex shrink-0 items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={closeProjectPicker}
-                className="rounded-md bg-secondary px-4 py-1.5 text-foreground transition hover:bg-accent"
+                variant="secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => void handleOpen()}
                 className={cn(
-                  "rounded-md px-4 py-1.5 font-medium text-white transition",
+                  "text-white",
                   createProject.isPending
                     ? "cursor-wait bg-picker/70"
                     : "bg-picker hover:bg-picker-hover"
@@ -461,7 +466,7 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
                 data-testid="project-create-submit"
               >
                 Open
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -479,7 +484,7 @@ function SidebarSection({
 }) {
   return (
     <div className="mb-3">
-      <div className="px-6 pb-2 pt-2 font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="px-6 pb-2 pt-2 text-xs font-normal uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       {children}
@@ -499,26 +504,22 @@ function SidebarItem({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant={active ? "secondary" : "ghost"}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-4 rounded-none px-6 py-3 text-left transition",
+        "h-auto w-full justify-start gap-4 rounded-none px-6 py-3 text-left transition",
         active
           ? "bg-picker/25 text-foreground"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
       {icon}
-      <span
-        className={cn(
-          "truncate",
-          active ? "font-semibold text-foreground" : "text-muted-foreground"
-        )}
-      >
+        <span className={cn("truncate", active ? "text-foreground" : "text-muted-foreground")}>
         {label}
       </span>
-    </button>
+    </Button>
   )
 }
 
@@ -536,22 +537,24 @@ function ToolbarButton({
   title?: string
 }) {
   return (
-    <button
+    <Button
       type="button"
       disabled={disabled}
       onClick={onClick}
       title={title}
+      variant={active ? "secondary" : "ghost"}
+      size="icon-lg"
       className={cn(
-        "flex size-10 items-center justify-center rounded-lg text-muted-foreground transition",
+        "text-muted-foreground",
         disabled
           ? "cursor-not-allowed opacity-30"
           : active
-            ? "bg-accent text-foreground"
-            : "hover:bg-accent hover:text-foreground"
+            ? "text-foreground"
+            : "hover:text-foreground"
       )}
     >
       {children}
-    </button>
+    </Button>
   )
 }
 
@@ -577,15 +580,15 @@ function ListView({
         <col className="w-1/3" />
         <col className="w-1/6" />
       </colgroup>
-      <thead>
+      <thead className="text-sm font-normal text-muted-foreground">
         <tr className="border-b border-border">
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left">
             Name
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left">
             Date Modified
           </th>
-          <th className="sticky top-0 bg-popover px-6 py-4 text-left font-medium text-muted-foreground">
+          <th className="sticky top-0 bg-popover px-6 py-4 text-left">
             Size
           </th>
         </tr>

@@ -1,402 +1,363 @@
-import { X } from "lucide-react"
-import { ArtifactKind } from "@/gen/proto/orchd/v1/common_pb"
+import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "lucide-react"
 
-import { SessionRichText } from "@/components/app/session-rich-text"
-import { usePathMetadata } from "@/features/host/use-host-browser"
-import type { Session } from "@/gen/proto/orchd/v1/session_pb"
-import {
-  formatArtifactKind,
-  formatSessionStatus,
-  formatUpdatedAt,
-} from "@/lib/format/proto"
+import { ShikiCodeFrame } from "@/components/app/shiki-code-frame"
+import { Button } from "@/components/ui/button"
+import type {
+  SessionFile,
+  SessionReview,
+} from "@/gen/proto/orchd/v1/session_pb"
 import { cn } from "@/lib/utils"
 
-type InspectorTab = "summary" | "review"
-type InspectorMode = "code" | "diff"
-
-export type InspectorSelectedDiff = {
-  additions: number
-  deletions: number
-  diff?: string
-  kindLabel: string
-  path: string
-}
+export type SessionSidebarMode = "file" | "review"
+export type SessionReviewView = "file" | "full"
 
 type SessionInspectorPaneProps = {
-  activeTab: InspectorTab
-  mode: InspectorMode
+  file?: SessionFile
+  fileLoading?: boolean
+  mobile?: boolean
+  mode: SessionSidebarMode
   onClose: () => void
-  onModeChange: (mode: InspectorMode) => void
-  onTabChange: (tab: InspectorTab) => void
-  selectedDiff?: InspectorSelectedDiff | null
-  selectedPath?: string | null
-  session: Session
-}
-
-function tokenizeLine(line: string) {
-  const keywords = new Set([
-    "thread",
-    "project",
-    "status",
-    "updated_at",
-    "summary",
-    "true",
-    "false",
-    "null",
-    "undefined",
-  ])
-
-  if (line.trim().startsWith("//")) {
-    return <span style={{ color: "#6a9955" }}>{line}</span>
-  }
-
-  const result: Array<{ text: string; color: string }> = []
-  let i = 0
-
-  while (i < line.length) {
-    if (line[i] === "`") {
-      let j = i + 1
-      while (j < line.length && line[j] !== "`") {
-        j += 1
-      }
-      j += 1
-      result.push({
-        color: "var(--workspace-inline-code-text)",
-        text: line.slice(i, j),
-      })
-      i = j
-      continue
-    }
-
-    if (line[i] === "'" || line[i] === '"') {
-      const quote = line[i]
-      let j = i + 1
-      while (j < line.length && line[j] !== quote) {
-        if (line[j] === "\\") {
-          j += 1
-        }
-        j += 1
-      }
-      j += 1
-      result.push({ color: "#ce9178", text: line.slice(i, j) })
-      i = j
-      continue
-    }
-
-    if (/[a-zA-Z_]/.test(line[i])) {
-      let j = i + 1
-      while (j < line.length && /[a-zA-Z0-9_./-]/.test(line[j])) {
-        j += 1
-      }
-      const word = line.slice(i, j)
-      let color = "#d4d4d4"
-      if (keywords.has(word.replace(/:$/, ""))) {
-        color = "#569cd6"
-      } else if (
-        word.includes(".proto") ||
-        word.includes(".go") ||
-        word.includes(".md")
-      ) {
-        color = "#9cdcfe"
-      }
-      result.push({ color, text: word })
-      i = j
-      continue
-    }
-
-    result.push({ color: "#d4d4d4", text: line[i] })
-    i += 1
-  }
-
-  return (
-    <>
-      {result.map((token, index) => (
-        <span key={`${token.text}-${index}`} style={{ color: token.color }}>
-          {token.text}
-        </span>
-      ))}
-    </>
-  )
+  onModeChange: (mode: SessionSidebarMode) => void
+  onReviewFileSelect: (path: string) => void
+  onReviewViewChange: (view: SessionReviewView) => void
+  review?: SessionReview
+  reviewFile: string | null
+  reviewLoading?: boolean
+  reviewView: SessionReviewView
 }
 
 export function SessionInspectorPane({
-  activeTab,
+  file,
+  fileLoading = false,
+  mobile = false,
   mode,
   onClose,
   onModeChange,
-  onTabChange,
-  selectedDiff,
-  selectedPath,
-  session,
+  onReviewFileSelect,
+  onReviewViewChange,
+  review,
+  reviewFile,
+  reviewLoading = false,
+  reviewView,
 }: SessionInspectorPaneProps) {
-  const reviewLabel = "summary.md"
-  const selectedPathQuery = usePathMetadata(selectedPath ?? "", Boolean(selectedPath))
-  const selectedPathMetadata = selectedPathQuery.data
+  const selectedReviewFile =
+    review?.files.find((entry) => entry.path === reviewFile) ?? review?.files[0]
 
   return (
     <aside
-      className="flex h-full w-[404px] shrink-0 flex-col border-l border-border bg-card"
+      className={cn(
+        "flex min-h-0 shrink-0 flex-col bg-card text-sm font-medium text-foreground",
+        mobile ? "h-full w-full" : "h-full"
+      )}
       data-testid="session-inspector-pane"
     >
-      <div className="flex items-center gap-1 border-b border-border bg-popover px-3 py-2">
-        <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-          <InspectorTabButton
-            active={activeTab === "summary"}
-            onClick={() => onTabChange("summary")}
+      <div className="flex items-center gap-2 border-b border-border bg-popover px-3 py-2">
+        <div className="flex min-w-0 items-center gap-1">
+          <ModeButton
+            active={mode === "file"}
+            onClick={() => onModeChange("file")}
           >
-            Summary
-          </InspectorTabButton>
-          <InspectorTabButton
-            active={false}
-            onClick={() => onTabChange("review")}
+            File
+          </ModeButton>
+          <ModeButton
+            active={mode === "review"}
+            onClick={() => onModeChange("review")}
           >
             Review
-          </InspectorTabButton>
-          <InspectorTabButton
-            active={activeTab === "review"}
-            onClick={() => onTabChange("review")}
-          >
-            {reviewLabel}
-          </InspectorTabButton>
+          </ModeButton>
         </div>
 
-        <div className="ml-auto flex items-center gap-1">
-          <ModeButton
-            active={mode === "code"}
-            onClick={() => onModeChange("code")}
-          >
-            Code
-          </ModeButton>
-          <ModeButton
-            active={mode === "diff"}
-            onClick={() => onModeChange("diff")}
-          >
-            Diff
-          </ModeButton>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-muted-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
+        {mode === "review" ? (
+          <div className="ml-auto flex items-center gap-1">
+            <ViewButton
+              active={reviewView === "file"}
+              onClick={() => onReviewViewChange("file")}
+            >
+              {reviewFile ? <PanelRightOpen className="size-3.5" /> : null}
+              File
+            </ViewButton>
+            <ViewButton
+              active={reviewView === "full"}
+              onClick={() => onReviewViewChange("full")}
+            >
+              <PanelRightClose className="size-3.5" />
+              Full patch
+            </ViewButton>
+          </div>
+        ) : (
+          <div className="ml-auto" />
+        )}
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          className="text-muted-foreground"
+        >
+          <X className="size-4" />
+        </Button>
       </div>
 
-      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
-        {activeTab === "summary" ? (
-          <div className="space-y-4 p-4">
-            {selectedPath ? (
-              <div className="rounded-lg border border-border bg-card px-4 py-4">
-                <div className="text-xs font-medium text-muted-foreground">
-                  Linked file
-                </div>
-                <div className="mt-2 font-mono text-sm text-ws-code">
-                  {selectedPathMetadata?.basename || selectedPath.split("/").pop() || selectedPath}
-                </div>
-                <div className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {selectedPathMetadata?.canonicalPath || selectedPath}
-                </div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  {selectedPathQuery.isLoading
-                    ? "Loading metadata..."
-                    : selectedPathMetadata?.isDirectory
-                      ? "Directory"
-                      : "File"}
-                </div>
-              </div>
-            ) : null}
-            <div className="rounded-lg border border-border bg-card">
-              <div className="border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
-                Current state
-              </div>
-              <SessionRichText
-                text={session.summary || "No summary yet."}
-                className="px-4 py-4 text-sm leading-6"
-              />
-            </div>
-
-            <div className="rounded-lg border border-border bg-card">
-              <InfoRow
-                label="Status"
-                value={formatSessionStatus(session.status)}
-              />
-              <InfoRow
-                label="Project"
-                value={session.project?.name || "Unassigned"}
-              />
-              <InfoRow
-                label="Updated"
-                value={formatUpdatedAt(session.updatedAt)}
-              />
-              <InfoRow
-                label="Attention"
-                multiline
-                value={
-                  session.attentionRequired
-                    ? session.attentionReason || "User action required"
-                    : "No attention required"
-                }
-              />
-            </div>
-          </div>
-        ) : mode === "code" ? (
-          <CodeModePane session={session} />
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {mode === "file" ? (
+          <FilePanel file={file} loading={fileLoading} />
         ) : (
-          <DiffModePane selectedDiff={selectedDiff} session={session} />
+          <ReviewPanel
+            review={review}
+            reviewFile={selectedReviewFile?.path ?? null}
+            reviewLoading={reviewLoading}
+            reviewView={reviewView}
+            onReviewFileSelect={onReviewFileSelect}
+          />
         )}
       </div>
     </aside>
   )
 }
 
-function CodeModePane({ session }: { session: Session }) {
-  const lines = [
-    `thread: ${session.title || "Untitled"}`,
-    `project: ${session.project?.name || "Unassigned"}`,
-    `status: ${formatSessionStatus(session.status)}`,
-    `updated_at: ${formatUpdatedAt(session.updatedAt)}`,
-    "",
-    "summary:",
-    ...(session.summary || "No summary yet.").split("\n"),
-  ]
-
-  return (
-    <div className="h-full overflow-auto py-2">
-      {lines.map((line, index) => (
-        <div
-          key={`${line}-${index}`}
-          className="flex items-start px-0 transition hover:bg-muted"
-        >
-          <div className="w-12 shrink-0 pr-4 text-right font-mono text-xs leading-5 text-muted-foreground select-none">
-            {index + 1}
-          </div>
-          <pre className="m-0 flex-1 pr-4 font-mono text-xs leading-5 whitespace-pre-wrap text-foreground">
-            {tokenizeLine(line)}
-          </pre>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function DiffModePane({
-  selectedDiff,
-  session,
+function FilePanel({
+  file,
+  loading,
 }: {
-  selectedDiff?: InspectorSelectedDiff | null
-  session: Session
+  file?: SessionFile
+  loading: boolean
 }) {
-  if (selectedDiff) {
-    return (
-      <div className="space-y-4 p-4">
-        <div className="rounded-lg border border-border bg-card px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate font-mono text-sm text-ws-code">
-                {selectedDiff.path}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {selectedDiff.kindLabel}
-                {selectedDiff.additions || selectedDiff.deletions
-                  ? `  +${selectedDiff.additions} -${selectedDiff.deletions}`
-                  : ""}
-              </p>
-            </div>
-          </div>
-        </div>
+  if (loading) {
+    return <PanelLoading label="Loading file…" />
+  }
 
-        {selectedDiff.diff ? (
-          <pre className="workspace-scrollbar overflow-x-auto rounded-lg border border-border bg-card p-4 font-mono text-xs leading-6 whitespace-pre">
-            {selectedDiff.diff}
-          </pre>
-        ) : (
-          <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
-            This file change does not currently include inline diff content.
-          </div>
-        )}
-      </div>
+  if (!file) {
+    return <PanelEmpty label="Select a file from the thread to open it here." />
+  }
+
+  if (!file.available) {
+    return (
+      <PanelMessage
+        title="File unavailable"
+        body={file.reason || "The requested file could not be opened."}
+        meta={[
+          file.requestedPath ? `Requested: ${file.requestedPath}` : null,
+          file.canonicalPath ? `Resolved: ${file.canonicalPath}` : null,
+        ]}
+      />
     )
   }
 
-  const changedArtifacts = session.artifacts.filter(
-    (artifact) => artifact.kind === ArtifactKind.CHANGED_FILES
-  )
-
-  if (changedArtifacts.length === 0) {
+  if (file.isBinary) {
     return (
-      <div className="p-4">
-        <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-5 text-sm leading-6 text-foreground/70">
-          No changed-files artifact yet. When the backend emits file changes or
-          review metadata, the diff view will render them here.
-        </div>
-      </div>
+      <PanelMessage
+        title="Binary file not previewable"
+        body={
+          file.reason ||
+          "This file exists, but the sidebar only previews text files."
+        }
+        meta={[
+          file.displayPath || file.requestedPath || null,
+          file.canonicalPath || null,
+        ]}
+      />
     )
   }
 
   return (
-    <div className="space-y-3 p-4">
-      {changedArtifacts.map((artifact) => (
-        <div
-          key={artifact.id}
-          className="rounded-lg border border-border bg-card px-4 py-4"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm text-foreground">
-                {artifact.label}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {formatArtifactKind(artifact.kind)}
-              </p>
-            </div>
-            <span className="rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground">
-              {artifact.contentType || "metadata"}
-            </span>
-          </div>
-
-          {artifact.downloadUrl ? (
-            <a
-              href={artifact.downloadUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center rounded-md border border-border bg-accent px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-accent"
-            >
-              Download artifact
-            </a>
-          ) : (
-            <p className="mt-4 text-xs leading-6 text-muted-foreground">
-              This artifact currently exposes metadata only.
-            </p>
-          )}
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-border px-4 py-3">
+        <div className="truncate font-mono text-ws-code">
+          {file.displayPath || file.requestedPath}
         </div>
-      ))}
+        <div className="mt-1 truncate text-xs text-muted-foreground">
+          {file.canonicalPath}
+        </div>
+        {file.truncated ? (
+          <div className="mt-2 text-xs text-amber-200/80">
+            Preview truncated for large file size.
+          </div>
+        ) : null}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto py-2">
+        <ShikiCodeFrame
+          code={file.content}
+          filePath={file.displayPath || file.requestedPath}
+          targetLine={file.initialLine}
+        />
+      </div>
     </div>
   )
 }
 
-function InspectorTabButton({
-  active,
-  children,
-  onClick,
+function ReviewPanel({
+  review,
+  reviewFile,
+  reviewLoading,
+  reviewView,
+  onReviewFileSelect,
 }: {
-  active: boolean
-  children: string
-  onClick: () => void
+  review?: SessionReview
+  reviewFile: string | null
+  reviewLoading: boolean
+  reviewView: SessionReviewView
+  onReviewFileSelect: (path: string) => void
 }) {
+  if (reviewLoading) {
+    return <PanelLoading label="Loading review…" />
+  }
+
+  if (!review || !review.available) {
+    return (
+      <PanelMessage
+        title="Review unavailable"
+        body={review?.reason || "No completed turn is available to review yet."}
+        meta={
+          review?.pendingTurnInProgress
+            ? ["A newer turn is still running."]
+            : undefined
+        }
+      />
+    )
+  }
+
+  const selectedFile =
+    review.files.find((entry) => entry.path === reviewFile) ?? review.files[0]
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "truncate rounded-md px-3 py-1.5 text-sm transition",
-        active
-          ? "border-b border-ws-code bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+    <div className="flex h-full min-h-0 flex-col">
+      {review.pendingTurnInProgress ? (
+        <div className="border-b border-border bg-secondary px-4 py-2 text-xs text-muted-foreground">
+          A newer turn is still running. Review is showing the latest completed
+          turn.
+        </div>
+      ) : null}
+
+      {reviewView === "full" ? (
+        <div className="min-h-0 flex-1 overflow-auto py-2">
+          <ShikiCodeFrame
+            code={
+              review.fullPatch.trim() ||
+              "This turn does not currently expose a full patch."
+            }
+            language="diff"
+          />
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1">
+          <div className="flex w-56 shrink-0 flex-col border-r border-border bg-popover">
+            <div className="border-b border-border px-3 py-2 text-xs tracking-wide text-muted-foreground uppercase">
+              Changed files
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto p-2">
+              <div className="space-y-1">
+                {review.files.map((file) => (
+                  <button
+                    key={file.path}
+                    type="button"
+                    onClick={() => onReviewFileSelect(file.path)}
+                    className={cn(
+                      "flex w-full items-start gap-2 rounded-md px-2 py-2 text-left transition",
+                      selectedFile?.path === file.path
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    )}
+                  >
+                    <span className="shrink-0 text-xs tracking-wide text-muted-foreground uppercase">
+                      {file.kind}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-mono text-xs text-ws-code">
+                        {file.path}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        +{file.additions} -{file.deletions}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+            {selectedFile ? (
+              <div className="flex h-full min-h-0 flex-col">
+                <div className="border-b border-border px-4 py-3">
+                  <div className="truncate font-mono text-ws-code">
+                    {selectedFile.path}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {selectedFile.kind} · +{selectedFile.additions} -
+                    {selectedFile.deletions}
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto py-2">
+                  <ShikiCodeFrame
+                    code={
+                      selectedFile.diff.trim() ||
+                      "This file change does not currently expose inline diff content."
+                    }
+                    filePath={selectedFile.path}
+                    language="diff"
+                  />
+                </div>
+              </div>
+            ) : (
+              <PanelEmpty label="Select a changed file to inspect its diff." />
+            )}
+          </div>
+        </div>
       )}
-    >
-      {children}
-    </button>
+    </div>
+  )
+}
+
+function PanelLoading({ label }: { label: string }) {
+  return (
+    <div className="flex h-full items-center justify-center px-6">
+      <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-muted-foreground">
+        <LoaderCircle className="size-4 animate-spin" />
+        <span>{label}</span>
+      </div>
+    </div>
+  )
+}
+
+function PanelEmpty({ label }: { label: string }) {
+  return (
+    <div className="flex h-full items-center justify-center px-6">
+      <div className="max-w-sm rounded-lg border border-dashed border-border bg-muted px-5 py-4 text-center font-normal leading-6 text-muted-foreground">
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function PanelMessage({
+  title,
+  body,
+  meta,
+}: {
+  title: string
+  body: string
+  meta?: Array<string | null | undefined>
+}) {
+  const visibleMeta = (meta ?? []).filter(Boolean)
+
+  return (
+    <div className="flex h-full items-center justify-center px-6">
+      <div className="max-w-md rounded-lg border border-border bg-card px-5 py-4">
+        <div className="text-base text-foreground">{title}</div>
+        <div className="mt-2 font-normal leading-6 text-muted-foreground">
+          {body}
+        </div>
+        {visibleMeta.length > 0 ? (
+          <div className="mt-3 space-y-1 text-xs leading-5 text-muted-foreground">
+            {visibleMeta.map((item) => (
+              <div key={item}>{item}</div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
   )
 }
 
@@ -410,43 +371,36 @@ function ModeButton({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
-      className={cn(
-        "rounded-md px-2.5 py-1 text-sm transition",
-        active
-          ? "bg-accent text-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-      )}
+      variant={active ? "secondary" : "ghost"}
+      size="sm"
+      className={cn(active ? "text-foreground" : "text-muted-foreground")}
     >
       {children}
-    </button>
+    </Button>
   )
 }
 
-function InfoRow({
-  label,
-  multiline = false,
-  value,
+function ViewButton({
+  active,
+  children,
+  onClick,
 }: {
-  label: string
-  multiline?: boolean
-  value: string
+  active: boolean
+  children: React.ReactNode
+  onClick: () => void
 }) {
   return (
-    <div className="border-b border-border px-4 py-3 last:border-b-0">
-      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1.5 text-sm leading-6 text-foreground",
-          multiline ? "" : "truncate"
-        )}
-      >
-        {value}
-      </p>
-    </div>
+    <Button
+      type="button"
+      onClick={onClick}
+      variant={active ? "secondary" : "ghost"}
+      size="xs"
+      className={cn("gap-1", active ? "text-foreground" : "text-muted-foreground")}
+    >
+      {children}
+    </Button>
   )
 }

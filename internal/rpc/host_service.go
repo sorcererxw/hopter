@@ -59,6 +59,27 @@ func (s *HostService) ListBackends(_ context.Context, _ *connect.Request[orchdv1
 	return connect.NewResponse(response), nil
 }
 
+func (s *HostService) ListSkills(_ context.Context, _ *connect.Request[orchdv1.ListSkillsRequest]) (*connect.Response[orchdv1.ListSkillsResponse], error) {
+	skills, err := s.workspace.ListSkills()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("list skills: %w", err))
+	}
+
+	response := &orchdv1.ListSkillsResponse{
+		Skills: make([]*orchdv1.SkillSummary, 0, len(skills)),
+	}
+	for _, skill := range skills {
+		response.Skills = append(response.Skills, &orchdv1.SkillSummary{
+			Name:        skill.Name,
+			Reference:   skill.Reference,
+			Description: skill.Description,
+			Source:      skill.Source,
+		})
+	}
+
+	return connect.NewResponse(response), nil
+}
+
 func (s *HostService) ListDirectoryRoots(_ context.Context, _ *connect.Request[orchdv1.ListDirectoryRootsRequest]) (*connect.Response[orchdv1.ListDirectoryRootsResponse], error) {
 	roots, err := s.workspace.ListDirectoryRoots()
 	if err != nil {

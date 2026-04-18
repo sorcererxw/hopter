@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type BottomSheetProps = {
@@ -42,15 +43,17 @@ export function BottomSheet({ children, onClose, open, title }: BottomSheetProps
           "animate-in slide-in-from-bottom duration-200"
         )}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-popover px-4 py-3">
-          <span className="text-sm font-medium text-foreground">{title}</span>
-          <button
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-popover px-4 py-3 text-sm font-medium text-foreground">
+          <span className="text-foreground">{title}</span>
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
+            className="text-muted-foreground"
           >
             Done
-          </button>
+          </Button>
         </div>
         <div className="py-1">{children}</div>
       </div>
@@ -68,15 +71,13 @@ export function BottomSheetItem({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
-      className={cn(
-        "flex w-full items-center px-4 py-3 text-base text-foreground transition",
-        active ? "bg-accent font-medium" : "hover:bg-accent"
-      )}
+      variant="ghost"
+      className={cn("flex w-full items-center px-4 py-3 text-base text-foreground", active ? "bg-accent font-medium" : "hover:bg-accent")}
     >
       {children}
-    </button>
+    </Button>
   )
 }

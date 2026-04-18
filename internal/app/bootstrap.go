@@ -12,6 +12,7 @@ import (
 	"orchd/internal/events"
 	serverhttp "orchd/internal/http"
 	rpcserver "orchd/internal/rpc"
+	"orchd/internal/terminal"
 )
 
 type Runtime struct {
@@ -25,6 +26,7 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
 	codexManager := codex.NewManager(workspace, eventHub)
+	terminalManager := terminal.NewManager(workspace)
 	backendManager := backend.NewManager(workspace, map[string]backend.Runtime{
 		backend.DefaultBackendKey: backend.NewCodexRuntime(codexManager),
 		"copilot":                 copilotbackend.NewManager(workspace),
@@ -32,12 +34,14 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, backendManager)
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
-		Version:               cfg.Version,
-		UI:                    serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
-		EventHub:              eventHub,
-		HostServiceHandler:    rpcserver.NewHostService(workspace),
-		ProjectServiceHandler: rpcserver.NewProjectService(workspace, backendManager),
-		SessionServiceHandler: rpcserver.NewSessionService(workspace, backendManager, sessionReadModel),
+		Version:                cfg.Version,
+		UI:                     serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
+		EventHub:               eventHub,
+		HostServiceHandler:     rpcserver.NewHostService(workspace),
+		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, backendManager),
+		SessionServiceHandler:  rpcserver.NewSessionService(workspace, backendManager, sessionReadModel),
+		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
+		TerminalStreamHandler:  terminalManager,
 	})
 	if err != nil {
 		return nil, err

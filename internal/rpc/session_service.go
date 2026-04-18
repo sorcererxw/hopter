@@ -23,11 +23,14 @@ type sessionRuntime interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string) (core.Session, error)
+	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
 
 type sessionDetailReader interface {
 	GetSessionMeta(sessionID string) (core.SessionMeta, error)
+	GetSessionReview(sessionID string) (core.SessionReview, error)
+	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
 	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
 }
 
@@ -129,6 +132,31 @@ func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[
 	}), nil
 }
 
+func (s *SessionService) GetSessionReview(_ context.Context, req *connect.Request[orchdv1.GetSessionReviewRequest]) (*connect.Response[orchdv1.GetSessionReviewResponse], error) {
+	review, err := s.reader.GetSessionReview(req.Msg.GetSessionId())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q review not found", req.Msg.GetSessionId()))
+	}
+	return connect.NewResponse(&orchdv1.GetSessionReviewResponse{
+		Review: sessionReviewToProto(review),
+	}), nil
+}
+
+func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[orchdv1.GetSessionFileRequest]) (*connect.Response[orchdv1.GetSessionFileResponse], error) {
+	file, err := s.reader.GetSessionFile(core.GetSessionFileInput{
+		SessionID: req.Msg.GetSessionId(),
+		Path:      req.Msg.GetPath(),
+		Line:      req.Msg.GetLine(),
+		Column:    req.Msg.GetColumn(),
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q file not found", req.Msg.GetSessionId()))
+	}
+	return connect.NewResponse(&orchdv1.GetSessionFileResponse{
+		File: sessionFileToProto(file),
+	}), nil
+}
+
 func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.Request[orchdv1.ListSessionTranscriptRequest]) (*connect.Response[orchdv1.ListSessionTranscriptResponse], error) {
 	page, err := s.reader.ListSessionTranscript(core.ListSessionTranscriptInput{
 		SessionID:    req.Msg.GetSessionId(),
@@ -165,6 +193,18 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return connect.NewResponse(&orchdv1.SendSessionInputResponse{
+		Accepted:  true,
+		SessionId: session.ID,
+		UpdatedAt: timestamp(session.UpdatedAt),
+	}), nil
+}
+
+func (s *SessionService) InterruptSession(_ context.Context, req *connect.Request[orchdv1.InterruptSessionRequest]) (*connect.Response[orchdv1.InterruptSessionResponse], error) {
+	session, err := s.codex.InterruptSession(req.Msg.GetSessionId())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	return connect.NewResponse(&orchdv1.InterruptSessionResponse{
 		Accepted:  true,
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),

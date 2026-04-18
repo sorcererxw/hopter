@@ -66,6 +66,14 @@ type Backend struct {
 	Reason    string
 }
 
+type Skill struct {
+	Name        string
+	Reference   string
+	Description string
+	Source      string
+	Path        string
+}
+
 type DirectoryRoot struct {
 	Label string
 	Path  string
@@ -97,6 +105,44 @@ type PathMetadata struct {
 	ChildDirectoryCount int
 	ChildFileCount      int
 	ModifiedAt          time.Time
+}
+
+type SessionFile struct {
+	SessionID     string
+	ProjectID     string
+	Available     bool
+	RequestedPath string
+	CanonicalPath string
+	DisplayPath   string
+	Content       string
+	Reason        string
+	Truncated     bool
+	IsBinary      bool
+	LineCount     int
+	InitialLine   int
+	InitialColumn int
+}
+
+type SessionReviewFile struct {
+	Path         string
+	Kind         string
+	MovePath     string
+	Additions    int
+	Deletions    int
+	Diff         string
+	DisplayLabel string
+}
+
+type SessionReview struct {
+	SessionID             string
+	ProjectID             string
+	Available             bool
+	TurnID                string
+	Reason                string
+	FullPatch             string
+	Files                 []SessionReviewFile
+	GeneratedAt           time.Time
+	PendingTurnInProgress bool
 }
 
 type HostSnapshot struct {
@@ -157,6 +203,13 @@ type ListSessionTranscriptInput struct {
 	Limit        uint32
 }
 
+type GetSessionFileInput struct {
+	SessionID string
+	Path      string
+	Line      uint32
+	Column    uint32
+}
+
 type SessionTranscriptPage struct {
 	SessionID         string
 	ProjectID         string
@@ -212,6 +265,7 @@ type EventSink interface {
 type WorkspaceService interface {
 	GetHostStatus() HostSnapshot
 	ListBackends() []Backend
+	ListSkills() ([]Skill, error)
 	ListDirectoryRoots() ([]DirectoryRoot, error)
 	ListDirectory(path string) (DirectoryListing, error)
 	GetPathMetadata(path string) (PathMetadata, error)

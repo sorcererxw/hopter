@@ -39,6 +39,8 @@ const (
 	// HostServiceListBackendsProcedure is the fully-qualified name of the HostService's ListBackends
 	// RPC.
 	HostServiceListBackendsProcedure = "/orchd.v1.HostService/ListBackends"
+	// HostServiceListSkillsProcedure is the fully-qualified name of the HostService's ListSkills RPC.
+	HostServiceListSkillsProcedure = "/orchd.v1.HostService/ListSkills"
 	// HostServiceListDirectoryRootsProcedure is the fully-qualified name of the HostService's
 	// ListDirectoryRoots RPC.
 	HostServiceListDirectoryRootsProcedure = "/orchd.v1.HostService/ListDirectoryRoots"
@@ -57,6 +59,7 @@ const (
 type HostServiceClient interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
@@ -84,6 +87,12 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+HostServiceListBackendsProcedure,
 			connect.WithSchema(hostServiceMethods.ByName("ListBackends")),
+			connect.WithClientOptions(opts...),
+		),
+		listSkills: connect.NewClient[v1.ListSkillsRequest, v1.ListSkillsResponse](
+			httpClient,
+			baseURL+HostServiceListSkillsProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
 			connect.WithClientOptions(opts...),
 		),
 		listDirectoryRoots: connect.NewClient[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse](
@@ -117,6 +126,7 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 type hostServiceClient struct {
 	getHostStatus      *connect.Client[v1.GetHostStatusRequest, v1.GetHostStatusResponse]
 	listBackends       *connect.Client[v1.ListBackendsRequest, v1.ListBackendsResponse]
+	listSkills         *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
 	listDirectoryRoots *connect.Client[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse]
 	listDirectory      *connect.Client[v1.ListDirectoryRequest, v1.ListDirectoryResponse]
 	getPathMetadata    *connect.Client[v1.GetPathMetadataRequest, v1.GetPathMetadataResponse]
@@ -131,6 +141,11 @@ func (c *hostServiceClient) GetHostStatus(ctx context.Context, req *connect.Requ
 // ListBackends calls orchd.v1.HostService.ListBackends.
 func (c *hostServiceClient) ListBackends(ctx context.Context, req *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error) {
 	return c.listBackends.CallUnary(ctx, req)
+}
+
+// ListSkills calls orchd.v1.HostService.ListSkills.
+func (c *hostServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return c.listSkills.CallUnary(ctx, req)
 }
 
 // ListDirectoryRoots calls orchd.v1.HostService.ListDirectoryRoots.
@@ -157,6 +172,7 @@ func (c *hostServiceClient) ListRecentRepos(ctx context.Context, req *connect.Re
 type HostServiceHandler interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
@@ -180,6 +196,12 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 		HostServiceListBackendsProcedure,
 		svc.ListBackends,
 		connect.WithSchema(hostServiceMethods.ByName("ListBackends")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceListSkillsHandler := connect.NewUnaryHandler(
+		HostServiceListSkillsProcedure,
+		svc.ListSkills,
+		connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
 		connect.WithHandlerOptions(opts...),
 	)
 	hostServiceListDirectoryRootsHandler := connect.NewUnaryHandler(
@@ -212,6 +234,8 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 			hostServiceGetHostStatusHandler.ServeHTTP(w, r)
 		case HostServiceListBackendsProcedure:
 			hostServiceListBackendsHandler.ServeHTTP(w, r)
+		case HostServiceListSkillsProcedure:
+			hostServiceListSkillsHandler.ServeHTTP(w, r)
 		case HostServiceListDirectoryRootsProcedure:
 			hostServiceListDirectoryRootsHandler.ServeHTTP(w, r)
 		case HostServiceListDirectoryProcedure:
@@ -235,6 +259,10 @@ func (UnimplementedHostServiceHandler) GetHostStatus(context.Context, *connect.R
 
 func (UnimplementedHostServiceHandler) ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListBackends is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListSkills is not implemented"))
 }
 
 func (UnimplementedHostServiceHandler) ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error) {

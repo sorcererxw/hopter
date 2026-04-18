@@ -1,13 +1,18 @@
 package core
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 var preferredBrowseDirs = []struct {
@@ -23,6 +28,12 @@ var preferredBrowseDirs = []struct {
 	{Label: "Repo", Name: "repo", Kind: "favorite"},
 	{Label: "Code", Name: "code", Kind: "favorite"},
 	{Label: "Src", Name: "src", Kind: "favorite"},
+}
+
+type skillSearchRoot struct {
+	Path     string
+	Source   string
+	Priority int
 }
 
 func discoverDirectoryRoots() ([]DirectoryRoot, error) {
@@ -273,14 +284,20 @@ func isAllowedPath(path string, roots []DirectoryRoot) bool {
 	cleanPath := filepath.Clean(path)
 	for _, root := range roots {
 		rootPath := filepath.Clean(root.Path)
-		if cleanPath == rootPath {
-			return true
-		}
-		if strings.HasPrefix(cleanPath, rootPath+string(filepath.Separator)) {
+		if pathWithinRoot(cleanPath, rootPath) {
 			return true
 		}
 	}
 	return false
+}
+
+func pathWithinRoot(path string, rootPath string) bool {
+	cleanPath := filepath.Clean(path)
+	cleanRoot := filepath.Clean(rootPath)
+	if cleanPath == cleanRoot {
+		return true
+	}
+	return strings.HasPrefix(cleanPath, cleanRoot+string(filepath.Separator))
 }
 
 func shouldHideEntry(name string) bool {
@@ -338,6 +355,111 @@ func validateProjectRoot(path string) (string, error) {
 	return canonicalPath, nil
 }
 
+func ResolvePathWithinRoot(rootPath string, targetPath string) (string, error) {
+	rootCanonical, info, err := resolvePath(rootPath)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("project root %q must be a directory", rootCanonical)
+	}
+
+	targetTrimmed := strings.TrimSpace(targetPath)
+	if targetTrimmed == "" {
+		return "", errors.New("path is required")
+	}
+
+	resolvedCandidate := targetTrimmed
+	if !filepath.IsAbs(targetTrimmed) {
+		resolvedCandidate = filepath.Join(rootCanonical, targetTrimmed)
+	}
+
+	canonicalPath, fileInfo, err := resolvePath(resolvedCandidate)
+	if err != nil {
+		return "", err
+	}
+	if fileInfo.IsDir() {
+		return "", fmt.Errorf("path %q is a directory", canonicalPath)
+	}
+	if !pathWithinRoot(canonicalPath, rootCanonical) {
+		return "", fmt.Errorf("path %q is outside project root %q", canonicalPath, rootCanonical)
+	}
+
+	return canonicalPath, nil
+}
+
+func ResolveSessionFilePath(projectRoot string, targetPath string) (string, error) {
+	targetTrimmed := strings.TrimSpace(targetPath)
+	if targetTrimmed == "" {
+		return "", errors.New("path is required")
+	}
+
+	if filepath.IsAbs(targetTrimmed) {
+		canonicalPath, info, err := resolvePath(targetTrimmed)
+		if err != nil {
+			return "", err
+		}
+		if info.IsDir() {
+			return "", fmt.Errorf("path %q is a directory", canonicalPath)
+		}
+
+		roots, err := discoverDirectoryRoots()
+		if err != nil {
+			return "", err
+		}
+		if !isAllowedPath(canonicalPath, roots) {
+			return "", fmt.Errorf("path %q is outside allowed roots", canonicalPath)
+		}
+		return canonicalPath, nil
+	}
+
+	rootCanonical, info, err := resolvePath(projectRoot)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("project root %q must be a directory", rootCanonical)
+	}
+
+	return ResolvePathWithinRoot(rootCanonical, targetTrimmed)
+}
+
+func ReadFilePreview(path string, maxBytes int64) (content string, truncated bool, isBinary bool, err error) {
+	if maxBytes <= 0 {
+		maxBytes = 128 * 1024
+	}
+
+	canonicalPath, info, err := resolvePath(path)
+	if err != nil {
+		return "", false, false, err
+	}
+	if info.IsDir() {
+		return "", false, false, fmt.Errorf("path %q is a directory", canonicalPath)
+	}
+
+	file, err := os.Open(canonicalPath)
+	if err != nil {
+		return "", false, false, fmt.Errorf("open file %q: %w", canonicalPath, err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxBytes+1))
+	if err != nil {
+		return "", false, false, fmt.Errorf("read file %q: %w", canonicalPath, err)
+	}
+
+	if int64(len(data)) > maxBytes {
+		truncated = true
+		data = data[:maxBytes]
+	}
+
+	if bytes.IndexByte(data, 0) >= 0 || !utf8.Valid(data) {
+		return "", truncated, true, nil
+	}
+
+	return string(data), truncated, false, nil
+}
+
 func listRecentRepos(projects []Project, limit uint32) ([]PathMetadata, error) {
 	if limit == 0 {
 		limit = 6
@@ -366,6 +488,189 @@ func listRecentRepos(projects []Project, limit uint32) ([]PathMetadata, error) {
 	}
 
 	return result, nil
+}
+
+func discoverSkills() ([]Skill, error) {
+	return discoverSkillsFromRoots(discoverSkillRoots())
+}
+
+func discoverSkillRoots() []skillSearchRoot {
+	roots := make([]skillSearchRoot, 0, 6)
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		roots = append(roots,
+			skillSearchRoot{Path: filepath.Join(homeDir, ".codex", "skills"), Source: "local", Priority: 10},
+			skillSearchRoot{Path: filepath.Join(homeDir, ".agents", "skills"), Source: "local", Priority: 20},
+			skillSearchRoot{Path: filepath.Join(homeDir, ".claude", "skills"), Source: "local", Priority: 30},
+			skillSearchRoot{Path: filepath.Join(homeDir, ".codex", "plugins", "cache"), Source: "plugin", Priority: 40},
+		)
+	}
+
+	if cwd, err := os.Getwd(); err == nil {
+		roots = append(roots,
+			skillSearchRoot{Path: filepath.Join(cwd, ".codex", "skills"), Source: "project", Priority: 0},
+			skillSearchRoot{Path: filepath.Join(cwd, ".agents", "skills"), Source: "project", Priority: 1},
+		)
+	}
+
+	return roots
+}
+
+func discoverSkillsFromRoots(roots []skillSearchRoot) ([]Skill, error) {
+	sortedRoots := slices.Clone(roots)
+	sort.SliceStable(sortedRoots, func(i, j int) bool {
+		if sortedRoots[i].Priority != sortedRoots[j].Priority {
+			return sortedRoots[i].Priority < sortedRoots[j].Priority
+		}
+		return sortedRoots[i].Path < sortedRoots[j].Path
+	})
+
+	skillsByReference := make(map[string]Skill)
+	for _, root := range sortedRoots {
+		if !dirExists(root.Path) {
+			continue
+		}
+
+		err := filepath.WalkDir(root.Path, func(path string, d fs.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return nil
+			}
+			if d.IsDir() {
+				name := d.Name()
+				if name == "node_modules" || name == ".git" {
+					return filepath.SkipDir
+				}
+				if path != root.Path && strings.HasPrefix(name, ".") {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if d.Name() != "SKILL.md" {
+				return nil
+			}
+
+			skill, err := readSkillSummary(path, root.Source)
+			if err != nil || skill.Reference == "" {
+				return nil
+			}
+			if _, exists := skillsByReference[skill.Reference]; exists {
+				return nil
+			}
+			skillsByReference[skill.Reference] = skill
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("discover skills in %q: %w", root.Path, err)
+		}
+	}
+
+	skills := make([]Skill, 0, len(skillsByReference))
+	for _, skill := range skillsByReference {
+		skills = append(skills, skill)
+	}
+	sort.SliceStable(skills, func(i, j int) bool {
+		if skills[i].Source != skills[j].Source {
+			return skills[i].Source < skills[j].Source
+		}
+		if skills[i].Name != skills[j].Name {
+			return strings.ToLower(skills[i].Name) < strings.ToLower(skills[j].Name)
+		}
+		return skills[i].Reference < skills[j].Reference
+	})
+	return skills, nil
+}
+
+func readSkillSummary(path string, source string) (Skill, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return Skill{}, err
+	}
+
+	name, description := parseSkillFrontmatter(string(content))
+	if name == "" {
+		name = filepath.Base(filepath.Dir(path))
+	}
+
+	reference := normalizeSkillReference(name)
+	if reference == "" {
+		return Skill{}, fmt.Errorf("skill %q produced empty reference", path)
+	}
+
+	return Skill{
+		Name:        strings.TrimSpace(name),
+		Reference:   reference,
+		Description: strings.TrimSpace(description),
+		Source:      source,
+		Path:        path,
+	}, nil
+}
+
+func parseSkillFrontmatter(content string) (string, string) {
+	if !strings.HasPrefix(content, "---") {
+		return "", ""
+	}
+
+	parts := strings.SplitN(content, "\n---", 2)
+	if len(parts) != 2 {
+		return "", ""
+	}
+
+	var name string
+	var description string
+	for _, rawLine := range strings.Split(parts[0], "\n")[1:] {
+		line := strings.TrimSpace(rawLine)
+		switch {
+		case strings.HasPrefix(line, "name:"):
+			name = parseYAMLScalar(strings.TrimSpace(strings.TrimPrefix(line, "name:")))
+		case strings.HasPrefix(line, "description:"):
+			description = parseYAMLScalar(strings.TrimSpace(strings.TrimPrefix(line, "description:")))
+		}
+	}
+
+	return name, description
+}
+
+func parseYAMLScalar(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+
+	if unquoted, err := strconv.Unquote(trimmed); err == nil {
+		return unquoted
+	}
+
+	return strings.Trim(trimmed, `"'`)
+}
+
+func normalizeSkillReference(name string) string {
+	trimmed := strings.TrimSpace(strings.ToLower(name))
+	if trimmed == "" {
+		return ""
+	}
+
+	var b strings.Builder
+	lastDash := false
+	for _, r := range trimmed {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'):
+			b.WriteRune(r)
+			lastDash = false
+		case r == ':' || r == '/':
+			if b.Len() > 0 && !lastDash {
+				b.WriteRune(r)
+				lastDash = true
+			}
+		default:
+			if b.Len() == 0 || lastDash {
+				continue
+			}
+			b.WriteRune('-')
+			lastDash = true
+		}
+	}
+
+	return strings.Trim(b.String(), "-:/")
 }
 
 func min(a, b int) int {

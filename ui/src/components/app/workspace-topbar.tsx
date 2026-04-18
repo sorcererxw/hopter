@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
 import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
@@ -21,13 +22,17 @@ type WorkspaceTopbarProps = {
   onCommitAndReview?: () => void
   onLeadingAction?: () => void
   onOpenReview?: () => void
+  onOpenTerminal?: () => void
   onToggleInspector?: () => void
   projectName?: string
   resumeCommand?: string
   sessionId?: string
   showInspectorToggle?: boolean
   showReview?: boolean
+  showTerminal?: boolean
   syncState?: WorkspaceEventStreamState
+  terminalButtonTestId?: string
+  terminalActive?: boolean
   title: string
   toolbarMode?: WorkspaceToolbarMode
 }
@@ -39,13 +44,17 @@ export function WorkspaceTopbar({
   onCommitAndReview,
   onLeadingAction,
   onOpenReview,
+  onOpenTerminal,
   onToggleInspector,
   projectName,
   resumeCommand,
   sessionId,
   showInspectorToggle = false,
   showReview = false,
+  showTerminal = false,
   syncState,
+  terminalButtonTestId,
+  terminalActive = false,
   title,
   toolbarMode = "desktop",
 }: WorkspaceTopbarProps) {
@@ -127,7 +136,7 @@ export function WorkspaceTopbar({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5"
+      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground"
       data-testid="workspace-topbar"
       data-toolbar-mode={toolbarMode}
     >
@@ -136,13 +145,11 @@ export function WorkspaceTopbar({
           <div className="flex min-w-0 items-center gap-2">
             {leadingButton}
             <div className="min-w-0">
-              <p className="truncate text-base font-medium text-foreground">
+              <p className="truncate text-base text-foreground">
                 {title}
               </p>
               {projectName ? (
-                <p className="truncate text-sm text-muted-foreground">
-                  {projectName}
-                </p>
+                <p className="truncate text-muted-foreground">{projectName}</p>
               ) : null}
               {syncState ? <SyncStatusBadge state={syncState} /> : null}
             </div>
@@ -190,12 +197,17 @@ export function WorkspaceTopbar({
                         >
                           Commit &amp; Review
                         </OverflowMenuItem>
-                        <OverflowMenuItem
-                          icon={<Terminal className="size-3.5" />}
-                          onClick={() => setOverflowOpen(false)}
-                        >
-                          Terminal
-                        </OverflowMenuItem>
+                        {showTerminal ? (
+                          <OverflowMenuItem
+                            icon={<Terminal className="size-3.5" />}
+                            onClick={() => {
+                              setOverflowOpen(false)
+                              onOpenTerminal?.()
+                            }}
+                          >
+                            Terminal
+                          </OverflowMenuItem>
+                        ) : null}
                       </>
                     ) : null}
                     {showInspectorToggle ? (
@@ -206,7 +218,7 @@ export function WorkspaceTopbar({
                           onToggleInspector?.()
                         }}
                       >
-                        {inspectorOpen ? "Close inspector" : "Open inspector"}
+                        {inspectorOpen ? "Close sidebar" : "Open sidebar"}
                       </OverflowMenuItem>
                     ) : null}
                     {resumeCommand ? (
@@ -241,11 +253,9 @@ export function WorkspaceTopbar({
         <>
           <div className="flex min-w-0 items-center gap-2">
             {leadingButton}
-            <h1 className="truncate text-sm font-medium text-foreground">
-              {title}
-            </h1>
+            <h1 className="truncate text-base text-foreground">{title}</h1>
             {projectName ? (
-              <span className="truncate text-sm text-muted-foreground">
+              <span className="truncate text-muted-foreground">
                 {projectName}
               </span>
             ) : null}
@@ -297,14 +307,16 @@ export function WorkspaceTopbar({
           <div className="flex items-center gap-1.5">
             {showReview ? (
               <div className="relative">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setCommitOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
+                  className="gap-1.5 text-foreground"
                 >
                   <span>Commit</span>
                   <ChevronDown className="size-3 text-muted-foreground" />
-                </button>
+                </Button>
                 {commitOpen ? (
                   <>
                     <div
@@ -343,23 +355,29 @@ export function WorkspaceTopbar({
               </div>
             ) : null}
 
-            <TopbarIconButton label="Terminal">
-              <Terminal className="size-3.5" />
-            </TopbarIconButton>
+            {showTerminal ? (
+              <TopbarIconButton
+                active={terminalActive}
+                label="Terminal"
+                onClick={onOpenTerminal}
+                testId={terminalButtonTestId}
+              >
+                <Terminal className="size-3.5" />
+              </TopbarIconButton>
+            ) : null}
 
             {showInspectorToggle ? (
-              <button
+              <Button
                 type="button"
+                variant={inspectorOpen ? "secondary" : "ghost"}
+                size="icon"
                 onClick={onToggleInspector}
-                className={cn(
-                  "inline-flex size-8 items-center justify-center rounded-md transition",
-                  inspectorOpen
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                )}
+                aria-label={inspectorOpen ? "Close sidebar" : "Open sidebar"}
+                title={inspectorOpen ? "Close sidebar" : "Open sidebar"}
+                className={cn(inspectorOpen ? "text-foreground" : "text-muted-foreground")}
               >
                 <PanelRight className="size-3.5" />
-              </button>
+              </Button>
             ) : null}
           </div>
         </>
@@ -385,7 +403,7 @@ function SyncStatusBadge({ state }: { state: WorkspaceEventStreamState }) {
         : "bg-rose-400"
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-0.5 text-muted-foreground">
       <span className={cn("size-1.5 rounded-full", dotClassName)} />
       <span>{label}</span>
     </span>
@@ -404,16 +422,18 @@ function TopbarLeadingButton({
   testId: string
 }) {
   return (
-    <button
+    <Button
       type="button"
       aria-label={label}
       title={label}
       data-testid={testId}
       onClick={onClick}
-      className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+      variant="ghost"
+      size="icon-lg"
+      className="text-foreground"
     >
       {icon}
-    </button>
+    </Button>
   )
 }
 
@@ -427,14 +447,15 @@ function OverflowMenuItem({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-foreground transition hover:bg-accent"
+      variant="ghost"
+      className="flex h-auto w-full items-center justify-start gap-2.5 rounded-none px-3 py-2.5 text-foreground"
     >
       {icon ?? <span className="size-3.5" />}
       <span>{children}</span>
-    </button>
+    </Button>
   )
 }
 
@@ -446,34 +467,42 @@ function CommitMenuItem({
   onClick: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+      variant="ghost"
+      className="flex h-auto w-full items-center justify-start rounded-none px-3 py-2 text-foreground"
     >
       {children}
-    </button>
+    </Button>
   )
 }
 
 function TopbarIconButton({
+  active = false,
   children,
   label,
   onClick,
+  testId,
 }: {
+  active?: boolean
   children: ReactNode
   label: string
   onClick?: () => void
+  testId?: string
 }) {
   return (
-    <button
+    <Button
       type="button"
       aria-label={label}
       title={label}
+      data-testid={testId}
       onClick={onClick}
-      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
+      variant={active ? "secondary" : "ghost"}
+      size="icon"
+      className={cn(active ? "text-foreground" : "text-muted-foreground")}
     >
       {children}
-    </button>
+    </Button>
   )
 }

@@ -40,6 +40,10 @@ func (r *codexRuntime) SendSessionInput(sessionID, input string) (core.Session, 
 	return r.manager.SendSessionInput(sessionID, input)
 }
 
+func (r *codexRuntime) InterruptSession(sessionID string) (core.Session, error) {
+	return r.manager.InterruptSession(sessionID)
+}
+
 func (r *codexRuntime) RespondToSessionApproval(
 	sessionID, approvalID string,
 	decision core.ApprovalDecision,

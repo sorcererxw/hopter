@@ -141,6 +141,10 @@ func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, erro
 	return session, project, nil
 }
 
+func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
+	return core.Session{}, fmt.Errorf("copilot backend does not support interrupt for session %q", sessionID)
+}
+
 func (m *Manager) RespondToSessionApproval(
 	sessionID, approvalID string,
 	decision core.ApprovalDecision,

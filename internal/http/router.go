@@ -11,12 +11,14 @@ import (
 )
 
 type RouterOptions struct {
-	Version               string
-	UI                    UIHandlerOptions
-	EventHub              *events.Hub
-	HostServiceHandler    orchdv1connect.HostServiceHandler
-	ProjectServiceHandler orchdv1connect.ProjectServiceHandler
-	SessionServiceHandler orchdv1connect.SessionServiceHandler
+	Version                string
+	UI                     UIHandlerOptions
+	EventHub               *events.Hub
+	HostServiceHandler     orchdv1connect.HostServiceHandler
+	ProjectServiceHandler  orchdv1connect.ProjectServiceHandler
+	SessionServiceHandler  orchdv1connect.SessionServiceHandler
+	TerminalServiceHandler orchdv1connect.TerminalServiceHandler
+	TerminalStreamHandler  TerminalStreamHandler
 }
 
 func NewRouter(opts RouterOptions) (http.Handler, error) {
@@ -29,7 +31,9 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 	mux.HandleFunc("GET /healthz", handleHealth)
 	mux.HandleFunc("GET /readyz", handleReady)
 	mux.HandleFunc("GET /version", versionHandler(opts.Version, opts.UI.Mode()))
-	mux.Handle("GET /events", NewSSEHandler(opts.EventHub))
+	mux.Handle("GET /events", authGate(NewSSEHandler(opts.EventHub)))
+	mux.Handle("GET /terminals/{terminalId}/stream", authGate(NewTerminalWSHandler(opts.TerminalStreamHandler)))
+	registerAuthHandlers(mux, opts.TerminalStreamHandler)
 
 	connectMux := http.NewServeMux()
 	registerConnectHandlers(connectMux,
@@ -40,8 +44,11 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 		func() (string, http.Handler) {
 			return orchdv1connect.NewSessionServiceHandler(opts.SessionServiceHandler)
 		},
+		func() (string, http.Handler) {
+			return orchdv1connect.NewTerminalServiceHandler(opts.TerminalServiceHandler)
+		},
 	)
-	mux.Handle("/rpc/", http.StripPrefix("/rpc", connectMux))
+	mux.Handle("/rpc/", authGate(http.StripPrefix("/rpc", connectMux)))
 	mux.Handle("/", uiHandler)
 
 	return mux, nil

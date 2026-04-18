@@ -18,6 +18,7 @@ type fakeRuntime struct {
 	lastCreate   core.CreateSessionInput
 	lastSendID   string
 	lastSendText string
+	lastInterruptID string
 	lastApprovalID string
 	lastApprovalSessionID string
 	lastApprovalDecision core.ApprovalDecision
@@ -39,6 +40,11 @@ func (f *fakeRuntime) CreateSession(input core.CreateSessionInput) (core.Session
 func (f *fakeRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
 	f.lastSendID = sessionID
 	f.lastSendText = input
+	return f.sendResult, nil
+}
+
+func (f *fakeRuntime) InterruptSession(sessionID string) (core.Session, error) {
+	f.lastInterruptID = sessionID
 	return f.sendResult, nil
 }
 
@@ -227,6 +233,41 @@ func TestManagerRespondToSessionApprovalRoutesByBackend(t *testing.T) {
 	}
 	if runtime.lastApprovalDecision != core.ApprovalDecisionApprove {
 		t.Fatalf("approval decision = %q", runtime.lastApprovalDecision)
+	}
+	if updated.ID != session.ID {
+		t.Fatalf("updated session id = %q", updated.ID)
+	}
+}
+
+func TestManagerInterruptSessionRoutesByBackend(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace, "codex")
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	runtime := &fakeRuntime{
+		sendResult: core.Session{
+			ID:        session.ID,
+			ProjectID: project.ID,
+			Status:    core.SessionStateWaitingInput,
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	manager := NewManager(workspace, map[string]Runtime{
+		"codex": runtime,
+	})
+
+	updated, err := manager.InterruptSession(session.ID)
+	if err != nil {
+		t.Fatalf("InterruptSession: %v", err)
+	}
+	if runtime.lastInterruptID != session.ID {
+		t.Fatalf("interrupt session id = %q", runtime.lastInterruptID)
 	}
 	if updated.ID != session.ID {
 		t.Fatalf("updated session id = %q", updated.ID)

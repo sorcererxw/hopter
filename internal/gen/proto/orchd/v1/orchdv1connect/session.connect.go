@@ -42,6 +42,12 @@ const (
 	// SessionServiceGetSessionMetaProcedure is the fully-qualified name of the SessionService's
 	// GetSessionMeta RPC.
 	SessionServiceGetSessionMetaProcedure = "/orchd.v1.SessionService/GetSessionMeta"
+	// SessionServiceGetSessionReviewProcedure is the fully-qualified name of the SessionService's
+	// GetSessionReview RPC.
+	SessionServiceGetSessionReviewProcedure = "/orchd.v1.SessionService/GetSessionReview"
+	// SessionServiceGetSessionFileProcedure is the fully-qualified name of the SessionService's
+	// GetSessionFile RPC.
+	SessionServiceGetSessionFileProcedure = "/orchd.v1.SessionService/GetSessionFile"
 	// SessionServiceListSessionTranscriptProcedure is the fully-qualified name of the SessionService's
 	// ListSessionTranscript RPC.
 	SessionServiceListSessionTranscriptProcedure = "/orchd.v1.SessionService/ListSessionTranscript"
@@ -51,6 +57,9 @@ const (
 	// SessionServiceSendSessionInputProcedure is the fully-qualified name of the SessionService's
 	// SendSessionInput RPC.
 	SessionServiceSendSessionInputProcedure = "/orchd.v1.SessionService/SendSessionInput"
+	// SessionServiceInterruptSessionProcedure is the fully-qualified name of the SessionService's
+	// InterruptSession RPC.
+	SessionServiceInterruptSessionProcedure = "/orchd.v1.SessionService/InterruptSession"
 	// SessionServiceRespondToSessionApprovalProcedure is the fully-qualified name of the
 	// SessionService's RespondToSessionApproval RPC.
 	SessionServiceRespondToSessionApprovalProcedure = "/orchd.v1.SessionService/RespondToSessionApproval"
@@ -64,9 +73,12 @@ type SessionServiceClient interface {
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	GetSessionMeta(context.Context, *connect.Request[v1.GetSessionMetaRequest]) (*connect.Response[v1.GetSessionMetaResponse], error)
+	GetSessionReview(context.Context, *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error)
+	GetSessionFile(context.Context, *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error)
 	ListSessionTranscript(context.Context, *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error)
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error)
+	InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error)
 	RespondToSessionApproval(context.Context, *connect.Request[v1.RespondToSessionApprovalRequest]) (*connect.Response[v1.RespondToSessionApprovalResponse], error)
 	ListSessionArtifacts(context.Context, *connect.Request[v1.ListSessionArtifactsRequest]) (*connect.Response[v1.ListSessionArtifactsResponse], error)
 }
@@ -100,6 +112,18 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("GetSessionMeta")),
 			connect.WithClientOptions(opts...),
 		),
+		getSessionReview: connect.NewClient[v1.GetSessionReviewRequest, v1.GetSessionReviewResponse](
+			httpClient,
+			baseURL+SessionServiceGetSessionReviewProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("GetSessionReview")),
+			connect.WithClientOptions(opts...),
+		),
+		getSessionFile: connect.NewClient[v1.GetSessionFileRequest, v1.GetSessionFileResponse](
+			httpClient,
+			baseURL+SessionServiceGetSessionFileProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("GetSessionFile")),
+			connect.WithClientOptions(opts...),
+		),
 		listSessionTranscript: connect.NewClient[v1.ListSessionTranscriptRequest, v1.ListSessionTranscriptResponse](
 			httpClient,
 			baseURL+SessionServiceListSessionTranscriptProcedure,
@@ -116,6 +140,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+SessionServiceSendSessionInputProcedure,
 			connect.WithSchema(sessionServiceMethods.ByName("SendSessionInput")),
+			connect.WithClientOptions(opts...),
+		),
+		interruptSession: connect.NewClient[v1.InterruptSessionRequest, v1.InterruptSessionResponse](
+			httpClient,
+			baseURL+SessionServiceInterruptSessionProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("InterruptSession")),
 			connect.WithClientOptions(opts...),
 		),
 		respondToSessionApproval: connect.NewClient[v1.RespondToSessionApprovalRequest, v1.RespondToSessionApprovalResponse](
@@ -138,9 +168,12 @@ type sessionServiceClient struct {
 	listSessions             *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
 	getSession               *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
 	getSessionMeta           *connect.Client[v1.GetSessionMetaRequest, v1.GetSessionMetaResponse]
+	getSessionReview         *connect.Client[v1.GetSessionReviewRequest, v1.GetSessionReviewResponse]
+	getSessionFile           *connect.Client[v1.GetSessionFileRequest, v1.GetSessionFileResponse]
 	listSessionTranscript    *connect.Client[v1.ListSessionTranscriptRequest, v1.ListSessionTranscriptResponse]
 	createSession            *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
 	sendSessionInput         *connect.Client[v1.SendSessionInputRequest, v1.SendSessionInputResponse]
+	interruptSession         *connect.Client[v1.InterruptSessionRequest, v1.InterruptSessionResponse]
 	respondToSessionApproval *connect.Client[v1.RespondToSessionApprovalRequest, v1.RespondToSessionApprovalResponse]
 	listSessionArtifacts     *connect.Client[v1.ListSessionArtifactsRequest, v1.ListSessionArtifactsResponse]
 }
@@ -160,6 +193,16 @@ func (c *sessionServiceClient) GetSessionMeta(ctx context.Context, req *connect.
 	return c.getSessionMeta.CallUnary(ctx, req)
 }
 
+// GetSessionReview calls orchd.v1.SessionService.GetSessionReview.
+func (c *sessionServiceClient) GetSessionReview(ctx context.Context, req *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error) {
+	return c.getSessionReview.CallUnary(ctx, req)
+}
+
+// GetSessionFile calls orchd.v1.SessionService.GetSessionFile.
+func (c *sessionServiceClient) GetSessionFile(ctx context.Context, req *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error) {
+	return c.getSessionFile.CallUnary(ctx, req)
+}
+
 // ListSessionTranscript calls orchd.v1.SessionService.ListSessionTranscript.
 func (c *sessionServiceClient) ListSessionTranscript(ctx context.Context, req *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error) {
 	return c.listSessionTranscript.CallUnary(ctx, req)
@@ -173,6 +216,11 @@ func (c *sessionServiceClient) CreateSession(ctx context.Context, req *connect.R
 // SendSessionInput calls orchd.v1.SessionService.SendSessionInput.
 func (c *sessionServiceClient) SendSessionInput(ctx context.Context, req *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error) {
 	return c.sendSessionInput.CallUnary(ctx, req)
+}
+
+// InterruptSession calls orchd.v1.SessionService.InterruptSession.
+func (c *sessionServiceClient) InterruptSession(ctx context.Context, req *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error) {
+	return c.interruptSession.CallUnary(ctx, req)
 }
 
 // RespondToSessionApproval calls orchd.v1.SessionService.RespondToSessionApproval.
@@ -190,9 +238,12 @@ type SessionServiceHandler interface {
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
 	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
 	GetSessionMeta(context.Context, *connect.Request[v1.GetSessionMetaRequest]) (*connect.Response[v1.GetSessionMetaResponse], error)
+	GetSessionReview(context.Context, *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error)
+	GetSessionFile(context.Context, *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error)
 	ListSessionTranscript(context.Context, *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error)
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error)
+	InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error)
 	RespondToSessionApproval(context.Context, *connect.Request[v1.RespondToSessionApprovalRequest]) (*connect.Response[v1.RespondToSessionApprovalResponse], error)
 	ListSessionArtifacts(context.Context, *connect.Request[v1.ListSessionArtifactsRequest]) (*connect.Response[v1.ListSessionArtifactsResponse], error)
 }
@@ -222,6 +273,18 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("GetSessionMeta")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceGetSessionReviewHandler := connect.NewUnaryHandler(
+		SessionServiceGetSessionReviewProcedure,
+		svc.GetSessionReview,
+		connect.WithSchema(sessionServiceMethods.ByName("GetSessionReview")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceGetSessionFileHandler := connect.NewUnaryHandler(
+		SessionServiceGetSessionFileProcedure,
+		svc.GetSessionFile,
+		connect.WithSchema(sessionServiceMethods.ByName("GetSessionFile")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceListSessionTranscriptHandler := connect.NewUnaryHandler(
 		SessionServiceListSessionTranscriptProcedure,
 		svc.ListSessionTranscript,
@@ -238,6 +301,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		SessionServiceSendSessionInputProcedure,
 		svc.SendSessionInput,
 		connect.WithSchema(sessionServiceMethods.ByName("SendSessionInput")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceInterruptSessionHandler := connect.NewUnaryHandler(
+		SessionServiceInterruptSessionProcedure,
+		svc.InterruptSession,
+		connect.WithSchema(sessionServiceMethods.ByName("InterruptSession")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sessionServiceRespondToSessionApprovalHandler := connect.NewUnaryHandler(
@@ -260,12 +329,18 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceGetSessionHandler.ServeHTTP(w, r)
 		case SessionServiceGetSessionMetaProcedure:
 			sessionServiceGetSessionMetaHandler.ServeHTTP(w, r)
+		case SessionServiceGetSessionReviewProcedure:
+			sessionServiceGetSessionReviewHandler.ServeHTTP(w, r)
+		case SessionServiceGetSessionFileProcedure:
+			sessionServiceGetSessionFileHandler.ServeHTTP(w, r)
 		case SessionServiceListSessionTranscriptProcedure:
 			sessionServiceListSessionTranscriptHandler.ServeHTTP(w, r)
 		case SessionServiceCreateSessionProcedure:
 			sessionServiceCreateSessionHandler.ServeHTTP(w, r)
 		case SessionServiceSendSessionInputProcedure:
 			sessionServiceSendSessionInputHandler.ServeHTTP(w, r)
+		case SessionServiceInterruptSessionProcedure:
+			sessionServiceInterruptSessionHandler.ServeHTTP(w, r)
 		case SessionServiceRespondToSessionApprovalProcedure:
 			sessionServiceRespondToSessionApprovalHandler.ServeHTTP(w, r)
 		case SessionServiceListSessionArtifactsProcedure:
@@ -291,6 +366,14 @@ func (UnimplementedSessionServiceHandler) GetSessionMeta(context.Context, *conne
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.GetSessionMeta is not implemented"))
 }
 
+func (UnimplementedSessionServiceHandler) GetSessionReview(context.Context, *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.GetSessionReview is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) GetSessionFile(context.Context, *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.GetSessionFile is not implemented"))
+}
+
 func (UnimplementedSessionServiceHandler) ListSessionTranscript(context.Context, *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.ListSessionTranscript is not implemented"))
 }
@@ -301,6 +384,10 @@ func (UnimplementedSessionServiceHandler) CreateSession(context.Context, *connec
 
 func (UnimplementedSessionServiceHandler) SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.SendSessionInput is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.SessionService.InterruptSession is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) RespondToSessionApproval(context.Context, *connect.Request[v1.RespondToSessionApprovalRequest]) (*connect.Response[v1.RespondToSessionApprovalResponse], error) {

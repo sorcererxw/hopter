@@ -1,4 +1,4 @@
-.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-runtime validate-app-server-approvals validate-all
+.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-runtime validate-app-server-approvals validate-interrupt-ui validate-all
 
 help:
 	@echo "Targets:"
@@ -20,11 +20,13 @@ help:
 	@echo "  validate-go-idl    Run Go/IDL validation"
 	@echo "  validate-go-server Run Go server validation"
 	@echo "  validate-go-ui     Run Go UI validation"
+	@echo "  validate-go-terminal Run Go terminal validation"
 	@echo "  validate-go-tetris Run end-to-end Tetris proof"
 	@echo "  validate-transcript-ui Run browser transcript rendering validation"
 	@echo "  validate-session-roundtrip Run fresh-session + 4 follow-up Codex roundtrip validation"
 	@echo "  validate-app-server-runtime Run SSE + reconcile + approval runtime validation"
 	@echo "  validate-app-server-approvals Run approval probes by request type"
+	@echo "  validate-interrupt-ui Run interrupt-button browser validation"
 	@echo "  validate-all       Run all current validations"
 
 dev:
@@ -80,6 +82,9 @@ validate-go-server:
 validate-go-ui:
 	bun scripts/validate-go-ui.ts
 
+validate-go-terminal:
+	bun scripts/validate-go-terminal.ts
+
 validate-go-tetris:
 	bun scripts/validate-go-tetris.ts
 
@@ -94,5 +99,8 @@ validate-app-server-runtime:
 
 validate-app-server-approvals:
 	bun scripts/validate-app-server-approvals.ts
+
+validate-interrupt-ui:
+	bun scripts/validate-interrupt-ui.ts
 
 validate-all: docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris

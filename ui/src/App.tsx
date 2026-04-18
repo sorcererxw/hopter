@@ -1,8 +1,15 @@
 import { Suspense, lazy, type ReactNode } from "react"
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { ThemeProvider } from "@/components/theme-provider"
+import { useAuthStatus } from "@/features/auth/use-auth"
 import { queryClient } from "@/lib/query/client"
 const HomeRoute = lazy(() =>
   import("@/routes/home-route").then((module) => ({
@@ -34,21 +41,49 @@ function renderLazyRoute(element: ReactNode) {
   return <Suspense fallback={null}>{element}</Suspense>
 }
 
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const auth = useAuthStatus()
+
+  if (auth.isLoading) {
+    return null
+  }
+
+  if (auth.data?.authenticated === false) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="orchd-theme">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route path="settings" element={renderLazyRoute(<SettingsRoute />)} />
-            <Route element={<WorkspaceRouteFrame />}>
-              <Route index element={renderLazyRoute(<HomeRoute />)} />
-            <Route
-              path="sessions/:sessionId"
-              element={renderLazyRoute(<SessionRoute />)}
-            />
-          </Route>
             <Route path="login" element={renderLazyRoute(<LoginRoute />)} />
+            <Route
+              path="settings"
+              element={renderLazyRoute(
+                <ProtectedRoute>
+                  <SettingsRoute />
+                </ProtectedRoute>
+              )}
+            />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <WorkspaceRouteFrame />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={renderLazyRoute(<HomeRoute />)} />
+              <Route
+                path="sessions/:sessionId"
+                element={renderLazyRoute(<SessionRoute />)}
+              />
+            </Route>
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>

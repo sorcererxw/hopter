@@ -288,6 +288,7 @@ There are now two lanes:
 - `make validate-go-idl`
 - `make validate-go-server`
 - `make validate-go-ui`
+- `make validate-go-terminal`
 - `make validate-go-tetris`
 
 Use the first lane for daily iteration. Use the second lane when you need durable proof artifacts.

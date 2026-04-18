@@ -1,4 +1,12 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react"
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -7,19 +15,35 @@ import {
   LoaderCircle,
   Wrench,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/session-composer"
 import { parseReferencedFiles } from "@/components/app/session-derived"
-import type { InspectorSelectedDiff } from "@/components/app/session-inspector-pane"
+import {
+  buildClosedPanelParams,
+  buildFilePanelParams,
+  buildReviewPanelParams,
+  buildReviewSelectionParams,
+  parseSessionPathReference,
+  readSessionPanelState,
+} from "@/components/app/session-panel-state"
+import { CodeContainer } from "@/components/app/code-container"
 import { SessionRichText } from "@/components/app/session-rich-text"
+import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
+import { useAutoHideScrollbar } from "@/components/app/use-auto-hide-scrollbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
+import { SessionTerminalDrawer } from "@/features/terminal/terminal-drawer"
+import { useTerminalSession } from "@/features/terminal/use-terminal-session"
+import { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
 import {
   fetchSessionTranscriptPage,
+  useInterruptSession,
   useRespondToSessionApproval,
   useSendSessionInput,
+  useSessionFile,
   useSessionMeta,
+  useSessionReview,
   useSessionTranscript,
 } from "@/features/sessions/use-sessions"
 import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
@@ -39,11 +63,21 @@ const SessionInspectorPane = lazy(() =>
   }))
 )
 
+const sessionSidebarWidthStorageKey = "orchd.sessionSidebarWidth"
+const minSessionSidebarWidth = 440
+const maxSessionSidebarWidth = 920
+const defaultSessionSidebarWidth = 640
+
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { eventStreamState, posture, toggleRail, toolbarMode } =
     useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
+  const panelState = useMemo(
+    () => readSessionPanelState(searchParams),
+    [searchParams]
+  )
   const transcriptPollInterval = useMemo(
     () =>
       eventStreamState === "connected"
@@ -66,15 +100,28 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     transcriptPollInterval
   )
   const sendInput = useSendSessionInput()
+  const interruptSession = useInterruptSession()
   const respondToApproval = useRespondToSessionApproval()
   const [prompt, setPrompt] = useState("")
   const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
-  const [inspectorOpen, setInspectorOpen] = useState(true)
-  const [activeTab, setActiveTab] = useState<"summary" | "review">("review")
-  const [inspectorMode, setInspectorMode] = useState<"code" | "diff">("code")
-  const [selectedDiff, setSelectedDiff] =
-    useState<InspectorSelectedDiff | null>(null)
-  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window === "undefined") {
+      return defaultSessionSidebarWidth
+    }
+
+    const stored = Number(
+      window.localStorage.getItem(sessionSidebarWidthStorageKey)
+    )
+    if (!Number.isFinite(stored)) {
+      return defaultSessionSidebarWidth
+    }
+
+    return Math.min(
+      Math.max(stored, minSessionSidebarWidth),
+      maxSessionSidebarWidth
+    )
+  })
+  const sidebarDraggingRef = useRef(false)
   const [transcriptVisible, setTranscriptVisible] = useState(false)
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const transcriptContentRef = useRef<HTMLDivElement | null>(null)
@@ -89,10 +136,38 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     SessionTranscriptPage[]
   >([])
   const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(false)
+  const terminalEnabled = posture !== "phone"
+  const terminalUIState = useTerminalUIState(sessionId)
+  const terminalState = useTerminalSession(sessionId, terminalEnabled)
+  const {
+    handleScroll,
+    scrollbarScrollable,
+    scrollbarVisible,
+    syncScrollbar,
+    thumbHeight,
+    thumbOffset,
+  } = useAutoHideScrollbar(transcriptScrollRef, {
+    contentRef: transcriptContentRef,
+  })
 
   const session = useMemo(
     () => buildSessionDetail(sessionMetaQuery.data, transcriptPages),
     [sessionMetaQuery.data, transcriptPages]
+  )
+  const reviewQuery = useSessionReview(
+    sessionId,
+    Boolean(sessionMetaQuery.data) && panelState.panel === "review"
+  )
+  const fileQuery = useSessionFile(
+    panelState.panel === "file" && panelState.path
+      ? {
+          sessionId,
+          path: panelState.path,
+          line: panelState.line,
+          column: panelState.column,
+        }
+      : undefined,
+    Boolean(sessionMetaQuery.data) && panelState.panel === "file"
   )
   const transcriptItems = useMemo(() => {
     return (session?.transcriptItems ?? []).filter(
@@ -120,6 +195,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     sendInput.isPending ||
     (session && shouldShowThinkingState(session.status))
   )
+  const shouldShowInterruptAction =
+    Boolean(session) &&
+    shouldShowThinkingState(session!.status) &&
+    prompt.trim().length === 0 &&
+    !sendInput.isPending
   useEffect(() => {
     if (!optimisticPendingInput) {
       return
@@ -202,12 +282,9 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     false
   const isLoadingInitialTranscript =
     latestTranscriptQuery.isLoading && activityItems.length === 0
-
-  useEffect(() => {
-    if (posture !== "wide") {
-      setInspectorOpen(false)
-    }
-  }, [posture])
+  const panelVisible =
+    panelState.panel === "file" || panelState.panel === "review"
+  const panelAsPage = posture !== "wide" && panelVisible
 
   useEffect(() => {
     if (!latestTranscriptQuery.data) {
@@ -218,11 +295,71 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   }, [latestTranscriptQuery.data, sessionId])
 
   useEffect(() => {
-    setSelectedDiff(null)
-    setSelectedPath(null)
     setOptimisticPendingInput("")
     prependSnapshotRef.current = null
   }, [sessionId])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+    window.localStorage.setItem(
+      sessionSidebarWidthStorageKey,
+      String(sidebarWidth)
+    )
+  }, [sidebarWidth])
+
+  useEffect(() => {
+    if (panelState.panel !== "review") {
+      return
+    }
+    if (panelState.reviewFile || panelState.reviewView === "full") {
+      return
+    }
+    const firstFile = reviewQuery.data?.files[0]?.path
+    if (!firstFile) {
+      return
+    }
+    setSearchParams((current) =>
+      buildReviewSelectionParams(current, { reviewFile: firstFile })
+    )
+  }, [
+    panelState.panel,
+    panelState.reviewFile,
+    panelState.reviewView,
+    reviewQuery.data,
+    setSearchParams,
+  ])
+
+  useEffect(() => {
+    if (posture !== "wide") {
+      return
+    }
+
+    function handlePointerMove(event: MouseEvent) {
+      if (!sidebarDraggingRef.current) {
+        return
+      }
+      const nextWidth = window.innerWidth - event.clientX
+      setSidebarWidth(
+        Math.min(
+          Math.max(nextWidth, minSessionSidebarWidth),
+          maxSessionSidebarWidth
+        )
+      )
+    }
+
+    function handlePointerUp() {
+      sidebarDraggingRef.current = false
+    }
+
+    window.addEventListener("mousemove", handlePointerMove)
+    window.addEventListener("mouseup", handlePointerUp)
+    return () => {
+      window.removeEventListener("mousemove", handlePointerMove)
+      window.removeEventListener("mouseup", handlePointerUp)
+    }
+  }, [posture])
 
   useEffect(() => {
     if (isLoadingInitialTranscript) {
@@ -288,6 +425,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   }, [sessionId])
 
   useEffect(() => {
+    syncScrollbar()
+  }, [syncScrollbar, transcriptPages, transcriptVisible])
+
+  useEffect(() => {
     const container = transcriptScrollRef.current
     const snapshot = prependSnapshotRef.current
     if (!container || !snapshot) {
@@ -310,6 +451,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     if (!container) {
       return
     }
+    handleScroll()
 
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight
@@ -337,11 +479,59 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     }
   }
 
+  function openFilePanel(rawPath: string) {
+    const reference = parseSessionPathReference(rawPath)
+    if (!reference.path) {
+      return
+    }
+    setSearchParams((current) => buildFilePanelParams(current, reference))
+  }
+
+  function openReviewPanel(input?: {
+    reviewFile?: string | null
+    reviewView?: "file" | "full"
+  }) {
+    setSearchParams((current) => buildReviewPanelParams(current, input))
+  }
+
+  function closePanel() {
+    setSearchParams((current) => buildClosedPanelParams(current))
+  }
+
+  function togglePanel() {
+    if (panelVisible) {
+      closePanel()
+      return
+    }
+    openReviewPanel({
+      reviewFile:
+        panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
+      reviewView: panelState.reviewView,
+    })
+  }
+
+  function startSidebarResize(event: ReactMouseEvent<HTMLDivElement>) {
+    event.preventDefault()
+    sidebarDraggingRef.current = true
+  }
+
+  const mobilePanelTitle =
+    panelState.panel === "file"
+      ? fileQuery.data?.displayPath || fileQuery.data?.requestedPath || "File"
+      : "Review"
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspaceTopbar
-        leadingAction={posture === "phone" ? "back" : "toggle-rail"}
+        leadingAction={
+          panelAsPage || posture === "phone" ? "back" : "toggle-rail"
+        }
         onLeadingAction={() => {
+          if (panelAsPage) {
+            closePanel()
+            return
+          }
+
           if (posture === "phone") {
             navigate("/")
             return
@@ -349,32 +539,43 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
           toggleRail()
         }}
-        title={session?.title || "Thread"}
+        title={panelAsPage ? mobilePanelTitle : session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
         resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
-        inspectorOpen={inspectorOpen}
+        inspectorOpen={panelVisible}
         onCommit={() => {
           // TODO: wire commit action
         }}
         onCommitAndReview={() => {
-          setActiveTab("review")
-          setInspectorOpen(true)
+          openReviewPanel({
+            reviewFile:
+              panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
+            reviewView: panelState.reviewView,
+          })
         }}
         onOpenReview={() => {
-          setActiveTab("review")
-          if (posture === "wide") {
-            setInspectorOpen(true)
-          }
+          openReviewPanel({
+            reviewFile:
+              panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
+            reviewView: panelState.reviewView,
+          })
         }}
-        onToggleInspector={
-          posture === "wide"
-            ? () => setInspectorOpen((current) => !current)
-            : undefined
-        }
+        onOpenTerminal={() => {
+          if (!terminalEnabled) {
+            return
+          }
+          terminalUIState.setOpen(!terminalUIState.open)
+        }}
+        onToggleInspector={posture === "wide" ? togglePanel : undefined}
         showInspectorToggle={posture === "wide"}
         showReview
+        showTerminal={terminalEnabled}
         syncState={eventStreamState}
+        terminalButtonTestId="workspace-topbar-terminal"
+        terminalActive={Boolean(
+          terminalState.terminal && !terminalUIState.open
+        )}
         toolbarMode={toolbarMode}
       />
 
@@ -382,107 +583,175 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         <CenteredTranscriptLoader />
       ) : sessionMetaQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
-          <div className="rounded-lg border border-border bg-muted px-6 py-4 text-sm text-foreground">
+          <div className="rounded-lg border border-border bg-muted px-6 py-4 text-foreground">
             This thread is temporarily unavailable.
           </div>
         </div>
+      ) : panelAsPage ? (
+        <Suspense fallback={null}>
+          <SessionInspectorPane
+            file={fileQuery.data}
+            fileLoading={fileQuery.isLoading}
+            mobile
+            mode={panelState.panel === "file" ? "file" : "review"}
+            onClose={closePanel}
+            onModeChange={(nextMode) => {
+              if (nextMode === "file" && panelState.path) {
+                setSearchParams((current) =>
+                  buildFilePanelParams(current, {
+                    path: panelState.path!,
+                    line: panelState.line,
+                    column: panelState.column,
+                  })
+                )
+                return
+              }
+              openReviewPanel({
+                reviewFile:
+                  panelState.reviewFile ||
+                  reviewQuery.data?.files[0]?.path ||
+                  null,
+                reviewView: panelState.reviewView,
+              })
+            }}
+            onReviewFileSelect={(path) => {
+              setSearchParams((current) =>
+                buildReviewSelectionParams(current, {
+                  reviewFile: path,
+                  reviewView: "file",
+                })
+              )
+            }}
+            onReviewViewChange={(reviewView) => {
+              setSearchParams((current) =>
+                buildReviewSelectionParams(current, {
+                  reviewFile: panelState.reviewFile,
+                  reviewView,
+                })
+              )
+            }}
+            review={reviewQuery.data}
+            reviewFile={panelState.reviewFile}
+            reviewLoading={reviewQuery.isLoading}
+            reviewView={panelState.reviewView}
+          />
+        </Suspense>
       ) : (
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
-            <div
-              ref={transcriptScrollRef}
-              onScroll={handleTranscriptScroll}
-              className="workspace-scrollbar relative flex-1 overflow-y-auto px-6 py-4"
-            >
+            <div className="relative min-h-0 flex-1">
               <div
-                ref={transcriptContentRef}
-                className={cn(
-                  "mx-auto max-w-[720px] space-y-5 transition-opacity duration-200 ease-out",
-                  transcriptVisible ? "opacity-100" : "opacity-0"
-                )}
+                ref={transcriptScrollRef}
+                onScroll={handleTranscriptScroll}
+                className="scrollbar-native-hidden relative h-full overflow-y-auto px-6 py-4"
               >
-                <ArtifactPills session={session} />
+                <div
+                  ref={transcriptContentRef}
+                  className={cn(
+                    "mx-auto max-w-[720px] space-y-5 transition-opacity duration-200 ease-out",
+                    transcriptVisible ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  <ArtifactPills session={session} />
 
-                {session.attentionRequired ? (
-                  <div className="rounded-lg border border-amber-300/15 bg-amber-300/8 px-4 py-3">
-                    <div className="mb-1 text-sm font-semibold text-amber-100/80">
-                      Attention
-                    </div>
-                    <p className="text-base leading-7 font-medium text-amber-50/85">
-                      {session.attentionReason ||
-                        "This session requires user input."}
-                    </p>
-                    {session.pendingApprovalId ? (
-                      <div className="mt-3 flex gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 text-sm font-medium text-emerald-50 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={respondToApproval.isPending}
-                          onClick={() => {
-                            void respondToApproval.mutateAsync({
-                              sessionId,
-                              approvalId: session.pendingApprovalId,
-                              decision: ApprovalDecision.APPROVE,
-                            })
-                          }}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200/20 bg-transparent px-3 text-sm font-medium text-amber-50/85 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-                          disabled={respondToApproval.isPending}
-                          onClick={() => {
-                            void respondToApproval.mutateAsync({
-                              sessionId,
-                              approvalId: session.pendingApprovalId,
-                              decision: ApprovalDecision.REJECT,
-                            })
-                          }}
-                        >
-                          Reject
-                        </button>
+                  {session.attentionRequired ? (
+                    <div className="rounded-lg border border-amber-300/15 bg-amber-300/8 px-4 py-3">
+                      <div className="mb-1 text-sm font-medium text-amber-100/80">
+                        Attention
                       </div>
-                    ) : null}
+                      <p className="text-base leading-7 font-medium text-amber-50/85">
+                        {session.attentionReason ||
+                          "This session requires user input."}
+                      </p>
+                      {session.pendingApprovalId ? (
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 font-medium text-emerald-50 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={respondToApproval.isPending}
+                            onClick={() => {
+                              void respondToApproval.mutateAsync({
+                                sessionId,
+                                approvalId: session.pendingApprovalId!,
+                                decision: ApprovalDecision.APPROVE,
+                              })
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200/20 bg-transparent px-3 font-medium text-amber-50/85 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={respondToApproval.isPending}
+                            onClick={() => {
+                              void respondToApproval.mutateAsync({
+                                sessionId,
+                                approvalId: session.pendingApprovalId!,
+                                decision: ApprovalDecision.REJECT,
+                              })
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <TranscriptTimeline
+                    items={activityItems}
+                    isFetchingPreviousPage={isFetchingPreviousPage}
+                    isLoadingInitialTranscript={isLoadingInitialTranscript}
+                    onSelectDiff={(diff) => {
+                      openReviewPanel({
+                        reviewFile: diff.path,
+                        reviewView: "file",
+                      })
+                    }}
+                    onSelectPath={(path) => {
+                      openFilePanel(path)
+                    }}
+                  />
+                  <ArtifactStrip session={session} />
+                </div>
+                {!transcriptVisible ? (
+                  <div className="pointer-events-none absolute inset-x-0 top-0 flex min-h-full items-center justify-center">
+                    <InitialTranscriptLoader />
                   </div>
                 ) : null}
-
-                <TranscriptTimeline
-                  items={activityItems}
-                  isFetchingPreviousPage={isFetchingPreviousPage}
-                  isLoadingInitialTranscript={isLoadingInitialTranscript}
-                  onSelectDiff={(diff) => {
-                    setSelectedDiff(diff)
-                    setSelectedPath(null)
-                    setActiveTab("review")
-                    setInspectorMode("diff")
-                    if (posture === "wide") {
-                      setInspectorOpen(true)
-                    }
-                  }}
-                  onSelectPath={(path) => {
-                    setSelectedPath(path)
-                    setSelectedDiff(null)
-                    setActiveTab("summary")
-                    setInspectorMode("code")
-                    if (posture === "wide") {
-                      setInspectorOpen(true)
-                    }
-                  }}
-                />
-                <ArtifactStrip session={session} />
               </div>
-              {!transcriptVisible ? (
-                <div className="pointer-events-none absolute inset-x-0 top-0 flex min-h-full items-center justify-center">
-                  <InitialTranscriptLoader />
-                </div>
-              ) : null}
+              <ScrollbarIndicator
+                scrollable={scrollbarScrollable}
+                thumbHeight={thumbHeight}
+                thumbOffset={thumbOffset}
+                visible={scrollbarVisible}
+              />
             </div>
 
+            {session && shouldShowWorkingStatus ? (
+              <div className="border-t border-border bg-background/95 px-6 py-2 backdrop-blur">
+                <div className="mx-auto max-w-[720px] rounded-lg border border-border bg-card px-3 py-2">
+                  <TypingIndicator
+                    label={
+                      sendInput.isPending || Boolean(optimisticPendingInput)
+                        ? "Codex is starting this turn..."
+                        : session.summary?.trim() ||
+                          "Codex is still working on this turn..."
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <SessionComposer
-              busy={sendInput.isPending}
+              busy={sendInput.isPending || interruptSession.isPending}
               composerTestId="session-composer"
+              interruptMode={shouldShowInterruptAction}
+              interruptTestId="session-interrupt-submit"
               inputTestId="session-prompt-input"
+              onInterrupt={async () => {
+                await interruptSession.mutateAsync({ sessionId })
+              }}
               placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
               projectLabel={session.project?.name || "Local"}
               branchLabel="main"
@@ -510,21 +779,74 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               submitTestId="session-followup-submit"
               value={prompt}
             />
+
+            <SessionTerminalDrawer
+              enabled={terminalEnabled}
+              terminal={terminalState}
+              uiState={terminalUIState}
+            />
           </div>
 
-          {posture === "wide" && inspectorOpen ? (
-            <Suspense fallback={null}>
-              <SessionInspectorPane
-                activeTab={activeTab}
-                mode={inspectorMode}
-                onClose={() => setInspectorOpen(false)}
-                onModeChange={setInspectorMode}
-                onTabChange={setActiveTab}
-                selectedDiff={selectedDiff}
-                selectedPath={selectedPath}
-                session={session}
+          {posture === "wide" && panelVisible ? (
+            <div
+              className="relative flex h-full shrink-0 border-l border-border bg-card"
+              style={{ width: sidebarWidth }}
+            >
+              <div
+                role="presentation"
+                className="absolute inset-y-0 left-0 w-1 cursor-col-resize bg-transparent"
+                onMouseDown={startSidebarResize}
               />
-            </Suspense>
+              <div className="min-w-0 flex-1">
+                <Suspense fallback={null}>
+                  <SessionInspectorPane
+                    file={fileQuery.data}
+                    fileLoading={fileQuery.isLoading}
+                    mode={panelState.panel === "file" ? "file" : "review"}
+                    onClose={closePanel}
+                    onModeChange={(nextMode) => {
+                      if (nextMode === "file" && panelState.path) {
+                        setSearchParams((current) =>
+                          buildFilePanelParams(current, {
+                            path: panelState.path!,
+                            line: panelState.line,
+                            column: panelState.column,
+                          })
+                        )
+                        return
+                      }
+                      openReviewPanel({
+                        reviewFile:
+                          panelState.reviewFile ||
+                          reviewQuery.data?.files[0]?.path ||
+                          null,
+                        reviewView: panelState.reviewView,
+                      })
+                    }}
+                    onReviewFileSelect={(path) => {
+                      setSearchParams((current) =>
+                        buildReviewSelectionParams(current, {
+                          reviewFile: path,
+                          reviewView: "file",
+                        })
+                      )
+                    }}
+                    onReviewViewChange={(reviewView) => {
+                      setSearchParams((current) =>
+                        buildReviewSelectionParams(current, {
+                          reviewFile: panelState.reviewFile,
+                          reviewView,
+                        })
+                      )
+                    }}
+                    review={reviewQuery.data}
+                    reviewFile={panelState.reviewFile}
+                    reviewLoading={reviewQuery.isLoading}
+                    reviewView={panelState.reviewView}
+                  />
+                </Suspense>
+              </div>
+            </div>
           ) : null}
         </div>
       )}
@@ -597,7 +919,7 @@ function ArtifactPills({ session }: { session: Session }) {
         <button
           key={artifact.id}
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-accent"
+          className="inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-muted-foreground transition hover:bg-accent"
         >
           <FileText className="size-3.5 text-muted-foreground" />
           <span>{artifact.label}</span>
@@ -621,10 +943,8 @@ function ArtifactStrip({ session }: { session: Session }) {
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="truncate text-sm text-foreground">
-                {artifact.label}
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="truncate text-foreground">{artifact.label}</div>
+              <div className="mt-1 text-muted-foreground">
                 {formatArtifactKind(artifact.kind)}
               </div>
             </div>
@@ -633,7 +953,7 @@ function ArtifactStrip({ session }: { session: Session }) {
                 href={artifact.downloadUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 rounded-md border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground transition hover:bg-accent"
+                className="shrink-0 rounded-md border border-border bg-secondary px-2.5 py-1 text-muted-foreground transition hover:bg-accent"
               >
                 Open
               </a>
@@ -727,7 +1047,7 @@ function TranscriptTimeline({
   items: ActivityItem[]
   isFetchingPreviousPage: boolean
   isLoadingInitialTranscript: boolean
-  onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
 }) {
   const timelineItems = groupTimelineItems(items)
@@ -761,7 +1081,13 @@ function TranscriptTimeline({
               />
             )
           case "pending-input":
-            return <PendingInputEntry key={item.key} text={item.text} />
+            return (
+              <PendingInputEntry
+                key={item.key}
+                onSelectPath={onSelectPath}
+                text={item.text}
+              />
+            )
           case "command-group":
             return <CommandGroupEntry key={item.key} items={item.items} />
           case "file-change-group":
@@ -942,13 +1268,20 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return timelineItems
 }
 
-function PendingInputEntry({ text }: { text: string }) {
+function PendingInputEntry({
+  onSelectPath,
+  text,
+}: {
+  onSelectPath: (path: string) => void
+  text: string
+}) {
   return (
     <div className="flex justify-end" data-testid="session-transcript-pending">
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
           className="rounded-lg bg-accent px-4 py-3"
+          onLocalPathClick={onSelectPath}
         />
       </div>
     </div>
@@ -974,7 +1307,7 @@ function RoundStatusEntry({
 }) {
   return (
     <div className="min-w-0" data-testid="session-transcript-round-status">
-      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground">
+      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3 text-muted-foreground">
         <div className="flex items-center gap-2">
           <span
             className={cn(
@@ -995,12 +1328,12 @@ function TranscriptEntry({
   onSelectPath,
 }: {
   item: SessionTranscriptItem
-  onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
 }) {
   switch (item.kind) {
     case SessionTranscriptItemKind.USER_MESSAGE:
-      return <UserMessageEntry item={item} />
+      return <UserMessageEntry item={item} onSelectPath={onSelectPath} />
     case SessionTranscriptItemKind.AGENT_MESSAGE:
       return <AgentMessageEntry item={item} onSelectPath={onSelectPath} />
     case SessionTranscriptItemKind.REASONING:
@@ -1016,13 +1349,20 @@ function TranscriptEntry({
   }
 }
 
-function UserMessageEntry({ item }: { item: SessionTranscriptItem }) {
+function UserMessageEntry({
+  item,
+  onSelectPath,
+}: {
+  item: SessionTranscriptItem
+  onSelectPath: (path: string) => void
+}) {
   return (
     <div className="flex justify-end" data-testid="session-transcript-user">
       <div className="max-w-[85%]">
         <SessionRichText
           text={item.body}
           className="rounded-lg bg-accent px-4 py-3"
+          onLocalPathClick={onSelectPath}
         />
       </div>
     </div>
@@ -1065,14 +1405,14 @@ function ReasoningEntry({
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+          className="flex items-center gap-1.5 text-foreground/70 transition hover:text-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
           ) : (
             <ChevronRight className="size-3" />
           )}
-          <span className="font-medium">{label}</span>
+          <span className="text-sm">{label}</span>
           {!expanded && preview ? (
             <span className="truncate text-muted-foreground">— {preview}</span>
           ) : null}
@@ -1102,19 +1442,22 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-sm text-foreground/70 transition hover:text-foreground"
+          className="flex items-center gap-1.5 text-foreground/70 transition hover:text-foreground"
         >
           {expanded ? (
             <ChevronDown className="size-3" />
           ) : (
             <ChevronRight className="size-3" />
           )}
-          <span className="font-medium">{label}</span>
+          <span className="text-sm">{label}</span>
         </button>
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+          <CodeContainer
+            as="pre"
+            className="mt-2 break-words whitespace-pre-wrap text-foreground/70"
+          >
             {item.body}
-          </pre>
+          </CodeContainer>
         ) : null}
       </div>
     </div>
@@ -1134,12 +1477,13 @@ function ToolGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
     >
       <div className="space-y-2">
         {items.map((item) => (
-          <pre
+          <CodeContainer
             key={item.id}
-            className="workspace-scrollbar overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70"
+            as="pre"
+            className="break-words whitespace-pre-wrap text-foreground/70"
           >
             {item.body}
-          </pre>
+          </CodeContainer>
         ))}
       </div>
     </TranscriptBatchEntry>
@@ -1152,7 +1496,7 @@ function ThoughtProcessGroupEntry({
   onSelectPath,
 }: {
   items: SessionTranscriptItem[]
-  onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -1189,7 +1533,7 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
         <button
           type="button"
           onClick={() => setExpanded((prev) => !prev)}
-          className="group flex w-full items-center gap-1.5 text-sm text-muted-foreground transition hover:text-foreground"
+          className="group flex w-full items-center gap-1.5 text-muted-foreground transition hover:text-foreground"
         >
           <span>{label}</span>
           <ChevronRight
@@ -1202,9 +1546,12 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
           />
         </button>
         {expanded ? (
-          <pre className="workspace-scrollbar mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70">
+          <CodeContainer
+            as="pre"
+            className="mt-2 break-words whitespace-pre-wrap text-foreground/70"
+          >
             {item.body}
-          </pre>
+          </CodeContainer>
         ) : null}
       </div>
     </div>
@@ -1224,12 +1571,13 @@ function CommandGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
     >
       <div className="space-y-2">
         {items.map((item) => (
-          <pre
+          <CodeContainer
             key={item.id}
-            className="workspace-scrollbar overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs leading-5 break-words whitespace-pre-wrap text-foreground/70"
+            as="pre"
+            className="break-words whitespace-pre-wrap text-foreground/70"
           >
             {item.body}
-          </pre>
+          </CodeContainer>
         ))}
       </div>
     </TranscriptBatchEntry>
@@ -1241,7 +1589,7 @@ function FileChangeGroupEntry({
   onSelectDiff,
 }: {
   items: SessionTranscriptItem[]
-  onSelectDiff: (diff: InspectorSelectedDiff) => void
+  onSelectDiff: (diff: ParsedFileChange) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const changes = items.flatMap((item) => parseFileChangeBody(item.body))
@@ -1262,14 +1610,14 @@ function FileChangeGroupEntry({
             onClick={() => onSelectDiff(change)}
             className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-accent"
           >
-            <span className="shrink-0 text-xs text-muted-foreground">
+            <span className="shrink-0 text-muted-foreground">
               {change.kindLabel}
             </span>
-            <span className="min-w-0 truncate font-mono text-sm text-ws-code">
+            <span className="min-w-0 truncate font-mono text-ws-code">
               {change.path}
             </span>
             {change.additions || change.deletions ? (
-              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+              <span className="ml-auto shrink-0 text-muted-foreground">
                 +{change.additions} -{change.deletions}
               </span>
             ) : null}
@@ -1302,10 +1650,7 @@ function TranscriptBatchEntry({
           onClick={onToggle}
           className="group inline-flex max-w-full items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
         >
-          <span className="font-medium">{label}</span>
-          <span className="rounded-md border border-border bg-secondary px-2 py-0.5 text-xs text-foreground/85 transition group-hover:bg-accent">
-            {expanded ? "Collapse" : "Expand"}
-          </span>
+          <span>{label}</span>
           <ChevronRight
             className={cn(
               "size-3 shrink-0 transition",
@@ -1321,7 +1666,12 @@ function TranscriptBatchEntry({
   )
 }
 
-type ParsedFileChange = InspectorSelectedDiff & {
+type ParsedFileChange = {
+  additions: number
+  deletions: number
+  diff?: string
+  kindLabel: string
+  path: string
   movePath?: string
 }
 
@@ -1469,7 +1819,7 @@ function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
 
 function TypingIndicator({ label = "Thinking..." }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-muted-foreground">
       <div className="flex items-center gap-1">
         <span className="bg-primary-muted size-1.5 animate-pulse rounded-full" />
         <span className="bg-primary-muted size-1.5 animate-pulse rounded-full [animation-delay:140ms]" />

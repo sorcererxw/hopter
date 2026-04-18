@@ -55,8 +55,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
   )
   const showPhoneDetail = posture === "phone" && isSessionRoute
   const showPhoneList = posture === "phone" && !isSessionRoute
-  const showInlineRail =
-    posture !== "phone" && railVisible
+  const showInlineRail = posture !== "phone" && railVisible
   const toolbarMode = getToolbarMode(posture, railVisible)
 
   useEffect(() => {
@@ -122,14 +121,17 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
       },
       toolbarMode,
     }),
-    [eventStream.lastEventAt, eventStream.status, posture, projectPickerOpen, railVisible, toolbarMode]
+    [
+      eventStream.lastEventAt,
+      eventStream.status,
+      posture,
+      projectPickerOpen,
+      railVisible,
+      toolbarMode,
+    ]
   )
 
-  const rail = (
-    <SessionRail
-      onOpenSearch={() => setSearchOpen(true)}
-    />
-  )
+  const rail = <SessionRail onOpenSearch={() => setSearchOpen(true)} />
 
   return (
     <WorkspaceShellContext.Provider value={shellContext}>
@@ -150,10 +152,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         ) : null}
 
         {showPhoneList ? (
-          <div
-            className="h-full min-h-0"
-            data-testid="workspace-phone-list"
-          >
+          <div className="h-full min-h-0" data-testid="workspace-phone-list">
             {rail}
           </div>
         ) : null}

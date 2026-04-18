@@ -46,6 +46,7 @@ type liveSession struct {
 
 type codexClient interface {
 	Close() error
+	InterruptTurn(threadID, turnID string) error
 	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
 	ReadThread(threadID string) (*ReadThreadResult, error)
 	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
@@ -196,6 +197,75 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	session.UpdatedAt = time.Now().UTC()
 	go m.dispatchInput(project, sessionID, session.BackendThreadID, input)
 	return session, nil
+}
+
+func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
+	session, project, err := m.GetSession(sessionID)
+	if err != nil {
+		return core.Session{}, err
+	}
+	if local, ok := m.workspace.GetSession(sessionID); ok {
+		if strings.TrimSpace(local.BackendThreadID) != "" {
+			session.BackendThreadID = local.BackendThreadID
+		}
+		if strings.TrimSpace(local.ActiveTurnID) != "" {
+			session.ActiveTurnID = local.ActiveTurnID
+		}
+	}
+
+	threadID := strings.TrimSpace(session.BackendThreadID)
+	turnID := strings.TrimSpace(session.ActiveTurnID)
+	if threadID == "" || turnID == "" {
+		return core.Session{}, fmt.Errorf("session %q has no active turn to interrupt", sessionID)
+	}
+
+	live, err := m.ensureLiveSession(sessionID, project, threadID)
+	if err != nil {
+		return core.Session{}, err
+	}
+	if err := live.client.InterruptTurn(threadID, turnID); err != nil {
+		return core.Session{}, err
+	}
+
+	active := ""
+	pendingApprovalID := ""
+	waiting := core.SessionStateWaitingInput
+	attention := false
+	reason := ""
+	summary := "Codex stopped before completing the turn."
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		PendingApprovalID: &pendingApprovalID,
+		ActiveTurnID:      &active,
+		Status:            &waiting,
+		AttentionRequired: &attention,
+		AttentionReason:   &reason,
+		Summary:           &summary,
+	})
+
+	m.mu.Lock()
+	if current := m.live[sessionID]; current != nil {
+		current.active = ""
+		current.optimisticSummary = summary
+		current.optimisticStatus = waiting
+		current.optimisticUpdatedAt = time.Now().UTC()
+		current.pendingApproval = nil
+		current.draftItemID = ""
+		current.draftText = ""
+	}
+	m.mu.Unlock()
+
+	m.publishLivePatch(sessionID, project.ID, core.SessionLivePatch{
+		Kind:            core.SessionLivePatchKindStatus,
+		Status:          waiting,
+		Summary:         summary,
+		RequiresRefetch: true,
+	})
+
+	updated, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		return core.Session{}, fmt.Errorf("session %q not found", sessionID)
+	}
+	return updated, nil
 }
 
 func (m *Manager) runSession(project core.Project, sessionID, prompt string) {

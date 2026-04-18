@@ -10,6 +10,7 @@ import "orchd/v1/common.proto";
 service HostService {
   rpc GetHostStatus(GetHostStatusRequest) returns (GetHostStatusResponse);
   rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
+  rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse);
   rpc ListDirectoryRoots(ListDirectoryRootsRequest) returns (ListDirectoryRootsResponse);
   rpc ListDirectory(ListDirectoryRequest) returns (ListDirectoryResponse);
   rpc GetPathMetadata(GetPathMetadataRequest) returns (GetPathMetadataResponse);
@@ -42,6 +43,19 @@ message ListBackendsRequest {}
 
 message ListBackendsResponse {
   repeated BackendStatus backends = 1;
+}
+
+message SkillSummary {
+  string name = 1;
+  string reference = 2;
+  string description = 3;
+  string source = 4;
+}
+
+message ListSkillsRequest {}
+
+message ListSkillsResponse {
+  repeated SkillSummary skills = 1;
 }
 
 message DirectoryRoot {

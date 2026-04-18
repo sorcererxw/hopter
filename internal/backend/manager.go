@@ -20,6 +20,7 @@ type Runtime interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string) (core.Session, error)
+	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
 
@@ -129,6 +130,35 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 		return core.Session{}, fmt.Errorf("backend runtime %q not registered", backendKey)
 	}
 	updated, err := runtime.SendSessionInput(sessionID, input)
+	if err != nil {
+		return core.Session{}, err
+	}
+	updated, _ = m.normalizeSession(updated, project, backendKey)
+	return updated, nil
+}
+
+func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
+	session, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		resolved, project, err := m.GetSession(sessionID)
+		if err != nil {
+			return core.Session{}, err
+		}
+		session = resolved
+		if strings.TrimSpace(session.ProjectID) == "" {
+			session.ProjectID = project.ID
+		}
+	}
+	project, err := m.resolveProject(session.ProjectID, session.BackendKey)
+	if err != nil {
+		return core.Session{}, err
+	}
+	backendKey := normalizeBackendKey(session.BackendKey, project.DefaultBackend)
+	runtime, ok := m.runtimes[backendKey]
+	if !ok {
+		return core.Session{}, fmt.Errorf("backend runtime %q not registered", backendKey)
+	}
+	updated, err := runtime.InterruptSession(sessionID)
 	if err != nil {
 		return core.Session{}, err
 	}

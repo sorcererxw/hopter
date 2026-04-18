@@ -148,8 +148,9 @@ Introduce a new resource: `TerminalSession`.
 
 This resource is:
 
-- always attached to a `project`
-- optionally attached to a `session`
+- always attached to a `session`
+- always resolved through that session's `project`
+- keyed by `browser_instance_id + tab_id + session_id`
 - ephemeral and gateway-owned
 - not durable truth after gateway restart
 
@@ -168,14 +169,18 @@ Allowed persistent fields:
 
 - terminal id
 - project id
-- optional session id
+- session id
+- browser instance id
+- tab id
 - cwd
 - shell command
 - status
 - created at
 - last activity at
 - exit code
-- last attached client id
+- attached / detached state
+- last foreground command summary
+- whether the last foreground command has exited
 
 Not allowed as durable truth:
 
@@ -255,17 +260,19 @@ Responsibilities:
 - mark live/degraded/exited state
 - support reconnect lookup
 
-Backed by the existing repo storage approach.
-If there is tension between sqlite persistence and implementation speed, start with in-memory plus explicit degraded semantics, then persist metadata once the live loop is sound.
+v1 recommendation:
+
+- keep this store **in memory only**
+- do not persist terminal metadata across gateway restarts
+- treat gateway restart as a hard boundary that invalidates live terminals
 
 #### 4. `TerminalStreamHub`
 
 Responsibilities:
 
 - own active WebSocket attachments
-- enforce single-writer semantics
 - fan terminal output to attached client
-- send control messages such as `ready`, `exit`, `error`, `taken_over`
+- send control messages such as `ready`, `exit`, `terminated`, `error`
 - batch bursty output into small frames so one noisy command does not thrash the browser
 
 ### Lifecycle flow
@@ -273,12 +280,13 @@ Responsibilities:
 #### Create flow
 
 1. browser calls `CreateTerminalSession`
-2. server validates project/session relationship
+2. server validates browser instance id, tab id, and session relationship
 3. server resolves cwd
-4. server spawns shell PTY
-5. server records terminal metadata
-6. server returns terminal id and WebSocket attach URL
-7. browser opens terminal drawer and attaches
+4. if a live terminal already exists for `browser_instance_id + tab_id + session_id`, server returns that terminal instead of spawning another
+5. otherwise server spawns shell PTY
+6. server records terminal metadata
+7. server returns terminal id and WebSocket attach URL
+8. browser opens terminal drawer and attaches
 
 #### Attach/reconnect flow
 
@@ -288,14 +296,23 @@ Responsibilities:
 4. if terminal is live, server replays the recent in-memory buffer, then attach succeeds
 5. if terminal has exited, browser gets read-only final state with exit code
 6. if gateway restarted and PTY is gone, browser gets degraded state
+7. if the browser instance id or tab id does not match, attach is rejected and the client must create a new terminal
 
-#### Close flow
+#### Detach flow
 
-1. browser calls `CloseTerminalSession`
-2. server sends `SIGHUP` or configured termination
-3. PTY exits
-4. metadata marked closed
-5. SSE emits terminal-status refresh event
+1. browser hides the drawer, changes route, or transiently loses network
+2. server marks the terminal detached
+3. if the last foreground command is still running, keep the PTY alive indefinitely
+4. if the last foreground command has exited, start a 5 minute cleanup timer
+5. if the same tab reattaches before cleanup, cancel the timer
+
+#### Terminate flow
+
+1. browser calls `TerminateTerminalSession`
+2. if a foreground command is still running, browser confirms first
+3. server kills the PTY immediately
+4. metadata marked terminated
+5. browser keeps the final visible content until the drawer is hidden
 
 ## Browser transport split
 
@@ -305,9 +322,7 @@ Use Connect RPCs for:
 
 - create terminal
 - fetch terminal metadata
-- list terminals for a session or project if needed
-- close terminal
-- optionally mark takeover intent
+- terminate terminal
 
 ### SSE is for freshness only
 
@@ -317,6 +332,7 @@ Use SSE events for:
 - terminal attached/detached
 - terminal exited
 - terminal degraded
+- terminal terminated
 
 SSE is not the terminal stream.
 It only tells the UI what to refresh.
@@ -353,7 +369,6 @@ Use JSON messages over WebSocket.
 { "type": "input", "data": "git status\r" }
 { "type": "resize", "cols": 120, "rows": 32 }
 { "type": "ping" }
-{ "type": "takeover" }
 ```
 
 ### Server -> browser
@@ -362,8 +377,8 @@ Use JSON messages over WebSocket.
 { "type": "ready", "terminalId": "term_123", "cols": 120, "rows": 32 }
 { "type": "output", "data": "On branch master\r\n" }
 { "type": "exit", "exitCode": 0 }
+{ "type": "terminated" }
 { "type": "error", "message": "terminal no longer available" }
-{ "type": "taken_over" }
 { "type": "pong" }
 ```
 
@@ -404,7 +419,7 @@ service TerminalService {
 message TerminalSession {
   string id = 1;
   string project_id = 2;
-  optional string session_id = 3;
+  string session_id = 3;
   string cwd = 4;
   string shell = 5;
   TerminalStatus status = 6;
@@ -426,9 +441,9 @@ enum TerminalStatus {
 }
 
 message CreateTerminalSessionRequest {
-  string project_id = 1;
-  optional string session_id = 2;
-  optional string relative_cwd = 3;
+  string session_id = 1;
+  string browser_instance_id = 2;
+  string tab_id = 3;
   optional uint32 cols = 4;
   optional uint32 rows = 5;
 }
@@ -454,7 +469,7 @@ That would blur two different truth domains:
 Instead:
 
 - session detail may show whether an active terminal exists
-- session detail may open the terminal drawer bound to that session's project
+- session detail may open the terminal drawer bound to that exact session
 - terminal lifecycle events may refresh session detail metadata
 
 The session remains the primary page.
@@ -471,17 +486,21 @@ Use a bottom drawer in the selected session pane.
 Rules:
 
 - closed by default
-- last-used height remembered locally per browser
+- drawer open state is session-local UI state
+- drawer height is session-local UI state
 - default height around 320-420px
 - resizable, but not dominant
 - session summary, attention, composer, and artifacts remain visible before opening
 
 ### Phone
 
-Do not force a tiny embedded terminal strip.
+v1 does not support terminal on phone-sized viewports.
 
-Use a full-height sheet launched from the overflow menu or terminal button.
-It is still secondary, but the device needs space for touch interaction.
+Rules:
+
+- hide the terminal entrypoint entirely
+- do not attempt a cramped sheet or embedded strip
+- keep the session page focused on status, summary, attention, and reply
 
 ### Large touch screens
 
@@ -504,14 +523,15 @@ Recommended additions:
 
 Use:
 
-- `xterm.js`
-- `@xterm/addon-fit`
+- `@wterm/react`
+- `@wterm/dom`
 
 Why:
 
-- proven browser terminal rendering
-- resize support
-- less custom terminal emulation work
+- DOM rendering matches the product's browser-first posture better than an IDE-style canvas terminal
+- native text selection, copy/paste, browser find, and accessibility come with the renderer instead of being layered on later
+- built-in WebSocket transport and reconnection support fit the session-local terminal model well
+- React integration is thin enough to keep terminal UI as a focused feature, not a second app shell
 
 Do not build a terminal renderer from scratch.
 
@@ -521,7 +541,9 @@ Do not build a terminal renderer from scratch.
 2. Terminal state is visible but not louder than session attention.
 3. Terminal can reconnect within the same gateway lifetime.
 4. If terminal is degraded, say so plainly.
-5. If another browser takes over, the old browser gets a clear banner.
+5. The terminal drawer opens immediately into `Starting terminal...` before the shell is ready.
+6. If startup or reconnect fails, keep the error in the drawer and offer `Retry`.
+7. If the terminal is live but hidden, the topbar button may show a light active state only.
 
 ### Required copy quality
 
@@ -529,7 +551,8 @@ Examples:
 
 - `Terminal disconnected. The shell process may still be running. Reconnect to continue.`
 - `Terminal ended with exit code 1.`
-- `This terminal was taken over from another browser.`
+- `Reconnection failed. Try again.`
+- `Terminal terminated.`
 - `Gateway restarted. This terminal can’t be resumed, but the session and artifacts are still available.`
 
 ## Multi-device behavior
@@ -539,17 +562,11 @@ That matters here.
 
 ### Recommended v1 policy
 
-- one active writer at a time
-- newest attachment may take over
-- previous attachment becomes read-only and receives `taken_over`
-
-Why not true multi-writer:
-
-- harder conflict model
-- higher surprise factor
-- not needed for the first useful version
-
-This keeps cross-device continuity without pretending collaborative shell editing is simple.
+- terminals are **not shared across devices**
+- terminals are **not shared across tabs**
+- the only reconnect path is the same `browser_instance_id + tab_id + session_id`
+- same-tab refresh may reattach
+- browser restart, copied tab, or another machine must create a new terminal
 
 ## Security model
 
@@ -561,11 +578,10 @@ Treat it accordingly.
 1. only available on the same auth path as the rest of `orchd`
 2. enforce same-origin and authenticated browser session checks
 3. restrict cwd to:
-   - project root, or
-   - project-relative subpaths only
+   - the session's project root only in v1
 4. no arbitrary absolute path launch from the browser
 5. inherit the project's local environment, but do not silently widen filesystem scope
-6. close orphaned terminals after timeout when no client is attached
+6. close all live terminals for the current tab immediately on logout or auth expiry
 
 ### Localhost dev mode
 
@@ -588,20 +604,24 @@ Resolve in this order:
 
 ### Default cwd
 
-Resolve in this order:
+Use the session's project root.
 
-1. requested project-relative cwd
-2. session project root
-3. project root
+Do not add "remember last directory" behavior in v1.
 
-### Idle cleanup
+### Cleanup rule
 
-Recommended initial policy:
+Attached terminal:
 
-- keep detached live terminal for 5 minutes
-- then terminate unless marked pinned in a later phase
+- never auto-close
 
-That supports temporary reconnect without accumulating dead shells forever.
+Detached terminal:
+
+- if the last foreground command has **not** exited, keep it alive indefinitely
+- if the last foreground command **has** exited, close it 5 minutes after detach
+
+Browser restart:
+
+- do not restore terminals after the browser process exits
 
 ## Failure modes and rescue plan
 
@@ -609,11 +629,12 @@ That supports temporary reconnect without accumulating dead shells forever.
 |---|---|---|---|
 | PTY spawn fails | terminal never opens | create RPC returns error | show actionable error, keep session usable |
 | WebSocket attach fails | drawer shows no output | ws close/error | allow reconnect |
-| Browser disconnects | user loses live view | missing client heartbeat | keep PTY for grace period |
-| Second browser takes over | first browser loses control | attach collision | show read-only banner, explicit takeover |
+| Browser disconnects | user loses live view | ws close/error | auto-reattach on the same tab when possible |
+| Different tab or device tries to reuse the terminal | user expects sharing that does not exist | browser instance or tab mismatch | create a new terminal instead |
 | Gateway restart | PTY gone | missing runtime record | mark terminal degraded, do not fake resume |
 | Invalid cwd request | security or confusion risk | create validation | reject with clear message |
-| Terminal exits | command session ends | child process exit | show exit code and allow reopen |
+| Terminal exits | command session ends | child process exit | show exit state and allow reopen |
+| Auth expires or user logs out | sharp capability remains alive too long | auth middleware + session teardown | terminate terminals for that tab immediately |
 
 ## Interaction with Codex sessions
 
@@ -681,9 +702,9 @@ Acceptance criteria:
 Deliverables:
 
 - desktop bottom drawer
-- mobile terminal sheet
 - topbar launch affordance
-- terminal status badge
+- fixed minimal header
+- `wterm` renderer integration
 
 Acceptance criteria:
 
@@ -694,15 +715,15 @@ Acceptance criteria:
 
 Deliverables:
 
-- reconnect grace period
-- single-writer takeover policy
+- same-tab reconnect
+- browser-instance and tab isolation
 - degraded state after gateway restart
 - SSE freshness events
 
 Acceptance criteria:
 
-- second browser can take over cleanly
-- browser refresh can reattach within grace period
+- same-tab refresh can reattach
+- copied tab or different device does not attach to the old terminal
 - gateway restart does not fake terminal recovery
 
 ## Slice 5: Validation and evidence
@@ -757,7 +778,9 @@ storage/artifacts/validation/latest-go-terminal.txt
 - verify drawer is secondary, not full page
 - run a harmless command such as `printf "ok"`
 - verify reconnect after page refresh
-- verify takeover banner from second browser context
+- verify copied tab opens a new terminal
+- verify a second device does not attach to the old terminal
+- verify phone viewport hides the terminal entrypoint
 
 #### Negative tests
 

@@ -225,6 +225,51 @@ func sessionMetaToProto(meta core.SessionMeta) *orchdv1.SessionMeta {
 	}
 }
 
+func sessionReviewToProto(review core.SessionReview) *orchdv1.SessionReview {
+	files := make([]*orchdv1.SessionReviewFile, 0, len(review.Files))
+	for _, file := range review.Files {
+		files = append(files, &orchdv1.SessionReviewFile{
+			Path:         validUTF8(file.Path),
+			Kind:         validUTF8(file.Kind),
+			MovePath:     optionalString(file.MovePath),
+			Additions:    uint32(file.Additions),
+			Deletions:    uint32(file.Deletions),
+			Diff:         validUTF8(file.Diff),
+			DisplayLabel: validUTF8(file.DisplayLabel),
+		})
+	}
+
+	return &orchdv1.SessionReview{
+		SessionId:             validUTF8(review.SessionID),
+		ProjectId:             validUTF8(review.ProjectID),
+		Available:             review.Available,
+		TurnId:                validUTF8(review.TurnID),
+		Reason:                validUTF8(review.Reason),
+		FullPatch:             validUTF8(review.FullPatch),
+		Files:                 files,
+		GeneratedAt:           timestamp(review.GeneratedAt),
+		PendingTurnInProgress: review.PendingTurnInProgress,
+	}
+}
+
+func sessionFileToProto(file core.SessionFile) *orchdv1.SessionFile {
+	return &orchdv1.SessionFile{
+		SessionId:     validUTF8(file.SessionID),
+		ProjectId:     validUTF8(file.ProjectID),
+		Available:     file.Available,
+		RequestedPath: validUTF8(file.RequestedPath),
+		CanonicalPath: validUTF8(file.CanonicalPath),
+		DisplayPath:   validUTF8(file.DisplayPath),
+		Content:       validUTF8(file.Content),
+		Reason:        validUTF8(file.Reason),
+		Truncated:     file.Truncated,
+		IsBinary:      file.IsBinary,
+		LineCount:     uint32(file.LineCount),
+		InitialLine:   uint32(file.InitialLine),
+		InitialColumn: uint32(file.InitialColumn),
+	}
+}
+
 func buildCodexResumeCommand(rootPath string, session core.Session) string {
 	if strings.TrimSpace(session.BackendKey) != "codex" {
 		return ""

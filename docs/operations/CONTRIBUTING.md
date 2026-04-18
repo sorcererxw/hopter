@@ -45,6 +45,7 @@ make docs
 make validate-go-idl
 make validate-go-server
 make validate-go-ui
+make validate-go-terminal
 make validate-go-tetris
 make validate-all
 ```
@@ -65,6 +66,7 @@ bun scripts/validate-docs.ts
 bun scripts/validate-go-idl.ts
 bun scripts/validate-go-server.ts
 bun scripts/validate-go-ui.ts
+bun scripts/validate-go-terminal.ts
 bun scripts/validate-go-tetris.ts
 bun scripts/validate-live.ts
 ```

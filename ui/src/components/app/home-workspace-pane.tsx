@@ -91,7 +91,7 @@ export function HomeWorkspacePane() {
               Start building
             </h2>
 
-            <label className="relative mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <label className="relative mt-1 inline-flex items-center gap-1 text-base font-medium text-muted-foreground">
               <select
                 value={selectedProjectId}
                 onChange={(event) => {
@@ -120,7 +120,7 @@ export function HomeWorkspacePane() {
               <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
             </label>
 
-            <label className="relative mt-2 inline-flex items-center gap-1 text-xs tracking-wider text-ws-text-muted uppercase">
+            <label className="relative mt-2 inline-flex items-center gap-1 text-xs font-medium tracking-wider text-ws-text-muted uppercase">
               <select
                 value={selectedBackendKey}
                 onChange={(event) =>

@@ -14,6 +14,9 @@ import {
 import { useNavigate } from "react-router-dom"
 
 import { useTheme } from "@/components/theme-provider"
+import { CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useLogout } from "@/features/auth/use-auth"
 import { useHostStatus } from "@/features/host/use-host-status"
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
@@ -47,6 +50,7 @@ export function SettingsRoute() {
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState<SettingsSection>("general")
   const { resolvedTheme, theme, setTheme } = useTheme()
+  const logout = useLogout()
   const { data: hostStatus } = useHostStatus()
   const { data: projects } = useProjects()
   const { data: sessions } = useSessions()
@@ -54,36 +58,47 @@ export function SettingsRoute() {
   return (
     <div className="flex h-dvh bg-background text-foreground">
       <div className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar py-4">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate(-1)}
-          className="mb-3 flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground transition hover:text-foreground"
+          className="mb-3 justify-start gap-2 px-4 text-muted-foreground"
         >
           <ArrowLeft className="size-3.5" />
           <span>Back to app</span>
-        </button>
+        </Button>
 
-        <div className="px-2 space-y-0.5">
+        <div className="space-y-0.5 px-2 text-sm font-medium">
           {NAV_ITEMS.map(({ icon: Icon, id, label }) => (
-            <button
+            <Button
               key={id}
               type="button"
+              variant={activeSection === id ? "secondary" : "ghost"}
+              size="sm"
               onClick={() => setActiveSection(id)}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition",
+                "h-auto w-full justify-start gap-2.5 px-3 py-2 text-left",
                 activeSection === id
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
               )}
             >
-              <Icon className={cn("size-3.5", activeSection === id ? "text-muted-foreground" : "text-muted-foreground")} />
-              <span className="text-sm">{label}</span>
-            </button>
+              <Icon
+                className={cn(
+                  "size-3.5",
+                  activeSection === id
+                    ? "text-muted-foreground"
+                    : "text-muted-foreground"
+                )}
+              />
+              <span>{label}</span>
+            </Button>
           ))}
         </div>
       </div>
 
-      <div className="thin-scrollbar flex-1 overflow-y-auto px-12 py-8">
+      <div className="thin-scrollbar flex-1 overflow-y-auto px-12 py-8 text-sm font-medium text-foreground">
         {activeSection === "general" ? (
           <div className="w-full">
             <SectionTitle>General</SectionTitle>
@@ -118,6 +133,22 @@ export function SettingsRoute() {
               description="Choose how quickly inference runs across threads and follow-ups"
               control={<SelectField value="Standard" />}
             />
+            <SettingRow
+              label="Session"
+              description="Clear the current browser session and close terminals owned by this tab"
+              control={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={async () => {
+                    await logout.mutateAsync()
+                    navigate("/login")
+                  }}
+                >
+                  Log out
+                </Button>
+              }
+            />
           </div>
         ) : null}
 
@@ -141,7 +172,7 @@ export function SettingsRoute() {
             <SettingRow
               label="Interface font"
               description="Primary UI font"
-              control={<SelectField value="Inter" />}
+              control={<SelectField value="Geist" />}
             />
             <SettingRow
               label="Code font"
@@ -168,7 +199,9 @@ export function SettingsRoute() {
             <SettingRow
               label="Host status"
               description="Current state reported by the Go host service"
-              control={<SelectField value={formatHostStatus(hostStatus?.status)} />}
+              control={
+                <SelectField value={formatHostStatus(hostStatus?.status)} />
+              }
             />
           </div>
         ) : null}
@@ -185,17 +218,22 @@ export function SettingsRoute() {
             <SettingRow
               label="Host availability"
               description="Backend availability from the Go host interface"
-              control={<SelectField value={hostStatus ? "available" : "pending"} />}
+              control={
+                <SelectField value={hostStatus ? "available" : "pending"} />
+              }
             />
           </div>
         ) : null}
 
         {!["general", "appearance", "usage", "mcp"].includes(activeSection) ? (
           <div className="max-w-2xl">
-            <SectionTitle>{NAV_ITEMS.find((item) => item.id === activeSection)?.label}</SectionTitle>
-            <div className="rounded-lg border border-border bg-muted px-5 py-4 text-sm leading-7 text-muted-foreground">
-              This section has been visually rebuilt, but the active product loop is still the
-              workspace shell, project picker, and session continuation flow.
+            <SectionTitle>
+              {NAV_ITEMS.find((item) => item.id === activeSection)?.label}
+            </SectionTitle>
+            <div className="rounded-lg border border-border bg-muted px-5 py-4 text-base leading-7 text-muted-foreground">
+              This section has been visually rebuilt, but the active product
+              loop is still the workspace shell, project picker, and session
+              continuation flow.
             </div>
           </div>
         ) : null}
@@ -205,7 +243,9 @@ export function SettingsRoute() {
 }
 
 function SectionTitle({ children }: { children: ReactNode }) {
-  return <h1 className="mb-8 text-2xl text-foreground">{children}</h1>
+  return (
+    <CardTitle className="mb-8 text-2xl text-foreground">{children}</CardTitle>
+  )
 }
 
 function SelectField({
@@ -223,7 +263,7 @@ function SelectField({
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-10 w-full appearance-none rounded-lg border border-border bg-accent px-3 py-2 pr-8 text-sm text-foreground outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-10 w-full appearance-none rounded-lg border border-border bg-accent px-3 py-2 pr-8 text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -239,7 +279,7 @@ function SelectField({
   }
 
   return (
-    <div className="flex min-w-40 items-center gap-2 rounded-lg border border-border bg-accent px-3 py-2 text-sm text-muted-foreground">
+    <div className="flex min-w-40 items-center gap-2 rounded-lg border border-border bg-accent px-3 py-2 text-muted-foreground">
       <span className="flex-1">{value}</span>
       <span className="text-muted-foreground">▾</span>
     </div>
@@ -266,7 +306,7 @@ function ToggleSwitch({ enabled = false }: { enabled?: boolean }) {
 
 function StatBadge({ value }: { value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-accent px-3 py-2 text-sm text-foreground">
+    <div className="rounded-lg border border-border bg-accent px-3 py-2 text-foreground">
       {value}
     </div>
   )
@@ -284,8 +324,10 @@ function SettingRow({
   return (
     <div className="flex items-start justify-between gap-8 border-b border-border py-5 last:border-b-0">
       <div className="flex-1 pr-8">
-        <div className="mb-1 text-sm text-foreground">{label}</div>
-        <div className="text-xs leading-6 text-muted-foreground">{description}</div>
+        <div className="mb-1 text-foreground">{label}</div>
+        <div className="font-normal leading-6 text-muted-foreground">
+          {description}
+        </div>
       </div>
       <div className="shrink-0">{control}</div>
     </div>
