@@ -13,6 +13,7 @@ Start with the thinnest document that answers your question, then drill down onl
 - detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
 - Codex TS-SDK parity design for Go client: [`docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md)
 - App Server-first convergence plan for the live Codex runtime: [`docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md)
+- accepted streaming runtime decision for app-server-only live sessions: [`docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md)
 - Copilot backend adapter design: [`docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md)
 - backend plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
 - frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)

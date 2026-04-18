@@ -6,9 +6,6 @@ import type {
   ReactNode,
 } from "react"
 import { Check, Copy } from "lucide-react"
-import ReactMarkdown from "react-markdown"
-import remarkBreaks from "remark-breaks"
-import remarkGfm from "remark-gfm"
 
 import { cn } from "@/lib/utils"
 
@@ -27,16 +24,81 @@ type MarkdownPreProps = ComponentPropsWithoutRef<"pre"> & {
   node?: unknown
 }
 
+type MarkdownModules = {
+  ReactMarkdown: typeof import("react-markdown").default
+  remarkBreaks: typeof import("remark-breaks").default
+  remarkGfm: typeof import("remark-gfm").default
+}
+
+let markdownModulesCache: MarkdownModules | null = null
+let markdownModulesPromise: Promise<MarkdownModules> | null = null
+
+function loadMarkdownModules() {
+  if (markdownModulesCache) {
+    return Promise.resolve(markdownModulesCache)
+  }
+
+  if (!markdownModulesPromise) {
+    markdownModulesPromise = Promise.all([
+      import("react-markdown"),
+      import("remark-breaks"),
+      import("remark-gfm"),
+    ]).then(([reactMarkdown, remarkBreaks, remarkGfm]) => {
+      markdownModulesCache = {
+        ReactMarkdown: reactMarkdown.default,
+        remarkBreaks: remarkBreaks.default,
+        remarkGfm: remarkGfm.default,
+      }
+      return markdownModulesCache
+    })
+  }
+
+  return markdownModulesPromise
+}
+
 export function SessionRichText({
   className,
   onLocalPathClick,
   text,
 }: SessionRichTextProps) {
+  const [markdownModules, setMarkdownModules] = useState<MarkdownModules | null>(
+    () => markdownModulesCache
+  )
   const paragraphCount = text
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter(Boolean).length
   const isLongForm = paragraphCount > 3
+
+  useEffect(() => {
+    if (markdownModules) {
+      return
+    }
+
+    let cancelled = false
+
+    void loadMarkdownModules().then((modules) => {
+      if (!cancelled) {
+        setMarkdownModules(modules)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [markdownModules])
+
+  if (!markdownModules) {
+    return (
+      <PlainRichText
+        className={className}
+        isLongForm={isLongForm}
+        text={text}
+      />
+    )
+  }
+
+  const { ReactMarkdown, remarkBreaks, remarkGfm } = markdownModules
 
   return (
     <div
@@ -94,6 +156,28 @@ export function SessionRichText({
       >
         {text}
       </ReactMarkdown>
+    </div>
+  )
+}
+
+function PlainRichText({
+  className,
+  isLongForm,
+  text,
+}: {
+  className?: string
+  isLongForm: boolean
+  text: string
+}) {
+  return (
+    <div
+      className={cn(
+        "min-w-0 break-words text-base leading-7 font-medium text-foreground",
+        isLongForm ? "space-y-4" : "space-y-2.5",
+        className
+      )}
+    >
+      <div className="whitespace-pre-wrap">{text}</div>
     </div>
   )
 }

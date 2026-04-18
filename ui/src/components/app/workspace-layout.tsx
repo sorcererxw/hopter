@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react"
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react"
 import { matchPath, useLocation } from "react-router-dom"
 
-import { ProjectPickerDialog } from "@/components/app/project-picker-dialog"
-import { SearchDialog } from "@/components/app/search-dialog"
 import {
   getToolbarMode,
   getWorkspacePosture,
@@ -11,6 +17,17 @@ import {
 import { SessionRail } from "@/components/app/session-rail"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
+
+const ProjectPickerDialog = lazy(() =>
+  import("@/components/app/project-picker-dialog").then((module) => ({
+    default: module.ProjectPickerDialog,
+  }))
+)
+const SearchDialog = lazy(() =>
+  import("@/components/app/search-dialog").then((module) => ({
+    default: module.SearchDialog,
+  }))
+)
 
 export function WorkspaceLayout({ children }: PropsWithChildren) {
   const location = useLocation()
@@ -121,8 +138,16 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         data-rail-visible={railVisible ? "true" : "false"}
         data-shell-posture={posture}
       >
-        <ProjectPickerDialog open={projectPickerOpen} />
-        <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+        {projectPickerOpen ? (
+          <Suspense fallback={null}>
+            <ProjectPickerDialog open={projectPickerOpen} />
+          </Suspense>
+        ) : null}
+        {searchOpen ? (
+          <Suspense fallback={null}>
+            <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+          </Suspense>
+        ) : null}
 
         {showPhoneList ? (
           <div
