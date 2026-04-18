@@ -11,6 +11,7 @@ service HostService {
   rpc GetHostStatus(GetHostStatusRequest) returns (GetHostStatusResponse);
   rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
   rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse);
+  rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse);
   rpc ListDirectoryRoots(ListDirectoryRootsRequest) returns (ListDirectoryRootsResponse);
   rpc ListDirectory(ListDirectoryRequest) returns (ListDirectoryResponse);
   rpc GetPathMetadata(GetPathMetadataRequest) returns (GetPathMetadataResponse);
@@ -56,6 +57,18 @@ message ListSkillsRequest {}
 
 message ListSkillsResponse {
   repeated SkillSummary skills = 1;
+}
+
+message MCPServerSummary {
+  string name = 1;
+  string source = 2;
+  string configuration_status = 3;
+}
+
+message ListMCPServersRequest {}
+
+message ListMCPServersResponse {
+  repeated MCPServerSummary servers = 1;
 }
 
 message DirectoryRoot {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -678,4 +679,103 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+type mcpConfigFile struct {
+	Path   string
+	Source string
+}
+
+func discoverMCPServers() ([]MCPServer, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve home directory: %w", err)
+	}
+
+	configPaths := []mcpConfigFile{
+		{Path: filepath.Join(homeDir, ".codex", "mcp.json"), Source: "codex"},
+		{Path: filepath.Join(homeDir, ".claude", "claude_desktop_config.json"), Source: "claude"},
+	}
+
+	seen := make(map[string]struct{})
+	var servers []MCPServer
+
+	for _, cfg := range configPaths {
+		discovered, err := readMCPConfigFile(cfg.Path, cfg.Source)
+		if err != nil {
+			continue
+		}
+		for _, server := range discovered {
+			if _, ok := seen[server.Name]; ok {
+				continue
+			}
+			seen[server.Name] = struct{}{}
+			servers = append(servers, server)
+		}
+	}
+
+	sort.SliceStable(servers, func(i, j int) bool {
+		return strings.ToLower(servers[i].Name) < strings.ToLower(servers[j].Name)
+	})
+
+	return servers, nil
+}
+
+func readMCPConfigFile(path string, source string) ([]MCPServer, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed, err := parseMCPJSON(data)
+	if err != nil {
+		return nil, err
+	}
+
+	servers := make([]MCPServer, 0, len(parsed))
+	for name, configured := range parsed {
+		status := "configured"
+		if !configured {
+			status = "incomplete"
+		}
+		servers = append(servers, MCPServer{
+			Name:                strings.TrimSpace(name),
+			Source:              source,
+			ConfigurationStatus: status,
+		})
+	}
+	return servers, nil
+}
+
+// parseMCPJSON extracts MCP server names from a JSON config.
+// It looks for a top-level "mcpServers" object; each key is a server name.
+// A server is "configured" if it has a "command" or "url" field.
+func parseMCPJSON(data []byte) (map[string]bool, error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+
+	serversRaw, ok := raw["mcpServers"]
+	if !ok {
+		return nil, fmt.Errorf("no mcpServers key")
+	}
+
+	var serversMap map[string]json.RawMessage
+	if err := json.Unmarshal(serversRaw, &serversMap); err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool, len(serversMap))
+	for name, entryRaw := range serversMap {
+		var entry map[string]json.RawMessage
+		if err := json.Unmarshal(entryRaw, &entry); err != nil {
+			result[name] = false
+			continue
+		}
+		_, hasCommand := entry["command"]
+		_, hasURL := entry["url"]
+		result[name] = hasCommand || hasURL
+	}
+	return result, nil
 }

@@ -177,7 +177,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
               <RailRow
                 icon={<Grid2x2 className="size-3.5" />}
                 label="Skills & Apps"
-                interactive
+                onClick={onNavigate}
+                to="/settings/plugins"
                 className="text-muted-foreground hover:bg-accent hover:text-foreground"
               />
             </li>

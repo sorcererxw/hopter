@@ -41,6 +41,9 @@ const (
 	HostServiceListBackendsProcedure = "/orchd.v1.HostService/ListBackends"
 	// HostServiceListSkillsProcedure is the fully-qualified name of the HostService's ListSkills RPC.
 	HostServiceListSkillsProcedure = "/orchd.v1.HostService/ListSkills"
+	// HostServiceListMCPServersProcedure is the fully-qualified name of the HostService's
+	// ListMCPServers RPC.
+	HostServiceListMCPServersProcedure = "/orchd.v1.HostService/ListMCPServers"
 	// HostServiceListDirectoryRootsProcedure is the fully-qualified name of the HostService's
 	// ListDirectoryRoots RPC.
 	HostServiceListDirectoryRootsProcedure = "/orchd.v1.HostService/ListDirectoryRoots"
@@ -60,6 +63,7 @@ type HostServiceClient interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
@@ -95,6 +99,12 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
 			connect.WithClientOptions(opts...),
 		),
+		listMCPServers: connect.NewClient[v1.ListMCPServersRequest, v1.ListMCPServersResponse](
+			httpClient,
+			baseURL+HostServiceListMCPServersProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ListMCPServers")),
+			connect.WithClientOptions(opts...),
+		),
 		listDirectoryRoots: connect.NewClient[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse](
 			httpClient,
 			baseURL+HostServiceListDirectoryRootsProcedure,
@@ -127,6 +137,7 @@ type hostServiceClient struct {
 	getHostStatus      *connect.Client[v1.GetHostStatusRequest, v1.GetHostStatusResponse]
 	listBackends       *connect.Client[v1.ListBackendsRequest, v1.ListBackendsResponse]
 	listSkills         *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
+	listMCPServers     *connect.Client[v1.ListMCPServersRequest, v1.ListMCPServersResponse]
 	listDirectoryRoots *connect.Client[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse]
 	listDirectory      *connect.Client[v1.ListDirectoryRequest, v1.ListDirectoryResponse]
 	getPathMetadata    *connect.Client[v1.GetPathMetadataRequest, v1.GetPathMetadataResponse]
@@ -146,6 +157,11 @@ func (c *hostServiceClient) ListBackends(ctx context.Context, req *connect.Reque
 // ListSkills calls orchd.v1.HostService.ListSkills.
 func (c *hostServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
 	return c.listSkills.CallUnary(ctx, req)
+}
+
+// ListMCPServers calls orchd.v1.HostService.ListMCPServers.
+func (c *hostServiceClient) ListMCPServers(ctx context.Context, req *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error) {
+	return c.listMCPServers.CallUnary(ctx, req)
 }
 
 // ListDirectoryRoots calls orchd.v1.HostService.ListDirectoryRoots.
@@ -173,6 +189,7 @@ type HostServiceHandler interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
@@ -202,6 +219,12 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 		HostServiceListSkillsProcedure,
 		svc.ListSkills,
 		connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceListMCPServersHandler := connect.NewUnaryHandler(
+		HostServiceListMCPServersProcedure,
+		svc.ListMCPServers,
+		connect.WithSchema(hostServiceMethods.ByName("ListMCPServers")),
 		connect.WithHandlerOptions(opts...),
 	)
 	hostServiceListDirectoryRootsHandler := connect.NewUnaryHandler(
@@ -236,6 +259,8 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 			hostServiceListBackendsHandler.ServeHTTP(w, r)
 		case HostServiceListSkillsProcedure:
 			hostServiceListSkillsHandler.ServeHTTP(w, r)
+		case HostServiceListMCPServersProcedure:
+			hostServiceListMCPServersHandler.ServeHTTP(w, r)
 		case HostServiceListDirectoryRootsProcedure:
 			hostServiceListDirectoryRootsHandler.ServeHTTP(w, r)
 		case HostServiceListDirectoryProcedure:
@@ -263,6 +288,10 @@ func (UnimplementedHostServiceHandler) ListBackends(context.Context, *connect.Re
 
 func (UnimplementedHostServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListSkills is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListMCPServers is not implemented"))
 }
 
 func (UnimplementedHostServiceHandler) ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error) {

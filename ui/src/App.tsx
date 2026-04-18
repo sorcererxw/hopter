@@ -31,6 +31,26 @@ const SettingsRoute = lazy(() =>
     default: module.SettingsRoute,
   }))
 )
+const SettingsGeneralPage = lazy(() =>
+  import("@/routes/settings/settings-general-page").then((module) => ({
+    default: module.SettingsGeneralPage,
+  }))
+)
+const SettingsAppearancePage = lazy(() =>
+  import("@/routes/settings/settings-appearance-page").then((module) => ({
+    default: module.SettingsAppearancePage,
+  }))
+)
+const SettingsPluginsPage = lazy(() =>
+  import("@/routes/settings/settings-plugins-page").then((module) => ({
+    default: module.SettingsPluginsPage,
+  }))
+)
+const SettingsAgentsPage = lazy(() =>
+  import("@/routes/settings/settings-agents-page").then((module) => ({
+    default: module.SettingsAgentsPage,
+  }))
+)
 const WorkspaceRouteFrame = lazy(() =>
   import("@/components/app/workspace-route-frame").then((module) => ({
     default: module.WorkspaceRouteFrame,
@@ -70,7 +90,24 @@ export default function App() {
                   <SettingsRoute />
                 </ProtectedRoute>
               )}
-            />
+            >
+              <Route
+                index
+                element={renderLazyRoute(<SettingsGeneralPage />)}
+              />
+              <Route
+                path="appearance"
+                element={renderLazyRoute(<SettingsAppearancePage />)}
+              />
+              <Route
+                path="plugins"
+                element={renderLazyRoute(<SettingsPluginsPage />)}
+              />
+              <Route
+                path="agents"
+                element={renderLazyRoute(<SettingsAgentsPage />)}
+              />
+            </Route>
             <Route
               element={
                 <ProtectedRoute>

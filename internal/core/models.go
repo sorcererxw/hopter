@@ -74,6 +74,12 @@ type Skill struct {
 	Path        string
 }
 
+type MCPServer struct {
+	Name              string
+	Source            string
+	ConfigurationStatus string
+}
+
 type DirectoryRoot struct {
 	Label string
 	Path  string
@@ -266,6 +272,7 @@ type WorkspaceService interface {
 	GetHostStatus() HostSnapshot
 	ListBackends() []Backend
 	ListSkills() ([]Skill, error)
+	ListMCPServers() ([]MCPServer, error)
 	ListDirectoryRoots() ([]DirectoryRoot, error)
 	ListDirectory(path string) (DirectoryListing, error)
 	GetPathMetadata(path string) (PathMetadata, error)

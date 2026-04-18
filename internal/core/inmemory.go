@@ -55,6 +55,10 @@ func (w *InMemoryWorkspace) ListSkills() ([]Skill, error) {
 	return discoverSkills()
 }
 
+func (w *InMemoryWorkspace) ListMCPServers() ([]MCPServer, error) {
+	return discoverMCPServers()
+}
+
 func (w *InMemoryWorkspace) ListDirectoryRoots() ([]DirectoryRoot, error) {
 	return discoverDirectoryRoots()
 }

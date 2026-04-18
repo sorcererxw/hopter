@@ -80,6 +80,26 @@ func (s *HostService) ListSkills(_ context.Context, _ *connect.Request[orchdv1.L
 	return connect.NewResponse(response), nil
 }
 
+func (s *HostService) ListMCPServers(_ context.Context, _ *connect.Request[orchdv1.ListMCPServersRequest]) (*connect.Response[orchdv1.ListMCPServersResponse], error) {
+	servers, err := s.workspace.ListMCPServers()
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("list mcp servers: %w", err))
+	}
+
+	response := &orchdv1.ListMCPServersResponse{
+		Servers: make([]*orchdv1.MCPServerSummary, 0, len(servers)),
+	}
+	for _, server := range servers {
+		response.Servers = append(response.Servers, &orchdv1.MCPServerSummary{
+			Name:                server.Name,
+			Source:              server.Source,
+			ConfigurationStatus: server.ConfigurationStatus,
+		})
+	}
+
+	return connect.NewResponse(response), nil
+}
+
 func (s *HostService) ListDirectoryRoots(_ context.Context, _ *connect.Request[orchdv1.ListDirectoryRootsRequest]) (*connect.Response[orchdv1.ListDirectoryRootsResponse], error) {
 	roots, err := s.workspace.ListDirectoryRoots()
 	if err != nil {

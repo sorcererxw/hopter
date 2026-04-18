@@ -1,7 +1,9 @@
 export const queryKeys = {
   authStatus: () => ["auth-status"] as const,
   host: () => ["host"] as const,
+  hostBackends: () => ["host", "backends"] as const,
   hostSkills: () => ["host", "skills"] as const,
+  hostMCPServers: () => ["host", "mcp-servers"] as const,
   hostRoots: () => ["host", "roots"] as const,
   hostDirectory: (path: string) => ["host", "directory", path] as const,
   hostPathMetadata: (path: string) => ["host", "path-metadata", path] as const,
