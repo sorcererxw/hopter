@@ -1360,25 +1360,21 @@ function ReasoningEntry({
         <Lightbulb className="size-3.5 text-foreground/50" />
       </div>
       <div className="min-w-0 flex-1">
-        <button
-          type="button"
+        <TranscriptDisclosureButton
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-foreground/70 transition hover:text-foreground"
+          expanded={expanded}
+          iconClassName="size-3"
+          className="gap-1.5 text-foreground/70 hover:text-foreground"
         >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
           <span className="text-sm">{label}</span>
           {!expanded && preview ? (
             <span className="truncate text-muted-foreground">— {preview}</span>
           ) : null}
-        </button>
+        </TranscriptDisclosureButton>
         {expanded ? (
           <SessionRichText
             text={item.body}
-            className="mt-2 text-foreground/70"
+            className="mt-1 text-foreground/70"
             onLocalPathClick={onSelectPath}
           />
         ) : null}
@@ -1397,22 +1393,18 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
         <Wrench className="size-3.5 text-foreground/50" />
       </div>
       <div className="min-w-0 flex-1">
-        <button
-          type="button"
+        <TranscriptDisclosureButton
           onClick={() => setExpanded((prev) => !prev)}
-          className="flex items-center gap-1.5 text-foreground/70 transition hover:text-foreground"
+          expanded={expanded}
+          iconClassName="size-3"
+          className="gap-1.5 text-foreground/70 hover:text-foreground"
         >
-          {expanded ? (
-            <ChevronDown className="size-3" />
-          ) : (
-            <ChevronRight className="size-3" />
-          )}
           <span className="text-sm">{label}</span>
-        </button>
+        </TranscriptDisclosureButton>
         {expanded ? (
           <CodeContainer
             as="pre"
-            className="mt-2 break-words whitespace-pre-wrap text-foreground/70"
+            className="mt-1 break-words whitespace-pre-wrap text-foreground/70"
           >
             {item.body}
           </CodeContainer>
@@ -1488,23 +1480,16 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   return (
     <div className="min-w-0" data-testid="session-transcript-command">
       <div className="min-w-0">
-        <button
-          type="button"
+        <TranscriptDisclosureButton
           onClick={() => setExpanded((prev) => !prev)}
-          className="group flex w-full items-center gap-1.5 text-muted-foreground transition hover:text-foreground"
+          expanded={expanded}
+          iconClassName="ml-auto size-3"
+          className="w-full gap-1.5 text-muted-foreground hover:text-foreground"
         >
           <span>{label}</span>
-          <ChevronRight
-            className={cn(
-              "ml-auto size-3 transition",
-              expanded
-                ? "rotate-90 opacity-100"
-                : "opacity-0 group-hover:opacity-100"
-            )}
-          />
-        </button>
+        </TranscriptDisclosureButton>
         {expanded ? (
-          <CommandExecutionDetail className="mt-2" body={item.body} />
+          <CommandExecutionDetail className="mt-1" body={item.body} />
         ) : null}
       </div>
     </div>
@@ -1522,11 +1507,11 @@ function CommandGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
       onToggle={() => setExpanded((prev) => !prev)}
       testId="session-transcript-command"
     >
-      <div>
+      <TranscriptBatchList>
         {items.map((item) => (
           <CommandSummaryEntry key={item.id} item={item} />
         ))}
-      </div>
+      </TranscriptBatchList>
     </TranscriptBatchEntry>
   )
 }
@@ -1537,10 +1522,9 @@ function CommandSummaryEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="min-w-0">
-      <button
-        type="button"
+      <TranscriptBatchRowButton
         onClick={() => setExpanded((prev) => !prev)}
-        className="group inline-flex max-w-full items-center text-left text-base text-muted-foreground transition hover:text-foreground"
+        className="gap-1.5"
       >
         <span className="truncate">Ran {label}</span>
         <ChevronRight
@@ -1551,7 +1535,7 @@ function CommandSummaryEntry({ item }: { item: SessionTranscriptItem }) {
               : "opacity-60 group-hover:opacity-100"
           )}
         />
-      </button>
+      </TranscriptBatchRowButton>
       {expanded ? (
         <CommandExecutionDetail className="mt-2" body={item.body} />
       ) : null}
@@ -1600,16 +1584,13 @@ function FileChangeGroupEntry({
       label={`Changed ${count} files`}
       onToggle={() => setExpanded((prev) => !prev)}
       testId="session-transcript-file-change"
-      contentClassName="mt-1"
     >
-      <div className="space-y-1.5">
+      <TranscriptBatchList>
         {changes.map((change) => (
-          <button
+          <TranscriptBatchRowButton
             key={`${change.path}-${change.kindLabel}`}
-            type="button"
             onClick={() => onSelectDiff(change)}
             title={change.path}
-            className="group flex w-full items-center gap-2 py-1 text-left transition hover:text-foreground"
           >
             <span className="shrink-0 text-muted-foreground">
               {change.kindLabel}
@@ -1623,9 +1604,9 @@ function FileChangeGroupEntry({
                 <span className="text-destructive">-{change.deletions}</span>
               </span>
             ) : null}
-          </button>
+          </TranscriptBatchRowButton>
         ))}
-      </div>
+      </TranscriptBatchList>
     </TranscriptBatchEntry>
   )
 }
@@ -1648,26 +1629,75 @@ function TranscriptBatchEntry({
   return (
     <div className="min-w-0" data-testid={testId}>
       <div className="min-w-0">
-        <button
-          type="button"
+        <TranscriptDisclosureButton
           onClick={onToggle}
-          className="group inline-flex max-w-full items-center gap-2 text-base font-medium text-muted-foreground transition hover:text-foreground"
+          expanded={expanded}
+          iconClassName="size-3 shrink-0"
+          className="max-w-full gap-2 text-base font-medium text-muted-foreground hover:text-foreground"
         >
           <span>{label}</span>
-          <ChevronRight
-            className={cn(
-              "size-3 shrink-0 transition",
-              expanded
-                ? "rotate-90 opacity-100"
-                : "opacity-60 group-hover:opacity-100"
-            )}
-          />
-        </button>
+        </TranscriptDisclosureButton>
         {expanded ? (
-          <div className={cn( contentClassName)}>{children}</div>
+          <div className={cn("mt-1", contentClassName)}>{children}</div>
         ) : null}
       </div>
     </div>
+  )
+}
+
+function TranscriptBatchList({ children }: { children: React.ReactNode }) {
+  return <div className="space-y-0.5">{children}</div>
+}
+
+function TranscriptBatchRowButton({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"button">) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "group flex w-full items-center gap-2 py-0.5 text-left text-base text-muted-foreground transition hover:text-foreground",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
+function TranscriptDisclosureButton({
+  children,
+  className,
+  expanded,
+  iconClassName,
+  ...props
+}: React.ComponentProps<"button"> & {
+  expanded: boolean
+  iconClassName?: string
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "group inline-flex max-w-full items-center text-left transition",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRight
+        className={cn(
+          "shrink-0 transition",
+          expanded
+            ? "rotate-90 opacity-100"
+            : "opacity-60 group-hover:opacity-100",
+          iconClassName
+        )}
+      />
+    </button>
   )
 }
 
