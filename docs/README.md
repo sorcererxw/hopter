@@ -15,6 +15,7 @@ Start with the thinnest document that answers your question, then drill down onl
 - Codex TS-SDK parity design for Go client: [`docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md)
 - App Server-first convergence plan for the live Codex runtime: [`docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md)
 - accepted streaming runtime decision for app-server-only live sessions: [`docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md)
+- single-binary self-update plan for direct installs and package-managed command hints: [`docs/planning/SINGLE_BINARY_SELF_UPDATE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/SINGLE_BINARY_SELF_UPDATE_PLAN.md)
 - Copilot backend adapter design: [`docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/COPILOT_BACKEND_ADAPTER_PLAN.md)
 - terminal capability plan: [`docs/planning/TERMINAL_CAPABILITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TERMINAL_CAPABILITY_PLAN.md)
 - terminal implementation task list: [`docs/planning/TERMINAL_IMPLEMENTATION_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TERMINAL_IMPLEMENTATION_TASK_LIST.md)

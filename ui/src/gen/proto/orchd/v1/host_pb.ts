@@ -2,8 +2,8 @@
 // @generated from file orchd/v1/host.proto (package orchd.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { HostStatusKind } from "./common_pb";
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file orchd/v1/host.proto.
  */
 export const file_orchd_v1_host: GenFile = /*@__PURE__*/
-  fileDesc("ChNvcmNoZC92MS9ob3N0LnByb3RvEghvcmNoZC52MSJYCg1CYWNrZW5kU3RhdHVzEhMKC2JhY2tlbmRfa2V5GAEgASgJEhEKCWF2YWlsYWJsZRgCIAEoCBIPCgd2ZXJzaW9uGAMgASgJEg4KBnJlYXNvbhgEIAEoCSLQAQoKSG9zdFN0YXR1cxIPCgdob3N0X2lkGAEgASgJEigKBnN0YXR1cxgCIAEoDjIYLm9yY2hkLnYxLkhvc3RTdGF0dXNLaW5kEikKCGJhY2tlbmRzGAMgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cxIVCg1wcm9qZWN0X2NvdW50GAQgASgNEhUKDXNlc3Npb25fY291bnQYBSABKA0SLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiFgoUR2V0SG9zdFN0YXR1c1JlcXVlc3QiQgoVR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEikKC2hvc3Rfc3RhdHVzGAEgASgLMhQub3JjaGQudjEuSG9zdFN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkEKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEikKCGJhY2tlbmRzGAEgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cyJUCgxTa2lsbFN1bW1hcnkSDAoEbmFtZRgBIAEoCRIRCglyZWZlcmVuY2UYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSDgoGc291cmNlGAQgASgJIhMKEUxpc3RTa2lsbHNSZXF1ZXN0IjwKEkxpc3RTa2lsbHNSZXNwb25zZRImCgZza2lsbHMYASADKAsyFi5vcmNoZC52MS5Ta2lsbFN1bW1hcnkiTgoQTUNQU2VydmVyU3VtbWFyeRIMCgRuYW1lGAEgASgJEg4KBnNvdXJjZRgCIAEoCRIcChRjb25maWd1cmF0aW9uX3N0YXR1cxgDIAEoCSIXChVMaXN0TUNQU2VydmVyc1JlcXVlc3QiRQoWTGlzdE1DUFNlcnZlcnNSZXNwb25zZRIrCgdzZXJ2ZXJzGAEgAygLMhoub3JjaGQudjEuTUNQU2VydmVyU3VtbWFyeSI6Cg1EaXJlY3RvcnlSb290Eg0KBWxhYmVsGAEgASgJEgwKBHBhdGgYAiABKAkSDAoEa2luZBgDIAEoCSJ9Cg5EaXJlY3RvcnlFbnRyeRIMCgRuYW1lGAEgASgJEgwKBHBhdGgYAiABKAkSFAoMaXNfZGlyZWN0b3J5GAMgASgIEg8KB2lzX3JlcG8YBCABKAgSFAoMaGFzX2NoaWxkcmVuGAUgASgIEhIKCmlzX2FsbG93ZWQYBiABKAgiaAoQRGlyZWN0b3J5TGlzdGluZxIUCgxjdXJyZW50X3BhdGgYASABKAkSEwoLcGFyZW50X3BhdGgYAiABKAkSKQoHZW50cmllcxgDIAMoCzIYLm9yY2hkLnYxLkRpcmVjdG9yeUVudHJ5IusBCgxQYXRoTWV0YWRhdGESDAoEcGF0aBgBIAEoCRIWCg5jYW5vbmljYWxfcGF0aBgCIAEoCRIQCghiYXNlbmFtZRgDIAEoCRIUCgxpc19kaXJlY3RvcnkYBCABKAgSDwoHaXNfcmVwbxgFIAEoCBISCgppc19hbGxvd2VkGAYgASgIEh0KFWNoaWxkX2RpcmVjdG9yeV9jb3VudBgHIAEoDRIYChBjaGlsZF9maWxlX2NvdW50GAggASgNEi8KC21vZGlmaWVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIbChlMaXN0RGlyZWN0b3J5Um9vdHNSZXF1ZXN0IkQKGkxpc3REaXJlY3RvcnlSb290c1Jlc3BvbnNlEiYKBXJvb3RzGAEgAygLMhcub3JjaGQudjEuRGlyZWN0b3J5Um9vdCIkChRMaXN0RGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJIkQKFUxpc3REaXJlY3RvcnlSZXNwb25zZRIrCgdsaXN0aW5nGAEgASgLMhoub3JjaGQudjEuRGlyZWN0b3J5TGlzdGluZyImChZHZXRQYXRoTWV0YWRhdGFSZXF1ZXN0EgwKBHBhdGgYASABKAkiQwoXR2V0UGF0aE1ldGFkYXRhUmVzcG9uc2USKAoIbWV0YWRhdGEYASABKAsyFi5vcmNoZC52MS5QYXRoTWV0YWRhdGEiJwoWTGlzdFJlY2VudFJlcG9zUmVxdWVzdBINCgVsaW1pdBgBIAEoDSJAChdMaXN0UmVjZW50UmVwb3NSZXNwb25zZRIlCgVyZXBvcxgBIAMoCzIWLm9yY2hkLnYxLlBhdGhNZXRhZGF0YTKvBQoLSG9zdFNlcnZpY2USUAoNR2V0SG9zdFN0YXR1cxIeLm9yY2hkLnYxLkdldEhvc3RTdGF0dXNSZXF1ZXN0Gh8ub3JjaGQudjEuR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEk0KDExpc3RCYWNrZW5kcxIdLm9yY2hkLnYxLkxpc3RCYWNrZW5kc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0QmFja2VuZHNSZXNwb25zZRJHCgpMaXN0U2tpbGxzEhsub3JjaGQudjEuTGlzdFNraWxsc1JlcXVlc3QaHC5vcmNoZC52MS5MaXN0U2tpbGxzUmVzcG9uc2USUwoOTGlzdE1DUFNlcnZlcnMSHy5vcmNoZC52MS5MaXN0TUNQU2VydmVyc1JlcXVlc3QaIC5vcmNoZC52MS5MaXN0TUNQU2VydmVyc1Jlc3BvbnNlEl8KEkxpc3REaXJlY3RvcnlSb290cxIjLm9yY2hkLnYxLkxpc3REaXJlY3RvcnlSb290c1JlcXVlc3QaJC5vcmNoZC52MS5MaXN0RGlyZWN0b3J5Um9vdHNSZXNwb25zZRJQCg1MaXN0RGlyZWN0b3J5Eh4ub3JjaGQudjEuTGlzdERpcmVjdG9yeVJlcXVlc3QaHy5vcmNoZC52MS5MaXN0RGlyZWN0b3J5UmVzcG9uc2USVgoPR2V0UGF0aE1ldGFkYXRhEiAub3JjaGQudjEuR2V0UGF0aE1ldGFkYXRhUmVxdWVzdBohLm9yY2hkLnYxLkdldFBhdGhNZXRhZGF0YVJlc3BvbnNlElYKD0xpc3RSZWNlbnRSZXBvcxIgLm9yY2hkLnYxLkxpc3RSZWNlbnRSZXBvc1JlcXVlc3QaIS5vcmNoZC52MS5MaXN0UmVjZW50UmVwb3NSZXNwb25zZUKFAQoMY29tLm9yY2hkLnYxQglIb3N0UHJvdG9QAVopb3JjaGQvaW50ZXJuYWwvZ2VuL3Byb3RvL29yY2hkL3YxO29yY2hkdjGiAgNPWFiqAghPcmNoZC5WMcoCCE9yY2hkXFYx4gIUT3JjaGRcVjFcR1BCTWV0YWRhdGHqAglPcmNoZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_orchd_v1_common]);
+  fileDesc("ChNvcmNoZC92MS9ob3N0LnByb3RvEghvcmNoZC52MSJYCg1CYWNrZW5kU3RhdHVzEhMKC2JhY2tlbmRfa2V5GAEgASgJEhEKCWF2YWlsYWJsZRgCIAEoCBIPCgd2ZXJzaW9uGAMgASgJEg4KBnJlYXNvbhgEIAEoCSLQAQoKSG9zdFN0YXR1cxIPCgdob3N0X2lkGAEgASgJEigKBnN0YXR1cxgCIAEoDjIYLm9yY2hkLnYxLkhvc3RTdGF0dXNLaW5kEikKCGJhY2tlbmRzGAMgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cxIVCg1wcm9qZWN0X2NvdW50GAQgASgNEhUKDXNlc3Npb25fY291bnQYBSABKA0SLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiFgoUR2V0SG9zdFN0YXR1c1JlcXVlc3QiQgoVR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEikKC2hvc3Rfc3RhdHVzGAEgASgLMhQub3JjaGQudjEuSG9zdFN0YXR1cyJnCg9BdmFpbGFibGVVcGRhdGUSDwoHdmVyc2lvbhgBIAEoCRIRCglub3Rlc191cmwYAiABKAkSMAoMcHVibGlzaGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKoAwoMVXBkYXRlU3RhdHVzEhcKD2N1cnJlbnRfdmVyc2lvbhgBIAEoCRIWCg5jdXJyZW50X2NvbW1pdBgCIAEoCRIPCgdjaGFubmVsGAMgASgJEi8KDmluc3RhbGxfc291cmNlGAQgASgOMhcub3JjaGQudjEuSW5zdGFsbFNvdXJjZRItCg11cGRhdGVfcG9saWN5GAUgASgOMhYub3JjaGQudjEuVXBkYXRlUG9saWN5EiQKBXN0YXRlGAYgASgOMhUub3JjaGQudjEuVXBkYXRlU3RhdGUSGAoQdXBkYXRlX2F2YWlsYWJsZRgHIAEoCBIzChBhdmFpbGFibGVfdXBkYXRlGAggASgLMhkub3JjaGQudjEuQXZhaWxhYmxlVXBkYXRlEhYKDnRhcmdldF92ZXJzaW9uGAkgASgJEhwKFHVwZ3JhZGVfY29tbWFuZF9oaW50GAogASgJEhYKDmZhaWx1cmVfcmVhc29uGAsgASgJEjMKD2xhc3RfY2hlY2tlZF9hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiGAoWR2V0VXBkYXRlU3RhdHVzUmVxdWVzdCJIChdHZXRVcGRhdGVTdGF0dXNSZXNwb25zZRItCg11cGRhdGVfc3RhdHVzGAEgASgLMhYub3JjaGQudjEuVXBkYXRlU3RhdHVzIiYKFUNoZWNrRm9yVXBkYXRlUmVxdWVzdBINCgVmb3JjZRgBIAEoCCJHChZDaGVja0ZvclVwZGF0ZVJlc3BvbnNlEi0KDXVwZGF0ZV9zdGF0dXMYASABKAsyFi5vcmNoZC52MS5VcGRhdGVTdGF0dXMiFAoSQXBwbHlVcGRhdGVSZXF1ZXN0IkQKE0FwcGx5VXBkYXRlUmVzcG9uc2USLQoNdXBkYXRlX3N0YXR1cxgBIAEoCzIWLm9yY2hkLnYxLlVwZGF0ZVN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkEKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEikKCGJhY2tlbmRzGAEgAygLMhcub3JjaGQudjEuQmFja2VuZFN0YXR1cyJUCgxTa2lsbFN1bW1hcnkSDAoEbmFtZRgBIAEoCRIRCglyZWZlcmVuY2UYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSDgoGc291cmNlGAQgASgJIhMKEUxpc3RTa2lsbHNSZXF1ZXN0IjwKEkxpc3RTa2lsbHNSZXNwb25zZRImCgZza2lsbHMYASADKAsyFi5vcmNoZC52MS5Ta2lsbFN1bW1hcnkiTgoQTUNQU2VydmVyU3VtbWFyeRIMCgRuYW1lGAEgASgJEg4KBnNvdXJjZRgCIAEoCRIcChRjb25maWd1cmF0aW9uX3N0YXR1cxgDIAEoCSIXChVMaXN0TUNQU2VydmVyc1JlcXVlc3QiRQoWTGlzdE1DUFNlcnZlcnNSZXNwb25zZRIrCgdzZXJ2ZXJzGAEgAygLMhoub3JjaGQudjEuTUNQU2VydmVyU3VtbWFyeSI6Cg1EaXJlY3RvcnlSb290Eg0KBWxhYmVsGAEgASgJEgwKBHBhdGgYAiABKAkSDAoEa2luZBgDIAEoCSJ9Cg5EaXJlY3RvcnlFbnRyeRIMCgRuYW1lGAEgASgJEgwKBHBhdGgYAiABKAkSFAoMaXNfZGlyZWN0b3J5GAMgASgIEg8KB2lzX3JlcG8YBCABKAgSFAoMaGFzX2NoaWxkcmVuGAUgASgIEhIKCmlzX2FsbG93ZWQYBiABKAgiaAoQRGlyZWN0b3J5TGlzdGluZxIUCgxjdXJyZW50X3BhdGgYASABKAkSEwoLcGFyZW50X3BhdGgYAiABKAkSKQoHZW50cmllcxgDIAMoCzIYLm9yY2hkLnYxLkRpcmVjdG9yeUVudHJ5IusBCgxQYXRoTWV0YWRhdGESDAoEcGF0aBgBIAEoCRIWCg5jYW5vbmljYWxfcGF0aBgCIAEoCRIQCghiYXNlbmFtZRgDIAEoCRIUCgxpc19kaXJlY3RvcnkYBCABKAgSDwoHaXNfcmVwbxgFIAEoCBISCgppc19hbGxvd2VkGAYgASgIEh0KFWNoaWxkX2RpcmVjdG9yeV9jb3VudBgHIAEoDRIYChBjaGlsZF9maWxlX2NvdW50GAggASgNEi8KC21vZGlmaWVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIbChlMaXN0RGlyZWN0b3J5Um9vdHNSZXF1ZXN0IkQKGkxpc3REaXJlY3RvcnlSb290c1Jlc3BvbnNlEiYKBXJvb3RzGAEgAygLMhcub3JjaGQudjEuRGlyZWN0b3J5Um9vdCIkChRMaXN0RGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJIkQKFUxpc3REaXJlY3RvcnlSZXNwb25zZRIrCgdsaXN0aW5nGAEgASgLMhoub3JjaGQudjEuRGlyZWN0b3J5TGlzdGluZyImChZHZXRQYXRoTWV0YWRhdGFSZXF1ZXN0EgwKBHBhdGgYASABKAkiQwoXR2V0UGF0aE1ldGFkYXRhUmVzcG9uc2USKAoIbWV0YWRhdGEYASABKAsyFi5vcmNoZC52MS5QYXRoTWV0YWRhdGEiJwoWTGlzdFJlY2VudFJlcG9zUmVxdWVzdBINCgVsaW1pdBgBIAEoDSJAChdMaXN0UmVjZW50UmVwb3NSZXNwb25zZRIlCgVyZXBvcxgBIAMoCzIWLm9yY2hkLnYxLlBhdGhNZXRhZGF0YSriAgoNSW5zdGFsbFNvdXJjZRIeChpJTlNUQUxMX1NPVVJDRV9VTlNQRUNJRklFRBAAEhkKFUlOU1RBTExfU09VUkNFX0RJUkVDVBABEhoKFklOU1RBTExfU09VUkNFX1VOS05PV04QAhIjCh9JTlNUQUxMX1NPVVJDRV9IT01FQlJFV19GT1JNVUxBEAMSIAocSU5TVEFMTF9TT1VSQ0VfSE9NRUJSRVdfQ0FTSxAEEhYKEklOU1RBTExfU09VUkNFX0FQVBAFEhYKEklOU1RBTExfU09VUkNFX0RORhAGEhkKFUlOU1RBTExfU09VUkNFX1dJTkdFVBAHEhYKEklOU1RBTExfU09VUkNFX05JWBAIEhsKF0lOU1RBTExfU09VUkNFX01BQ1BPUlRTEAkSFwoTSU5TVEFMTF9TT1VSQ0VfU05BUBAKEhoKFklOU1RBTExfU09VUkNFX0ZMQVRQQUsQCyqRAQoMVXBkYXRlUG9saWN5Eh0KGVVQREFURV9QT0xJQ1lfVU5TUEVDSUZJRUQQABIeChpVUERBVEVfUE9MSUNZX1NFTEZfTUFOQUdFRBABEiEKHVVQREFURV9QT0xJQ1lfUEFDS0FHRV9NQU5BR0VEEAISHwobVVBEQVRFX1BPTElDWV9TVE9SRV9NQU5BR0VEEAMq4QIKC1VwZGF0ZVN0YXRlEhwKGFVQREFURV9TVEFURV9VTlNQRUNJRklFRBAAEhUKEVVQREFURV9TVEFURV9JRExFEAESGQoVVVBEQVRFX1NUQVRFX0NIRUNLSU5HEAISGgoWVVBEQVRFX1NUQVRFX0FWQUlMQUJMRRADEhwKGFVQREFURV9TVEFURV9ET1dOTE9BRElORxAEEhoKFlVQREFURV9TVEFURV9WRVJJRllJTkcQBRIiCh5VUERBVEVfU1RBVEVfUFJFRkxJR0hUX1JVTk5JTkcQBhIfChtVUERBVEVfU1RBVEVfUkVBRFlfVE9fQVBQTFkQBxIaChZVUERBVEVfU1RBVEVfUkVFWEVDSU5HEAgSIAocVVBEQVRFX1NUQVRFX0ZBSUxFRF9QUkVfRVhFQxAJEikKJVVQREFURV9TVEFURV9GQUlMRURfUE9TVF9FWEVDX1VOS05PV04QCjKoBwoLSG9zdFNlcnZpY2USUAoNR2V0SG9zdFN0YXR1cxIeLm9yY2hkLnYxLkdldEhvc3RTdGF0dXNSZXF1ZXN0Gh8ub3JjaGQudjEuR2V0SG9zdFN0YXR1c1Jlc3BvbnNlEk0KDExpc3RCYWNrZW5kcxIdLm9yY2hkLnYxLkxpc3RCYWNrZW5kc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0QmFja2VuZHNSZXNwb25zZRJHCgpMaXN0U2tpbGxzEhsub3JjaGQudjEuTGlzdFNraWxsc1JlcXVlc3QaHC5vcmNoZC52MS5MaXN0U2tpbGxzUmVzcG9uc2USUwoOTGlzdE1DUFNlcnZlcnMSHy5vcmNoZC52MS5MaXN0TUNQU2VydmVyc1JlcXVlc3QaIC5vcmNoZC52MS5MaXN0TUNQU2VydmVyc1Jlc3BvbnNlEl8KEkxpc3REaXJlY3RvcnlSb290cxIjLm9yY2hkLnYxLkxpc3REaXJlY3RvcnlSb290c1JlcXVlc3QaJC5vcmNoZC52MS5MaXN0RGlyZWN0b3J5Um9vdHNSZXNwb25zZRJQCg1MaXN0RGlyZWN0b3J5Eh4ub3JjaGQudjEuTGlzdERpcmVjdG9yeVJlcXVlc3QaHy5vcmNoZC52MS5MaXN0RGlyZWN0b3J5UmVzcG9uc2USVgoPR2V0UGF0aE1ldGFkYXRhEiAub3JjaGQudjEuR2V0UGF0aE1ldGFkYXRhUmVxdWVzdBohLm9yY2hkLnYxLkdldFBhdGhNZXRhZGF0YVJlc3BvbnNlElYKD0xpc3RSZWNlbnRSZXBvcxIgLm9yY2hkLnYxLkxpc3RSZWNlbnRSZXBvc1JlcXVlc3QaIS5vcmNoZC52MS5MaXN0UmVjZW50UmVwb3NSZXNwb25zZRJWCg9HZXRVcGRhdGVTdGF0dXMSIC5vcmNoZC52MS5HZXRVcGRhdGVTdGF0dXNSZXF1ZXN0GiEub3JjaGQudjEuR2V0VXBkYXRlU3RhdHVzUmVzcG9uc2USUwoOQ2hlY2tGb3JVcGRhdGUSHy5vcmNoZC52MS5DaGVja0ZvclVwZGF0ZVJlcXVlc3QaIC5vcmNoZC52MS5DaGVja0ZvclVwZGF0ZVJlc3BvbnNlEkoKC0FwcGx5VXBkYXRlEhwub3JjaGQudjEuQXBwbHlVcGRhdGVSZXF1ZXN0Gh0ub3JjaGQudjEuQXBwbHlVcGRhdGVSZXNwb25zZUKFAQoMY29tLm9yY2hkLnYxQglIb3N0UHJvdG9QAVopb3JjaGQvaW50ZXJuYWwvZ2VuL3Byb3RvL29yY2hkL3YxO29yY2hkdjGiAgNPWFiqAghPcmNoZC5WMcoCCE9yY2hkXFYx4gIUT3JjaGRcVjFcR1BCTWV0YWRhdGHqAglPcmNoZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_orchd_v1_common]);
 
 /**
  * @generated from message orchd.v1.BackendStatus
@@ -121,6 +121,199 @@ export const GetHostStatusResponseSchema: GenMessage<GetHostStatusResponse> = /*
   messageDesc(file_orchd_v1_host, 3);
 
 /**
+ * @generated from message orchd.v1.AvailableUpdate
+ */
+export type AvailableUpdate = Message<"orchd.v1.AvailableUpdate"> & {
+  /**
+   * @generated from field: string version = 1;
+   */
+  version: string;
+
+  /**
+   * @generated from field: string notes_url = 2;
+   */
+  notesUrl: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp published_at = 3;
+   */
+  publishedAt?: Timestamp;
+};
+
+/**
+ * Describes the message orchd.v1.AvailableUpdate.
+ * Use `create(AvailableUpdateSchema)` to create a new message.
+ */
+export const AvailableUpdateSchema: GenMessage<AvailableUpdate> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 4);
+
+/**
+ * @generated from message orchd.v1.UpdateStatus
+ */
+export type UpdateStatus = Message<"orchd.v1.UpdateStatus"> & {
+  /**
+   * @generated from field: string current_version = 1;
+   */
+  currentVersion: string;
+
+  /**
+   * @generated from field: string current_commit = 2;
+   */
+  currentCommit: string;
+
+  /**
+   * @generated from field: string channel = 3;
+   */
+  channel: string;
+
+  /**
+   * @generated from field: orchd.v1.InstallSource install_source = 4;
+   */
+  installSource: InstallSource;
+
+  /**
+   * @generated from field: orchd.v1.UpdatePolicy update_policy = 5;
+   */
+  updatePolicy: UpdatePolicy;
+
+  /**
+   * @generated from field: orchd.v1.UpdateState state = 6;
+   */
+  state: UpdateState;
+
+  /**
+   * @generated from field: bool update_available = 7;
+   */
+  updateAvailable: boolean;
+
+  /**
+   * @generated from field: orchd.v1.AvailableUpdate available_update = 8;
+   */
+  availableUpdate?: AvailableUpdate;
+
+  /**
+   * @generated from field: string target_version = 9;
+   */
+  targetVersion: string;
+
+  /**
+   * @generated from field: string upgrade_command_hint = 10;
+   */
+  upgradeCommandHint: string;
+
+  /**
+   * @generated from field: string failure_reason = 11;
+   */
+  failureReason: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp last_checked_at = 12;
+   */
+  lastCheckedAt?: Timestamp;
+};
+
+/**
+ * Describes the message orchd.v1.UpdateStatus.
+ * Use `create(UpdateStatusSchema)` to create a new message.
+ */
+export const UpdateStatusSchema: GenMessage<UpdateStatus> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 5);
+
+/**
+ * @generated from message orchd.v1.GetUpdateStatusRequest
+ */
+export type GetUpdateStatusRequest = Message<"orchd.v1.GetUpdateStatusRequest"> & {
+};
+
+/**
+ * Describes the message orchd.v1.GetUpdateStatusRequest.
+ * Use `create(GetUpdateStatusRequestSchema)` to create a new message.
+ */
+export const GetUpdateStatusRequestSchema: GenMessage<GetUpdateStatusRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 6);
+
+/**
+ * @generated from message orchd.v1.GetUpdateStatusResponse
+ */
+export type GetUpdateStatusResponse = Message<"orchd.v1.GetUpdateStatusResponse"> & {
+  /**
+   * @generated from field: orchd.v1.UpdateStatus update_status = 1;
+   */
+  updateStatus?: UpdateStatus;
+};
+
+/**
+ * Describes the message orchd.v1.GetUpdateStatusResponse.
+ * Use `create(GetUpdateStatusResponseSchema)` to create a new message.
+ */
+export const GetUpdateStatusResponseSchema: GenMessage<GetUpdateStatusResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 7);
+
+/**
+ * @generated from message orchd.v1.CheckForUpdateRequest
+ */
+export type CheckForUpdateRequest = Message<"orchd.v1.CheckForUpdateRequest"> & {
+  /**
+   * @generated from field: bool force = 1;
+   */
+  force: boolean;
+};
+
+/**
+ * Describes the message orchd.v1.CheckForUpdateRequest.
+ * Use `create(CheckForUpdateRequestSchema)` to create a new message.
+ */
+export const CheckForUpdateRequestSchema: GenMessage<CheckForUpdateRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 8);
+
+/**
+ * @generated from message orchd.v1.CheckForUpdateResponse
+ */
+export type CheckForUpdateResponse = Message<"orchd.v1.CheckForUpdateResponse"> & {
+  /**
+   * @generated from field: orchd.v1.UpdateStatus update_status = 1;
+   */
+  updateStatus?: UpdateStatus;
+};
+
+/**
+ * Describes the message orchd.v1.CheckForUpdateResponse.
+ * Use `create(CheckForUpdateResponseSchema)` to create a new message.
+ */
+export const CheckForUpdateResponseSchema: GenMessage<CheckForUpdateResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 9);
+
+/**
+ * @generated from message orchd.v1.ApplyUpdateRequest
+ */
+export type ApplyUpdateRequest = Message<"orchd.v1.ApplyUpdateRequest"> & {
+};
+
+/**
+ * Describes the message orchd.v1.ApplyUpdateRequest.
+ * Use `create(ApplyUpdateRequestSchema)` to create a new message.
+ */
+export const ApplyUpdateRequestSchema: GenMessage<ApplyUpdateRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 10);
+
+/**
+ * @generated from message orchd.v1.ApplyUpdateResponse
+ */
+export type ApplyUpdateResponse = Message<"orchd.v1.ApplyUpdateResponse"> & {
+  /**
+   * @generated from field: orchd.v1.UpdateStatus update_status = 1;
+   */
+  updateStatus?: UpdateStatus;
+};
+
+/**
+ * Describes the message orchd.v1.ApplyUpdateResponse.
+ * Use `create(ApplyUpdateResponseSchema)` to create a new message.
+ */
+export const ApplyUpdateResponseSchema: GenMessage<ApplyUpdateResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_host, 11);
+
+/**
  * @generated from message orchd.v1.ListBackendsRequest
  */
 export type ListBackendsRequest = Message<"orchd.v1.ListBackendsRequest"> & {
@@ -131,7 +324,7 @@ export type ListBackendsRequest = Message<"orchd.v1.ListBackendsRequest"> & {
  * Use `create(ListBackendsRequestSchema)` to create a new message.
  */
 export const ListBackendsRequestSchema: GenMessage<ListBackendsRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 4);
+  messageDesc(file_orchd_v1_host, 12);
 
 /**
  * @generated from message orchd.v1.ListBackendsResponse
@@ -148,7 +341,7 @@ export type ListBackendsResponse = Message<"orchd.v1.ListBackendsResponse"> & {
  * Use `create(ListBackendsResponseSchema)` to create a new message.
  */
 export const ListBackendsResponseSchema: GenMessage<ListBackendsResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 5);
+  messageDesc(file_orchd_v1_host, 13);
 
 /**
  * @generated from message orchd.v1.SkillSummary
@@ -180,7 +373,7 @@ export type SkillSummary = Message<"orchd.v1.SkillSummary"> & {
  * Use `create(SkillSummarySchema)` to create a new message.
  */
 export const SkillSummarySchema: GenMessage<SkillSummary> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 6);
+  messageDesc(file_orchd_v1_host, 14);
 
 /**
  * @generated from message orchd.v1.ListSkillsRequest
@@ -193,7 +386,7 @@ export type ListSkillsRequest = Message<"orchd.v1.ListSkillsRequest"> & {
  * Use `create(ListSkillsRequestSchema)` to create a new message.
  */
 export const ListSkillsRequestSchema: GenMessage<ListSkillsRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 7);
+  messageDesc(file_orchd_v1_host, 15);
 
 /**
  * @generated from message orchd.v1.ListSkillsResponse
@@ -210,7 +403,7 @@ export type ListSkillsResponse = Message<"orchd.v1.ListSkillsResponse"> & {
  * Use `create(ListSkillsResponseSchema)` to create a new message.
  */
 export const ListSkillsResponseSchema: GenMessage<ListSkillsResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 8);
+  messageDesc(file_orchd_v1_host, 16);
 
 /**
  * @generated from message orchd.v1.MCPServerSummary
@@ -237,7 +430,7 @@ export type MCPServerSummary = Message<"orchd.v1.MCPServerSummary"> & {
  * Use `create(MCPServerSummarySchema)` to create a new message.
  */
 export const MCPServerSummarySchema: GenMessage<MCPServerSummary> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 9);
+  messageDesc(file_orchd_v1_host, 17);
 
 /**
  * @generated from message orchd.v1.ListMCPServersRequest
@@ -250,7 +443,7 @@ export type ListMCPServersRequest = Message<"orchd.v1.ListMCPServersRequest"> & 
  * Use `create(ListMCPServersRequestSchema)` to create a new message.
  */
 export const ListMCPServersRequestSchema: GenMessage<ListMCPServersRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 10);
+  messageDesc(file_orchd_v1_host, 18);
 
 /**
  * @generated from message orchd.v1.ListMCPServersResponse
@@ -267,7 +460,7 @@ export type ListMCPServersResponse = Message<"orchd.v1.ListMCPServersResponse"> 
  * Use `create(ListMCPServersResponseSchema)` to create a new message.
  */
 export const ListMCPServersResponseSchema: GenMessage<ListMCPServersResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 11);
+  messageDesc(file_orchd_v1_host, 19);
 
 /**
  * @generated from message orchd.v1.DirectoryRoot
@@ -294,7 +487,7 @@ export type DirectoryRoot = Message<"orchd.v1.DirectoryRoot"> & {
  * Use `create(DirectoryRootSchema)` to create a new message.
  */
 export const DirectoryRootSchema: GenMessage<DirectoryRoot> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 12);
+  messageDesc(file_orchd_v1_host, 20);
 
 /**
  * @generated from message orchd.v1.DirectoryEntry
@@ -336,7 +529,7 @@ export type DirectoryEntry = Message<"orchd.v1.DirectoryEntry"> & {
  * Use `create(DirectoryEntrySchema)` to create a new message.
  */
 export const DirectoryEntrySchema: GenMessage<DirectoryEntry> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 13);
+  messageDesc(file_orchd_v1_host, 21);
 
 /**
  * @generated from message orchd.v1.DirectoryListing
@@ -363,7 +556,7 @@ export type DirectoryListing = Message<"orchd.v1.DirectoryListing"> & {
  * Use `create(DirectoryListingSchema)` to create a new message.
  */
 export const DirectoryListingSchema: GenMessage<DirectoryListing> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 14);
+  messageDesc(file_orchd_v1_host, 22);
 
 /**
  * @generated from message orchd.v1.PathMetadata
@@ -420,7 +613,7 @@ export type PathMetadata = Message<"orchd.v1.PathMetadata"> & {
  * Use `create(PathMetadataSchema)` to create a new message.
  */
 export const PathMetadataSchema: GenMessage<PathMetadata> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 15);
+  messageDesc(file_orchd_v1_host, 23);
 
 /**
  * @generated from message orchd.v1.ListDirectoryRootsRequest
@@ -433,7 +626,7 @@ export type ListDirectoryRootsRequest = Message<"orchd.v1.ListDirectoryRootsRequ
  * Use `create(ListDirectoryRootsRequestSchema)` to create a new message.
  */
 export const ListDirectoryRootsRequestSchema: GenMessage<ListDirectoryRootsRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 16);
+  messageDesc(file_orchd_v1_host, 24);
 
 /**
  * @generated from message orchd.v1.ListDirectoryRootsResponse
@@ -450,7 +643,7 @@ export type ListDirectoryRootsResponse = Message<"orchd.v1.ListDirectoryRootsRes
  * Use `create(ListDirectoryRootsResponseSchema)` to create a new message.
  */
 export const ListDirectoryRootsResponseSchema: GenMessage<ListDirectoryRootsResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 17);
+  messageDesc(file_orchd_v1_host, 25);
 
 /**
  * @generated from message orchd.v1.ListDirectoryRequest
@@ -467,7 +660,7 @@ export type ListDirectoryRequest = Message<"orchd.v1.ListDirectoryRequest"> & {
  * Use `create(ListDirectoryRequestSchema)` to create a new message.
  */
 export const ListDirectoryRequestSchema: GenMessage<ListDirectoryRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 18);
+  messageDesc(file_orchd_v1_host, 26);
 
 /**
  * @generated from message orchd.v1.ListDirectoryResponse
@@ -484,7 +677,7 @@ export type ListDirectoryResponse = Message<"orchd.v1.ListDirectoryResponse"> & 
  * Use `create(ListDirectoryResponseSchema)` to create a new message.
  */
 export const ListDirectoryResponseSchema: GenMessage<ListDirectoryResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 19);
+  messageDesc(file_orchd_v1_host, 27);
 
 /**
  * @generated from message orchd.v1.GetPathMetadataRequest
@@ -501,7 +694,7 @@ export type GetPathMetadataRequest = Message<"orchd.v1.GetPathMetadataRequest"> 
  * Use `create(GetPathMetadataRequestSchema)` to create a new message.
  */
 export const GetPathMetadataRequestSchema: GenMessage<GetPathMetadataRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 20);
+  messageDesc(file_orchd_v1_host, 28);
 
 /**
  * @generated from message orchd.v1.GetPathMetadataResponse
@@ -518,7 +711,7 @@ export type GetPathMetadataResponse = Message<"orchd.v1.GetPathMetadataResponse"
  * Use `create(GetPathMetadataResponseSchema)` to create a new message.
  */
 export const GetPathMetadataResponseSchema: GenMessage<GetPathMetadataResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 21);
+  messageDesc(file_orchd_v1_host, 29);
 
 /**
  * @generated from message orchd.v1.ListRecentReposRequest
@@ -535,7 +728,7 @@ export type ListRecentReposRequest = Message<"orchd.v1.ListRecentReposRequest"> 
  * Use `create(ListRecentReposRequestSchema)` to create a new message.
  */
 export const ListRecentReposRequestSchema: GenMessage<ListRecentReposRequest> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 22);
+  messageDesc(file_orchd_v1_host, 30);
 
 /**
  * @generated from message orchd.v1.ListRecentReposResponse
@@ -552,7 +745,175 @@ export type ListRecentReposResponse = Message<"orchd.v1.ListRecentReposResponse"
  * Use `create(ListRecentReposResponseSchema)` to create a new message.
  */
 export const ListRecentReposResponseSchema: GenMessage<ListRecentReposResponse> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_host, 23);
+  messageDesc(file_orchd_v1_host, 31);
+
+/**
+ * @generated from enum orchd.v1.InstallSource
+ */
+export enum InstallSource {
+  /**
+   * @generated from enum value: INSTALL_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_DIRECT = 1;
+   */
+  DIRECT = 1,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_UNKNOWN = 2;
+   */
+  UNKNOWN = 2,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_HOMEBREW_FORMULA = 3;
+   */
+  HOMEBREW_FORMULA = 3,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_HOMEBREW_CASK = 4;
+   */
+  HOMEBREW_CASK = 4,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_APT = 5;
+   */
+  APT = 5,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_DNF = 6;
+   */
+  DNF = 6,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_WINGET = 7;
+   */
+  WINGET = 7,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_NIX = 8;
+   */
+  NIX = 8,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_MACPORTS = 9;
+   */
+  MACPORTS = 9,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_SNAP = 10;
+   */
+  SNAP = 10,
+
+  /**
+   * @generated from enum value: INSTALL_SOURCE_FLATPAK = 11;
+   */
+  FLATPAK = 11,
+}
+
+/**
+ * Describes the enum orchd.v1.InstallSource.
+ */
+export const InstallSourceSchema: GenEnum<InstallSource> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_host, 0);
+
+/**
+ * @generated from enum orchd.v1.UpdatePolicy
+ */
+export enum UpdatePolicy {
+  /**
+   * @generated from enum value: UPDATE_POLICY_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: UPDATE_POLICY_SELF_MANAGED = 1;
+   */
+  SELF_MANAGED = 1,
+
+  /**
+   * @generated from enum value: UPDATE_POLICY_PACKAGE_MANAGED = 2;
+   */
+  PACKAGE_MANAGED = 2,
+
+  /**
+   * @generated from enum value: UPDATE_POLICY_STORE_MANAGED = 3;
+   */
+  STORE_MANAGED = 3,
+}
+
+/**
+ * Describes the enum orchd.v1.UpdatePolicy.
+ */
+export const UpdatePolicySchema: GenEnum<UpdatePolicy> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_host, 1);
+
+/**
+ * @generated from enum orchd.v1.UpdateState
+ */
+export enum UpdateState {
+  /**
+   * @generated from enum value: UPDATE_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_IDLE = 1;
+   */
+  IDLE = 1,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_CHECKING = 2;
+   */
+  CHECKING = 2,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_AVAILABLE = 3;
+   */
+  AVAILABLE = 3,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_DOWNLOADING = 4;
+   */
+  DOWNLOADING = 4,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_VERIFYING = 5;
+   */
+  VERIFYING = 5,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_PREFLIGHT_RUNNING = 6;
+   */
+  PREFLIGHT_RUNNING = 6,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_READY_TO_APPLY = 7;
+   */
+  READY_TO_APPLY = 7,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_REEXECING = 8;
+   */
+  REEXECING = 8,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_FAILED_PRE_EXEC = 9;
+   */
+  FAILED_PRE_EXEC = 9,
+
+  /**
+   * @generated from enum value: UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN = 10;
+   */
+  FAILED_POST_EXEC_UNKNOWN = 10,
+}
+
+/**
+ * Describes the enum orchd.v1.UpdateState.
+ */
+export const UpdateStateSchema: GenEnum<UpdateState> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_host, 2);
 
 /**
  * @generated from service orchd.v1.HostService
@@ -621,6 +982,30 @@ export const HostService: GenService<{
     methodKind: "unary";
     input: typeof ListRecentReposRequestSchema;
     output: typeof ListRecentReposResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.GetUpdateStatus
+   */
+  getUpdateStatus: {
+    methodKind: "unary";
+    input: typeof GetUpdateStatusRequestSchema;
+    output: typeof GetUpdateStatusResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.CheckForUpdate
+   */
+  checkForUpdate: {
+    methodKind: "unary";
+    input: typeof CheckForUpdateRequestSchema;
+    output: typeof CheckForUpdateResponseSchema;
+  },
+  /**
+   * @generated from rpc orchd.v1.HostService.ApplyUpdate
+   */
+  applyUpdate: {
+    methodKind: "unary";
+    input: typeof ApplyUpdateRequestSchema;
+    output: typeof ApplyUpdateResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_orchd_v1_host, 0);

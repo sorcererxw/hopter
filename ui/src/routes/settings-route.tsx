@@ -1,14 +1,10 @@
-import {
-  ArrowLeft,
-  Blocks,
-  Bot,
-  Brush,
-  Settings,
-} from "lucide-react"
+import { ArrowLeft, Blocks, Bot, Brush, Settings } from "lucide-react"
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 
 import { RailRow } from "@/components/app/rail-row"
 import { SidebarPane } from "@/components/app/sidebar-pane"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -38,9 +34,48 @@ export function SettingsRoute() {
         item.path !== "/settings" && location.pathname.startsWith(item.path)
     )?.id ?? "general"
 
+  const handleTabChange = (value: string) => {
+    const nextItem = NAV_ITEMS.find((item) => item.id === value)
+    if (nextItem) {
+      navigate(nextItem.path)
+    }
+  }
+
   return (
-    <div className="flex h-dvh bg-background text-foreground font-medium">
-      <SidebarPane className="py-4">
+    <div className="flex h-dvh flex-col bg-background font-medium text-foreground md:flex-row">
+      <div className="border-b border-border px-4 py-3 md:hidden">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-lg"
+            aria-label="Back to app"
+            title="Back to app"
+            onClick={() => navigate("/")}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft />
+          </Button>
+
+          <Tabs
+            value={activeId}
+            onValueChange={handleTabChange}
+            className="min-w-0 flex-1 gap-0"
+          >
+            <div className="overflow-x-auto">
+              <TabsList className="min-w-max">
+                {NAV_ITEMS.map(({ id, label }) => (
+                  <TabsTrigger key={id} value={id}>
+                    {label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+          </Tabs>
+        </div>
+      </div>
+
+      <SidebarPane className="hidden py-4 md:flex">
         <div className="mb-3 px-2">
           <RailRow
             icon={<ArrowLeft className="size-3.5" />}
@@ -50,7 +85,7 @@ export function SettingsRoute() {
           />
         </div>
 
-        <div className="space-y-0.5 px-2">
+        <div className="flex flex-col gap-0.5 px-2">
           {NAV_ITEMS.map(({ icon: Icon, id, label, path }) => (
             <RailRow
               key={id}
@@ -67,7 +102,7 @@ export function SettingsRoute() {
         </div>
       </SidebarPane>
 
-      <div className="thin-scrollbar flex-1 overflow-y-auto px-12 py-8 font-medium text-foreground">
+      <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 text-foreground md:px-12 md:py-8">
         <div className="max-w-2xl">
           <Outlet />
         </div>
@@ -79,4 +114,3 @@ export function SettingsRoute() {
 export function SettingsIndexRedirect() {
   return <Navigate to="/settings" replace />
 }
-

@@ -1,6 +1,7 @@
 export const queryKeys = {
   authStatus: () => ["auth-status"] as const,
   host: () => ["host"] as const,
+  hostUpdates: () => ["host", "updates"] as const,
   hostBackends: () => ["host", "backends"] as const,
   hostSkills: () => ["host", "skills"] as const,
   hostMCPServers: () => ["host", "mcp-servers"] as const,

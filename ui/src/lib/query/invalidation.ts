@@ -64,6 +64,7 @@ export function applyWorkspaceEventInvalidation(
   switch (eventType) {
     case WorkspaceEventType.HOST_STATUS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.host() })
+      client.invalidateQueries({ queryKey: queryKeys.hostUpdates() })
       return
     case WorkspaceEventType.PROJECTS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.projects() })
@@ -81,6 +82,7 @@ export function applyWorkspaceEventInvalidation(
       return
     default:
       client.invalidateQueries({ queryKey: queryKeys.host() })
+      client.invalidateQueries({ queryKey: queryKeys.hostUpdates() })
       client.invalidateQueries({ queryKey: queryKeys.projects() })
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       if (sessionId) {

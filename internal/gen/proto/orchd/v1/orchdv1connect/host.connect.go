@@ -56,6 +56,14 @@ const (
 	// HostServiceListRecentReposProcedure is the fully-qualified name of the HostService's
 	// ListRecentRepos RPC.
 	HostServiceListRecentReposProcedure = "/orchd.v1.HostService/ListRecentRepos"
+	// HostServiceGetUpdateStatusProcedure is the fully-qualified name of the HostService's
+	// GetUpdateStatus RPC.
+	HostServiceGetUpdateStatusProcedure = "/orchd.v1.HostService/GetUpdateStatus"
+	// HostServiceCheckForUpdateProcedure is the fully-qualified name of the HostService's
+	// CheckForUpdate RPC.
+	HostServiceCheckForUpdateProcedure = "/orchd.v1.HostService/CheckForUpdate"
+	// HostServiceApplyUpdateProcedure is the fully-qualified name of the HostService's ApplyUpdate RPC.
+	HostServiceApplyUpdateProcedure = "/orchd.v1.HostService/ApplyUpdate"
 )
 
 // HostServiceClient is a client for the orchd.v1.HostService service.
@@ -68,6 +76,9 @@ type HostServiceClient interface {
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
 	ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error)
+	GetUpdateStatus(context.Context, *connect.Request[v1.GetUpdateStatusRequest]) (*connect.Response[v1.GetUpdateStatusResponse], error)
+	CheckForUpdate(context.Context, *connect.Request[v1.CheckForUpdateRequest]) (*connect.Response[v1.CheckForUpdateResponse], error)
+	ApplyUpdate(context.Context, *connect.Request[v1.ApplyUpdateRequest]) (*connect.Response[v1.ApplyUpdateResponse], error)
 }
 
 // NewHostServiceClient constructs a client for the orchd.v1.HostService service. By default, it
@@ -129,6 +140,24 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(hostServiceMethods.ByName("ListRecentRepos")),
 			connect.WithClientOptions(opts...),
 		),
+		getUpdateStatus: connect.NewClient[v1.GetUpdateStatusRequest, v1.GetUpdateStatusResponse](
+			httpClient,
+			baseURL+HostServiceGetUpdateStatusProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("GetUpdateStatus")),
+			connect.WithClientOptions(opts...),
+		),
+		checkForUpdate: connect.NewClient[v1.CheckForUpdateRequest, v1.CheckForUpdateResponse](
+			httpClient,
+			baseURL+HostServiceCheckForUpdateProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("CheckForUpdate")),
+			connect.WithClientOptions(opts...),
+		),
+		applyUpdate: connect.NewClient[v1.ApplyUpdateRequest, v1.ApplyUpdateResponse](
+			httpClient,
+			baseURL+HostServiceApplyUpdateProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("ApplyUpdate")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -142,6 +171,9 @@ type hostServiceClient struct {
 	listDirectory      *connect.Client[v1.ListDirectoryRequest, v1.ListDirectoryResponse]
 	getPathMetadata    *connect.Client[v1.GetPathMetadataRequest, v1.GetPathMetadataResponse]
 	listRecentRepos    *connect.Client[v1.ListRecentReposRequest, v1.ListRecentReposResponse]
+	getUpdateStatus    *connect.Client[v1.GetUpdateStatusRequest, v1.GetUpdateStatusResponse]
+	checkForUpdate     *connect.Client[v1.CheckForUpdateRequest, v1.CheckForUpdateResponse]
+	applyUpdate        *connect.Client[v1.ApplyUpdateRequest, v1.ApplyUpdateResponse]
 }
 
 // GetHostStatus calls orchd.v1.HostService.GetHostStatus.
@@ -184,6 +216,21 @@ func (c *hostServiceClient) ListRecentRepos(ctx context.Context, req *connect.Re
 	return c.listRecentRepos.CallUnary(ctx, req)
 }
 
+// GetUpdateStatus calls orchd.v1.HostService.GetUpdateStatus.
+func (c *hostServiceClient) GetUpdateStatus(ctx context.Context, req *connect.Request[v1.GetUpdateStatusRequest]) (*connect.Response[v1.GetUpdateStatusResponse], error) {
+	return c.getUpdateStatus.CallUnary(ctx, req)
+}
+
+// CheckForUpdate calls orchd.v1.HostService.CheckForUpdate.
+func (c *hostServiceClient) CheckForUpdate(ctx context.Context, req *connect.Request[v1.CheckForUpdateRequest]) (*connect.Response[v1.CheckForUpdateResponse], error) {
+	return c.checkForUpdate.CallUnary(ctx, req)
+}
+
+// ApplyUpdate calls orchd.v1.HostService.ApplyUpdate.
+func (c *hostServiceClient) ApplyUpdate(ctx context.Context, req *connect.Request[v1.ApplyUpdateRequest]) (*connect.Response[v1.ApplyUpdateResponse], error) {
+	return c.applyUpdate.CallUnary(ctx, req)
+}
+
 // HostServiceHandler is an implementation of the orchd.v1.HostService service.
 type HostServiceHandler interface {
 	GetHostStatus(context.Context, *connect.Request[v1.GetHostStatusRequest]) (*connect.Response[v1.GetHostStatusResponse], error)
@@ -194,6 +241,9 @@ type HostServiceHandler interface {
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
 	GetPathMetadata(context.Context, *connect.Request[v1.GetPathMetadataRequest]) (*connect.Response[v1.GetPathMetadataResponse], error)
 	ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error)
+	GetUpdateStatus(context.Context, *connect.Request[v1.GetUpdateStatusRequest]) (*connect.Response[v1.GetUpdateStatusResponse], error)
+	CheckForUpdate(context.Context, *connect.Request[v1.CheckForUpdateRequest]) (*connect.Response[v1.CheckForUpdateResponse], error)
+	ApplyUpdate(context.Context, *connect.Request[v1.ApplyUpdateRequest]) (*connect.Response[v1.ApplyUpdateResponse], error)
 }
 
 // NewHostServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -251,6 +301,24 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(hostServiceMethods.ByName("ListRecentRepos")),
 		connect.WithHandlerOptions(opts...),
 	)
+	hostServiceGetUpdateStatusHandler := connect.NewUnaryHandler(
+		HostServiceGetUpdateStatusProcedure,
+		svc.GetUpdateStatus,
+		connect.WithSchema(hostServiceMethods.ByName("GetUpdateStatus")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceCheckForUpdateHandler := connect.NewUnaryHandler(
+		HostServiceCheckForUpdateProcedure,
+		svc.CheckForUpdate,
+		connect.WithSchema(hostServiceMethods.ByName("CheckForUpdate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceApplyUpdateHandler := connect.NewUnaryHandler(
+		HostServiceApplyUpdateProcedure,
+		svc.ApplyUpdate,
+		connect.WithSchema(hostServiceMethods.ByName("ApplyUpdate")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/orchd.v1.HostService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case HostServiceGetHostStatusProcedure:
@@ -269,6 +337,12 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 			hostServiceGetPathMetadataHandler.ServeHTTP(w, r)
 		case HostServiceListRecentReposProcedure:
 			hostServiceListRecentReposHandler.ServeHTTP(w, r)
+		case HostServiceGetUpdateStatusProcedure:
+			hostServiceGetUpdateStatusHandler.ServeHTTP(w, r)
+		case HostServiceCheckForUpdateProcedure:
+			hostServiceCheckForUpdateHandler.ServeHTTP(w, r)
+		case HostServiceApplyUpdateProcedure:
+			hostServiceApplyUpdateHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -308,4 +382,16 @@ func (UnimplementedHostServiceHandler) GetPathMetadata(context.Context, *connect
 
 func (UnimplementedHostServiceHandler) ListRecentRepos(context.Context, *connect.Request[v1.ListRecentReposRequest]) (*connect.Response[v1.ListRecentReposResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ListRecentRepos is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) GetUpdateStatus(context.Context, *connect.Request[v1.GetUpdateStatusRequest]) (*connect.Response[v1.GetUpdateStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.GetUpdateStatus is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) CheckForUpdate(context.Context, *connect.Request[v1.CheckForUpdateRequest]) (*connect.Response[v1.CheckForUpdateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.CheckForUpdate is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) ApplyUpdate(context.Context, *connect.Request[v1.ApplyUpdateRequest]) (*connect.Response[v1.ApplyUpdateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("orchd.v1.HostService.ApplyUpdate is not implemented"))
 }

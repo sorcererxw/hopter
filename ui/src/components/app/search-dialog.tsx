@@ -1,10 +1,5 @@
 import { useMemo, useState } from "react"
-import {
-  FolderGit2,
-  Search,
-  Settings,
-  SquarePen,
-} from "lucide-react"
+import { FolderGit2, Search, Settings, SquarePen } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
@@ -35,7 +30,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     const filteredSessions = (sessions ?? []).filter((session) => {
       const projectName = session.project?.name?.toLowerCase() ?? ""
       const title = session.title.toLowerCase()
-      return !normalized || title.includes(normalized) || projectName.includes(normalized)
+      return (
+        !normalized ||
+        title.includes(normalized) ||
+        projectName.includes(normalized)
+      )
     })
 
     return {
@@ -60,20 +59,18 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-[680px] gap-0 overflow-hidden rounded-2xl border border-ws-border-strong bg-popover p-0 text-foreground ring-0"
+        className="max-w-[680px] gap-0 overflow-hidden rounded-2xl border border-border bg-popover p-0 text-foreground ring-0"
       >
         <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-            <Search className="size-4 text-muted-foreground" />
-            <Input
+          <Search className="size-4 text-muted-foreground" />
+          <Input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search threads, projects, and actions"
-              className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
-            />
-          <span className="workspace-kbd">
-            esc
-          </span>
+            className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
+          />
+          <span className="workspace-kbd">esc</span>
         </div>
 
         <div className="max-h-[560px] overflow-y-auto p-3 text-sm text-foreground">
@@ -112,11 +109,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <div className="truncate font-medium">
-                      {session.title}
-                    </div>
+                    <div className="truncate font-medium">{session.title}</div>
                     <div className="mt-1 text-muted-foreground">
-                      {session.project?.name || "Local"} · {formatSessionStatus(session.status)}
+                      {session.project?.name || "Local"} ·{" "}
+                      {formatSessionStatus(session.status)}
                     </div>
                   </div>
                 </button>
@@ -135,9 +131,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-accent"
                 >
                   <div className="min-w-0">
-                    <div className="truncate font-medium">
-                      {project.name}
-                    </div>
+                    <div className="truncate font-medium">{project.name}</div>
                     <div className="mt-1 truncate text-muted-foreground">
                       {project.rootPath}
                     </div>
@@ -147,7 +141,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             </div>
           ) : null}
 
-          {normalized && filtered.sessions.length === 0 && filtered.projects.length === 0 ? (
+          {normalized &&
+          filtered.sessions.length === 0 &&
+          filtered.projects.length === 0 ? (
             <div className="px-3 py-6 text-muted-foreground">
               No matches. Try a thread title, project name, or "settings".
             </div>
@@ -160,7 +156,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <div className="px-3 uppercase tracking-wider text-muted-foreground">
+    <div className="px-3 tracking-wider text-muted-foreground uppercase">
       {children}
     </div>
   )

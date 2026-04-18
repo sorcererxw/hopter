@@ -5,11 +5,9 @@ import {
   useState,
   type ButtonHTMLAttributes,
   type KeyboardEvent,
-  type ReactNode,
 } from "react"
 import {
   ArrowUp,
-  Check,
   ChevronDown,
   LoaderCircle,
   Mic,
@@ -17,14 +15,12 @@ import {
   Square,
 } from "lucide-react"
 
-import { BottomSheet, BottomSheetItem } from "@/components/app/bottom-sheet"
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import type { SkillSummary } from "@/gen/proto/orchd/v1/host_pb"
 import { cn } from "@/lib/utils"
 
-/** Matches Tailwind `md` breakpoint (768px) */
-const MD_BREAKPOINT = 768
 const MAX_SKILL_SUGGESTIONS = 8
 
 const MODEL_OPTIONS = [
@@ -46,6 +42,7 @@ type SessionComposerProps = {
   disabled?: boolean
   interruptMode?: boolean
   placeholder: string
+  placement?: "sticky" | "inline"
   composerTestId?: string
   inputTestId?: string
   projectLabel?: string
@@ -77,6 +74,7 @@ export function SessionComposer({
   disabled = false,
   interruptMode = false,
   placeholder,
+  placement = "sticky",
   composerTestId,
   inputTestId,
   projectLabel: _projectLabel = "Local",
@@ -104,10 +102,6 @@ export function SessionComposer({
     REASONING_OPTIONS.find((opt) => opt.label === reasoningLabel)?.value ??
       "high"
   )
-  const [modelMenuOpen, setModelMenuOpen] = useState(false)
-  const [reasoningMenuOpen, setReasoningMenuOpen] = useState(false)
-  const [modelSheetOpen, setModelSheetOpen] = useState(false)
-  const [reasoningSheetOpen, setReasoningSheetOpen] = useState(false)
   const [caretPosition, setCaretPosition] = useState(value.length)
   const [skillSuggestionsDismissed, setSkillSuggestionsDismissed] =
     useState(false)
@@ -120,8 +114,6 @@ export function SessionComposer({
   const currentReasoningLabel =
     REASONING_OPTIONS.find((opt) => opt.value === selectedReasoning)?.label ??
     reasoningLabel
-  const isMobileViewport =
-    typeof window !== "undefined" && window.innerWidth < MD_BREAKPOINT
 
   const activeSkillMatch = useMemo(
     () => getActiveSkillMatch(value, caretPosition),
@@ -170,24 +162,6 @@ export function SessionComposer({
     }
     setHighlightedSkillIndex(0)
   }, [highlightedSkillIndex, skillSuggestions.length])
-
-  function handleModelTrigger() {
-    if (isMobileViewport) {
-      setModelSheetOpen(true)
-      setModelMenuOpen(false)
-      return
-    }
-    setModelMenuOpen((prev) => !prev)
-  }
-
-  function handleReasoningTrigger() {
-    if (isMobileViewport) {
-      setReasoningSheetOpen(true)
-      setReasoningMenuOpen(false)
-      return
-    }
-    setReasoningMenuOpen((prev) => !prev)
-  }
 
   function syncCaretPosition() {
     if (!textareaRef.current) {
@@ -280,7 +254,11 @@ export function SessionComposer({
   return (
     <>
       <div
-        className="composer-foreground px-6 pb-3 md:pb-4"
+        className={cn(
+          placement === "sticky"
+            ? "composer-foreground px-6 pb-3 md:pb-4"
+            : "w-full"
+        )}
         data-testid={composerTestId}
       >
         <div className="mx-auto max-w-[720px]">
@@ -295,8 +273,8 @@ export function SessionComposer({
               />
             ) : null}
 
-            <div className="overflow-hidden rounded-lg border border-ws-border-strong bg-popover shadow-lg">
-              <div className="px-4 pt-3 pb-3">
+            <div className="overflow-hidden rounded-2xl border border-border bg-popover">
+              <div className="px-3 pt-3 pb-2">
                 <div className="relative min-h-14">
                   {value.length > 0 ? (
                     <div
@@ -308,7 +286,7 @@ export function SessionComposer({
                           <span
                             key={`${segment.text}-${index}`}
                             data-testid="composer-skill-highlight"
-                            className="rounded-md bg-picker px-1 py-0.5 text-foreground"
+                            className="rounded-md bg-muted px-1 py-0.5 text-foreground"
                           >
                             {segment.text}
                           </span>
@@ -345,69 +323,29 @@ export function SessionComposer({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-2.5 pb-2.5">
+              <div className="flex items-center justify-between px-2 pb-2">
                 <div className="flex items-center gap-1">
                   <GhostIconButton aria-label="Add context">
                     <Plus className="size-4" />
                   </GhostIconButton>
 
-                  <div className="relative">
-                    <GhostTextButton onClick={handleModelTrigger}>
-                      {currentModelLabel}
-                    </GhostTextButton>
-                    {modelMenuOpen ? (
-                      <>
-                        <div
-                          aria-hidden="true"
-                          className="fixed inset-0 z-40 hidden md:block"
-                          onClick={() => setModelMenuOpen(false)}
-                        />
-                        <div className="absolute bottom-full left-0 z-50 mb-1 hidden w-40 rounded-lg border border-border bg-popover py-1 shadow-lg md:block">
-                          {MODEL_OPTIONS.map((option) => (
-                            <DropdownItem
-                              key={option.value}
-                              active={selectedModel === option.value}
-                              onClick={() => {
-                                setSelectedModel(option.value)
-                                setModelMenuOpen(false)
-                              }}
-                            >
-                              {option.label}
-                            </DropdownItem>
-                          ))}
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
+                  <InlineSelect
+                    aria-label="Model"
+                    options={MODEL_OPTIONS}
+                    value={selectedModel}
+                    onValueChange={setSelectedModel}
+                  >
+                    {currentModelLabel}
+                  </InlineSelect>
 
-                  <div className="relative">
-                    <GhostTextButton onClick={handleReasoningTrigger}>
-                      {currentReasoningLabel}
-                    </GhostTextButton>
-                    {reasoningMenuOpen ? (
-                      <>
-                        <div
-                          aria-hidden="true"
-                          className="fixed inset-0 z-40 hidden md:block"
-                          onClick={() => setReasoningMenuOpen(false)}
-                        />
-                        <div className="absolute bottom-full left-0 z-50 mb-1 hidden w-40 rounded-lg border border-border bg-popover py-1 shadow-lg md:block">
-                          {REASONING_OPTIONS.map((option) => (
-                            <DropdownItem
-                              key={option.value}
-                              active={selectedReasoning === option.value}
-                              onClick={() => {
-                                setSelectedReasoning(option.value)
-                                setReasoningMenuOpen(false)
-                              }}
-                            >
-                              {option.label}
-                            </DropdownItem>
-                          ))}
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
+                  <InlineSelect
+                    aria-label="Reasoning"
+                    options={REASONING_OPTIONS}
+                    value={selectedReasoning}
+                    onValueChange={setSelectedReasoning}
+                  >
+                    {currentReasoningLabel}
+                  </InlineSelect>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -429,7 +367,7 @@ export function SessionComposer({
                     title={interruptMode ? "Interrupt turn" : "Send message"}
                     data-testid={interruptMode ? interruptTestId : submitTestId}
                     className={cn(
-                      "rounded-full transition size-9 md:size-8",
+                      "size-9 rounded-full transition md:size-8",
                       canSubmit
                         ? "bg-primary text-primary-foreground hover:brightness-110"
                         : "bg-accent text-muted-foreground"
@@ -449,44 +387,6 @@ export function SessionComposer({
           </div>
         </div>
       </div>
-
-      <BottomSheet
-        open={modelSheetOpen}
-        onClose={() => setModelSheetOpen(false)}
-        title="Model"
-      >
-        {MODEL_OPTIONS.map((option) => (
-          <BottomSheetItem
-            key={option.value}
-            active={selectedModel === option.value}
-            onClick={() => {
-              setSelectedModel(option.value)
-              setModelSheetOpen(false)
-            }}
-          >
-            {option.label}
-          </BottomSheetItem>
-        ))}
-      </BottomSheet>
-
-      <BottomSheet
-        open={reasoningSheetOpen}
-        onClose={() => setReasoningSheetOpen(false)}
-        title="Reasoning"
-      >
-        {REASONING_OPTIONS.map((option) => (
-          <BottomSheetItem
-            key={option.value}
-            active={selectedReasoning === option.value}
-            onClick={() => {
-              setSelectedReasoning(option.value)
-              setReasoningSheetOpen(false)
-            }}
-          >
-            {option.label}
-          </BottomSheetItem>
-        ))}
-      </BottomSheet>
     </>
   )
 }
@@ -509,7 +409,7 @@ function SkillSuggestionPopover({
       className="absolute inset-x-0 bottom-full z-50 mb-2"
       data-testid="skill-suggestion-popover"
     >
-      <div className="overflow-hidden rounded-lg border border-ws-border-strong bg-popover text-sm font-medium text-foreground shadow-lg">
+      <div className="overflow-hidden rounded-lg border border-border bg-popover text-sm font-medium text-foreground shadow-lg">
         <div className="border-b border-border px-4 py-2 text-xs tracking-wider text-muted-foreground uppercase">
           {loading
             ? "Loading skills"
@@ -544,7 +444,7 @@ function SkillSuggestionPopover({
                   onSelectSkill(skill)
                 }}
                 className={cn(
-                  "h-auto w-full justify-start items-start gap-3 px-4 py-3 text-left",
+                  "h-auto w-full items-start justify-start gap-3 px-4 py-3 text-left",
                   index === highlightedIndex
                     ? "text-foreground"
                     : "text-foreground"
@@ -555,9 +455,7 @@ function SkillSuggestionPopover({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate">
-                      {skill.name}
-                    </span>
+                    <span className="truncate">{skill.name}</span>
                     <span className="font-mono text-xs text-muted-foreground">
                       ${skill.reference}
                     </span>
@@ -590,10 +488,7 @@ function GhostIconButton({
       type="button"
       variant="ghost"
       size="icon"
-      className={cn(
-        "text-muted-foreground md:size-7",
-        className
-      )}
+      className={cn("text-muted-foreground md:size-7", className)}
       {...props}
     >
       {children}
@@ -601,47 +496,41 @@ function GhostIconButton({
   )
 }
 
-function GhostTextButton({
+function InlineSelect({
   children,
+  onValueChange,
+  options,
+  value,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="gap-1 text-muted-foreground"
-      {...props}
-    >
-      {children}
-      <ChevronDown className="size-3 opacity-50" />
-    </Button>
-  )
-}
-
-function DropdownItem({
-  active = false,
-  children,
-  onClick,
 }: {
-  active?: boolean
-  children: ReactNode
-  onClick: () => void
-}) {
+  children: string
+  onValueChange: (value: string) => void
+  options: readonly { label: string; value: string }[]
+  value: string
+} & Omit<React.ComponentProps<"select">, "onChange" | "value">) {
   return (
-    <Button
-      type="button"
-      onClick={onClick}
-      variant={active ? "secondary" : "ghost"}
-      size="sm"
+    <label
       className={cn(
-        "h-auto w-full justify-between px-3 py-2",
-        active ? "text-foreground" : "text-foreground/70"
+        buttonVariants({ variant: "ghost", size: "default" }),
+        "relative gap-2 rounded-full pr-8 text-muted-foreground hover:text-foreground"
       )}
     >
-      <span>{children}</span>
-      {active ? <Check className="size-3.5 text-foreground" /> : null}
-    </Button>
+      <span aria-hidden="true">{children}</span>
+      <select
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+        className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
+        {...props}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-3 size-3" />
+      <span className="sr-only">{children}</span>
+    </label>
   )
 }
 

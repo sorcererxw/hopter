@@ -1,13 +1,11 @@
 import { useBackends } from "@/features/host/use-host-backends"
-import { CardTitle } from "@/components/ui/card"
+import { SettingsPageLayout } from "@/routes/settings/settings-page-layout"
 
 export function SettingsAgentsPage() {
   const { data: backends, isLoading } = useBackends()
 
   return (
-    <div>
-      <CardTitle className="mb-8 text-2xl text-foreground">Agents</CardTitle>
-
+    <SettingsPageLayout title="Agents">
       {isLoading ? (
         <div className="py-8 text-center text-sm font-normal text-muted-foreground">
           Loading backends…
@@ -38,6 +36,6 @@ export function SettingsAgentsPage() {
           ))}
         </div>
       )}
-    </div>
+    </SettingsPageLayout>
   )
 }

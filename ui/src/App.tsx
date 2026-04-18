@@ -56,6 +56,11 @@ const WorkspaceRouteFrame = lazy(() =>
     default: module.WorkspaceRouteFrame,
   }))
 )
+const ProjectPickerPage = lazy(() =>
+  import("@/components/app/project-picker-dialog").then((module) => ({
+    default: module.ProjectPickerPage,
+  }))
+)
 
 function renderLazyRoute(element: ReactNode) {
   return <Suspense fallback={null}>{element}</Suspense>
@@ -91,10 +96,7 @@ export default function App() {
                 </ProtectedRoute>
               )}
             >
-              <Route
-                index
-                element={renderLazyRoute(<SettingsGeneralPage />)}
-              />
+              <Route index element={renderLazyRoute(<SettingsGeneralPage />)} />
               <Route
                 path="appearance"
                 element={renderLazyRoute(<SettingsAppearancePage />)}
@@ -116,6 +118,10 @@ export default function App() {
               }
             >
               <Route index element={renderLazyRoute(<HomeRoute />)} />
+              <Route
+                path="projects/new"
+                element={renderLazyRoute(<ProjectPickerPage />)}
+              />
               <Route
                 path="sessions/:sessionId"
                 element={renderLazyRoute(<SessionRoute />)}

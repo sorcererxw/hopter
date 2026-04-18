@@ -252,17 +252,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
           ? "Codex is working on your latest message…"
           : session.summary?.trim() || "Codex is thinking…",
       })
-    } else if (session) {
-      items.push({
-        kind: "round-status" as const,
-        key: "round-status",
-        state: shouldShowAttentionState(session.status)
-          ? "attention"
-          : "finished",
-        summary: shouldShowAttentionState(session.status)
-          ? session.attentionReason?.trim() || "This round needs attention."
-          : "This round has finished.",
-      })
     }
 
     return items
@@ -571,7 +560,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         showInspectorToggle={posture === "wide"}
         showReview
         showTerminal={terminalEnabled}
-        syncState={eventStreamState}
         terminalButtonTestId="workspace-topbar-terminal"
         terminalActive={Boolean(
           terminalState.terminal && !terminalUIState.open
@@ -643,12 +631,12 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               <div
                 ref={transcriptScrollRef}
                 onScroll={handleTranscriptScroll}
-                className="scrollbar-native-hidden relative h-full overflow-y-auto px-6 py-4"
+                className="scrollbar-native-hidden relative h-full overflow-y-auto px-6 py-0"
               >
                 <div
                   ref={transcriptContentRef}
                   className={cn(
-                    "mx-auto max-w-[720px] space-y-5 transition-opacity duration-200 ease-out",
+                    "mx-auto max-w-[720px] space-y-0 transition-opacity duration-200 ease-out",
                     transcriptVisible ? "opacity-100" : "opacity-0"
                   )}
                 >
@@ -1057,7 +1045,7 @@ function TranscriptTimeline({
   }
 
   return (
-    <div className="space-y-5" data-testid="session-transcript">
+    <div className="space-y-2" data-testid="session-transcript">
       {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
       {timelineItems.map((item) => {
         switch (item.kind) {
@@ -1160,38 +1148,6 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
       continue
     }
 
-    if (isThoughtProcessTranscriptItem(current.item)) {
-      const thoughtItems: SessionTranscriptItem[] = [current.item]
-      let next = cursor + 1
-      while (next < items.length) {
-        const candidate = items[next]
-        if (
-          !isTranscriptActivityItem(candidate) ||
-          !isThoughtProcessTranscriptItem(candidate.item)
-        ) {
-          break
-        }
-        thoughtItems.push(candidate.item)
-        next += 1
-      }
-
-      const previousItem = cursor > 0 ? items[cursor - 1] : null
-      if (
-        previousItem &&
-        previousItem.kind !== "thinking" &&
-        (!isTranscriptActivityItem(previousItem) ||
-          previousItem.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE)
-      ) {
-        timelineItems.push({
-          items: thoughtItems,
-          key: thoughtItems.map((item) => item.id).join(":"),
-          kind: "thought-group",
-        })
-        cursor = next
-        continue
-      }
-    }
-
     if (current.item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
       const groupedItems: SessionTranscriptItem[] = [current.item]
       let next = cursor + 1
@@ -1280,7 +1236,8 @@ function PendingInputEntry({
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
-          className="rounded-lg bg-accent px-4 py-3"
+          className="rounded-lg bg-muted px-3 py-2.5 leading-6"
+          markdown={false}
           onLocalPathClick={onSelectPath}
         />
       </div>
@@ -1361,7 +1318,8 @@ function UserMessageEntry({
       <div className="max-w-[85%]">
         <SessionRichText
           text={item.body}
-          className="rounded-lg bg-accent px-4 py-3"
+          className="rounded-lg bg-muted px-3 py-2.5 leading-6"
+          markdown={false}
           onLocalPathClick={onSelectPath}
         />
       </div>
@@ -1475,7 +1433,7 @@ function ToolGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
       onToggle={() => setExpanded((prev) => !prev)}
       testId="session-transcript-tool"
     >
-      <div className="space-y-2">
+      <div>
         {items.map((item) => (
           <CodeContainer
             key={item.id}
@@ -1546,12 +1504,7 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
           />
         </button>
         {expanded ? (
-          <CodeContainer
-            as="pre"
-            className="mt-2 break-words whitespace-pre-wrap text-foreground/70"
-          >
-            {item.body}
-          </CodeContainer>
+          <CommandExecutionDetail className="mt-2" body={item.body} />
         ) : null}
       </div>
     </div>
@@ -1569,18 +1522,64 @@ function CommandGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
       onToggle={() => setExpanded((prev) => !prev)}
       testId="session-transcript-command"
     >
-      <div className="space-y-2">
+      <div>
         {items.map((item) => (
-          <CodeContainer
-            key={item.id}
-            as="pre"
-            className="break-words whitespace-pre-wrap text-foreground/70"
-          >
-            {item.body}
-          </CodeContainer>
+          <CommandSummaryEntry key={item.id} item={item} />
         ))}
       </div>
     </TranscriptBatchEntry>
+  )
+}
+
+function CommandSummaryEntry({ item }: { item: SessionTranscriptItem }) {
+  const [expanded, setExpanded] = useState(false)
+  const label = summarizeCommandExecution(item.body)
+
+  return (
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="group inline-flex max-w-full items-center text-left text-base text-muted-foreground transition hover:text-foreground"
+      >
+        <span className="truncate">Ran {label}</span>
+        <ChevronRight
+          className={cn(
+            "size-3 shrink-0 transition",
+            expanded
+              ? "rotate-90 opacity-100"
+              : "opacity-60 group-hover:opacity-100"
+          )}
+        />
+      </button>
+      {expanded ? (
+        <CommandExecutionDetail className="mt-2" body={item.body} />
+      ) : null}
+    </div>
+  )
+}
+
+function CommandExecutionDetail({
+  body,
+  className,
+}: {
+  body: string
+  className?: string
+}) {
+  const detail = parseCommandExecutionDetail(body)
+
+  return (
+    <CodeContainer as="pre" className={cn("whitespace-pre", className)}>
+      <span className="text-foreground">{detail.command}</span>
+      {detail.output.length > 0 ? (
+        <>
+          {"\n\n"}
+          <span className="text-muted-foreground">
+            {detail.output.join("\n")}
+          </span>
+        </>
+      ) : null}
+    </CodeContainer>
   )
 }
 
@@ -1601,6 +1600,7 @@ function FileChangeGroupEntry({
       label={`Changed ${count} files`}
       onToggle={() => setExpanded((prev) => !prev)}
       testId="session-transcript-file-change"
+      contentClassName="mt-1"
     >
       <div className="space-y-1.5">
         {changes.map((change) => (
@@ -1608,20 +1608,21 @@ function FileChangeGroupEntry({
             key={`${change.path}-${change.kindLabel}`}
             type="button"
             onClick={() => onSelectDiff(change)}
-            className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-accent"
+            title={change.path}
+            className="group flex w-full items-center gap-2 py-1 text-left transition hover:text-foreground"
           >
             <span className="shrink-0 text-muted-foreground">
               {change.kindLabel}
             </span>
-            <span className="min-w-0 truncate font-mono text-ws-code">
-              {change.path}
+            <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
+              {formatFileChangePath(change.path)}
             </span>
             {change.additions || change.deletions ? (
-              <span className="ml-auto shrink-0 text-muted-foreground">
-                +{change.additions} -{change.deletions}
+              <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
+                <span className="text-emerald-600">+{change.additions}</span>
+                <span className="text-destructive">-{change.deletions}</span>
               </span>
             ) : null}
-            <ChevronRight className="size-3 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
           </button>
         ))}
       </div>
@@ -1631,12 +1632,14 @@ function FileChangeGroupEntry({
 
 function TranscriptBatchEntry({
   children,
+  contentClassName,
   expanded,
   label,
   onToggle,
   testId,
 }: {
   children: React.ReactNode
+  contentClassName?: string
   expanded: boolean
   label: string
   onToggle: () => void
@@ -1648,7 +1651,7 @@ function TranscriptBatchEntry({
         <button
           type="button"
           onClick={onToggle}
-          className="group inline-flex max-w-full items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+          className="group inline-flex max-w-full items-center gap-2 text-base font-medium text-muted-foreground transition hover:text-foreground"
         >
           <span>{label}</span>
           <ChevronRight
@@ -1660,7 +1663,9 @@ function TranscriptBatchEntry({
             )}
           />
         </button>
-        {expanded ? <div className="mt-2">{children}</div> : null}
+        {expanded ? (
+          <div className={cn( contentClassName)}>{children}</div>
+        ) : null}
       </div>
     </div>
   )
@@ -1751,27 +1756,96 @@ function describeFileChangeKind(kind: string | undefined) {
   }
 }
 
+function formatFileChangePath(path: string) {
+  const normalized = path.trim()
+  if (!normalized) {
+    return path
+  }
+
+  const segments = normalized.split(/[\\/]/)
+  return segments.at(-1) || normalized
+}
+
 function normalizeTranscriptText(value: string) {
   return value.trim().replace(/\s+/g, " ")
+}
+
+function summarizeCommandExecution(body: string) {
+  const firstLine = body
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.length > 0)
+
+  if (!firstLine) {
+    return "command"
+  }
+
+  const strippedPrefix = firstLine.replace(/^Command output:\s*/, "")
+  const shellWrapped = strippedPrefix.match(
+    /^[^\s]+(?:\s+-lc)?\s+["'](.+)["']$/
+  )
+  if (shellWrapped?.[1]) {
+    return shellWrapped[1]
+  }
+
+  return strippedPrefix.replace(/^\$\s*/, "")
+}
+
+function parseCommandExecutionDetail(body: string) {
+  const lines = body.split("\n")
+  const command =
+    lines
+      .map((line) => line.trimEnd())
+      .find((line) => line.trim().length > 0) ||
+    body.trim() ||
+    "command"
+
+  let status = ""
+  let exitCode = ""
+  const outputLines: string[] = []
+  let inOutput = false
+
+  for (const rawLine of lines.slice(1)) {
+    const line = rawLine.trimEnd()
+    const trimmed = line.trim()
+
+    if (!trimmed && !inOutput) {
+      continue
+    }
+
+    if (trimmed.toLowerCase().startsWith("status:")) {
+      status = trimmed.slice("status:".length).trim()
+      inOutput = false
+      continue
+    }
+
+    if (trimmed.toLowerCase().startsWith("exit code:")) {
+      exitCode = trimmed.slice("exit code:".length).trim()
+      inOutput = false
+      continue
+    }
+
+    if (trimmed.toLowerCase() === "output:") {
+      inOutput = true
+      continue
+    }
+
+    if (inOutput) {
+      outputLines.push(line)
+    }
+  }
+
+  return {
+    command,
+    exitCode,
+    output: outputLines,
+    status,
+  }
 }
 
 function shouldShowThinkingState(status: Session["status"]) {
   const normalized = formatSessionStatus(status).toLowerCase()
   return normalized === "pending" || normalized === "running"
-}
-
-function isThoughtProcessTranscriptItem(item: SessionTranscriptItem) {
-  return (
-    item.kind === SessionTranscriptItemKind.REASONING ||
-    item.kind === SessionTranscriptItemKind.TOOL_CALL ||
-    item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION ||
-    item.kind === SessionTranscriptItemKind.FILE_CHANGE
-  )
-}
-
-function shouldShowAttentionState(status: Session["status"]) {
-  const normalized = formatSessionStatus(status).toLowerCase()
-  return normalized === "failed" || normalized === "degraded"
 }
 
 function summarizeThoughtProcess(items: SessionTranscriptItem[]) {

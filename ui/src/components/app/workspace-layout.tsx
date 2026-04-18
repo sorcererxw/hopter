@@ -7,9 +7,13 @@ import {
   useState,
   type PropsWithChildren,
 } from "react"
-import { matchPath, useLocation } from "react-router-dom"
+import { matchPath, useLocation, useNavigate } from "react-router-dom"
 
-import { getToolbarMode, getWorkspacePosture, type WorkspacePosture } from "@/components/app/workspace-posture"
+import {
+  getToolbarMode,
+  getWorkspacePosture,
+  type WorkspacePosture,
+} from "@/components/app/workspace-posture"
 import { SessionRail } from "@/components/app/session-rail"
 import { SidebarPane } from "@/components/app/sidebar-pane"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
@@ -28,6 +32,7 @@ const SearchDialog = lazy(() =>
 
 export function WorkspaceLayout({ children }: PropsWithChildren) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [projectPickerOpen, setProjectPickerOpen] = useState(false)
   const eventStream = useWorkspaceEvents()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -50,8 +55,14 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
   const isSessionRoute = Boolean(
     matchPath("/sessions/:sessionId", location.pathname)
   )
-  const showPhoneDetail = posture === "phone" && isSessionRoute
-  const showPhoneList = posture === "phone" && !isSessionRoute
+  const isComposeRoute =
+    location.pathname === "/" &&
+    new URLSearchParams(location.search).get("compose") === "1"
+  const isProjectPickerRoute = location.pathname === "/projects/new"
+  const showPhoneDetail =
+    posture === "phone" &&
+    (isSessionRoute || isComposeRoute || isProjectPickerRoute)
+  const showPhoneList = posture === "phone" && !showPhoneDetail
   const showInlineRail = posture !== "phone" && railVisible
   const toolbarMode = getToolbarMode(posture, railVisible)
 
@@ -103,7 +114,13 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         setRailVisible(false)
       },
       lastEventAt: eventStream.lastEventAt,
-      openProjectPicker: () => setProjectPickerOpen(true),
+      openProjectPicker: () => {
+        if (posture === "phone") {
+          navigate("/projects/new")
+          return
+        }
+        setProjectPickerOpen(true)
+      },
       openSearch: () => setSearchOpen(true),
       posture,
       projectPickerOpen,
@@ -121,6 +138,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
     [
       eventStream.lastEventAt,
       eventStream.status,
+      navigate,
       posture,
       projectPickerOpen,
       railVisible,
@@ -156,7 +174,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
         {showPhoneList ? null : (
           <>
-          <div className="flex h-full min-h-0 min-w-0">
+            <div className="flex h-full min-h-0 min-w-0">
               {showInlineRail ? (
                 <SidebarPane
                   className="h-full min-h-0"

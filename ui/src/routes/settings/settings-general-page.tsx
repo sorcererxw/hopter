@@ -1,5 +1,5 @@
 import { useHostStatus } from "@/features/host/use-host-status"
-import { CardTitle } from "@/components/ui/card"
+import { SettingsPageLayout } from "@/routes/settings/settings-page-layout"
 
 function formatHostStatusLabel(status?: number) {
   switch (status) {
@@ -31,9 +31,7 @@ export function SettingsGeneralPage() {
   const { data: hostStatus, isLoading } = useHostStatus()
 
   return (
-    <div>
-      <CardTitle className="mb-8 text-2xl text-foreground">General</CardTitle>
-
+    <SettingsPageLayout title="General">
       <div className="divide-y divide-border">
         <div className="flex items-center justify-between py-4">
           <div>
@@ -60,6 +58,6 @@ export function SettingsGeneralPage() {
           </div>
         </div>
       </div>
-    </div>
+    </SettingsPageLayout>
   )
 }

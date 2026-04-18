@@ -39,42 +39,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 2px);
-
-  /* Workspace layer backgrounds */
-  --color-ws-page: var(--workspace-page-bg);
-  --color-ws-sidebar: var(--workspace-sidebar-bg);
-  --color-ws-panel: var(--workspace-panel-bg);
-  --color-ws-surface: var(--workspace-surface-bg);
-  --color-ws-elevated: var(--workspace-elevated-bg);
-
-  /* Workspace interactive states */
-  --color-ws-hover: var(--workspace-hover-bg);
-  --color-ws-hover-soft: var(--workspace-hover-bg-soft);
-  --color-ws-active: var(--workspace-active-bg);
-
-  /* Workspace borders */
-  --color-ws-border: var(--workspace-border);
-  --color-ws-border-strong: var(--workspace-border-strong);
-
-  /* Workspace text */
-  --color-ws-text: var(--workspace-text-primary);
-  --color-ws-text-sub: var(--workspace-text-secondary);
-  --color-ws-text-muted: var(--workspace-text-muted);
-  --color-ws-text-off: var(--workspace-text-disabled);
-
-  /* Workspace chips / tags / tools */
-  --color-ws-tag: var(--workspace-tag-bg);
-  --color-ws-tag-border: var(--workspace-tag-border);
-  --color-ws-tool: var(--workspace-tool-bg);
-  --color-ws-tool-border: var(--workspace-tool-border);
-
-  /* Workspace misc */
-  --color-ws-thread: var(--workspace-thread-guide);
-  --color-ws-code: var(--workspace-inline-code-text);
-
-  /* Picker selection */
-  --color-picker: var(--picker-selection);
-  --color-picker-hover: var(--picker-selection-hover);
 }
 
 :root {
@@ -103,38 +67,13 @@
   --sidebar-accent: rgba(255, 255, 255, 0.07);
   --sidebar-accent-foreground: #f3f3f3;
   --radius: 0.625rem;
-  --workspace-page-bg: #0f0f0f;
-  --workspace-sidebar-bg: #141414;
-  --workspace-panel-bg: #1e1e1e;
-  --workspace-surface-bg: #1a1a1a;
-  --workspace-elevated-bg: #242424;
-  --workspace-border: rgba(255, 255, 255, 0.07);
-  --workspace-border-strong: rgba(255, 255, 255, 0.12);
-  --workspace-text-primary: #e0e0e0;
-  --workspace-text-secondary: #888;
-  --workspace-text-muted: #555;
-  --workspace-text-disabled: #3a3a3a;
-  --workspace-hover-bg: rgba(255, 255, 255, 0.07);
-  --workspace-hover-bg-soft: rgba(255, 255, 255, 0.04);
-  --workspace-active-bg: rgba(255, 255, 255, 0.1);
-  --workspace-tag-bg: rgba(255, 255, 255, 0.06);
-  --workspace-tag-border: rgba(255, 255, 255, 0.08);
-  --workspace-tool-bg: rgba(255, 255, 255, 0.04);
-  --workspace-tool-border: rgba(255, 255, 255, 0.07);
-  --workspace-thread-guide: rgba(255, 255, 255, 0.08);
-  --workspace-scrollbar-thumb: rgba(255, 255, 255, 0.1);
-  --workspace-scrollbar-thumb-hover: rgba(255, 255, 255, 0.16);
-  --workspace-inline-code-bg: rgba(255, 255, 255, 0.06);
-  --workspace-inline-code-text: var(--foreground);
-  --picker-selection: #2a5cb8;
-  --picker-selection-hover: #1e4fa0;
-  --workspace-placeholder-color: #4d4d4d;
+  --workspace-scrollbar-thumb: var(--border);
+  --workspace-scrollbar-thumb-hover: var(--muted-foreground);
   --workspace-selection-bg: rgba(255, 255, 255, 0.12);
-  --workspace-surface-panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 .light {
-  --background: #f3f3f3;
+  --background: #ffffff;
   --foreground: #141414;
   --card: #ffffff;
   --card-foreground: #141414;
@@ -158,32 +97,9 @@
   --sidebar-border: rgba(15, 15, 15, 0.08);
   --sidebar-accent: rgba(15, 15, 15, 0.06);
   --sidebar-accent-foreground: #141414;
-  --workspace-page-bg: #f0f0f0;
-  --workspace-sidebar-bg: #e4e4e4;
-  --workspace-panel-bg: #ffffff;
-  --workspace-surface-bg: #f7f7f7;
-  --workspace-elevated-bg: #efefef;
-  --workspace-border: rgba(0, 0, 0, 0.07);
-  --workspace-border-strong: rgba(0, 0, 0, 0.12);
-  --workspace-text-primary: #1a1a1a;
-  --workspace-text-secondary: #666;
-  --workspace-text-muted: #999;
-  --workspace-text-disabled: #c3c3c3;
-  --workspace-hover-bg: rgba(0, 0, 0, 0.06);
-  --workspace-hover-bg-soft: rgba(0, 0, 0, 0.03);
-  --workspace-active-bg: rgba(0, 0, 0, 0.09);
-  --workspace-tag-bg: rgba(0, 0, 0, 0.05);
-  --workspace-tag-border: rgba(0, 0, 0, 0.08);
-  --workspace-tool-bg: rgba(0, 0, 0, 0.04);
-  --workspace-tool-border: rgba(0, 0, 0, 0.07);
-  --workspace-thread-guide: rgba(0, 0, 0, 0.1);
-  --workspace-scrollbar-thumb: rgba(0, 0, 0, 0.12);
-  --workspace-scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
-  --workspace-inline-code-bg: rgba(15, 15, 15, 0.08);
-  --workspace-inline-code-text: var(--foreground);
-  --workspace-placeholder-color: #a8a8a8;
+  --workspace-scrollbar-thumb: var(--border);
+  --workspace-scrollbar-thumb-hover: var(--muted-foreground);
   --workspace-selection-bg: rgba(0, 0, 0, 0.1);
-  --workspace-surface-panel-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
 @layer base {
@@ -199,7 +115,7 @@
   }
 
   html {
-    @apply bg-background font-sans text-foreground font-medium;
+    @apply bg-background font-sans font-medium text-foreground;
   }
 
   body {
@@ -227,7 +143,7 @@
   }
 
   textarea::placeholder {
-    color: var(--workspace-placeholder-color);
+    color: var(--muted-foreground);
   }
 }
 
@@ -239,15 +155,9 @@
     background: var(--background);
   }
 
-  .surface-panel {
-    background: var(--workspace-surface-bg);
-    border: 1px solid var(--workspace-border-strong);
-    box-shadow: var(--workspace-surface-panel-shadow);
-  }
-
   .workspace-chip {
-    background: var(--workspace-tag-bg);
-    border: 1px solid var(--workspace-tag-border);
+    background: var(--secondary);
+    border: 1px solid var(--border);
   }
 
   .workspace-scrollbar,
@@ -263,19 +173,19 @@
 
   .workspace-kbd {
     border-radius: 0.375rem;
-    border: 1px solid var(--workspace-tag-border);
-    background: var(--workspace-tag-bg);
-    color: var(--workspace-text-disabled);
+    border: 1px solid var(--border);
+    background: var(--secondary);
+    color: var(--muted-foreground);
     font-size: 10px;
     line-height: 1.4;
     padding: 1px 5px;
   }
 
   .workspace-inline-code {
-    background: var(--workspace-inline-code-bg);
-    border: 1px solid var(--workspace-tag-border);
+    background: var(--muted);
+    border: 1px solid var(--border);
     border-radius: 0.5rem;
-    color: var(--workspace-inline-code-text);
+    color: var(--foreground);
     display: inline-block;
     line-height: 1.4;
     padding: 0.1rem 0.45rem;

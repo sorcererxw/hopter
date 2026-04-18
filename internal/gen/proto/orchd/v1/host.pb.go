@@ -22,6 +22,207 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type InstallSource int32
+
+const (
+	InstallSource_INSTALL_SOURCE_UNSPECIFIED      InstallSource = 0
+	InstallSource_INSTALL_SOURCE_DIRECT           InstallSource = 1
+	InstallSource_INSTALL_SOURCE_UNKNOWN          InstallSource = 2
+	InstallSource_INSTALL_SOURCE_HOMEBREW_FORMULA InstallSource = 3
+	InstallSource_INSTALL_SOURCE_HOMEBREW_CASK    InstallSource = 4
+	InstallSource_INSTALL_SOURCE_APT              InstallSource = 5
+	InstallSource_INSTALL_SOURCE_DNF              InstallSource = 6
+	InstallSource_INSTALL_SOURCE_WINGET           InstallSource = 7
+	InstallSource_INSTALL_SOURCE_NIX              InstallSource = 8
+	InstallSource_INSTALL_SOURCE_MACPORTS         InstallSource = 9
+	InstallSource_INSTALL_SOURCE_SNAP             InstallSource = 10
+	InstallSource_INSTALL_SOURCE_FLATPAK          InstallSource = 11
+)
+
+// Enum value maps for InstallSource.
+var (
+	InstallSource_name = map[int32]string{
+		0:  "INSTALL_SOURCE_UNSPECIFIED",
+		1:  "INSTALL_SOURCE_DIRECT",
+		2:  "INSTALL_SOURCE_UNKNOWN",
+		3:  "INSTALL_SOURCE_HOMEBREW_FORMULA",
+		4:  "INSTALL_SOURCE_HOMEBREW_CASK",
+		5:  "INSTALL_SOURCE_APT",
+		6:  "INSTALL_SOURCE_DNF",
+		7:  "INSTALL_SOURCE_WINGET",
+		8:  "INSTALL_SOURCE_NIX",
+		9:  "INSTALL_SOURCE_MACPORTS",
+		10: "INSTALL_SOURCE_SNAP",
+		11: "INSTALL_SOURCE_FLATPAK",
+	}
+	InstallSource_value = map[string]int32{
+		"INSTALL_SOURCE_UNSPECIFIED":      0,
+		"INSTALL_SOURCE_DIRECT":           1,
+		"INSTALL_SOURCE_UNKNOWN":          2,
+		"INSTALL_SOURCE_HOMEBREW_FORMULA": 3,
+		"INSTALL_SOURCE_HOMEBREW_CASK":    4,
+		"INSTALL_SOURCE_APT":              5,
+		"INSTALL_SOURCE_DNF":              6,
+		"INSTALL_SOURCE_WINGET":           7,
+		"INSTALL_SOURCE_NIX":              8,
+		"INSTALL_SOURCE_MACPORTS":         9,
+		"INSTALL_SOURCE_SNAP":             10,
+		"INSTALL_SOURCE_FLATPAK":          11,
+	}
+)
+
+func (x InstallSource) Enum() *InstallSource {
+	p := new(InstallSource)
+	*p = x
+	return p
+}
+
+func (x InstallSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (InstallSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchd_v1_host_proto_enumTypes[0].Descriptor()
+}
+
+func (InstallSource) Type() protoreflect.EnumType {
+	return &file_orchd_v1_host_proto_enumTypes[0]
+}
+
+func (x InstallSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use InstallSource.Descriptor instead.
+func (InstallSource) EnumDescriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{0}
+}
+
+type UpdatePolicy int32
+
+const (
+	UpdatePolicy_UPDATE_POLICY_UNSPECIFIED     UpdatePolicy = 0
+	UpdatePolicy_UPDATE_POLICY_SELF_MANAGED    UpdatePolicy = 1
+	UpdatePolicy_UPDATE_POLICY_PACKAGE_MANAGED UpdatePolicy = 2
+	UpdatePolicy_UPDATE_POLICY_STORE_MANAGED   UpdatePolicy = 3
+)
+
+// Enum value maps for UpdatePolicy.
+var (
+	UpdatePolicy_name = map[int32]string{
+		0: "UPDATE_POLICY_UNSPECIFIED",
+		1: "UPDATE_POLICY_SELF_MANAGED",
+		2: "UPDATE_POLICY_PACKAGE_MANAGED",
+		3: "UPDATE_POLICY_STORE_MANAGED",
+	}
+	UpdatePolicy_value = map[string]int32{
+		"UPDATE_POLICY_UNSPECIFIED":     0,
+		"UPDATE_POLICY_SELF_MANAGED":    1,
+		"UPDATE_POLICY_PACKAGE_MANAGED": 2,
+		"UPDATE_POLICY_STORE_MANAGED":   3,
+	}
+)
+
+func (x UpdatePolicy) Enum() *UpdatePolicy {
+	p := new(UpdatePolicy)
+	*p = x
+	return p
+}
+
+func (x UpdatePolicy) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UpdatePolicy) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchd_v1_host_proto_enumTypes[1].Descriptor()
+}
+
+func (UpdatePolicy) Type() protoreflect.EnumType {
+	return &file_orchd_v1_host_proto_enumTypes[1]
+}
+
+func (x UpdatePolicy) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UpdatePolicy.Descriptor instead.
+func (UpdatePolicy) EnumDescriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{1}
+}
+
+type UpdateState int32
+
+const (
+	UpdateState_UPDATE_STATE_UNSPECIFIED              UpdateState = 0
+	UpdateState_UPDATE_STATE_IDLE                     UpdateState = 1
+	UpdateState_UPDATE_STATE_CHECKING                 UpdateState = 2
+	UpdateState_UPDATE_STATE_AVAILABLE                UpdateState = 3
+	UpdateState_UPDATE_STATE_DOWNLOADING              UpdateState = 4
+	UpdateState_UPDATE_STATE_VERIFYING                UpdateState = 5
+	UpdateState_UPDATE_STATE_PREFLIGHT_RUNNING        UpdateState = 6
+	UpdateState_UPDATE_STATE_READY_TO_APPLY           UpdateState = 7
+	UpdateState_UPDATE_STATE_REEXECING                UpdateState = 8
+	UpdateState_UPDATE_STATE_FAILED_PRE_EXEC          UpdateState = 9
+	UpdateState_UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN UpdateState = 10
+)
+
+// Enum value maps for UpdateState.
+var (
+	UpdateState_name = map[int32]string{
+		0:  "UPDATE_STATE_UNSPECIFIED",
+		1:  "UPDATE_STATE_IDLE",
+		2:  "UPDATE_STATE_CHECKING",
+		3:  "UPDATE_STATE_AVAILABLE",
+		4:  "UPDATE_STATE_DOWNLOADING",
+		5:  "UPDATE_STATE_VERIFYING",
+		6:  "UPDATE_STATE_PREFLIGHT_RUNNING",
+		7:  "UPDATE_STATE_READY_TO_APPLY",
+		8:  "UPDATE_STATE_REEXECING",
+		9:  "UPDATE_STATE_FAILED_PRE_EXEC",
+		10: "UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN",
+	}
+	UpdateState_value = map[string]int32{
+		"UPDATE_STATE_UNSPECIFIED":              0,
+		"UPDATE_STATE_IDLE":                     1,
+		"UPDATE_STATE_CHECKING":                 2,
+		"UPDATE_STATE_AVAILABLE":                3,
+		"UPDATE_STATE_DOWNLOADING":              4,
+		"UPDATE_STATE_VERIFYING":                5,
+		"UPDATE_STATE_PREFLIGHT_RUNNING":        6,
+		"UPDATE_STATE_READY_TO_APPLY":           7,
+		"UPDATE_STATE_REEXECING":                8,
+		"UPDATE_STATE_FAILED_PRE_EXEC":          9,
+		"UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN": 10,
+	}
+)
+
+func (x UpdateState) Enum() *UpdateState {
+	p := new(UpdateState)
+	*p = x
+	return p
+}
+
+func (x UpdateState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UpdateState) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchd_v1_host_proto_enumTypes[2].Descriptor()
+}
+
+func (UpdateState) Type() protoreflect.EnumType {
+	return &file_orchd_v1_host_proto_enumTypes[2]
+}
+
+func (x UpdateState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UpdateState.Descriptor instead.
+func (UpdateState) EnumDescriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{2}
+}
+
 type BackendStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BackendKey    string                 `protobuf:"bytes,1,opt,name=backend_key,json=backendKey,proto3" json:"backend_key,omitempty"`
@@ -254,6 +455,446 @@ func (x *GetHostStatusResponse) GetHostStatus() *HostStatus {
 	return nil
 }
 
+type AvailableUpdate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	NotesUrl      string                 `protobuf:"bytes,2,opt,name=notes_url,json=notesUrl,proto3" json:"notes_url,omitempty"`
+	PublishedAt   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvailableUpdate) Reset() {
+	*x = AvailableUpdate{}
+	mi := &file_orchd_v1_host_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvailableUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvailableUpdate) ProtoMessage() {}
+
+func (x *AvailableUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvailableUpdate.ProtoReflect.Descriptor instead.
+func (*AvailableUpdate) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *AvailableUpdate) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *AvailableUpdate) GetNotesUrl() string {
+	if x != nil {
+		return x.NotesUrl
+	}
+	return ""
+}
+
+func (x *AvailableUpdate) GetPublishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PublishedAt
+	}
+	return nil
+}
+
+type UpdateStatus struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	CurrentVersion     string                 `protobuf:"bytes,1,opt,name=current_version,json=currentVersion,proto3" json:"current_version,omitempty"`
+	CurrentCommit      string                 `protobuf:"bytes,2,opt,name=current_commit,json=currentCommit,proto3" json:"current_commit,omitempty"`
+	Channel            string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`
+	InstallSource      InstallSource          `protobuf:"varint,4,opt,name=install_source,json=installSource,proto3,enum=orchd.v1.InstallSource" json:"install_source,omitempty"`
+	UpdatePolicy       UpdatePolicy           `protobuf:"varint,5,opt,name=update_policy,json=updatePolicy,proto3,enum=orchd.v1.UpdatePolicy" json:"update_policy,omitempty"`
+	State              UpdateState            `protobuf:"varint,6,opt,name=state,proto3,enum=orchd.v1.UpdateState" json:"state,omitempty"`
+	UpdateAvailable    bool                   `protobuf:"varint,7,opt,name=update_available,json=updateAvailable,proto3" json:"update_available,omitempty"`
+	AvailableUpdate    *AvailableUpdate       `protobuf:"bytes,8,opt,name=available_update,json=availableUpdate,proto3" json:"available_update,omitempty"`
+	TargetVersion      string                 `protobuf:"bytes,9,opt,name=target_version,json=targetVersion,proto3" json:"target_version,omitempty"`
+	UpgradeCommandHint string                 `protobuf:"bytes,10,opt,name=upgrade_command_hint,json=upgradeCommandHint,proto3" json:"upgrade_command_hint,omitempty"`
+	FailureReason      string                 `protobuf:"bytes,11,opt,name=failure_reason,json=failureReason,proto3" json:"failure_reason,omitempty"`
+	LastCheckedAt      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=last_checked_at,json=lastCheckedAt,proto3" json:"last_checked_at,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *UpdateStatus) Reset() {
+	*x = UpdateStatus{}
+	mi := &file_orchd_v1_host_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateStatus) ProtoMessage() {}
+
+func (x *UpdateStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateStatus.ProtoReflect.Descriptor instead.
+func (*UpdateStatus) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdateStatus) GetCurrentVersion() string {
+	if x != nil {
+		return x.CurrentVersion
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetCurrentCommit() string {
+	if x != nil {
+		return x.CurrentCommit
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetChannel() string {
+	if x != nil {
+		return x.Channel
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetInstallSource() InstallSource {
+	if x != nil {
+		return x.InstallSource
+	}
+	return InstallSource_INSTALL_SOURCE_UNSPECIFIED
+}
+
+func (x *UpdateStatus) GetUpdatePolicy() UpdatePolicy {
+	if x != nil {
+		return x.UpdatePolicy
+	}
+	return UpdatePolicy_UPDATE_POLICY_UNSPECIFIED
+}
+
+func (x *UpdateStatus) GetState() UpdateState {
+	if x != nil {
+		return x.State
+	}
+	return UpdateState_UPDATE_STATE_UNSPECIFIED
+}
+
+func (x *UpdateStatus) GetUpdateAvailable() bool {
+	if x != nil {
+		return x.UpdateAvailable
+	}
+	return false
+}
+
+func (x *UpdateStatus) GetAvailableUpdate() *AvailableUpdate {
+	if x != nil {
+		return x.AvailableUpdate
+	}
+	return nil
+}
+
+func (x *UpdateStatus) GetTargetVersion() string {
+	if x != nil {
+		return x.TargetVersion
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetUpgradeCommandHint() string {
+	if x != nil {
+		return x.UpgradeCommandHint
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetFailureReason() string {
+	if x != nil {
+		return x.FailureReason
+	}
+	return ""
+}
+
+func (x *UpdateStatus) GetLastCheckedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastCheckedAt
+	}
+	return nil
+}
+
+type GetUpdateStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUpdateStatusRequest) Reset() {
+	*x = GetUpdateStatusRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUpdateStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUpdateStatusRequest) ProtoMessage() {}
+
+func (x *GetUpdateStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUpdateStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetUpdateStatusRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{6}
+}
+
+type GetUpdateStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UpdateStatus  *UpdateStatus          `protobuf:"bytes,1,opt,name=update_status,json=updateStatus,proto3" json:"update_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUpdateStatusResponse) Reset() {
+	*x = GetUpdateStatusResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUpdateStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUpdateStatusResponse) ProtoMessage() {}
+
+func (x *GetUpdateStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUpdateStatusResponse.ProtoReflect.Descriptor instead.
+func (*GetUpdateStatusResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetUpdateStatusResponse) GetUpdateStatus() *UpdateStatus {
+	if x != nil {
+		return x.UpdateStatus
+	}
+	return nil
+}
+
+type CheckForUpdateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Force         bool                   `protobuf:"varint,1,opt,name=force,proto3" json:"force,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckForUpdateRequest) Reset() {
+	*x = CheckForUpdateRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckForUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckForUpdateRequest) ProtoMessage() {}
+
+func (x *CheckForUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckForUpdateRequest.ProtoReflect.Descriptor instead.
+func (*CheckForUpdateRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CheckForUpdateRequest) GetForce() bool {
+	if x != nil {
+		return x.Force
+	}
+	return false
+}
+
+type CheckForUpdateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UpdateStatus  *UpdateStatus          `protobuf:"bytes,1,opt,name=update_status,json=updateStatus,proto3" json:"update_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckForUpdateResponse) Reset() {
+	*x = CheckForUpdateResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckForUpdateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckForUpdateResponse) ProtoMessage() {}
+
+func (x *CheckForUpdateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckForUpdateResponse.ProtoReflect.Descriptor instead.
+func (*CheckForUpdateResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CheckForUpdateResponse) GetUpdateStatus() *UpdateStatus {
+	if x != nil {
+		return x.UpdateStatus
+	}
+	return nil
+}
+
+type ApplyUpdateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyUpdateRequest) Reset() {
+	*x = ApplyUpdateRequest{}
+	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyUpdateRequest) ProtoMessage() {}
+
+func (x *ApplyUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyUpdateRequest.ProtoReflect.Descriptor instead.
+func (*ApplyUpdateRequest) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{10}
+}
+
+type ApplyUpdateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UpdateStatus  *UpdateStatus          `protobuf:"bytes,1,opt,name=update_status,json=updateStatus,proto3" json:"update_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyUpdateResponse) Reset() {
+	*x = ApplyUpdateResponse{}
+	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyUpdateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyUpdateResponse) ProtoMessage() {}
+
+func (x *ApplyUpdateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyUpdateResponse.ProtoReflect.Descriptor instead.
+func (*ApplyUpdateResponse) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ApplyUpdateResponse) GetUpdateStatus() *UpdateStatus {
+	if x != nil {
+		return x.UpdateStatus
+	}
+	return nil
+}
+
 type ListBackendsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -262,7 +903,7 @@ type ListBackendsRequest struct {
 
 func (x *ListBackendsRequest) Reset() {
 	*x = ListBackendsRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[4]
+	mi := &file_orchd_v1_host_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -274,7 +915,7 @@ func (x *ListBackendsRequest) String() string {
 func (*ListBackendsRequest) ProtoMessage() {}
 
 func (x *ListBackendsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[4]
+	mi := &file_orchd_v1_host_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -287,7 +928,7 @@ func (x *ListBackendsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBackendsRequest.ProtoReflect.Descriptor instead.
 func (*ListBackendsRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{4}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{12}
 }
 
 type ListBackendsResponse struct {
@@ -299,7 +940,7 @@ type ListBackendsResponse struct {
 
 func (x *ListBackendsResponse) Reset() {
 	*x = ListBackendsResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[5]
+	mi := &file_orchd_v1_host_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -311,7 +952,7 @@ func (x *ListBackendsResponse) String() string {
 func (*ListBackendsResponse) ProtoMessage() {}
 
 func (x *ListBackendsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[5]
+	mi := &file_orchd_v1_host_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -324,7 +965,7 @@ func (x *ListBackendsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListBackendsResponse.ProtoReflect.Descriptor instead.
 func (*ListBackendsResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{5}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListBackendsResponse) GetBackends() []*BackendStatus {
@@ -346,7 +987,7 @@ type SkillSummary struct {
 
 func (x *SkillSummary) Reset() {
 	*x = SkillSummary{}
-	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	mi := &file_orchd_v1_host_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -358,7 +999,7 @@ func (x *SkillSummary) String() string {
 func (*SkillSummary) ProtoMessage() {}
 
 func (x *SkillSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[6]
+	mi := &file_orchd_v1_host_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,7 +1012,7 @@ func (x *SkillSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SkillSummary.ProtoReflect.Descriptor instead.
 func (*SkillSummary) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{6}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SkillSummary) GetName() string {
@@ -410,7 +1051,7 @@ type ListSkillsRequest struct {
 
 func (x *ListSkillsRequest) Reset() {
 	*x = ListSkillsRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	mi := &file_orchd_v1_host_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +1063,7 @@ func (x *ListSkillsRequest) String() string {
 func (*ListSkillsRequest) ProtoMessage() {}
 
 func (x *ListSkillsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[7]
+	mi := &file_orchd_v1_host_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -435,7 +1076,7 @@ func (x *ListSkillsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSkillsRequest.ProtoReflect.Descriptor instead.
 func (*ListSkillsRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{7}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{15}
 }
 
 type ListSkillsResponse struct {
@@ -447,7 +1088,7 @@ type ListSkillsResponse struct {
 
 func (x *ListSkillsResponse) Reset() {
 	*x = ListSkillsResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	mi := &file_orchd_v1_host_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -459,7 +1100,7 @@ func (x *ListSkillsResponse) String() string {
 func (*ListSkillsResponse) ProtoMessage() {}
 
 func (x *ListSkillsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[8]
+	mi := &file_orchd_v1_host_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -472,7 +1113,7 @@ func (x *ListSkillsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSkillsResponse.ProtoReflect.Descriptor instead.
 func (*ListSkillsResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{8}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListSkillsResponse) GetSkills() []*SkillSummary {
@@ -493,7 +1134,7 @@ type MCPServerSummary struct {
 
 func (x *MCPServerSummary) Reset() {
 	*x = MCPServerSummary{}
-	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	mi := &file_orchd_v1_host_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -505,7 +1146,7 @@ func (x *MCPServerSummary) String() string {
 func (*MCPServerSummary) ProtoMessage() {}
 
 func (x *MCPServerSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[9]
+	mi := &file_orchd_v1_host_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -518,7 +1159,7 @@ func (x *MCPServerSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MCPServerSummary.ProtoReflect.Descriptor instead.
 func (*MCPServerSummary) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{9}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MCPServerSummary) GetName() string {
@@ -550,7 +1191,7 @@ type ListMCPServersRequest struct {
 
 func (x *ListMCPServersRequest) Reset() {
 	*x = ListMCPServersRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	mi := &file_orchd_v1_host_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -562,7 +1203,7 @@ func (x *ListMCPServersRequest) String() string {
 func (*ListMCPServersRequest) ProtoMessage() {}
 
 func (x *ListMCPServersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[10]
+	mi := &file_orchd_v1_host_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -575,7 +1216,7 @@ func (x *ListMCPServersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMCPServersRequest.ProtoReflect.Descriptor instead.
 func (*ListMCPServersRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{10}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{18}
 }
 
 type ListMCPServersResponse struct {
@@ -587,7 +1228,7 @@ type ListMCPServersResponse struct {
 
 func (x *ListMCPServersResponse) Reset() {
 	*x = ListMCPServersResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	mi := &file_orchd_v1_host_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -599,7 +1240,7 @@ func (x *ListMCPServersResponse) String() string {
 func (*ListMCPServersResponse) ProtoMessage() {}
 
 func (x *ListMCPServersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[11]
+	mi := &file_orchd_v1_host_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -612,7 +1253,7 @@ func (x *ListMCPServersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMCPServersResponse.ProtoReflect.Descriptor instead.
 func (*ListMCPServersResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{11}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListMCPServersResponse) GetServers() []*MCPServerSummary {
@@ -633,7 +1274,7 @@ type DirectoryRoot struct {
 
 func (x *DirectoryRoot) Reset() {
 	*x = DirectoryRoot{}
-	mi := &file_orchd_v1_host_proto_msgTypes[12]
+	mi := &file_orchd_v1_host_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +1286,7 @@ func (x *DirectoryRoot) String() string {
 func (*DirectoryRoot) ProtoMessage() {}
 
 func (x *DirectoryRoot) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[12]
+	mi := &file_orchd_v1_host_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -658,7 +1299,7 @@ func (x *DirectoryRoot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryRoot.ProtoReflect.Descriptor instead.
 func (*DirectoryRoot) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{12}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DirectoryRoot) GetLabel() string {
@@ -696,7 +1337,7 @@ type DirectoryEntry struct {
 
 func (x *DirectoryEntry) Reset() {
 	*x = DirectoryEntry{}
-	mi := &file_orchd_v1_host_proto_msgTypes[13]
+	mi := &file_orchd_v1_host_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -708,7 +1349,7 @@ func (x *DirectoryEntry) String() string {
 func (*DirectoryEntry) ProtoMessage() {}
 
 func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[13]
+	mi := &file_orchd_v1_host_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -721,7 +1362,7 @@ func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryEntry.ProtoReflect.Descriptor instead.
 func (*DirectoryEntry) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{13}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *DirectoryEntry) GetName() string {
@@ -777,7 +1418,7 @@ type DirectoryListing struct {
 
 func (x *DirectoryListing) Reset() {
 	*x = DirectoryListing{}
-	mi := &file_orchd_v1_host_proto_msgTypes[14]
+	mi := &file_orchd_v1_host_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -789,7 +1430,7 @@ func (x *DirectoryListing) String() string {
 func (*DirectoryListing) ProtoMessage() {}
 
 func (x *DirectoryListing) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[14]
+	mi := &file_orchd_v1_host_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -802,7 +1443,7 @@ func (x *DirectoryListing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryListing.ProtoReflect.Descriptor instead.
 func (*DirectoryListing) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{14}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DirectoryListing) GetCurrentPath() string {
@@ -843,7 +1484,7 @@ type PathMetadata struct {
 
 func (x *PathMetadata) Reset() {
 	*x = PathMetadata{}
-	mi := &file_orchd_v1_host_proto_msgTypes[15]
+	mi := &file_orchd_v1_host_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -855,7 +1496,7 @@ func (x *PathMetadata) String() string {
 func (*PathMetadata) ProtoMessage() {}
 
 func (x *PathMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[15]
+	mi := &file_orchd_v1_host_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -868,7 +1509,7 @@ func (x *PathMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PathMetadata.ProtoReflect.Descriptor instead.
 func (*PathMetadata) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{15}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *PathMetadata) GetPath() string {
@@ -942,7 +1583,7 @@ type ListDirectoryRootsRequest struct {
 
 func (x *ListDirectoryRootsRequest) Reset() {
 	*x = ListDirectoryRootsRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[16]
+	mi := &file_orchd_v1_host_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -954,7 +1595,7 @@ func (x *ListDirectoryRootsRequest) String() string {
 func (*ListDirectoryRootsRequest) ProtoMessage() {}
 
 func (x *ListDirectoryRootsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[16]
+	mi := &file_orchd_v1_host_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -967,7 +1608,7 @@ func (x *ListDirectoryRootsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRootsRequest.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRootsRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{16}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{24}
 }
 
 type ListDirectoryRootsResponse struct {
@@ -979,7 +1620,7 @@ type ListDirectoryRootsResponse struct {
 
 func (x *ListDirectoryRootsResponse) Reset() {
 	*x = ListDirectoryRootsResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[17]
+	mi := &file_orchd_v1_host_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -991,7 +1632,7 @@ func (x *ListDirectoryRootsResponse) String() string {
 func (*ListDirectoryRootsResponse) ProtoMessage() {}
 
 func (x *ListDirectoryRootsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[17]
+	mi := &file_orchd_v1_host_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1004,7 +1645,7 @@ func (x *ListDirectoryRootsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRootsResponse.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRootsResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{17}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListDirectoryRootsResponse) GetRoots() []*DirectoryRoot {
@@ -1023,7 +1664,7 @@ type ListDirectoryRequest struct {
 
 func (x *ListDirectoryRequest) Reset() {
 	*x = ListDirectoryRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[18]
+	mi := &file_orchd_v1_host_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1035,7 +1676,7 @@ func (x *ListDirectoryRequest) String() string {
 func (*ListDirectoryRequest) ProtoMessage() {}
 
 func (x *ListDirectoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[18]
+	mi := &file_orchd_v1_host_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1048,7 +1689,7 @@ func (x *ListDirectoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRequest.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{18}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListDirectoryRequest) GetPath() string {
@@ -1067,7 +1708,7 @@ type ListDirectoryResponse struct {
 
 func (x *ListDirectoryResponse) Reset() {
 	*x = ListDirectoryResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[19]
+	mi := &file_orchd_v1_host_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1079,7 +1720,7 @@ func (x *ListDirectoryResponse) String() string {
 func (*ListDirectoryResponse) ProtoMessage() {}
 
 func (x *ListDirectoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[19]
+	mi := &file_orchd_v1_host_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1092,7 +1733,7 @@ func (x *ListDirectoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryResponse.ProtoReflect.Descriptor instead.
 func (*ListDirectoryResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{19}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListDirectoryResponse) GetListing() *DirectoryListing {
@@ -1111,7 +1752,7 @@ type GetPathMetadataRequest struct {
 
 func (x *GetPathMetadataRequest) Reset() {
 	*x = GetPathMetadataRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[20]
+	mi := &file_orchd_v1_host_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1123,7 +1764,7 @@ func (x *GetPathMetadataRequest) String() string {
 func (*GetPathMetadataRequest) ProtoMessage() {}
 
 func (x *GetPathMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[20]
+	mi := &file_orchd_v1_host_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1777,7 @@ func (x *GetPathMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPathMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetPathMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{20}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetPathMetadataRequest) GetPath() string {
@@ -1155,7 +1796,7 @@ type GetPathMetadataResponse struct {
 
 func (x *GetPathMetadataResponse) Reset() {
 	*x = GetPathMetadataResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[21]
+	mi := &file_orchd_v1_host_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1167,7 +1808,7 @@ func (x *GetPathMetadataResponse) String() string {
 func (*GetPathMetadataResponse) ProtoMessage() {}
 
 func (x *GetPathMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[21]
+	mi := &file_orchd_v1_host_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1180,7 +1821,7 @@ func (x *GetPathMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPathMetadataResponse.ProtoReflect.Descriptor instead.
 func (*GetPathMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{21}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetPathMetadataResponse) GetMetadata() *PathMetadata {
@@ -1199,7 +1840,7 @@ type ListRecentReposRequest struct {
 
 func (x *ListRecentReposRequest) Reset() {
 	*x = ListRecentReposRequest{}
-	mi := &file_orchd_v1_host_proto_msgTypes[22]
+	mi := &file_orchd_v1_host_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1211,7 +1852,7 @@ func (x *ListRecentReposRequest) String() string {
 func (*ListRecentReposRequest) ProtoMessage() {}
 
 func (x *ListRecentReposRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[22]
+	mi := &file_orchd_v1_host_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1224,7 +1865,7 @@ func (x *ListRecentReposRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRecentReposRequest.ProtoReflect.Descriptor instead.
 func (*ListRecentReposRequest) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{22}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListRecentReposRequest) GetLimit() uint32 {
@@ -1243,7 +1884,7 @@ type ListRecentReposResponse struct {
 
 func (x *ListRecentReposResponse) Reset() {
 	*x = ListRecentReposResponse{}
-	mi := &file_orchd_v1_host_proto_msgTypes[23]
+	mi := &file_orchd_v1_host_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1255,7 +1896,7 @@ func (x *ListRecentReposResponse) String() string {
 func (*ListRecentReposResponse) ProtoMessage() {}
 
 func (x *ListRecentReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_host_proto_msgTypes[23]
+	mi := &file_orchd_v1_host_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1268,7 +1909,7 @@ func (x *ListRecentReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRecentReposResponse.ProtoReflect.Descriptor instead.
 func (*ListRecentReposResponse) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_host_proto_rawDescGZIP(), []int{23}
+	return file_orchd_v1_host_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListRecentReposResponse) GetRepos() []*PathMetadata {
@@ -1301,7 +1942,35 @@ const file_orchd_v1_host_proto_rawDesc = "" +
 	"\x14GetHostStatusRequest\"N\n" +
 	"\x15GetHostStatusResponse\x125\n" +
 	"\vhost_status\x18\x01 \x01(\v2\x14.orchd.v1.HostStatusR\n" +
-	"hostStatus\"\x15\n" +
+	"hostStatus\"\x87\x01\n" +
+	"\x0fAvailableUpdate\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1b\n" +
+	"\tnotes_url\x18\x02 \x01(\tR\bnotesUrl\x12=\n" +
+	"\fpublished_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vpublishedAt\"\xd7\x04\n" +
+	"\fUpdateStatus\x12'\n" +
+	"\x0fcurrent_version\x18\x01 \x01(\tR\x0ecurrentVersion\x12%\n" +
+	"\x0ecurrent_commit\x18\x02 \x01(\tR\rcurrentCommit\x12\x18\n" +
+	"\achannel\x18\x03 \x01(\tR\achannel\x12>\n" +
+	"\x0einstall_source\x18\x04 \x01(\x0e2\x17.orchd.v1.InstallSourceR\rinstallSource\x12;\n" +
+	"\rupdate_policy\x18\x05 \x01(\x0e2\x16.orchd.v1.UpdatePolicyR\fupdatePolicy\x12+\n" +
+	"\x05state\x18\x06 \x01(\x0e2\x15.orchd.v1.UpdateStateR\x05state\x12)\n" +
+	"\x10update_available\x18\a \x01(\bR\x0fupdateAvailable\x12D\n" +
+	"\x10available_update\x18\b \x01(\v2\x19.orchd.v1.AvailableUpdateR\x0favailableUpdate\x12%\n" +
+	"\x0etarget_version\x18\t \x01(\tR\rtargetVersion\x120\n" +
+	"\x14upgrade_command_hint\x18\n" +
+	" \x01(\tR\x12upgradeCommandHint\x12%\n" +
+	"\x0efailure_reason\x18\v \x01(\tR\rfailureReason\x12B\n" +
+	"\x0flast_checked_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\rlastCheckedAt\"\x18\n" +
+	"\x16GetUpdateStatusRequest\"V\n" +
+	"\x17GetUpdateStatusResponse\x12;\n" +
+	"\rupdate_status\x18\x01 \x01(\v2\x16.orchd.v1.UpdateStatusR\fupdateStatus\"-\n" +
+	"\x15CheckForUpdateRequest\x12\x14\n" +
+	"\x05force\x18\x01 \x01(\bR\x05force\"U\n" +
+	"\x16CheckForUpdateResponse\x12;\n" +
+	"\rupdate_status\x18\x01 \x01(\v2\x16.orchd.v1.UpdateStatusR\fupdateStatus\"\x14\n" +
+	"\x12ApplyUpdateRequest\"R\n" +
+	"\x13ApplyUpdateResponse\x12;\n" +
+	"\rupdate_status\x18\x01 \x01(\v2\x16.orchd.v1.UpdateStatusR\fupdateStatus\"\x15\n" +
 	"\x13ListBackendsRequest\"K\n" +
 	"\x14ListBackendsResponse\x123\n" +
 	"\bbackends\x18\x01 \x03(\v2\x17.orchd.v1.BackendStatusR\bbackends\"z\n" +
@@ -1363,7 +2032,39 @@ const file_orchd_v1_host_proto_rawDesc = "" +
 	"\x16ListRecentReposRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\rR\x05limit\"G\n" +
 	"\x17ListRecentReposResponse\x12,\n" +
-	"\x05repos\x18\x01 \x03(\v2\x16.orchd.v1.PathMetadataR\x05repos2\xaf\x05\n" +
+	"\x05repos\x18\x01 \x03(\v2\x16.orchd.v1.PathMetadataR\x05repos*\xe2\x02\n" +
+	"\rInstallSource\x12\x1e\n" +
+	"\x1aINSTALL_SOURCE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15INSTALL_SOURCE_DIRECT\x10\x01\x12\x1a\n" +
+	"\x16INSTALL_SOURCE_UNKNOWN\x10\x02\x12#\n" +
+	"\x1fINSTALL_SOURCE_HOMEBREW_FORMULA\x10\x03\x12 \n" +
+	"\x1cINSTALL_SOURCE_HOMEBREW_CASK\x10\x04\x12\x16\n" +
+	"\x12INSTALL_SOURCE_APT\x10\x05\x12\x16\n" +
+	"\x12INSTALL_SOURCE_DNF\x10\x06\x12\x19\n" +
+	"\x15INSTALL_SOURCE_WINGET\x10\a\x12\x16\n" +
+	"\x12INSTALL_SOURCE_NIX\x10\b\x12\x1b\n" +
+	"\x17INSTALL_SOURCE_MACPORTS\x10\t\x12\x17\n" +
+	"\x13INSTALL_SOURCE_SNAP\x10\n" +
+	"\x12\x1a\n" +
+	"\x16INSTALL_SOURCE_FLATPAK\x10\v*\x91\x01\n" +
+	"\fUpdatePolicy\x12\x1d\n" +
+	"\x19UPDATE_POLICY_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aUPDATE_POLICY_SELF_MANAGED\x10\x01\x12!\n" +
+	"\x1dUPDATE_POLICY_PACKAGE_MANAGED\x10\x02\x12\x1f\n" +
+	"\x1bUPDATE_POLICY_STORE_MANAGED\x10\x03*\xe1\x02\n" +
+	"\vUpdateState\x12\x1c\n" +
+	"\x18UPDATE_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11UPDATE_STATE_IDLE\x10\x01\x12\x19\n" +
+	"\x15UPDATE_STATE_CHECKING\x10\x02\x12\x1a\n" +
+	"\x16UPDATE_STATE_AVAILABLE\x10\x03\x12\x1c\n" +
+	"\x18UPDATE_STATE_DOWNLOADING\x10\x04\x12\x1a\n" +
+	"\x16UPDATE_STATE_VERIFYING\x10\x05\x12\"\n" +
+	"\x1eUPDATE_STATE_PREFLIGHT_RUNNING\x10\x06\x12\x1f\n" +
+	"\x1bUPDATE_STATE_READY_TO_APPLY\x10\a\x12\x1a\n" +
+	"\x16UPDATE_STATE_REEXECING\x10\b\x12 \n" +
+	"\x1cUPDATE_STATE_FAILED_PRE_EXEC\x10\t\x12)\n" +
+	"%UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN\x10\n" +
+	"2\xa8\a\n" +
 	"\vHostService\x12P\n" +
 	"\rGetHostStatus\x12\x1e.orchd.v1.GetHostStatusRequest\x1a\x1f.orchd.v1.GetHostStatusResponse\x12M\n" +
 	"\fListBackends\x12\x1d.orchd.v1.ListBackendsRequest\x1a\x1e.orchd.v1.ListBackendsResponse\x12G\n" +
@@ -1373,7 +2074,10 @@ const file_orchd_v1_host_proto_rawDesc = "" +
 	"\x12ListDirectoryRoots\x12#.orchd.v1.ListDirectoryRootsRequest\x1a$.orchd.v1.ListDirectoryRootsResponse\x12P\n" +
 	"\rListDirectory\x12\x1e.orchd.v1.ListDirectoryRequest\x1a\x1f.orchd.v1.ListDirectoryResponse\x12V\n" +
 	"\x0fGetPathMetadata\x12 .orchd.v1.GetPathMetadataRequest\x1a!.orchd.v1.GetPathMetadataResponse\x12V\n" +
-	"\x0fListRecentRepos\x12 .orchd.v1.ListRecentReposRequest\x1a!.orchd.v1.ListRecentReposResponseB\x85\x01\n" +
+	"\x0fListRecentRepos\x12 .orchd.v1.ListRecentReposRequest\x1a!.orchd.v1.ListRecentReposResponse\x12V\n" +
+	"\x0fGetUpdateStatus\x12 .orchd.v1.GetUpdateStatusRequest\x1a!.orchd.v1.GetUpdateStatusResponse\x12S\n" +
+	"\x0eCheckForUpdate\x12\x1f.orchd.v1.CheckForUpdateRequest\x1a .orchd.v1.CheckForUpdateResponse\x12J\n" +
+	"\vApplyUpdate\x12\x1c.orchd.v1.ApplyUpdateRequest\x1a\x1d.orchd.v1.ApplyUpdateResponseB\x85\x01\n" +
 	"\fcom.orchd.v1B\tHostProtoP\x01Z)orchd/internal/gen/proto/orchd/v1;orchdv1\xa2\x02\x03OXX\xaa\x02\bOrchd.V1\xca\x02\bOrchd\\V1\xe2\x02\x14Orchd\\V1\\GPBMetadata\xea\x02\tOrchd::V1b\x06proto3"
 
 var (
@@ -1388,70 +2092,97 @@ func file_orchd_v1_host_proto_rawDescGZIP() []byte {
 	return file_orchd_v1_host_proto_rawDescData
 }
 
-var file_orchd_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_orchd_v1_host_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_orchd_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_orchd_v1_host_proto_goTypes = []any{
-	(*BackendStatus)(nil),              // 0: orchd.v1.BackendStatus
-	(*HostStatus)(nil),                 // 1: orchd.v1.HostStatus
-	(*GetHostStatusRequest)(nil),       // 2: orchd.v1.GetHostStatusRequest
-	(*GetHostStatusResponse)(nil),      // 3: orchd.v1.GetHostStatusResponse
-	(*ListBackendsRequest)(nil),        // 4: orchd.v1.ListBackendsRequest
-	(*ListBackendsResponse)(nil),       // 5: orchd.v1.ListBackendsResponse
-	(*SkillSummary)(nil),               // 6: orchd.v1.SkillSummary
-	(*ListSkillsRequest)(nil),          // 7: orchd.v1.ListSkillsRequest
-	(*ListSkillsResponse)(nil),         // 8: orchd.v1.ListSkillsResponse
-	(*MCPServerSummary)(nil),           // 9: orchd.v1.MCPServerSummary
-	(*ListMCPServersRequest)(nil),      // 10: orchd.v1.ListMCPServersRequest
-	(*ListMCPServersResponse)(nil),     // 11: orchd.v1.ListMCPServersResponse
-	(*DirectoryRoot)(nil),              // 12: orchd.v1.DirectoryRoot
-	(*DirectoryEntry)(nil),             // 13: orchd.v1.DirectoryEntry
-	(*DirectoryListing)(nil),           // 14: orchd.v1.DirectoryListing
-	(*PathMetadata)(nil),               // 15: orchd.v1.PathMetadata
-	(*ListDirectoryRootsRequest)(nil),  // 16: orchd.v1.ListDirectoryRootsRequest
-	(*ListDirectoryRootsResponse)(nil), // 17: orchd.v1.ListDirectoryRootsResponse
-	(*ListDirectoryRequest)(nil),       // 18: orchd.v1.ListDirectoryRequest
-	(*ListDirectoryResponse)(nil),      // 19: orchd.v1.ListDirectoryResponse
-	(*GetPathMetadataRequest)(nil),     // 20: orchd.v1.GetPathMetadataRequest
-	(*GetPathMetadataResponse)(nil),    // 21: orchd.v1.GetPathMetadataResponse
-	(*ListRecentReposRequest)(nil),     // 22: orchd.v1.ListRecentReposRequest
-	(*ListRecentReposResponse)(nil),    // 23: orchd.v1.ListRecentReposResponse
-	(HostStatusKind)(0),                // 24: orchd.v1.HostStatusKind
-	(*timestamppb.Timestamp)(nil),      // 25: google.protobuf.Timestamp
+	(InstallSource)(0),                 // 0: orchd.v1.InstallSource
+	(UpdatePolicy)(0),                  // 1: orchd.v1.UpdatePolicy
+	(UpdateState)(0),                   // 2: orchd.v1.UpdateState
+	(*BackendStatus)(nil),              // 3: orchd.v1.BackendStatus
+	(*HostStatus)(nil),                 // 4: orchd.v1.HostStatus
+	(*GetHostStatusRequest)(nil),       // 5: orchd.v1.GetHostStatusRequest
+	(*GetHostStatusResponse)(nil),      // 6: orchd.v1.GetHostStatusResponse
+	(*AvailableUpdate)(nil),            // 7: orchd.v1.AvailableUpdate
+	(*UpdateStatus)(nil),               // 8: orchd.v1.UpdateStatus
+	(*GetUpdateStatusRequest)(nil),     // 9: orchd.v1.GetUpdateStatusRequest
+	(*GetUpdateStatusResponse)(nil),    // 10: orchd.v1.GetUpdateStatusResponse
+	(*CheckForUpdateRequest)(nil),      // 11: orchd.v1.CheckForUpdateRequest
+	(*CheckForUpdateResponse)(nil),     // 12: orchd.v1.CheckForUpdateResponse
+	(*ApplyUpdateRequest)(nil),         // 13: orchd.v1.ApplyUpdateRequest
+	(*ApplyUpdateResponse)(nil),        // 14: orchd.v1.ApplyUpdateResponse
+	(*ListBackendsRequest)(nil),        // 15: orchd.v1.ListBackendsRequest
+	(*ListBackendsResponse)(nil),       // 16: orchd.v1.ListBackendsResponse
+	(*SkillSummary)(nil),               // 17: orchd.v1.SkillSummary
+	(*ListSkillsRequest)(nil),          // 18: orchd.v1.ListSkillsRequest
+	(*ListSkillsResponse)(nil),         // 19: orchd.v1.ListSkillsResponse
+	(*MCPServerSummary)(nil),           // 20: orchd.v1.MCPServerSummary
+	(*ListMCPServersRequest)(nil),      // 21: orchd.v1.ListMCPServersRequest
+	(*ListMCPServersResponse)(nil),     // 22: orchd.v1.ListMCPServersResponse
+	(*DirectoryRoot)(nil),              // 23: orchd.v1.DirectoryRoot
+	(*DirectoryEntry)(nil),             // 24: orchd.v1.DirectoryEntry
+	(*DirectoryListing)(nil),           // 25: orchd.v1.DirectoryListing
+	(*PathMetadata)(nil),               // 26: orchd.v1.PathMetadata
+	(*ListDirectoryRootsRequest)(nil),  // 27: orchd.v1.ListDirectoryRootsRequest
+	(*ListDirectoryRootsResponse)(nil), // 28: orchd.v1.ListDirectoryRootsResponse
+	(*ListDirectoryRequest)(nil),       // 29: orchd.v1.ListDirectoryRequest
+	(*ListDirectoryResponse)(nil),      // 30: orchd.v1.ListDirectoryResponse
+	(*GetPathMetadataRequest)(nil),     // 31: orchd.v1.GetPathMetadataRequest
+	(*GetPathMetadataResponse)(nil),    // 32: orchd.v1.GetPathMetadataResponse
+	(*ListRecentReposRequest)(nil),     // 33: orchd.v1.ListRecentReposRequest
+	(*ListRecentReposResponse)(nil),    // 34: orchd.v1.ListRecentReposResponse
+	(HostStatusKind)(0),                // 35: orchd.v1.HostStatusKind
+	(*timestamppb.Timestamp)(nil),      // 36: google.protobuf.Timestamp
 }
 var file_orchd_v1_host_proto_depIdxs = []int32{
-	24, // 0: orchd.v1.HostStatus.status:type_name -> orchd.v1.HostStatusKind
-	0,  // 1: orchd.v1.HostStatus.backends:type_name -> orchd.v1.BackendStatus
-	25, // 2: orchd.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
-	1,  // 3: orchd.v1.GetHostStatusResponse.host_status:type_name -> orchd.v1.HostStatus
-	0,  // 4: orchd.v1.ListBackendsResponse.backends:type_name -> orchd.v1.BackendStatus
-	6,  // 5: orchd.v1.ListSkillsResponse.skills:type_name -> orchd.v1.SkillSummary
-	9,  // 6: orchd.v1.ListMCPServersResponse.servers:type_name -> orchd.v1.MCPServerSummary
-	13, // 7: orchd.v1.DirectoryListing.entries:type_name -> orchd.v1.DirectoryEntry
-	25, // 8: orchd.v1.PathMetadata.modified_at:type_name -> google.protobuf.Timestamp
-	12, // 9: orchd.v1.ListDirectoryRootsResponse.roots:type_name -> orchd.v1.DirectoryRoot
-	14, // 10: orchd.v1.ListDirectoryResponse.listing:type_name -> orchd.v1.DirectoryListing
-	15, // 11: orchd.v1.GetPathMetadataResponse.metadata:type_name -> orchd.v1.PathMetadata
-	15, // 12: orchd.v1.ListRecentReposResponse.repos:type_name -> orchd.v1.PathMetadata
-	2,  // 13: orchd.v1.HostService.GetHostStatus:input_type -> orchd.v1.GetHostStatusRequest
-	4,  // 14: orchd.v1.HostService.ListBackends:input_type -> orchd.v1.ListBackendsRequest
-	7,  // 15: orchd.v1.HostService.ListSkills:input_type -> orchd.v1.ListSkillsRequest
-	10, // 16: orchd.v1.HostService.ListMCPServers:input_type -> orchd.v1.ListMCPServersRequest
-	16, // 17: orchd.v1.HostService.ListDirectoryRoots:input_type -> orchd.v1.ListDirectoryRootsRequest
-	18, // 18: orchd.v1.HostService.ListDirectory:input_type -> orchd.v1.ListDirectoryRequest
-	20, // 19: orchd.v1.HostService.GetPathMetadata:input_type -> orchd.v1.GetPathMetadataRequest
-	22, // 20: orchd.v1.HostService.ListRecentRepos:input_type -> orchd.v1.ListRecentReposRequest
-	3,  // 21: orchd.v1.HostService.GetHostStatus:output_type -> orchd.v1.GetHostStatusResponse
-	5,  // 22: orchd.v1.HostService.ListBackends:output_type -> orchd.v1.ListBackendsResponse
-	8,  // 23: orchd.v1.HostService.ListSkills:output_type -> orchd.v1.ListSkillsResponse
-	11, // 24: orchd.v1.HostService.ListMCPServers:output_type -> orchd.v1.ListMCPServersResponse
-	17, // 25: orchd.v1.HostService.ListDirectoryRoots:output_type -> orchd.v1.ListDirectoryRootsResponse
-	19, // 26: orchd.v1.HostService.ListDirectory:output_type -> orchd.v1.ListDirectoryResponse
-	21, // 27: orchd.v1.HostService.GetPathMetadata:output_type -> orchd.v1.GetPathMetadataResponse
-	23, // 28: orchd.v1.HostService.ListRecentRepos:output_type -> orchd.v1.ListRecentReposResponse
-	21, // [21:29] is the sub-list for method output_type
-	13, // [13:21] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	35, // 0: orchd.v1.HostStatus.status:type_name -> orchd.v1.HostStatusKind
+	3,  // 1: orchd.v1.HostStatus.backends:type_name -> orchd.v1.BackendStatus
+	36, // 2: orchd.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
+	4,  // 3: orchd.v1.GetHostStatusResponse.host_status:type_name -> orchd.v1.HostStatus
+	36, // 4: orchd.v1.AvailableUpdate.published_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: orchd.v1.UpdateStatus.install_source:type_name -> orchd.v1.InstallSource
+	1,  // 6: orchd.v1.UpdateStatus.update_policy:type_name -> orchd.v1.UpdatePolicy
+	2,  // 7: orchd.v1.UpdateStatus.state:type_name -> orchd.v1.UpdateState
+	7,  // 8: orchd.v1.UpdateStatus.available_update:type_name -> orchd.v1.AvailableUpdate
+	36, // 9: orchd.v1.UpdateStatus.last_checked_at:type_name -> google.protobuf.Timestamp
+	8,  // 10: orchd.v1.GetUpdateStatusResponse.update_status:type_name -> orchd.v1.UpdateStatus
+	8,  // 11: orchd.v1.CheckForUpdateResponse.update_status:type_name -> orchd.v1.UpdateStatus
+	8,  // 12: orchd.v1.ApplyUpdateResponse.update_status:type_name -> orchd.v1.UpdateStatus
+	3,  // 13: orchd.v1.ListBackendsResponse.backends:type_name -> orchd.v1.BackendStatus
+	17, // 14: orchd.v1.ListSkillsResponse.skills:type_name -> orchd.v1.SkillSummary
+	20, // 15: orchd.v1.ListMCPServersResponse.servers:type_name -> orchd.v1.MCPServerSummary
+	24, // 16: orchd.v1.DirectoryListing.entries:type_name -> orchd.v1.DirectoryEntry
+	36, // 17: orchd.v1.PathMetadata.modified_at:type_name -> google.protobuf.Timestamp
+	23, // 18: orchd.v1.ListDirectoryRootsResponse.roots:type_name -> orchd.v1.DirectoryRoot
+	25, // 19: orchd.v1.ListDirectoryResponse.listing:type_name -> orchd.v1.DirectoryListing
+	26, // 20: orchd.v1.GetPathMetadataResponse.metadata:type_name -> orchd.v1.PathMetadata
+	26, // 21: orchd.v1.ListRecentReposResponse.repos:type_name -> orchd.v1.PathMetadata
+	5,  // 22: orchd.v1.HostService.GetHostStatus:input_type -> orchd.v1.GetHostStatusRequest
+	15, // 23: orchd.v1.HostService.ListBackends:input_type -> orchd.v1.ListBackendsRequest
+	18, // 24: orchd.v1.HostService.ListSkills:input_type -> orchd.v1.ListSkillsRequest
+	21, // 25: orchd.v1.HostService.ListMCPServers:input_type -> orchd.v1.ListMCPServersRequest
+	27, // 26: orchd.v1.HostService.ListDirectoryRoots:input_type -> orchd.v1.ListDirectoryRootsRequest
+	29, // 27: orchd.v1.HostService.ListDirectory:input_type -> orchd.v1.ListDirectoryRequest
+	31, // 28: orchd.v1.HostService.GetPathMetadata:input_type -> orchd.v1.GetPathMetadataRequest
+	33, // 29: orchd.v1.HostService.ListRecentRepos:input_type -> orchd.v1.ListRecentReposRequest
+	9,  // 30: orchd.v1.HostService.GetUpdateStatus:input_type -> orchd.v1.GetUpdateStatusRequest
+	11, // 31: orchd.v1.HostService.CheckForUpdate:input_type -> orchd.v1.CheckForUpdateRequest
+	13, // 32: orchd.v1.HostService.ApplyUpdate:input_type -> orchd.v1.ApplyUpdateRequest
+	6,  // 33: orchd.v1.HostService.GetHostStatus:output_type -> orchd.v1.GetHostStatusResponse
+	16, // 34: orchd.v1.HostService.ListBackends:output_type -> orchd.v1.ListBackendsResponse
+	19, // 35: orchd.v1.HostService.ListSkills:output_type -> orchd.v1.ListSkillsResponse
+	22, // 36: orchd.v1.HostService.ListMCPServers:output_type -> orchd.v1.ListMCPServersResponse
+	28, // 37: orchd.v1.HostService.ListDirectoryRoots:output_type -> orchd.v1.ListDirectoryRootsResponse
+	30, // 38: orchd.v1.HostService.ListDirectory:output_type -> orchd.v1.ListDirectoryResponse
+	32, // 39: orchd.v1.HostService.GetPathMetadata:output_type -> orchd.v1.GetPathMetadataResponse
+	34, // 40: orchd.v1.HostService.ListRecentRepos:output_type -> orchd.v1.ListRecentReposResponse
+	10, // 41: orchd.v1.HostService.GetUpdateStatus:output_type -> orchd.v1.GetUpdateStatusResponse
+	12, // 42: orchd.v1.HostService.CheckForUpdate:output_type -> orchd.v1.CheckForUpdateResponse
+	14, // 43: orchd.v1.HostService.ApplyUpdate:output_type -> orchd.v1.ApplyUpdateResponse
+	33, // [33:44] is the sub-list for method output_type
+	22, // [22:33] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_orchd_v1_host_proto_init() }
@@ -1465,13 +2196,14 @@ func file_orchd_v1_host_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchd_v1_host_proto_rawDesc), len(file_orchd_v1_host_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   24,
+			NumEnums:      3,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_orchd_v1_host_proto_goTypes,
 		DependencyIndexes: file_orchd_v1_host_proto_depIdxs,
+		EnumInfos:         file_orchd_v1_host_proto_enumTypes,
 		MessageInfos:      file_orchd_v1_host_proto_msgTypes,
 	}.Build()
 	File_orchd_v1_host_proto = out.File

@@ -1,18 +1,41 @@
-import { Fragment, useMemo, useRef, useState } from "react"
+import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import {
   ChevronDown,
+  Copy,
+  Folder,
   FolderOpen,
   FolderPlus,
   Grid2x2,
   LoaderCircle,
+  RefreshCw,
   Search,
   Settings,
   SquarePen,
+  Wrench,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
 import { RailRow } from "@/components/app/rail-row"
 import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  UpdatePolicy,
+  UpdateState,
+  type UpdateStatus,
+} from "@/gen/proto/orchd/v1/host_pb"
+import {
+  useApplyUpdate,
+  useHostUpdates,
+} from "@/features/host/use-host-updates"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
@@ -71,7 +94,7 @@ type SessionRailProps = {
 }
 
 export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
-  const { eventStreamState, openProjectPicker } = useWorkspaceShell()
+  const { eventStreamState, openProjectPicker, posture } = useWorkspaceShell()
   const navigate = useNavigate()
   const railScrollRef = useRef<HTMLDivElement | null>(null)
   const railListRef = useRef<HTMLUListElement | null>(null)
@@ -89,10 +112,25 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     isError,
     isLoading,
   } = useSessions(undefined, eventStreamState === "connected" ? 10_000 : 3_000)
+  const [closedProjectIds, setClosedProjectIds] = useState<
+    Record<string, boolean>
+  >({})
   const [collapsedProjectIds, setCollapsedProjectIds] = useState<
     Record<string, boolean>
   >({})
   const [projectsCollapsed, setProjectsCollapsed] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [reloadTargetVersion, setReloadTargetVersion] = useState<string | null>(
+    null
+  )
+  const applyUpdate = useApplyUpdate()
+  const { data: updateStatus } = useHostUpdates(
+    reloadTargetVersion
+      ? 1_000
+      : eventStreamState === "connected"
+        ? 30_000
+        : 10_000
+  )
 
   const groupedSessions = useMemo(() => {
     const sorted = [...(sessions ?? [])]
@@ -135,9 +173,49 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     return groups
   }, [sessions])
 
+  useEffect(() => {
+    if (!reloadTargetVersion || !updateStatus?.currentVersion) {
+      return
+    }
+    if (updateStatus.currentVersion !== reloadTargetVersion) {
+      return
+    }
+    setReloadTargetVersion(null)
+    window.location.reload()
+  }, [reloadTargetVersion, updateStatus?.currentVersion])
+
+  const updateControl = getUpdateControl(updateStatus, applyUpdate.isPending)
+
+  async function handleApplyUpdate() {
+    try {
+      const nextStatus = await applyUpdate.mutateAsync()
+      const targetVersion =
+        nextStatus?.targetVersion || nextStatus?.availableUpdate?.version || ""
+      if (targetVersion) {
+        setReloadTargetVersion(targetVersion)
+      }
+      toast.success("orchd is applying the update")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Unable to apply update"))
+    }
+  }
+
+  function handleCopyCommand(command: string) {
+    if (!command) {
+      return
+    }
+    navigator.clipboard.writeText(command).then(
+      () => toast.success("Upgrade command copied"),
+      () => {}
+    )
+  }
+
   return (
     <div
-      className="flex h-full flex-col bg-sidebar text-base text-foreground"
+      className={cn(
+        "flex h-full flex-col text-base text-foreground",
+        posture === "phone" ? "bg-background" : "bg-sidebar"
+      )}
       data-testid="session-rail"
     >
       <div className="relative min-h-0 flex-1">
@@ -153,11 +231,25 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           >
             <li>
               <RailRow
+                asDivInteractive
                 icon={<SquarePen className="size-3.5" />}
                 label="New chat"
-                onClick={onNavigate}
-                to="/"
+                onClick={() => {
+                  onNavigate?.()
+                  navigate("/?compose=1")
+                }}
                 className="text-muted-foreground hover:bg-accent hover:text-foreground"
+                right={
+                  updateControl.visible ? (
+                    <UpdateRailAction
+                      commandHint={updateStatus?.upgradeCommandHint ?? ""}
+                      onApply={handleApplyUpdate}
+                      onOpenDialog={() => setUpdateDialogOpen(true)}
+                      status={updateStatus}
+                    />
+                  ) : null
+                }
+                rightClassName="opacity-100"
               />
             </li>
             <li>
@@ -178,7 +270,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                 icon={<Grid2x2 className="size-3.5" />}
                 label="Skills & Apps"
                 onClick={onNavigate}
-                to="/settings/plugins"
+                to="/settings/plugins#skills"
                 className="text-muted-foreground hover:bg-accent hover:text-foreground"
               />
             </li>
@@ -213,7 +305,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                 asDivInteractive
                 reserveIconSpace={false}
                 labelFill={false}
-                labelClassName="select-none tracking-tight text-muted-foreground/80 uppercase"
+                labelClassName="select-none tracking-tight text-muted-foreground"
                 className="text-muted-foreground"
                 right={
                   <ChevronDown
@@ -258,91 +350,123 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
 
             {projectsCollapsed
               ? null
-              : groupedSessions.map((group) => (
-                  <Fragment key={group.projectId || group.projectName}>
-                    <li>
-                      <RailRow
-                        asDivInteractive
-                        icon={<FolderOpen className="size-3.5" />}
-                        label={group.projectName}
-                        title={group.projectRootPath || group.projectName}
-                        onClick={() =>
-                          setCollapsedProjectIds((current) => ({
-                            ...current,
-                            [group.projectId || group.projectName]:
-                              !current[group.projectId || group.projectName],
-                          }))
-                        }
-                        right={
-                          <button
-                            type="button"
-                            title={`New thread in ${group.projectName}`}
-                            className="flex size-5 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              onNavigate?.()
-                              navigate({
-                                pathname: "/",
-                                search: group.projectId
-                                  ? `?projectId=${encodeURIComponent(group.projectId)}`
-                                  : "",
-                              })
-                            }}
-                          >
-                            <SquarePen className="size-3" />
-                          </button>
-                        }
-                        rightClassName="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-                        labelClassName="truncate whitespace-nowrap tracking-tight text-foreground/80 uppercase"
-                        className="hover:bg-accent/60 hover:text-foreground"
-                        ariaExpanded={
-                          !collapsedProjectIds[
-                            group.projectId || group.projectName
-                          ]
-                        }
-                      />
-                    </li>
-                    {collapsedProjectIds[group.projectId || group.projectName]
-                      ? null
-                      : group.sessions.map((session) => {
-                          const updatedAt = timestampToDate(session.updatedAt)
-                          const status = formatSessionStatus(
-                            session.status
-                          ).toLowerCase()
+              : groupedSessions.map((group) => {
+                  const groupKey = group.projectId || group.projectName
+                  const folderClosed = closedProjectIds[groupKey] ?? false
+                  const sessionsCollapsed =
+                    collapsedProjectIds[groupKey] ?? false
+                  const visibleSessions = sessionsCollapsed
+                    ? group.sessions.slice(0, 5)
+                    : group.sessions
 
-                          return (
-                            <li key={session.id}>
-                              <RailRow
-                                icon={
-                                  status === "running" ? (
-                                    <LoaderCircle className="size-3.5 animate-spin text-muted-foreground" />
-                                  ) : (
-                                    <span
-                                      className={cn(
-                                        "size-1.5 rounded-full",
-                                        sessionDot(status)
-                                      )}
-                                    />
-                                  )
-                                }
-                                label={session.title || "Untitled thread"}
-                                onClick={onNavigate}
-                                to={`/sessions/${session.id}`}
-                                labelClassName="truncate"
-                                right={
-                                  <span className="text-muted-foreground">
-                                    {formatRelativeTime(updatedAt)}
-                                  </span>
-                                }
-                                className="text-foreground/80 hover:bg-muted hover:text-foreground"
-                                activeClassName="bg-accent text-foreground"
-                                nav
-                              />
-                            </li>
-                          )
-                        })}
-                  </Fragment>
-                ))}
+                  return (
+                    <Fragment key={groupKey}>
+                      <li>
+                        <RailRow
+                          icon={
+                            folderClosed ? (
+                              <Folder className="size-3.5" />
+                            ) : (
+                              <FolderOpen className="size-3.5" />
+                            )
+                          }
+                          label={group.projectName}
+                          title={group.projectRootPath || group.projectName}
+                          onClick={() =>
+                            setClosedProjectIds((current) => ({
+                              ...current,
+                              [groupKey]: !current[groupKey],
+                            }))
+                          }
+                          right={
+                            <button
+                              type="button"
+                              title={`New thread in ${group.projectName}`}
+                              className="flex size-5 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                onNavigate?.()
+                                navigate({
+                                  pathname: "/",
+                                  search: new URLSearchParams(
+                                    group.projectId
+                                      ? {
+                                          compose: "1",
+                                          projectId: group.projectId,
+                                        }
+                                      : { compose: "1" }
+                                  ).toString(),
+                                })
+                              }}
+                            >
+                              <SquarePen className="size-3" />
+                            </button>
+                          }
+                          rightClassName="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                          labelClassName="truncate whitespace-nowrap tracking-tight text-foreground"
+                          className="text-foreground hover:bg-accent/60 hover:text-foreground"
+                          ariaExpanded={!folderClosed}
+                        />
+                      </li>
+                      {folderClosed
+                        ? null
+                        : visibleSessions.map((session) => {
+                            const updatedAt = timestampToDate(session.updatedAt)
+                            const status = formatSessionStatus(
+                              session.status
+                            ).toLowerCase()
+
+                            return (
+                              <li key={session.id}>
+                                <RailRow
+                                  icon={
+                                    status === "running" ? (
+                                      <LoaderCircle className="size-3.5 animate-spin text-muted-foreground" />
+                                    ) : (
+                                      <span
+                                        className={cn(
+                                          "size-1.5 rounded-full",
+                                          sessionDot(status)
+                                        )}
+                                      />
+                                    )
+                                  }
+                                  label={session.title || "Untitled thread"}
+                                  onClick={onNavigate}
+                                  to={`/sessions/${session.id}`}
+                                  labelClassName="truncate"
+                                  right={
+                                    <span className="text-muted-foreground">
+                                      {formatRelativeTime(updatedAt)}
+                                    </span>
+                                  }
+                                  className="text-foreground/80 hover:bg-muted hover:text-foreground"
+                                  activeClassName="bg-accent text-foreground"
+                                  nav
+                                />
+                              </li>
+                            )
+                          })}
+                      {!folderClosed && group.sessions.length > 5 ? (
+                        <li>
+                          <RailRow
+                            asDivInteractive
+                            icon={null}
+                            label={sessionsCollapsed ? "展开显示" : "折叠显示"}
+                            onClick={() =>
+                              setCollapsedProjectIds((current) => ({
+                                ...current,
+                                [groupKey]: !sessionsCollapsed,
+                              }))
+                            }
+                            labelClassName="text-muted-foreground"
+                            className="hover:bg-accent/60"
+                          />
+                        </li>
+                      ) : null}
+                    </Fragment>
+                  )
+                })}
           </ul>
         </div>
         <ScrollbarIndicator
@@ -352,7 +476,123 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           visible={scrollbarVisible}
         />
       </div>
+      <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upgrade on host</DialogTitle>
+            <DialogDescription>
+              Run this command on the machine that is currently running{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
+                orchd
+              </code>
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-muted/40 p-3 font-mono text-xs text-foreground">
+            {updateStatus?.upgradeCommandHint ||
+              "No package-manager command available."}
+          </div>
+          <DialogFooter showCloseButton>
+            {updateStatus?.upgradeCommandHint ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleCopyCommand(updateStatus.upgradeCommandHint)
+                }
+              >
+                <Copy className="size-3.5" />
+                Copy command
+              </Button>
+            ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
+function UpdateRailAction({
+  commandHint,
+  onApply,
+  onOpenDialog,
+  status,
+}: {
+  commandHint: string
+  onApply: () => void
+  onOpenDialog: () => void
+  status?: UpdateStatus
+}) {
+  const busy =
+    status?.state === UpdateState.REEXECING ||
+    status?.state === UpdateState.DOWNLOADING ||
+    status?.state === UpdateState.VERIFYING ||
+    status?.state === UpdateState.PREFLIGHT_RUNNING
+
+  if (!status) {
+    return null
+  }
+
+  if (busy) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
+        <LoaderCircle className="size-3 animate-spin" />
+        Updating
+      </span>
+    )
+  }
+
+  if (status.updatePolicy === UpdatePolicy.SELF_MANAGED) {
+    return (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          onApply()
+        }}
+        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-foreground/80 transition hover:bg-accent hover:text-foreground"
+        title={
+          status.availableUpdate?.version
+            ? `Update to ${status.availableUpdate.version}`
+            : "Update orchd"
+        }
+      >
+        <RefreshCw className="size-3" />
+        Update
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onOpenDialog()
+      }}
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-foreground/80 transition hover:bg-accent hover:text-foreground"
+      title={commandHint || "Show update command"}
+    >
+      <Wrench className="size-3" />
+      Update
+    </button>
+  )
+}
+
+function getUpdateControl(status: UpdateStatus | undefined, applying: boolean) {
+  if (!status) {
+    return { visible: false }
+  }
+
+  const visible =
+    status.updateAvailable || applying || status.state === UpdateState.REEXECING
+  return { visible }
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return fallback
+}

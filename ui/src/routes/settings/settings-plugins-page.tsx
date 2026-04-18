@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search } from "lucide-react"
+import { useLocation } from "react-router-dom"
 
+import { Input } from "@/components/ui/input"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
-import { CardTitle } from "@/components/ui/card"
+import { SettingsPageLayout } from "@/routes/settings/settings-page-layout"
 
 export function SettingsPluginsPage() {
+  const location = useLocation()
   const { data: skills, isLoading: skillsLoading } = useHostSkills()
   const { data: mcpServers, isLoading: mcpLoading } = useMCPServers()
   const [search, setSearch] = useState("")
@@ -37,10 +40,21 @@ export function SettingsPluginsPage() {
   const hasResults = filteredSkills.length > 0 || filteredMCP.length > 0
   const isSearching = search.trim().length > 0
 
-  return (
-    <div>
-      <CardTitle className="mb-8 text-2xl text-foreground">Plugins</CardTitle>
+  useEffect(() => {
+    if (!location.hash || isLoading) {
+      return
+    }
 
+    const sectionId = location.hash.slice(1)
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({ block: "start" })
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [filteredMCP.length, filteredSkills.length, isLoading, location.hash])
+
+  return (
+    <SettingsPageLayout title="Plugins">
       {/* Overview counts */}
       <div className="mb-6 flex gap-6">
         <div className="flex items-baseline gap-2">
@@ -60,12 +74,12 @@ export function SettingsPluginsPage() {
       {/* Search */}
       <div className="relative mb-6">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <input
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search skills and MCP servers…"
-          className="h-10 w-full rounded-lg border border-border bg-accent px-3 pl-9 text-foreground outline-none transition placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-10 pl-9"
         />
       </div>
 
@@ -87,7 +101,10 @@ export function SettingsPluginsPage() {
               </h3>
               <div className="divide-y divide-border rounded-lg border border-border">
                 {filteredSkills.map((skill) => (
-                  <div key={skill.reference || skill.name} className="px-4 py-3">
+                  <div
+                    key={skill.reference || skill.name}
+                    className="px-4 py-3"
+                  >
                     <div className="text-sm text-foreground">{skill.name}</div>
                     {skill.description ? (
                       <div className="mt-0.5 text-sm font-normal text-muted-foreground">
@@ -129,13 +146,15 @@ export function SettingsPluginsPage() {
           ) : null}
 
           {/* Empty sections when not searching */}
-          {!isSearching && filteredSkills.length === 0 && filteredMCP.length === 0 ? (
+          {!isSearching &&
+          filteredSkills.length === 0 &&
+          filteredMCP.length === 0 ? (
             <div className="py-8 text-center text-sm font-normal text-muted-foreground">
               No skills or MCP servers discovered
             </div>
           ) : null}
         </>
       )}
-    </div>
+    </SettingsPageLayout>
   )
 }

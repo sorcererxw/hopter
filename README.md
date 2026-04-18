@@ -87,6 +87,33 @@ bun scripts/validate-app-server-approvals.ts
 bun scripts/validate-interrupt-ui.ts
 ```
 
+## Build metadata and install source
+
+`orchd` now expects two important build-time ldflags:
+
+- `main.version`
+- `main.installSource`
+
+The install source controls update ownership:
+
+- `direct` -> self-managed update path
+- `homebrew_formula` -> package-managed update path
+- `homebrew_cask` -> package-managed update path
+
+Minimal direct build example:
+
+```bash
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/orchd
+```
+
+Homebrew formula build example:
+
+```bash
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/orchd
+```
+
+`ORCHD_INSTALL_SOURCE` still exists as a runtime override for validation and debugging, but the normal product path should treat the build-time install source as the primary signal.
+
 `make dev` is the preferred local loop. It now runs an AI-first supervisor that starts:
 
 - `pnpm --dir ui dev`

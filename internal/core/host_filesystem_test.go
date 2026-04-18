@@ -6,6 +6,28 @@ import (
 	"testing"
 )
 
+func TestMergeMCPServerPrefersConfiguredAndKeepsSources(t *testing.T) {
+	existing := MCPServer{
+		Name:                "filesystem",
+		Source:              "claude",
+		ConfigurationStatus: "incomplete",
+	}
+	incoming := MCPServer{
+		Name:                "filesystem",
+		Source:              "codex",
+		ConfigurationStatus: "configured",
+	}
+
+	merged := mergeMCPServer(existing, incoming)
+
+	if merged.ConfigurationStatus != "configured" {
+		t.Fatalf("configuration status = %q, want configured", merged.ConfigurationStatus)
+	}
+	if merged.Source != "claude, codex" {
+		t.Fatalf("source = %q, want %q", merged.Source, "claude, codex")
+	}
+}
+
 func TestDiscoverSkillsParsesFrontmatterAndDeduplicatesByReference(t *testing.T) {
 	root := t.TempDir()
 	projectSkills := filepath.Join(root, ".codex", "skills")

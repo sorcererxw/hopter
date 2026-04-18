@@ -10,6 +10,45 @@ const (
 	HostStateUnavailable HostState = "unavailable"
 )
 
+type InstallSource string
+
+const (
+	InstallSourceDirect          InstallSource = "direct"
+	InstallSourceUnknown         InstallSource = "unknown"
+	InstallSourceHomebrewFormula InstallSource = "homebrew_formula"
+	InstallSourceHomebrewCask    InstallSource = "homebrew_cask"
+	InstallSourceAPT             InstallSource = "apt"
+	InstallSourceDNF             InstallSource = "dnf"
+	InstallSourceWinget          InstallSource = "winget"
+	InstallSourceNix             InstallSource = "nix"
+	InstallSourceMacPorts        InstallSource = "macports"
+	InstallSourceSnap            InstallSource = "snap"
+	InstallSourceFlatpak         InstallSource = "flatpak"
+)
+
+type UpdatePolicy string
+
+const (
+	UpdatePolicySelfManaged    UpdatePolicy = "self_managed"
+	UpdatePolicyPackageManaged UpdatePolicy = "package_managed"
+	UpdatePolicyStoreManaged   UpdatePolicy = "store_managed"
+)
+
+type UpdateState string
+
+const (
+	UpdateStateIdle                  UpdateState = "idle"
+	UpdateStateChecking              UpdateState = "checking"
+	UpdateStateAvailable             UpdateState = "available"
+	UpdateStateDownloading           UpdateState = "downloading"
+	UpdateStateVerifying             UpdateState = "verifying"
+	UpdateStatePreflightRunning      UpdateState = "preflight_running"
+	UpdateStateReadyToApply          UpdateState = "ready_to_apply"
+	UpdateStateReexecing             UpdateState = "reexecing"
+	UpdateStateFailedPreExec         UpdateState = "failed_pre_exec"
+	UpdateStateFailedPostExecUnknown UpdateState = "failed_post_exec_unknown"
+)
+
 type SessionState string
 
 const (
@@ -75,8 +114,8 @@ type Skill struct {
 }
 
 type MCPServer struct {
-	Name              string
-	Source            string
+	Name                string
+	Source              string
 	ConfigurationStatus string
 }
 
@@ -158,6 +197,31 @@ type HostSnapshot struct {
 	ProjectCount int
 	SessionCount int
 	UpdatedAt    time.Time
+}
+
+type AvailableUpdate struct {
+	Version              string
+	NotesURL             string
+	PublishedAt          time.Time
+	MinUpgradableVersion string
+	ArtifactURL          string
+	SHA256               string
+	SizeBytes            int64
+}
+
+type UpdateStatus struct {
+	CurrentVersion     string
+	CurrentCommit      string
+	Channel            string
+	InstallSource      InstallSource
+	UpdatePolicy       UpdatePolicy
+	State              UpdateState
+	UpdateAvailable    bool
+	AvailableUpdate    *AvailableUpdate
+	TargetVersion      string
+	UpgradeCommandHint string
+	FailureReason      string
+	LastCheckedAt      time.Time
 }
 
 type Project struct {
@@ -266,6 +330,12 @@ type Event struct {
 
 type EventSink interface {
 	Publish(Event)
+}
+
+type UpdateService interface {
+	GetStatus() UpdateStatus
+	Check(force bool) (UpdateStatus, error)
+	Apply() (UpdateStatus, error)
 }
 
 type WorkspaceService interface {

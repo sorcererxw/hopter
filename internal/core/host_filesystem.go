@@ -697,8 +697,7 @@ func discoverMCPServers() ([]MCPServer, error) {
 		{Path: filepath.Join(homeDir, ".claude", "claude_desktop_config.json"), Source: "claude"},
 	}
 
-	seen := make(map[string]struct{})
-	var servers []MCPServer
+	serversByName := make(map[string]MCPServer)
 
 	for _, cfg := range configPaths {
 		discovered, err := readMCPConfigFile(cfg.Path, cfg.Source)
@@ -706,12 +705,18 @@ func discoverMCPServers() ([]MCPServer, error) {
 			continue
 		}
 		for _, server := range discovered {
-			if _, ok := seen[server.Name]; ok {
+			key := strings.ToLower(strings.TrimSpace(server.Name))
+			if existing, ok := serversByName[key]; ok {
+				serversByName[key] = mergeMCPServer(existing, server)
 				continue
 			}
-			seen[server.Name] = struct{}{}
-			servers = append(servers, server)
+			serversByName[key] = server
 		}
+	}
+
+	servers := make([]MCPServer, 0, len(serversByName))
+	for _, server := range serversByName {
+		servers = append(servers, server)
 	}
 
 	sort.SliceStable(servers, func(i, j int) bool {
@@ -745,6 +750,42 @@ func readMCPConfigFile(path string, source string) ([]MCPServer, error) {
 		})
 	}
 	return servers, nil
+}
+
+func mergeMCPServer(existing MCPServer, incoming MCPServer) MCPServer {
+	merged := existing
+	merged.Source = joinMCPServerSources(existing.Source, incoming.Source)
+
+	if merged.ConfigurationStatus == "" {
+		merged.ConfigurationStatus = incoming.ConfigurationStatus
+	}
+
+	if existing.ConfigurationStatus != "configured" && incoming.ConfigurationStatus == "configured" {
+		merged.Name = incoming.Name
+		merged.ConfigurationStatus = incoming.ConfigurationStatus
+	}
+
+	return merged
+}
+
+func joinMCPServerSources(left string, right string) string {
+	seen := make(map[string]struct{}, 2)
+	sources := make([]string, 0, 2)
+
+	for _, raw := range append(strings.Split(left, ", "), strings.Split(right, ", ")...) {
+		source := strings.TrimSpace(raw)
+		if source == "" {
+			continue
+		}
+		if _, ok := seen[source]; ok {
+			continue
+		}
+		seen[source] = struct{}{}
+		sources = append(sources, source)
+	}
+
+	sort.Strings(sources)
+	return strings.Join(sources, ", ")
 }
 
 // parseMCPJSON extracts MCP server names from a JSON config.

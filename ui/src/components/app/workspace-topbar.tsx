@@ -12,7 +12,6 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
-import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
 import { cn } from "@/lib/utils"
 
 type WorkspaceTopbarProps = {
@@ -30,7 +29,6 @@ type WorkspaceTopbarProps = {
   showInspectorToggle?: boolean
   showReview?: boolean
   showTerminal?: boolean
-  syncState?: WorkspaceEventStreamState
   terminalButtonTestId?: string
   terminalActive?: boolean
   title: string
@@ -52,7 +50,6 @@ export function WorkspaceTopbar({
   showInspectorToggle = false,
   showReview = false,
   showTerminal = false,
-  syncState,
   terminalButtonTestId,
   terminalActive = false,
   title,
@@ -145,13 +142,10 @@ export function WorkspaceTopbar({
           <div className="flex min-w-0 items-center gap-2">
             {leadingButton}
             <div className="min-w-0">
-              <p className="truncate text-base text-foreground">
-                {title}
-              </p>
+              <p className="truncate text-base text-foreground">{title}</p>
               {projectName ? (
                 <p className="truncate text-muted-foreground">{projectName}</p>
               ) : null}
-              {syncState ? <SyncStatusBadge state={syncState} /> : null}
             </div>
           </div>
           <div className="flex items-center gap-1.5">
@@ -259,7 +253,6 @@ export function WorkspaceTopbar({
                 {projectName}
               </span>
             ) : null}
-            {syncState ? <SyncStatusBadge state={syncState} /> : null}
             <div className="relative">
               <button
                 type="button"
@@ -374,7 +367,9 @@ export function WorkspaceTopbar({
                 onClick={onToggleInspector}
                 aria-label={inspectorOpen ? "Close sidebar" : "Open sidebar"}
                 title={inspectorOpen ? "Close sidebar" : "Open sidebar"}
-                className={cn(inspectorOpen ? "text-foreground" : "text-muted-foreground")}
+                className={cn(
+                  inspectorOpen ? "text-foreground" : "text-muted-foreground"
+                )}
               >
                 <PanelRight className="size-3.5" />
               </Button>
@@ -383,30 +378,6 @@ export function WorkspaceTopbar({
         </>
       )}
     </div>
-  )
-}
-
-function SyncStatusBadge({ state }: { state: WorkspaceEventStreamState }) {
-  const label =
-    state === "connected"
-      ? "Live"
-      : state === "reconnecting"
-        ? "Reconnecting"
-        : state === "offline"
-          ? "Offline"
-          : "Connecting"
-  const dotClassName =
-    state === "connected"
-      ? "bg-emerald-400"
-      : state === "reconnecting"
-        ? "bg-amber-400"
-        : "bg-rose-400"
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-2 py-0.5 text-muted-foreground">
-      <span className={cn("size-1.5 rounded-full", dotClassName)} />
-      <span>{label}</span>
-    </span>
   )
 }
 

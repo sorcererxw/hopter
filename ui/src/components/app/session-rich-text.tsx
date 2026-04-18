@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
 type SessionRichTextProps = {
   text: string
   className?: string
+  markdown?: boolean
   onLocalPathClick?: (path: string, label: string) => void
 }
 
@@ -59,12 +60,12 @@ function loadMarkdownModules() {
 
 export function SessionRichText({
   className,
+  markdown = true,
   onLocalPathClick,
   text,
 }: SessionRichTextProps) {
-  const [markdownModules, setMarkdownModules] = useState<MarkdownModules | null>(
-    () => markdownModulesCache
-  )
+  const [markdownModules, setMarkdownModules] =
+    useState<MarkdownModules | null>(() => markdownModulesCache)
   const paragraphCount = text
     .split(/\n{2,}/)
     .map((block) => block.trim())
@@ -72,6 +73,10 @@ export function SessionRichText({
   const isLongForm = paragraphCount > 3
 
   useEffect(() => {
+    if (!markdown) {
+      return
+    }
+
     if (markdownModules) {
       return
     }
@@ -87,9 +92,9 @@ export function SessionRichText({
     return () => {
       cancelled = true
     }
-  }, [markdownModules])
+  }, [markdown, markdownModules])
 
-  if (!markdownModules) {
+  if (!markdown || !markdownModules) {
     return (
       <PlainRichText
         className={className}
@@ -104,8 +109,8 @@ export function SessionRichText({
   return (
     <div
       className={cn(
-        "min-w-0 break-words text-base leading-7 font-medium text-foreground",
-        isLongForm ? "space-y-4" : "space-y-2.5",
+        "min-w-0 text-base leading-6 font-medium break-words text-foreground",
+        isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
     >
@@ -121,7 +126,10 @@ export function SessionRichText({
               {children}
             </MarkdownLink>
           ),
-          code: ({ children, className: _codeClassName }: MarkdownCodeProps) => {
+          code: ({
+            children,
+            className: _codeClassName,
+          }: MarkdownCodeProps) => {
             const code = flattenMarkdownChildren(children)
 
             return (
@@ -140,13 +148,21 @@ export function SessionRichText({
 
             return <CodeBlock code={code} language={language} />
           },
-          li: ({ children }) => <li className="list-disc text-foreground">{children}</li>,
-          ol: ({ children }) => <ol className="space-y-1.5 pl-5">{children}</ol>,
+          li: ({ children }) => (
+            <li className="list-disc text-foreground">{children}</li>
+          ),
+          ol: ({ children }) => (
+            <ol className="space-y-1.5 pl-5">{children}</ol>
+          ),
           p: ({ children }) => <p>{children}</p>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
+            <strong className="font-semibold text-foreground">
+              {children}
+            </strong>
           ),
-          ul: ({ children }) => <ul className="space-y-1.5 pl-5">{children}</ul>,
+          ul: ({ children }) => (
+            <ul className="space-y-1.5 pl-5">{children}</ul>
+          ),
         }}
       >
         {text}
@@ -167,8 +183,8 @@ function PlainRichText({
   return (
     <div
       className={cn(
-        "min-w-0 break-words text-base leading-7 font-medium text-foreground",
-        isLongForm ? "space-y-4" : "space-y-2.5",
+        "min-w-0 text-base leading-6 font-medium break-words text-foreground",
+        isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
     >
@@ -218,7 +234,7 @@ function MarkdownLink({
         event.preventDefault()
         onLocalPathClick(href, label)
       }}
-      className="font-mono text-sm text-ws-code underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+      className="font-mono text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
       {...props}
     >
       {children}
@@ -267,7 +283,11 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         aria-label={copied ? "Copied code" : "Copy code"}
         data-testid="session-code-copy"
       >
-        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+        {copied ? (
+          <Check className="size-3.5" />
+        ) : (
+          <Copy className="size-3.5" />
+        )}
         <span>{copied ? "Copied" : "Copy"}</span>
       </button>
       <CodeContainer as="pre" className="pt-4 pb-3">
@@ -283,13 +303,19 @@ function flattenMarkdownChildren(children: ReactNode): string {
     : typeof children === "string" || typeof children === "number"
       ? String(children)
       : children && typeof children === "object" && "props" in children
-        ? flattenMarkdownChildren((children as { props?: { children?: ReactNode } }).props?.children ?? "")
+        ? flattenMarkdownChildren(
+            (children as { props?: { children?: ReactNode } }).props
+              ?.children ?? ""
+          )
         : ""
 }
 
 function getCodeElement(children: ReactNode) {
   if (isValidElement(children) && children.type === "code") {
-    return children as ReactElement<{ children?: ReactNode; className?: string }>
+    return children as ReactElement<{
+      children?: ReactNode
+      className?: string
+    }>
   }
 
   if (Array.isArray(children)) {
@@ -297,7 +323,10 @@ function getCodeElement(children: ReactNode) {
       (child) => isValidElement(child) && child.type === "code"
     )
     if (element && isValidElement(element)) {
-      return element as ReactElement<{ children?: ReactNode; className?: string }>
+      return element as ReactElement<{
+        children?: ReactNode
+        className?: string
+      }>
     }
   }
 
@@ -318,7 +347,11 @@ function formatCodeForDisplay(code: string, language?: string) {
 
 function looksLikeMarkup(code: string) {
   const trimmed = code.trim()
-  return trimmed.startsWith("<") && trimmed.includes(">") && /<\/?[a-zA-Z]/.test(trimmed)
+  return (
+    trimmed.startsWith("<") &&
+    trimmed.includes(">") &&
+    /<\/?[a-zA-Z]/.test(trimmed)
+  )
 }
 
 function prettyPrintMarkup(code: string) {

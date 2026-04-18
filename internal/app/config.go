@@ -37,15 +37,17 @@ func (c UIConfig) Mode() string {
 
 type Config struct {
 	Version             string
+	InstallSource       string
 	HostID              string
 	HTTP                HTTPConfig
 	UI                  UIConfig
 	LocalhostOnlyNoAuth bool
 }
 
-func LoadConfig(version string) (Config, error) {
+func LoadConfig(version string, installSource string) (Config, error) {
 	cfg := Config{
 		Version:             firstNonEmpty(strings.TrimSpace(version), "dev"),
+		InstallSource:       firstNonEmpty(strings.TrimSpace(installSource), "direct"),
 		HostID:              envOrDefault("ORCHD_HOST_ID", defaultHostID),
 		LocalhostOnlyNoAuth: envBool("ORCHD_LOCALHOST_ONLY_NO_AUTH", true),
 		HTTP: HTTPConfig{

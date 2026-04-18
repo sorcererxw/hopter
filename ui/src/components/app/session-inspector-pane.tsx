@@ -163,7 +163,7 @@ function FilePanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="border-b border-border px-4 py-3">
-        <div className="truncate font-mono text-ws-code">
+        <div className="truncate font-mono text-foreground">
           {file.displayPath || file.requestedPath}
         </div>
         <div className="mt-1 truncate text-xs text-muted-foreground">
@@ -264,7 +264,7 @@ function ReviewPanel({
                       {file.kind}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-mono text-xs text-ws-code">
+                      <div className="truncate font-mono text-xs text-foreground">
                         {file.path}
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
@@ -281,7 +281,7 @@ function ReviewPanel({
             {selectedFile ? (
               <div className="flex h-full min-h-0 flex-col">
                 <div className="border-b border-border px-4 py-3">
-                  <div className="truncate font-mono text-ws-code">
+                  <div className="truncate font-mono text-foreground">
                     {selectedFile.path}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
@@ -324,7 +324,7 @@ function PanelLoading({ label }: { label: string }) {
 function PanelEmpty({ label }: { label: string }) {
   return (
     <div className="flex h-full items-center justify-center px-6">
-      <div className="max-w-sm rounded-lg border border-dashed border-border bg-muted px-5 py-4 text-center font-normal leading-6 text-muted-foreground">
+      <div className="max-w-sm rounded-lg border border-dashed border-border bg-muted px-5 py-4 text-center leading-6 font-normal text-muted-foreground">
         {label}
       </div>
     </div>
@@ -346,7 +346,7 @@ function PanelMessage({
     <div className="flex h-full items-center justify-center px-6">
       <div className="max-w-md rounded-lg border border-border bg-card px-5 py-4">
         <div className="text-base text-foreground">{title}</div>
-        <div className="mt-2 font-normal leading-6 text-muted-foreground">
+        <div className="mt-2 leading-6 font-normal text-muted-foreground">
           {body}
         </div>
         {visibleMeta.length > 0 ? (
@@ -398,7 +398,10 @@ function ViewButton({
       onClick={onClick}
       variant={active ? "secondary" : "ghost"}
       size="xs"
-      className={cn("gap-1", active ? "text-foreground" : "text-muted-foreground")}
+      className={cn(
+        "gap-1",
+        active ? "text-foreground" : "text-muted-foreground"
+      )}
     >
       {children}
     </Button>

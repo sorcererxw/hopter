@@ -63,11 +63,13 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: true,
     host: devHost,
     port: 5173,
     strictPort: true,
   },
   preview: {
+    allowedHosts: true,
     host: previewHost,
     port: 4173,
     strictPort: true,

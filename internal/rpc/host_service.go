@@ -2,20 +2,23 @@ package rpcserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
 
 	"orchd/internal/core"
 	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	updater "orchd/internal/update"
 )
 
 type HostService struct {
 	workspace core.WorkspaceService
+	updates   core.UpdateService
 }
 
-func NewHostService(workspace core.WorkspaceService) *HostService {
-	return &HostService{workspace: workspace}
+func NewHostService(workspace core.WorkspaceService, updates core.UpdateService) *HostService {
+	return &HostService{workspace: workspace, updates: updates}
 }
 
 func (s *HostService) GetHostStatus(_ context.Context, _ *connect.Request[orchdv1.GetHostStatusRequest]) (*connect.Response[orchdv1.GetHostStatusResponse], error) {
@@ -150,4 +153,145 @@ func (s *HostService) ListRecentRepos(_ context.Context, req *connect.Request[or
 		response.Repos = append(response.Repos, pathMetadataToProto(repo))
 	}
 	return connect.NewResponse(response), nil
+}
+
+func (s *HostService) GetUpdateStatus(_ context.Context, _ *connect.Request[orchdv1.GetUpdateStatusRequest]) (*connect.Response[orchdv1.GetUpdateStatusResponse], error) {
+	if s.updates == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("update service unavailable"))
+	}
+	return connect.NewResponse(&orchdv1.GetUpdateStatusResponse{
+		UpdateStatus: updateStatusToProto(s.updates.GetStatus()),
+	}), nil
+}
+
+func (s *HostService) CheckForUpdate(_ context.Context, req *connect.Request[orchdv1.CheckForUpdateRequest]) (*connect.Response[orchdv1.CheckForUpdateResponse], error) {
+	if s.updates == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("update service unavailable"))
+	}
+
+	status, err := s.updates.Check(req.Msg.GetForce())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("check for update: %w", err))
+	}
+
+	return connect.NewResponse(&orchdv1.CheckForUpdateResponse{
+		UpdateStatus: updateStatusToProto(status),
+	}), nil
+}
+
+func (s *HostService) ApplyUpdate(_ context.Context, _ *connect.Request[orchdv1.ApplyUpdateRequest]) (*connect.Response[orchdv1.ApplyUpdateResponse], error) {
+	if s.updates == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("update service unavailable"))
+	}
+
+	status, err := s.updates.Apply()
+	if err != nil {
+		switch {
+		case errors.Is(err, updater.ErrNoUpdateAvailable), errors.Is(err, updater.ErrUpdateNotSelfManaged), errors.Is(err, updater.ErrUpdateBusy):
+			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		default:
+			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("apply update: %w", err))
+		}
+	}
+
+	return connect.NewResponse(&orchdv1.ApplyUpdateResponse{
+		UpdateStatus: updateStatusToProto(status),
+	}), nil
+}
+
+func updateStatusToProto(status core.UpdateStatus) *orchdv1.UpdateStatus {
+	if status == (core.UpdateStatus{}) {
+		return &orchdv1.UpdateStatus{}
+	}
+
+	protoStatus := &orchdv1.UpdateStatus{
+		CurrentVersion:     status.CurrentVersion,
+		CurrentCommit:      status.CurrentCommit,
+		Channel:            status.Channel,
+		InstallSource:      mapInstallSource(status.InstallSource),
+		UpdatePolicy:       mapUpdatePolicy(status.UpdatePolicy),
+		State:              mapUpdateState(status.State),
+		UpdateAvailable:    status.UpdateAvailable,
+		TargetVersion:      status.TargetVersion,
+		UpgradeCommandHint: status.UpgradeCommandHint,
+		FailureReason:      status.FailureReason,
+		LastCheckedAt:      timestamp(status.LastCheckedAt),
+	}
+	if status.AvailableUpdate != nil {
+		protoStatus.AvailableUpdate = &orchdv1.AvailableUpdate{
+			Version:     status.AvailableUpdate.Version,
+			NotesUrl:    status.AvailableUpdate.NotesURL,
+			PublishedAt: timestamp(status.AvailableUpdate.PublishedAt),
+		}
+	}
+	return protoStatus
+}
+
+func mapInstallSource(source core.InstallSource) orchdv1.InstallSource {
+	switch source {
+	case core.InstallSourceDirect:
+		return orchdv1.InstallSource_INSTALL_SOURCE_DIRECT
+	case core.InstallSourceUnknown:
+		return orchdv1.InstallSource_INSTALL_SOURCE_UNKNOWN
+	case core.InstallSourceHomebrewFormula:
+		return orchdv1.InstallSource_INSTALL_SOURCE_HOMEBREW_FORMULA
+	case core.InstallSourceHomebrewCask:
+		return orchdv1.InstallSource_INSTALL_SOURCE_HOMEBREW_CASK
+	case core.InstallSourceAPT:
+		return orchdv1.InstallSource_INSTALL_SOURCE_APT
+	case core.InstallSourceDNF:
+		return orchdv1.InstallSource_INSTALL_SOURCE_DNF
+	case core.InstallSourceWinget:
+		return orchdv1.InstallSource_INSTALL_SOURCE_WINGET
+	case core.InstallSourceNix:
+		return orchdv1.InstallSource_INSTALL_SOURCE_NIX
+	case core.InstallSourceMacPorts:
+		return orchdv1.InstallSource_INSTALL_SOURCE_MACPORTS
+	case core.InstallSourceSnap:
+		return orchdv1.InstallSource_INSTALL_SOURCE_SNAP
+	case core.InstallSourceFlatpak:
+		return orchdv1.InstallSource_INSTALL_SOURCE_FLATPAK
+	default:
+		return orchdv1.InstallSource_INSTALL_SOURCE_UNSPECIFIED
+	}
+}
+
+func mapUpdatePolicy(policy core.UpdatePolicy) orchdv1.UpdatePolicy {
+	switch policy {
+	case core.UpdatePolicySelfManaged:
+		return orchdv1.UpdatePolicy_UPDATE_POLICY_SELF_MANAGED
+	case core.UpdatePolicyPackageManaged:
+		return orchdv1.UpdatePolicy_UPDATE_POLICY_PACKAGE_MANAGED
+	case core.UpdatePolicyStoreManaged:
+		return orchdv1.UpdatePolicy_UPDATE_POLICY_STORE_MANAGED
+	default:
+		return orchdv1.UpdatePolicy_UPDATE_POLICY_UNSPECIFIED
+	}
+}
+
+func mapUpdateState(state core.UpdateState) orchdv1.UpdateState {
+	switch state {
+	case core.UpdateStateIdle:
+		return orchdv1.UpdateState_UPDATE_STATE_IDLE
+	case core.UpdateStateChecking:
+		return orchdv1.UpdateState_UPDATE_STATE_CHECKING
+	case core.UpdateStateAvailable:
+		return orchdv1.UpdateState_UPDATE_STATE_AVAILABLE
+	case core.UpdateStateDownloading:
+		return orchdv1.UpdateState_UPDATE_STATE_DOWNLOADING
+	case core.UpdateStateVerifying:
+		return orchdv1.UpdateState_UPDATE_STATE_VERIFYING
+	case core.UpdateStatePreflightRunning:
+		return orchdv1.UpdateState_UPDATE_STATE_PREFLIGHT_RUNNING
+	case core.UpdateStateReadyToApply:
+		return orchdv1.UpdateState_UPDATE_STATE_READY_TO_APPLY
+	case core.UpdateStateReexecing:
+		return orchdv1.UpdateState_UPDATE_STATE_REEXECING
+	case core.UpdateStateFailedPreExec:
+		return orchdv1.UpdateState_UPDATE_STATE_FAILED_PRE_EXEC
+	case core.UpdateStateFailedPostExecUnknown:
+		return orchdv1.UpdateState_UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN
+	default:
+		return orchdv1.UpdateState_UPDATE_STATE_UNSPECIFIED
+	}
 }

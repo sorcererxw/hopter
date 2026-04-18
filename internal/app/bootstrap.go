@@ -13,6 +13,7 @@ import (
 	serverhttp "orchd/internal/http"
 	rpcserver "orchd/internal/rpc"
 	"orchd/internal/terminal"
+	"orchd/internal/update"
 )
 
 type Runtime struct {
@@ -25,6 +26,7 @@ type Runtime struct {
 func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
+	updateService := update.NewService(cfg.Version, cfg.InstallSource)
 	codexManager := codex.NewManager(workspace, eventHub)
 	terminalManager := terminal.NewManager(workspace)
 	backendManager := backend.NewManager(workspace, map[string]backend.Runtime{
@@ -37,7 +39,7 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		Version:                cfg.Version,
 		UI:                     serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
 		EventHub:               eventHub,
-		HostServiceHandler:     rpcserver.NewHostService(workspace),
+		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService),
 		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, backendManager),
 		SessionServiceHandler:  rpcserver.NewSessionService(workspace, backendManager, sessionReadModel),
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),

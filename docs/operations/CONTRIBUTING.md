@@ -71,6 +71,41 @@ bun scripts/validate-go-tetris.ts
 bun scripts/validate-live.ts
 ```
 
+## Distribution build contract
+
+`orchd` uses build-time install-source metadata to decide update ownership.
+
+Required ldflags:
+
+- `main.version`
+- `main.installSource`
+
+Examples:
+
+```bash
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/orchd
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/orchd
+```
+
+Current intended values:
+
+- `direct`
+- `homebrew_formula`
+- `homebrew_cask`
+- `apt`
+- `dnf`
+- `winget`
+- `nix`
+- `macports`
+- `snap`
+- `flatpak`
+
+Rules:
+
+1. Treat build-time `installSource` as the primary product signal.
+2. Use `ORCHD_INSTALL_SOURCE` only for debugging, validation, and local overrides.
+3. Do not rely on runtime path guessing for the normal ownership decision.
+
 In dev, the browser should still enter through the Go origin.
 
 `make dev` is the recommended local workflow. It now runs a Bun supervisor that:
