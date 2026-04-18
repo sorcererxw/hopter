@@ -80,17 +80,173 @@ func (WorkspaceEventType) EnumDescriptor() ([]byte, []int) {
 	return file_orchd_v1_events_proto_rawDescGZIP(), []int{0}
 }
 
+type SessionLivePatchKind int32
+
+const (
+	SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_UNSPECIFIED        SessionLivePatchKind = 0
+	SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_STATUS             SessionLivePatchKind = 1
+	SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_DRAFT_DELTA        SessionLivePatchKind = 2
+	SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED  SessionLivePatchKind = 3
+	SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED SessionLivePatchKind = 4
+)
+
+// Enum value maps for SessionLivePatchKind.
+var (
+	SessionLivePatchKind_name = map[int32]string{
+		0: "SESSION_LIVE_PATCH_KIND_UNSPECIFIED",
+		1: "SESSION_LIVE_PATCH_KIND_STATUS",
+		2: "SESSION_LIVE_PATCH_KIND_DRAFT_DELTA",
+		3: "SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED",
+		4: "SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED",
+	}
+	SessionLivePatchKind_value = map[string]int32{
+		"SESSION_LIVE_PATCH_KIND_UNSPECIFIED":        0,
+		"SESSION_LIVE_PATCH_KIND_STATUS":             1,
+		"SESSION_LIVE_PATCH_KIND_DRAFT_DELTA":        2,
+		"SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED":  3,
+		"SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED": 4,
+	}
+)
+
+func (x SessionLivePatchKind) Enum() *SessionLivePatchKind {
+	p := new(SessionLivePatchKind)
+	*p = x
+	return p
+}
+
+func (x SessionLivePatchKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SessionLivePatchKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_orchd_v1_events_proto_enumTypes[1].Descriptor()
+}
+
+func (SessionLivePatchKind) Type() protoreflect.EnumType {
+	return &file_orchd_v1_events_proto_enumTypes[1]
+}
+
+func (x SessionLivePatchKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SessionLivePatchKind.Descriptor instead.
+func (SessionLivePatchKind) EnumDescriptor() ([]byte, []int) {
+	return file_orchd_v1_events_proto_rawDescGZIP(), []int{1}
+}
+
+type SessionLivePatch struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Kind            SessionLivePatchKind   `protobuf:"varint,1,opt,name=kind,proto3,enum=orchd.v1.SessionLivePatchKind" json:"kind,omitempty"`
+	ActiveTurnId    string                 `protobuf:"bytes,2,opt,name=active_turn_id,json=activeTurnId,proto3" json:"active_turn_id,omitempty"`
+	DraftItemId     string                 `protobuf:"bytes,3,opt,name=draft_item_id,json=draftItemId,proto3" json:"draft_item_id,omitempty"`
+	DraftDelta      string                 `protobuf:"bytes,4,opt,name=draft_delta,json=draftDelta,proto3" json:"draft_delta,omitempty"`
+	FinalItem       *SessionTranscriptItem `protobuf:"bytes,5,opt,name=final_item,json=finalItem,proto3" json:"final_item,omitempty"`
+	Status          SessionStatus          `protobuf:"varint,6,opt,name=status,proto3,enum=orchd.v1.SessionStatus" json:"status,omitempty"`
+	Summary         string                 `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
+	RequiresRefetch bool                   `protobuf:"varint,8,opt,name=requires_refetch,json=requiresRefetch,proto3" json:"requires_refetch,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SessionLivePatch) Reset() {
+	*x = SessionLivePatch{}
+	mi := &file_orchd_v1_events_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionLivePatch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionLivePatch) ProtoMessage() {}
+
+func (x *SessionLivePatch) ProtoReflect() protoreflect.Message {
+	mi := &file_orchd_v1_events_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SessionLivePatch.ProtoReflect.Descriptor instead.
+func (*SessionLivePatch) Descriptor() ([]byte, []int) {
+	return file_orchd_v1_events_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SessionLivePatch) GetKind() SessionLivePatchKind {
+	if x != nil {
+		return x.Kind
+	}
+	return SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_UNSPECIFIED
+}
+
+func (x *SessionLivePatch) GetActiveTurnId() string {
+	if x != nil {
+		return x.ActiveTurnId
+	}
+	return ""
+}
+
+func (x *SessionLivePatch) GetDraftItemId() string {
+	if x != nil {
+		return x.DraftItemId
+	}
+	return ""
+}
+
+func (x *SessionLivePatch) GetDraftDelta() string {
+	if x != nil {
+		return x.DraftDelta
+	}
+	return ""
+}
+
+func (x *SessionLivePatch) GetFinalItem() *SessionTranscriptItem {
+	if x != nil {
+		return x.FinalItem
+	}
+	return nil
+}
+
+func (x *SessionLivePatch) GetStatus() SessionStatus {
+	if x != nil {
+		return x.Status
+	}
+	return SessionStatus_SESSION_STATUS_UNSPECIFIED
+}
+
+func (x *SessionLivePatch) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *SessionLivePatch) GetRequiresRefetch() bool {
+	if x != nil {
+		return x.RequiresRefetch
+	}
+	return false
+}
+
 type WorkspaceEventPayload struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RefreshHint   RefreshHint            `protobuf:"varint,1,opt,name=refresh_hint,json=refreshHint,proto3,enum=orchd.v1.RefreshHint" json:"refresh_hint,omitempty"`
-	Summary       string                 `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RefreshHint      RefreshHint            `protobuf:"varint,1,opt,name=refresh_hint,json=refreshHint,proto3,enum=orchd.v1.RefreshHint" json:"refresh_hint,omitempty"`
+	Summary          string                 `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
+	SessionLivePatch *SessionLivePatch      `protobuf:"bytes,3,opt,name=session_live_patch,json=sessionLivePatch,proto3" json:"session_live_patch,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *WorkspaceEventPayload) Reset() {
 	*x = WorkspaceEventPayload{}
-	mi := &file_orchd_v1_events_proto_msgTypes[0]
+	mi := &file_orchd_v1_events_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +258,7 @@ func (x *WorkspaceEventPayload) String() string {
 func (*WorkspaceEventPayload) ProtoMessage() {}
 
 func (x *WorkspaceEventPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_events_proto_msgTypes[0]
+	mi := &file_orchd_v1_events_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +271,7 @@ func (x *WorkspaceEventPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceEventPayload.ProtoReflect.Descriptor instead.
 func (*WorkspaceEventPayload) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_events_proto_rawDescGZIP(), []int{0}
+	return file_orchd_v1_events_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WorkspaceEventPayload) GetRefreshHint() RefreshHint {
@@ -132,6 +288,13 @@ func (x *WorkspaceEventPayload) GetSummary() string {
 	return ""
 }
 
+func (x *WorkspaceEventPayload) GetSessionLivePatch() *SessionLivePatch {
+	if x != nil {
+		return x.SessionLivePatch
+	}
+	return nil
+}
+
 type WorkspaceEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -146,7 +309,7 @@ type WorkspaceEvent struct {
 
 func (x *WorkspaceEvent) Reset() {
 	*x = WorkspaceEvent{}
-	mi := &file_orchd_v1_events_proto_msgTypes[1]
+	mi := &file_orchd_v1_events_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -158,7 +321,7 @@ func (x *WorkspaceEvent) String() string {
 func (*WorkspaceEvent) ProtoMessage() {}
 
 func (x *WorkspaceEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_orchd_v1_events_proto_msgTypes[1]
+	mi := &file_orchd_v1_events_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -171,7 +334,7 @@ func (x *WorkspaceEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceEvent.ProtoReflect.Descriptor instead.
 func (*WorkspaceEvent) Descriptor() ([]byte, []int) {
-	return file_orchd_v1_events_proto_rawDescGZIP(), []int{1}
+	return file_orchd_v1_events_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *WorkspaceEvent) GetId() string {
@@ -220,10 +383,22 @@ var File_orchd_v1_events_proto protoreflect.FileDescriptor
 
 const file_orchd_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x15orchd/v1/events.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"k\n" +
+	"\x15orchd/v1/events.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\x1a\x16orchd/v1/session.proto\"\xe7\x02\n" +
+	"\x10SessionLivePatch\x122\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\x1e.orchd.v1.SessionLivePatchKindR\x04kind\x12$\n" +
+	"\x0eactive_turn_id\x18\x02 \x01(\tR\factiveTurnId\x12\"\n" +
+	"\rdraft_item_id\x18\x03 \x01(\tR\vdraftItemId\x12\x1f\n" +
+	"\vdraft_delta\x18\x04 \x01(\tR\n" +
+	"draftDelta\x12>\n" +
+	"\n" +
+	"final_item\x18\x05 \x01(\v2\x1f.orchd.v1.SessionTranscriptItemR\tfinalItem\x12/\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x17.orchd.v1.SessionStatusR\x06status\x12\x18\n" +
+	"\asummary\x18\a \x01(\tR\asummary\x12)\n" +
+	"\x10requires_refetch\x18\b \x01(\bR\x0frequiresRefetch\"\xb5\x01\n" +
 	"\x15WorkspaceEventPayload\x128\n" +
 	"\frefresh_hint\x18\x01 \x01(\x0e2\x15.orchd.v1.RefreshHintR\vrefreshHint\x12\x18\n" +
-	"\asummary\x18\x02 \x01(\tR\asummary\"\xb0\x02\n" +
+	"\asummary\x18\x02 \x01(\tR\asummary\x12H\n" +
+	"\x12session_live_patch\x18\x03 \x01(\v2\x1a.orchd.v1.SessionLivePatchR\x10sessionLivePatch\"\xb0\x02\n" +
 	"\x0eWorkspaceEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x120\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1c.orchd.v1.WorkspaceEventTypeR\x04type\x12;\n" +
@@ -242,7 +417,13 @@ const file_orchd_v1_events_proto_rawDesc = "" +
 	"%WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED\x10\x02\x12)\n" +
 	"%WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED\x10\x03\x12(\n" +
 	"$WORKSPACE_EVENT_TYPE_SESSION_CHANGED\x10\x04\x122\n" +
-	".WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED\x10\x05B\x87\x01\n" +
+	".WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED\x10\x05*\xeb\x01\n" +
+	"\x14SessionLivePatchKind\x12'\n" +
+	"#SESSION_LIVE_PATCH_KIND_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eSESSION_LIVE_PATCH_KIND_STATUS\x10\x01\x12'\n" +
+	"#SESSION_LIVE_PATCH_KIND_DRAFT_DELTA\x10\x02\x12-\n" +
+	")SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED\x10\x03\x12.\n" +
+	"*SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED\x10\x04B\x87\x01\n" +
 	"\fcom.orchd.v1B\vEventsProtoP\x01Z)orchd/internal/gen/proto/orchd/v1;orchdv1\xa2\x02\x03OXX\xaa\x02\bOrchd.V1\xca\x02\bOrchd\\V1\xe2\x02\x14Orchd\\V1\\GPBMetadata\xea\x02\tOrchd::V1b\x06proto3"
 
 var (
@@ -257,25 +438,33 @@ func file_orchd_v1_events_proto_rawDescGZIP() []byte {
 	return file_orchd_v1_events_proto_rawDescData
 }
 
-var file_orchd_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_orchd_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_orchd_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_orchd_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_orchd_v1_events_proto_goTypes = []any{
 	(WorkspaceEventType)(0),       // 0: orchd.v1.WorkspaceEventType
-	(*WorkspaceEventPayload)(nil), // 1: orchd.v1.WorkspaceEventPayload
-	(*WorkspaceEvent)(nil),        // 2: orchd.v1.WorkspaceEvent
-	(RefreshHint)(0),              // 3: orchd.v1.RefreshHint
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(SessionLivePatchKind)(0),     // 1: orchd.v1.SessionLivePatchKind
+	(*SessionLivePatch)(nil),      // 2: orchd.v1.SessionLivePatch
+	(*WorkspaceEventPayload)(nil), // 3: orchd.v1.WorkspaceEventPayload
+	(*WorkspaceEvent)(nil),        // 4: orchd.v1.WorkspaceEvent
+	(*SessionTranscriptItem)(nil), // 5: orchd.v1.SessionTranscriptItem
+	(SessionStatus)(0),            // 6: orchd.v1.SessionStatus
+	(RefreshHint)(0),              // 7: orchd.v1.RefreshHint
+	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
 }
 var file_orchd_v1_events_proto_depIdxs = []int32{
-	3, // 0: orchd.v1.WorkspaceEventPayload.refresh_hint:type_name -> orchd.v1.RefreshHint
-	0, // 1: orchd.v1.WorkspaceEvent.type:type_name -> orchd.v1.WorkspaceEventType
-	4, // 2: orchd.v1.WorkspaceEvent.occurred_at:type_name -> google.protobuf.Timestamp
-	1, // 3: orchd.v1.WorkspaceEvent.payload:type_name -> orchd.v1.WorkspaceEventPayload
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	1, // 0: orchd.v1.SessionLivePatch.kind:type_name -> orchd.v1.SessionLivePatchKind
+	5, // 1: orchd.v1.SessionLivePatch.final_item:type_name -> orchd.v1.SessionTranscriptItem
+	6, // 2: orchd.v1.SessionLivePatch.status:type_name -> orchd.v1.SessionStatus
+	7, // 3: orchd.v1.WorkspaceEventPayload.refresh_hint:type_name -> orchd.v1.RefreshHint
+	2, // 4: orchd.v1.WorkspaceEventPayload.session_live_patch:type_name -> orchd.v1.SessionLivePatch
+	0, // 5: orchd.v1.WorkspaceEvent.type:type_name -> orchd.v1.WorkspaceEventType
+	8, // 6: orchd.v1.WorkspaceEvent.occurred_at:type_name -> google.protobuf.Timestamp
+	3, // 7: orchd.v1.WorkspaceEvent.payload:type_name -> orchd.v1.WorkspaceEventPayload
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_orchd_v1_events_proto_init() }
@@ -284,14 +473,15 @@ func file_orchd_v1_events_proto_init() {
 		return
 	}
 	file_orchd_v1_common_proto_init()
-	file_orchd_v1_events_proto_msgTypes[1].OneofWrappers = []any{}
+	file_orchd_v1_session_proto_init()
+	file_orchd_v1_events_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orchd_v1_events_proto_rawDesc), len(file_orchd_v1_events_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   2,
+			NumEnums:      2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

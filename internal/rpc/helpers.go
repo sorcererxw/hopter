@@ -190,6 +190,7 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 		UpdatedAt:         timestamp(session.UpdatedAt),
 		Artifacts:         artifacts,
 		TranscriptItems:   transcriptItems,
+		PendingApprovalId: optionalString(session.PendingApprovalID),
 	}
 }
 
@@ -220,6 +221,7 @@ func sessionMetaToProto(meta core.SessionMeta) *orchdv1.SessionMeta {
 		HasMoreBefore:      meta.HasMoreBefore,
 		LatestPageSizeHint: meta.LatestPageSizeHint,
 		ResumeCommand:      buildCodexResumeCommand(meta.Project.RootPath, meta.Session),
+		PendingApprovalId:  optionalString(meta.Session.PendingApprovalID),
 	}
 }
 

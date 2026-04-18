@@ -279,7 +279,7 @@ func (m *SessionReadModel) readCodexMeta(
 		}
 	}
 
-	client, err := m.manager.start(context.Background(), cwd, nil, nil)
+	client, err := m.manager.start(context.Background(), cwd, nil, nil, nil, nil)
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -320,7 +320,7 @@ func (m *SessionReadModel) readCodexTranscript(sessionID string, project core.Pr
 		return read, nil
 	}
 
-	client, err := m.manager.start(context.Background(), project.RootPath, nil, nil)
+	client, err := m.manager.start(context.Background(), project.RootPath, nil, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}

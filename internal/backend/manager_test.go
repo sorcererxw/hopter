@@ -18,6 +18,9 @@ type fakeRuntime struct {
 	lastCreate   core.CreateSessionInput
 	lastSendID   string
 	lastSendText string
+	lastApprovalID string
+	lastApprovalSessionID string
+	lastApprovalDecision core.ApprovalDecision
 }
 
 func (f *fakeRuntime) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
@@ -36,6 +39,13 @@ func (f *fakeRuntime) CreateSession(input core.CreateSessionInput) (core.Session
 func (f *fakeRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
 	f.lastSendID = sessionID
 	f.lastSendText = input
+	return f.sendResult, nil
+}
+
+func (f *fakeRuntime) RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error) {
+	f.lastApprovalSessionID = sessionID
+	f.lastApprovalID = approvalID
+	f.lastApprovalDecision = decision
 	return f.sendResult, nil
 }
 
@@ -179,6 +189,47 @@ func TestManagerSendSessionInputMaterializesSyntheticProject(t *testing.T) {
 	}
 	if updated.ID != "sess_remote" {
 		t.Fatalf("updated session id = %q, want sess_remote", updated.ID)
+	}
+}
+
+func TestManagerRespondToSessionApprovalRoutesByBackend(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace, "codex")
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	runtime := &fakeRuntime{
+		sendResult: core.Session{
+			ID:        session.ID,
+			ProjectID: project.ID,
+			Status:    core.SessionStateRunning,
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	manager := NewManager(workspace, map[string]Runtime{
+		"codex": runtime,
+	})
+
+	updated, err := manager.RespondToSessionApproval(session.ID, "12", core.ApprovalDecisionApprove)
+	if err != nil {
+		t.Fatalf("RespondToSessionApproval: %v", err)
+	}
+	if runtime.lastApprovalSessionID != session.ID {
+		t.Fatalf("approval session id = %q", runtime.lastApprovalSessionID)
+	}
+	if runtime.lastApprovalID != "12" {
+		t.Fatalf("approval id = %q", runtime.lastApprovalID)
+	}
+	if runtime.lastApprovalDecision != core.ApprovalDecisionApprove {
+		t.Fatalf("approval decision = %q", runtime.lastApprovalDecision)
+	}
+	if updated.ID != session.ID {
+		t.Fatalf("updated session id = %q", updated.ID)
 	}
 }
 

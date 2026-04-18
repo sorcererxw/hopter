@@ -11,16 +11,22 @@ import (
 	"sync"
 	"time"
 
-	codexsdk "orchd/internal/codex/sdk"
 	"orchd/internal/core"
 )
 
 type Manager struct {
 	mu        sync.Mutex
 	workspace core.WorkspaceService
+	eventSink  core.EventSink
 	live      map[string]*liveSession
 	start     clientStarter
-	execTurns turnExecutor
+}
+
+type pendingApproval struct {
+	ID      string
+	RawID   json.RawMessage
+	Method  string
+	Message string
 }
 
 type liveSession struct {
@@ -33,6 +39,9 @@ type liveSession struct {
 	optimisticLastInput string
 	optimisticStatus    core.SessionState
 	optimisticUpdatedAt time.Time
+	draftItemID         string
+	draftText           string
+	pendingApproval     *pendingApproval
 }
 
 type codexClient interface {
@@ -41,6 +50,7 @@ type codexClient interface {
 	ReadThread(threadID string) (*ReadThreadResult, error)
 	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
 	ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
+	RespondToApproval(rawID json.RawMessage, decision string) error
 	StartThread(cwd string) (*StartThreadResult, error)
 	StartTurn(threadID string, text string) (*StartTurnResult, error)
 	SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error)
@@ -50,75 +60,34 @@ type clientStarter func(
 	ctx context.Context,
 	cwd string,
 	onNotification func(Notification),
+	onServerRequest func(ServerRequest),
+	onTrace func(TraceEntry),
 	onExit func(),
 ) (codexClient, error)
-
-type turnExecutor interface {
-	Run(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error)
-}
-
-type sdkTurnExecutor struct{}
-
-func (sdkTurnExecutor) Run(
-	ctx context.Context,
-	project core.Project,
-	threadID string,
-	input string,
-	onEvent func(codexsdk.Event),
-) (string, error) {
-	client, err := codexsdk.New(codexsdk.ClientOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	threadOptions := codexsdk.ThreadOptions{
-		WorkingDirectory: project.RootPath,
-		SandboxMode:      codexsdk.SandboxModeDangerFullAccess,
-		ApprovalPolicy:   codexsdk.ApprovalPolicyNever,
-	}
-
-	var thread *codexsdk.Thread
-	if strings.TrimSpace(threadID) == "" {
-		thread = client.StartThread(threadOptions)
-	} else {
-		thread = client.ResumeThread(threadID, threadOptions)
-	}
-
-	stream, err := thread.RunStreamed(ctx, codexsdk.TextInput(input), codexsdk.RunOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	for event := range stream.Events {
-		if onEvent != nil {
-			onEvent(event)
-		}
-	}
-	for err := range stream.Err {
-		if err != nil {
-			return thread.ID(), err
-		}
-	}
-	return thread.ID(), nil
-}
 
 type ResolvedSession struct {
 	Project core.Project
 	Session core.Session
 }
 
-func NewManager(workspace core.WorkspaceService) *Manager {
+func NewManager(workspace core.WorkspaceService, eventSink ...core.EventSink) *Manager {
+	var sink core.EventSink
+	if len(eventSink) > 0 {
+		sink = eventSink[0]
+	}
 	return &Manager{
 		workspace: workspace,
+		eventSink:  sink,
 		live:      make(map[string]*liveSession),
-		execTurns: sdkTurnExecutor{},
 		start: func(
 			ctx context.Context,
 			cwd string,
 			onNotification func(Notification),
+			onServerRequest func(ServerRequest),
+			onTrace func(TraceEntry),
 			onExit func(),
 		) (codexClient, error) {
-			return Start(ctx, cwd, onNotification, onExit)
+			return Start(ctx, cwd, onNotification, onServerRequest, onTrace, onExit)
 		},
 	}
 }
@@ -249,79 +218,59 @@ func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, 
 		AppendTranscriptItems: &[]core.SessionTranscriptItem{userItem},
 	})
 
-	resolvedThreadID, err := m.execTurns.Run(context.Background(), project, threadID, input, func(event codexsdk.Event) {
-		m.handleSDKEvent(sessionID, event)
-	})
+	var (
+		live *liveSession
+		err  error
+	)
+	if strings.TrimSpace(threadID) == "" {
+		live, err = m.startLiveSession(sessionID, project)
+	} else {
+		live, err = m.ensureLiveSession(sessionID, project, threadID)
+	}
 	if err != nil {
 		m.failSession(sessionID, fmt.Errorf("execute codex turn: %w", err))
 		return
 	}
-	if strings.TrimSpace(threadID) == "" && strings.TrimSpace(resolvedThreadID) != "" {
+
+	resolvedThreadID := strings.TrimSpace(live.thread)
+	if strings.TrimSpace(threadID) == "" && resolvedThreadID != "" {
 		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			BackendThreadID: &resolvedThreadID,
 		})
 	}
 
-	status := core.SessionStateCompleted
-	summary := latestLocalSummary(m.workspace, sessionID)
-	if strings.TrimSpace(summary) == "" {
-		summary = "Codex completed the turn."
+	var turn *StartTurnResult
+	expectedTurnID := strings.TrimSpace(live.active)
+	if expectedTurnID == "" {
+		turn, err = live.client.StartTurn(resolvedThreadID, input)
+	} else {
+		turn, err = live.client.SteerTurn(resolvedThreadID, expectedTurnID, input)
 	}
-	active := ""
+	if err != nil {
+		m.failSession(sessionID, fmt.Errorf("start app-server turn: %w", err))
+		return
+	}
+
+	activeTurnID := strings.TrimSpace(turn.Turn.ID)
+	now := time.Now().UTC()
+	running := core.SessionStateRunning
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
-		ActiveTurnID: &active,
-		Status:       &status,
-		Summary:      &summary,
+		ActiveTurnID: &activeTurnID,
+		Status:       &running,
+		Summary:      &runningSummary,
 	})
 
 	m.mu.Lock()
 	if current := m.live[sessionID]; current != nil {
-		current.active = ""
-		current.optimisticSummary = ""
-		current.optimisticStatus = ""
+		current.active = activeTurnID
+		current.optimisticSummary = runningSummary
+		current.optimisticLastInput = truncate(strings.TrimSpace(input), 120)
+		current.optimisticStatus = running
+		current.optimisticUpdatedAt = now
 	}
 	m.mu.Unlock()
-	_ = runningSummary
-}
 
-func (m *Manager) handleSDKEvent(sessionID string, event codexsdk.Event) {
-	switch typed := event.(type) {
-	case *codexsdk.ThreadStartedEvent:
-		threadID := typed.ThreadID
-		running := core.SessionStateRunning
-		summary := "Codex is working…"
-		m.updateWorkspaceSession(sessionID, core.SessionPatch{
-			BackendThreadID: &threadID,
-			Status:          &running,
-			Summary:         &summary,
-		})
-	case *codexsdk.ItemCompletedEvent:
-		if transcriptItem, ok := normalizeSDKItem(typed.Item); ok {
-			m.updateWorkspaceSession(sessionID, core.SessionPatch{
-				AppendTranscriptItems: &[]core.SessionTranscriptItem{transcriptItem},
-			})
-		}
-		switch item := typed.Item.(type) {
-		case *codexsdk.AgentMessageItem:
-			text := strings.TrimSpace(item.Text)
-			if text != "" {
-				m.updateWorkspaceSession(sessionID, core.SessionPatch{
-					Summary: &text,
-				})
-			}
-		case *codexsdk.ErrorItem:
-			if strings.TrimSpace(item.Message) != "" {
-				message := strings.TrimSpace(item.Message)
-				m.updateWorkspaceSession(sessionID, core.SessionPatch{
-					Summary: &message,
-				})
-			}
-		}
-	case *codexsdk.TurnFailedEvent:
-		m.failSession(sessionID, fmt.Errorf("%w: %s", codexsdk.ErrTurnFailed, typed.Error.Message))
-	case *codexsdk.StreamErrorEvent:
-		m.failSession(sessionID, fmt.Errorf("%w: %s", codexsdk.ErrStreamFailed, typed.Message))
-	}
+	go m.watchTurn(sessionID, resolvedThreadID, activeTurnID)
 }
 
 func latestLocalSummary(workspace core.WorkspaceService, sessionID string) string {
@@ -342,21 +291,38 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		}
 		if json.Unmarshal(notification.Params, &payload) == nil && payload.Turn.ID != "" {
 			active := payload.Turn.ID
+			approvalID := ""
 			running := core.SessionStateRunning
 			summary := "Codex is working…"
+			attention := false
+			reason := ""
 			m.updateWorkspaceSession(sessionID, core.SessionPatch{
+				PendingApprovalID: &approvalID,
 				ActiveTurnID: &active,
 				Status:       &running,
 				Summary:      &summary,
+				AttentionRequired: &attention,
+				AttentionReason: &reason,
 			})
 			m.mu.Lock()
+			var projectID string
 			if live := m.live[sessionID]; live != nil {
 				live.active = active
 				live.optimisticSummary = summary
 				live.optimisticStatus = running
 				live.optimisticUpdatedAt = time.Now().UTC()
+				live.pendingApproval = nil
+				projectID = live.project.ID
 			}
 			m.mu.Unlock()
+			if projectID != "" {
+				m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+					Kind:         core.SessionLivePatchKindStatus,
+					ActiveTurnID: active,
+					Status:       running,
+					Summary:      summary,
+				})
+			}
 		}
 	case "turn/completed":
 		var payload struct {
@@ -371,10 +337,13 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			live.active = ""
 			live.optimisticSummary = ""
 			live.optimisticStatus = ""
+			live.draftItemID = ""
+			live.draftText = ""
 		}
 		m.mu.Unlock()
 
 		active := ""
+		approvalID := ""
 		status := finalSessionState(payload.Turn.Status, core.SessionStateCompleted)
 		summary := "Codex completed the turn."
 		if payload.Turn.Status == "interrupted" {
@@ -383,6 +352,12 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 
 		if live != nil {
 			if read, err := live.client.ReadThread(live.thread); err == nil {
+				transcriptItems := normalizeTranscriptItems(read)
+				if len(transcriptItems) > 0 {
+					m.updateWorkspaceSession(sessionID, core.SessionPatch{
+						TranscriptItems: &transcriptItems,
+					})
+				}
 				if extracted := latestAgentSummary(read); extracted != "" {
 					summary = extracted
 				}
@@ -390,15 +365,56 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		}
 
 		m.updateWorkspaceSession(sessionID, core.SessionPatch{
+			PendingApprovalID: &approvalID,
 			ActiveTurnID: &active,
 			Status:       &status,
 			Summary:      &summary,
 		})
+		if live != nil {
+			m.publishLivePatch(sessionID, live.project.ID, core.SessionLivePatch{
+				Kind:            core.SessionLivePatchKindReconcileRequired,
+				Status:          status,
+				Summary:         summary,
+				RequiresRefetch: true,
+			})
+		}
 	case "error":
 		m.failSession(sessionID, errors.New("codex emitted an error notification"))
+	case "item/agentMessage/delta":
+		var payload struct {
+			TurnID string `json:"turnId"`
+			ItemID string `json:"itemId"`
+			Delta  string `json:"delta"`
+		}
+		if json.Unmarshal(notification.Params, &payload) == nil && strings.TrimSpace(payload.Delta) != "" {
+			var (
+				projectID string
+				delta     = payload.Delta
+			)
+			m.mu.Lock()
+			if live := m.live[sessionID]; live != nil {
+				live.draftItemID = payload.ItemID
+				live.draftText += delta
+				projectID = live.project.ID
+				if strings.TrimSpace(payload.TurnID) != "" {
+					live.active = payload.TurnID
+				}
+			}
+			m.mu.Unlock()
+			if projectID != "" {
+				m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+					Kind:         core.SessionLivePatchKindDraftDelta,
+					ActiveTurnID: strings.TrimSpace(payload.TurnID),
+					DraftItemID:  strings.TrimSpace(payload.ItemID),
+					DraftDelta:   delta,
+					Status:       core.SessionStateRunning,
+				})
+			}
+		}
 	case "item/completed":
 		var payload struct {
 			Item struct {
+				ID    string `json:"id"`
 				Type  string `json:"type"`
 				Text  string `json:"text"`
 				Phase string `json:"phase"`
@@ -411,8 +427,98 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 				m.updateWorkspaceSession(sessionID, core.SessionPatch{
 					Summary: &summary,
 				})
+				var projectID string
+				m.mu.Lock()
+				if live := m.live[sessionID]; live != nil {
+					live.draftItemID = ""
+					live.draftText = ""
+					projectID = live.project.ID
+				}
+				m.mu.Unlock()
+				if projectID != "" {
+					m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+						Kind: core.SessionLivePatchKindMessageFinalized,
+						FinalItem: &core.SessionTranscriptItem{
+							ID:     strings.TrimSpace(payload.Item.ID),
+							Kind:   core.SessionTranscriptItemKindAgentMessage,
+							Title:  "Codex",
+							Body:   text,
+							Status: strings.TrimSpace(payload.Item.Phase),
+						},
+						Status:  core.SessionStateRunning,
+						Summary: text,
+					})
+				}
 			}
 		}
+	}
+}
+
+func (m *Manager) handleServerRequest(sessionID string, req ServerRequest) {
+	if !isApprovalRequest(req.Method) {
+		return
+	}
+
+	message := approvalMessage(req.Method)
+	approvalID := strings.TrimSpace(string(req.ID))
+	if approvalID == "" {
+		return
+	}
+
+	var projectID string
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		live.pendingApproval = &pendingApproval{
+			ID:      approvalID,
+			RawID:   append(json.RawMessage(nil), req.ID...),
+			Method:  req.Method,
+			Message: message,
+		}
+		projectID = live.project.ID
+	}
+	m.mu.Unlock()
+
+	waiting := core.SessionStateWaitingApproval
+	attention := true
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		PendingApprovalID: &approvalID,
+		Status:            &waiting,
+		AttentionRequired: &attention,
+		AttentionReason:   &message,
+	})
+	if projectID != "" {
+		m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+			Kind:            core.SessionLivePatchKindStatus,
+			Status:          waiting,
+			Summary:         message,
+			RequiresRefetch: true,
+		})
+	}
+}
+
+func isApprovalRequest(method string) bool {
+	switch method {
+	case "item/commandExecution/requestApproval",
+		"item/fileChange/requestApproval",
+		"execCommandApproval",
+		"applyPatchApproval",
+		"item/permissions/requestApproval":
+		return true
+	default:
+		return false
+	}
+}
+
+func approvalMessage(method string) string {
+	switch method {
+	case "item/commandExecution/requestApproval", "execCommandApproval":
+		return "Codex needs approval to run a command."
+	case "item/fileChange/requestApproval", "applyPatchApproval":
+		return "Codex needs approval to change files."
+	case "item/permissions/requestApproval":
+		return "Codex needs approval for additional permissions."
+	default:
+		return "Codex needs approval to continue."
 	}
 }
 
@@ -447,8 +553,6 @@ func latestTurnStatus(read *ReadThreadResult, turnID string) string {
 
 func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 	for range 180 {
-		time.Sleep(2 * time.Second)
-
 		m.mu.Lock()
 		live := m.live[sessionID]
 		m.mu.Unlock()
@@ -468,6 +572,7 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 		active := ""
 		status := finalSessionState(statusText, core.SessionStateCompleted)
 		summary := latestAgentSummary(read)
+		transcriptItems := normalizeTranscriptItems(read)
 		if summary == "" {
 			if statusText == "interrupted" {
 				summary = "Codex stopped before completing the turn."
@@ -475,19 +580,33 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 				summary = "Codex completed the turn."
 			}
 		}
-		m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		patch := core.SessionPatch{
 			ActiveTurnID: &active,
 			Status:       &status,
 			Summary:      &summary,
+		}
+		if len(transcriptItems) > 0 {
+			patch.TranscriptItems = &transcriptItems
+		}
+		m.updateWorkspaceSession(sessionID, patch)
+		m.publishLivePatch(sessionID, live.project.ID, core.SessionLivePatch{
+			Kind:            core.SessionLivePatchKindReconcileRequired,
+			Status:          status,
+			Summary:         summary,
+			RequiresRefetch: true,
 		})
 		m.mu.Lock()
 		if current := m.live[sessionID]; current != nil {
 			current.active = ""
 			current.optimisticSummary = ""
 			current.optimisticStatus = ""
+			current.draftItemID = ""
+			current.draftText = ""
 		}
 		m.mu.Unlock()
 		return
+
+		time.Sleep(2 * time.Second)
 	}
 
 	active := ""
@@ -500,18 +619,144 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 	})
 }
 
+func (m *Manager) publishLivePatch(sessionID, projectID string, patch core.SessionLivePatch) {
+	if m.eventSink == nil {
+		return
+	}
+	summary := strings.TrimSpace(patch.Summary)
+	m.eventSink.Publish(core.Event{
+		Kind:      core.EventSessionChanged,
+		ProjectID: projectID,
+		SessionID: sessionID,
+		Summary:   summary,
+		LivePatch: &patch,
+	})
+}
+
+func (m *Manager) startLiveSession(sessionKey string, project core.Project) (*liveSession, error) {
+	traceWriter := newAppServerTraceWriter(project.RootPath, sessionKey)
+	client, err := m.start(context.Background(), project.RootPath, func(n Notification) {
+		m.handleNotification(sessionKey, n)
+	}, func(req ServerRequest) {
+		m.handleServerRequest(sessionKey, req)
+	}, func(entry TraceEntry) {
+		traceWriter.Write(entry)
+	}, func() {
+		summary := "Codex runtime exited unexpectedly."
+		degraded := true
+		active := ""
+		m.updateWorkspaceSession(sessionKey, core.SessionPatch{
+			Status:            ptrSessionState(core.SessionStateDegraded),
+			Summary:           &summary,
+			AttentionReason:   &summary,
+			AttentionRequired: &degraded,
+			ActiveTurnID:      &active,
+		})
+		m.mu.Lock()
+		delete(m.live, sessionKey)
+		m.mu.Unlock()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	started, err := client.StartThread(project.RootPath)
+	if err != nil {
+		_ = client.Close()
+		return nil, err
+	}
+
+	record := ThreadRecord{
+		ID:        started.Thread.ID,
+		Path:      started.Thread.Path,
+		Cwd:       started.Thread.Cwd,
+		UpdatedAt: time.Now().UTC().Unix(),
+		Status:    ThreadStatus{Type: "active"},
+	}
+
+	live := &liveSession{
+		project: project,
+		client:  client,
+		thread:  started.Thread.ID,
+		record:  record,
+	}
+	m.mu.Lock()
+	m.live[sessionKey] = live
+	m.mu.Unlock()
+	return live, nil
+}
+
 func (m *Manager) failSession(sessionID string, err error) {
 	active := ""
+	approvalID := ""
 	status := core.SessionStateFailed
 	attention := true
 	summary := err.Error()
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		PendingApprovalID:  &approvalID,
 		ActiveTurnID:      &active,
 		Status:            &status,
 		Summary:           &summary,
 		AttentionRequired: &attention,
 		AttentionReason:   &summary,
 	})
+}
+
+func (m *Manager) RespondToSessionApproval(
+	sessionID string,
+	approvalID string,
+	decision core.ApprovalDecision,
+) (core.Session, error) {
+	m.mu.Lock()
+	live := m.live[sessionID]
+	if live == nil || live.pendingApproval == nil || live.pendingApproval.ID != approvalID {
+		m.mu.Unlock()
+		return core.Session{}, fmt.Errorf("approval %q not found for session %q", approvalID, sessionID)
+	}
+	pending := live.pendingApproval
+	live.pendingApproval = nil
+	activeTurnID := live.active
+	projectID := live.project.ID
+	m.mu.Unlock()
+
+	protocolDecision := "reject"
+	if decision == core.ApprovalDecisionApprove {
+		protocolDecision = "approve"
+	}
+	if err := live.client.RespondToApproval(pending.RawID, protocolDecision); err != nil {
+		m.mu.Lock()
+		if current := m.live[sessionID]; current != nil && current.pendingApproval == nil {
+			current.pendingApproval = pending
+		}
+		m.mu.Unlock()
+		return core.Session{}, fmt.Errorf("respond to app-server approval: %w", err)
+	}
+
+	running := core.SessionStateRunning
+	attention := false
+	reason := ""
+	summary := "Approval submitted. Codex is resuming…"
+	clearApprovalID := ""
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		PendingApprovalID:  &clearApprovalID,
+		Status:             &running,
+		AttentionRequired:  &attention,
+		AttentionReason:    &reason,
+		Summary:            &summary,
+		ActiveTurnID:       &activeTurnID,
+	})
+	m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+		Kind:         core.SessionLivePatchKindStatus,
+		ActiveTurnID: activeTurnID,
+		Status:       running,
+		Summary:      summary,
+	})
+
+	session, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		return core.Session{}, fmt.Errorf("session %q not found", sessionID)
+	}
+	return session, nil
 }
 
 func ptrSessionState(value core.SessionState) *core.SessionState {
@@ -535,7 +780,7 @@ func (m *Manager) startEphemeralClient() (codexClient, string, error) {
 		cwd = projects[0].RootPath
 	}
 
-	client, err := m.start(context.Background(), cwd, nil, nil)
+	client, err := m.start(context.Background(), cwd, nil, nil, nil, nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -585,7 +830,7 @@ func (m *Manager) fetchThreadSession(
 		return session, project, nil
 	}
 
-	client, err := m.start(context.Background(), project.RootPath, nil, nil)
+	client, err := m.start(context.Background(), project.RootPath, nil, nil, nil, nil)
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -661,8 +906,13 @@ func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, thr
 		return live, nil
 	}
 
+	traceWriter := newAppServerTraceWriter(project.RootPath, sessionKey)
 	client, err := m.start(context.Background(), project.RootPath, func(n Notification) {
 		m.handleNotification(sessionKey, n)
+	}, func(req ServerRequest) {
+		m.handleServerRequest(sessionKey, req)
+	}, func(entry TraceEntry) {
+		traceWriter.Write(entry)
 	}, func() {
 		summary := "Codex runtime exited unexpectedly."
 		degraded := true
@@ -735,6 +985,25 @@ func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *R
 	if strings.TrimSpace(live.optimisticLastInput) != "" {
 		session.LastInputHint = live.optimisticLastInput
 	}
+	if live.pendingApproval != nil {
+		session.PendingApprovalID = live.pendingApproval.ID
+		session.AttentionRequired = true
+		session.AttentionReason = live.pendingApproval.Message
+	}
+
+	if strings.TrimSpace(live.draftText) != "" {
+		draftID := strings.TrimSpace(live.draftItemID)
+		if draftID == "" {
+			draftID = "live-draft"
+		}
+		session.TranscriptItems = append(session.TranscriptItems, core.SessionTranscriptItem{
+			ID:     draftID,
+			Kind:   core.SessionTranscriptItemKindAgentMessage,
+			Title:  "Codex",
+			Body:   live.draftText,
+			Status: "streaming",
+		})
+	}
 
 	if session.ActiveTurnID != "" || strings.TrimSpace(live.active) != "" {
 		session.Status = core.SessionStateRunning
@@ -742,6 +1011,9 @@ func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *R
 		session.Status = live.optimisticStatus
 	} else {
 		session.Status = finalSessionState(latestTerminalTurnStatus(read), session.Status)
+	}
+	if live.pendingApproval != nil {
+		session.Status = core.SessionStateWaitingApproval
 	}
 
 	if !live.optimisticUpdatedAt.IsZero() {
@@ -792,6 +1064,7 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 		session.ID = local.ID
 		session.AttentionRequired = local.AttentionRequired
 		session.AttentionReason = local.AttentionReason
+		session.PendingApprovalID = local.PendingApprovalID
 		session.LastInputHint = local.LastInputHint
 		session.Artifacts = append([]core.Artifact(nil), local.Artifacts...)
 		if strings.TrimSpace(local.Title) != "" && strings.TrimSpace(thread.NameValue()) == "" {

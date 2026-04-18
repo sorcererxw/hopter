@@ -2,38 +2,19 @@
 // @generated from file orchd/v1/session.proto (package orchd.v1, syntax proto3)
 /* eslint-disable */
 
-import type {
-  GenEnum,
-  GenFile,
-  GenMessage,
-  GenService,
-} from "@bufbuild/protobuf/codegenv2"
-import {
-  enumDesc,
-  fileDesc,
-  messageDesc,
-  serviceDesc,
-} from "@bufbuild/protobuf/codegenv2"
-import type { Timestamp } from "@bufbuild/protobuf/wkt"
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt"
-import type {
-  ApprovalDecision,
-  ArtifactRef,
-  ProjectRef,
-  SessionStatus,
-} from "./common_pb"
-import { file_orchd_v1_common } from "./common_pb"
-import type { Message } from "@bufbuild/protobuf"
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { ApprovalDecision, ArtifactRef, ProjectRef, SessionStatus } from "./common_pb";
+import { file_orchd_v1_common } from "./common_pb";
+import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file orchd/v1/session.proto.
  */
-export const file_orchd_v1_session: GenFile =
-  /*@__PURE__*/
-  fileDesc(
-    "ChZvcmNoZC92MS9zZXNzaW9uLnByb3RvEghvcmNoZC52MSL+AgoHU2Vzc2lvbhIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEg8KB3N1bW1hcnkYBSABKAkSGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhgKEGF0dGVudGlvbl9yZWFzb24YByABKAkSFwoPbGFzdF9pbnB1dF9oaW50GAggASgJEi4KCnVwZGF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEigKCWFydGlmYWN0cxgKIAMoCzIVLm9yY2hkLnYxLkFydGlmYWN0UmVmEjkKEHRyYW5zY3JpcHRfaXRlbXMYCyADKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SEwoLYmFja2VuZF9rZXkYDCABKAkilwMKC1Nlc3Npb25NZXRhEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiUKB3Byb2plY3QYAyABKAsyFC5vcmNoZC52MS5Qcm9qZWN0UmVmEicKBnN0YXR1cxgEIAEoDjIXLm9yY2hkLnYxLlNlc3Npb25TdGF0dXMSDwoHc3VtbWFyeRgFIAEoCRIaChJhdHRlbnRpb25fcmVxdWlyZWQYBiABKAgSGAoQYXR0ZW50aW9uX3JlYXNvbhgHIAEoCRIXCg9sYXN0X2lucHV0X2hpbnQYCCABKAkSLgoKdXBkYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASKAoJYXJ0aWZhY3RzGAogAygLMhUub3JjaGQudjEuQXJ0aWZhY3RSZWYSEwoLYmFja2VuZF9rZXkYCyABKAkSFwoPaGFzX21vcmVfYmVmb3JlGAwgASgIEh0KFWxhdGVzdF9wYWdlX3NpemVfaGludBgNIAEoDRIWCg5yZXN1bWVfY29tbWFuZBgOIAEoCSKDAQoVU2Vzc2lvblRyYW5zY3JpcHRJdGVtEgoKAmlkGAEgASgJEjEKBGtpbmQYAiABKA4yIy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW1LaW5kEg0KBXRpdGxlGAMgASgJEgwKBGJvZHkYBCABKAkSDgoGc3RhdHVzGAUgASgJIt0BCg9TZXNzaW9uTGlzdEl0ZW0SCgoCaWQYASABKAkSDQoFdGl0bGUYAiABKAkSJQoHcHJvamVjdBgDIAEoCzIULm9yY2hkLnYxLlByb2plY3RSZWYSJwoGc3RhdHVzGAQgASgOMhcub3JjaGQudjEuU2Vzc2lvblN0YXR1cxIuCgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJhdHRlbnRpb25fcmVxdWlyZWQYBiABKAgSEwoLYmFja2VuZF9rZXkYByABKAkiWwoTTGlzdFNlc3Npb25zUmVxdWVzdBIXCgpwcm9qZWN0X2lkGAEgASgJSACIAQESEgoFbGltaXQYAiABKA1IAYgBAUINCgtfcHJvamVjdF9pZEIICgZfbGltaXQiQwoUTGlzdFNlc3Npb25zUmVzcG9uc2USKwoIc2Vzc2lvbnMYASADKAsyGS5vcmNoZC52MS5TZXNzaW9uTGlzdEl0ZW0iJwoRR2V0U2Vzc2lvblJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSI4ChJHZXRTZXNzaW9uUmVzcG9uc2USIgoHc2Vzc2lvbhgBIAEoCzIRLm9yY2hkLnYxLlNlc3Npb24iKwoVR2V0U2Vzc2lvbk1ldGFSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiQAoWR2V0U2Vzc2lvbk1ldGFSZXNwb25zZRImCgdzZXNzaW9uGAEgASgLMhUub3JjaGQudjEuU2Vzc2lvbk1ldGEifgocTGlzdFNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhoKDWJlZm9yZV9jdXJzb3IYAiABKAlIAIgBARISCgVsaW1pdBgDIAEoDUgBiAEBQhAKDl9iZWZvcmVfY3Vyc29yQggKBl9saW1pdCLRAQoVU2Vzc2lvblRyYW5zY3JpcHRQYWdlEi4KBWl0ZW1zGAEgAygLMh8ub3JjaGQudjEuU2Vzc2lvblRyYW5zY3JpcHRJdGVtEh8KEm5leHRfYmVmb3JlX2N1cnNvchgCIAEoCUgAiAEBEhcKD2hhc19tb3JlX2JlZm9yZRgDIAEoCBI3ChNzbmFwc2hvdF91cGRhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIVChNfbmV4dF9iZWZvcmVfY3Vyc29yIk4KHUxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlc3BvbnNlEi0KBHBhZ2UYASABKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdFBhZ2UiggEKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhIKCnByb2plY3RfaWQYASABKAkSEgoFdGl0bGUYAiABKAlIAIgBARIOCgZwcm9tcHQYAyABKAkSGAoLYmFja2VuZF9rZXkYBCABKAlIAYgBAUIICgZfdGl0bGVCDgoMX2JhY2tlbmRfa2V5IjsKFUNyZWF0ZVNlc3Npb25SZXNwb25zZRIiCgdzZXNzaW9uGAEgASgLMhEub3JjaGQudjEuU2Vzc2lvbiI8ChdTZW5kU2Vzc2lvbklucHV0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg0KBWlucHV0GAIgASgJInAKGFNlbmRTZXNzaW9uSW5wdXRSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpoBCh9SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEwoLYXBwcm92YWxfaWQYAiABKAkSLAoIZGVjaXNpb24YAyABKA4yGi5vcmNoZC52MS5BcHByb3ZhbERlY2lzaW9uEhQKB2NvbW1lbnQYBCABKAlIAIgBAUIKCghfY29tbWVudCJ4CiBSZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjEKG0xpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIkgKHExpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2USKAoJYXJ0aWZhY3RzGAEgAygLMhUub3JjaGQudjEuQXJ0aWZhY3RSZWYq4gIKGVNlc3Npb25UcmFuc2NyaXB0SXRlbUtpbmQSLAooU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9VTlNQRUNJRklFRBAAEi0KKVNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfVVNFUl9NRVNTQUdFEAESLgoqU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9BR0VOVF9NRVNTQUdFEAISKgomU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9SRUFTT05JTkcQAxIqCiZTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1RPT0xfQ0FMTBAEEjIKLlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfQ09NTUFORF9FWEVDVVRJT04QBRIsCihTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX0ZJTEVfQ0hBTkdFEAYy7gUKDlNlc3Npb25TZXJ2aWNlEk0KDExpc3RTZXNzaW9ucxIdLm9yY2hkLnYxLkxpc3RTZXNzaW9uc1JlcXVlc3QaHi5vcmNoZC52MS5MaXN0U2Vzc2lvbnNSZXNwb25zZRJHCgpHZXRTZXNzaW9uEhsub3JjaGQudjEuR2V0U2Vzc2lvblJlcXVlc3QaHC5vcmNoZC52MS5HZXRTZXNzaW9uUmVzcG9uc2USUwoOR2V0U2Vzc2lvbk1ldGESHy5vcmNoZC52MS5HZXRTZXNzaW9uTWV0YVJlcXVlc3QaIC5vcmNoZC52MS5HZXRTZXNzaW9uTWV0YVJlc3BvbnNlEmgKFUxpc3RTZXNzaW9uVHJhbnNjcmlwdBImLm9yY2hkLnYxLkxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlcXVlc3QaJy5vcmNoZC52MS5MaXN0U2Vzc2lvblRyYW5zY3JpcHRSZXNwb25zZRJQCg1DcmVhdGVTZXNzaW9uEh4ub3JjaGQudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaHy5vcmNoZC52MS5DcmVhdGVTZXNzaW9uUmVzcG9uc2USWQoQU2VuZFNlc3Npb25JbnB1dBIhLm9yY2hkLnYxLlNlbmRTZXNzaW9uSW5wdXRSZXF1ZXN0GiIub3JjaGQudjEuU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlEnEKGFJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbBIpLm9yY2hkLnYxLlJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QaKi5vcmNoZC52MS5SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXNwb25zZRJlChRMaXN0U2Vzc2lvbkFydGlmYWN0cxIlLm9yY2hkLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBomLm9yY2hkLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2VCiAEKDGNvbS5vcmNoZC52MUIMU2Vzc2lvblByb3RvUAFaKW9yY2hkL2ludGVybmFsL2dlbi9wcm90by9vcmNoZC92MTtvcmNoZHYxogIDT1hYqgIIT3JjaGQuVjHKAghPcmNoZFxWMeICFE9yY2hkXFYxXEdQQk1ldGFkYXRh6gIJT3JjaGQ6OlYxYgZwcm90bzM",
-    [file_google_protobuf_timestamp, file_orchd_v1_common]
-  )
+export const file_orchd_v1_session: GenFile = /*@__PURE__*/
+  fileDesc("ChZvcmNoZC92MS9zZXNzaW9uLnByb3RvEghvcmNoZC52MSK4AwoHU2Vzc2lvbhIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEg8KB3N1bW1hcnkYBSABKAkSGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhgKEGF0dGVudGlvbl9yZWFzb24YByABKAkSFwoPbGFzdF9pbnB1dF9oaW50GAggASgJEi4KCnVwZGF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEigKCWFydGlmYWN0cxgKIAMoCzIVLm9yY2hkLnYxLkFydGlmYWN0UmVmEjkKEHRyYW5zY3JpcHRfaXRlbXMYCyADKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SEwoLYmFja2VuZF9rZXkYDCABKAkSIAoTcGVuZGluZ19hcHByb3ZhbF9pZBgNIAEoCUgAiAEBQhYKFF9wZW5kaW5nX2FwcHJvdmFsX2lkItEDCgtTZXNzaW9uTWV0YRIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEg8KB3N1bW1hcnkYBSABKAkSGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhgKEGF0dGVudGlvbl9yZWFzb24YByABKAkSFwoPbGFzdF9pbnB1dF9oaW50GAggASgJEi4KCnVwZGF0ZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEigKCWFydGlmYWN0cxgKIAMoCzIVLm9yY2hkLnYxLkFydGlmYWN0UmVmEhMKC2JhY2tlbmRfa2V5GAsgASgJEhcKD2hhc19tb3JlX2JlZm9yZRgMIAEoCBIdChVsYXRlc3RfcGFnZV9zaXplX2hpbnQYDSABKA0SFgoOcmVzdW1lX2NvbW1hbmQYDiABKAkSIAoTcGVuZGluZ19hcHByb3ZhbF9pZBgPIAEoCUgAiAEBQhYKFF9wZW5kaW5nX2FwcHJvdmFsX2lkIoMBChVTZXNzaW9uVHJhbnNjcmlwdEl0ZW0SCgoCaWQYASABKAkSMQoEa2luZBgCIAEoDjIjLm9yY2hkLnYxLlNlc3Npb25UcmFuc2NyaXB0SXRlbUtpbmQSDQoFdGl0bGUYAyABKAkSDAoEYm9keRgEIAEoCRIOCgZzdGF0dXMYBSABKAki3QEKD1Nlc3Npb25MaXN0SXRlbRIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIlCgdwcm9qZWN0GAMgASgLMhQub3JjaGQudjEuUHJvamVjdFJlZhInCgZzdGF0dXMYBCABKA4yFy5vcmNoZC52MS5TZXNzaW9uU3RhdHVzEi4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmF0dGVudGlvbl9yZXF1aXJlZBgGIAEoCBITCgtiYWNrZW5kX2tleRgHIAEoCSJbChNMaXN0U2Vzc2lvbnNSZXF1ZXN0EhcKCnByb2plY3RfaWQYASABKAlIAIgBARISCgVsaW1pdBgCIAEoDUgBiAEBQg0KC19wcm9qZWN0X2lkQggKBl9saW1pdCJDChRMaXN0U2Vzc2lvbnNSZXNwb25zZRIrCghzZXNzaW9ucxgBIAMoCzIZLm9yY2hkLnYxLlNlc3Npb25MaXN0SXRlbSInChFHZXRTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjgKEkdldFNlc3Npb25SZXNwb25zZRIiCgdzZXNzaW9uGAEgASgLMhEub3JjaGQudjEuU2Vzc2lvbiIrChVHZXRTZXNzaW9uTWV0YVJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJAChZHZXRTZXNzaW9uTWV0YVJlc3BvbnNlEiYKB3Nlc3Npb24YASABKAsyFS5vcmNoZC52MS5TZXNzaW9uTWV0YSJ+ChxMaXN0U2Vzc2lvblRyYW5zY3JpcHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSGgoNYmVmb3JlX2N1cnNvchgCIAEoCUgAiAEBEhIKBWxpbWl0GAMgASgNSAGIAQFCEAoOX2JlZm9yZV9jdXJzb3JCCAoGX2xpbWl0ItEBChVTZXNzaW9uVHJhbnNjcmlwdFBhZ2USLgoFaXRlbXMYASADKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SHwoSbmV4dF9iZWZvcmVfY3Vyc29yGAIgASgJSACIAQESFwoPaGFzX21vcmVfYmVmb3JlGAMgASgIEjcKE3NuYXBzaG90X3VwZGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQhUKE19uZXh0X2JlZm9yZV9jdXJzb3IiTgodTGlzdFNlc3Npb25UcmFuc2NyaXB0UmVzcG9uc2USLQoEcGFnZRgBIAEoCzIfLm9yY2hkLnYxLlNlc3Npb25UcmFuc2NyaXB0UGFnZSKCAQoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEgoKcHJvamVjdF9pZBgBIAEoCRISCgV0aXRsZRgCIAEoCUgAiAEBEg4KBnByb21wdBgDIAEoCRIYCgtiYWNrZW5kX2tleRgEIAEoCUgBiAEBQggKBl90aXRsZUIOCgxfYmFja2VuZF9rZXkiOwoVQ3JlYXRlU2Vzc2lvblJlc3BvbnNlEiIKB3Nlc3Npb24YASABKAsyES5vcmNoZC52MS5TZXNzaW9uIjwKF1NlbmRTZXNzaW9uSW5wdXRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDQoFaW5wdXQYAiABKAkicAoYU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAimgEKH1Jlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRITCgthcHByb3ZhbF9pZBgCIAEoCRIsCghkZWNpc2lvbhgDIAEoDjIaLm9yY2hkLnYxLkFwcHJvdmFsRGVjaXNpb24SFAoHY29tbWVudBgEIAEoCUgAiAEBQgoKCF9jb21tZW50IngKIFJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiMQobTGlzdFNlc3Npb25BcnRpZmFjdHNSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiSAocTGlzdFNlc3Npb25BcnRpZmFjdHNSZXNwb25zZRIoCglhcnRpZmFjdHMYASADKAsyFS5vcmNoZC52MS5BcnRpZmFjdFJlZiriAgoZU2Vzc2lvblRyYW5zY3JpcHRJdGVtS2luZBIsCihTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1VOU1BFQ0lGSUVEEAASLQopU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9VU0VSX01FU1NBR0UQARIuCipTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX0FHRU5UX01FU1NBR0UQAhIqCiZTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1JFQVNPTklORxADEioKJlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfVE9PTF9DQUxMEAQSMgouU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9DT01NQU5EX0VYRUNVVElPThAFEiwKKFNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfRklMRV9DSEFOR0UQBjLuBQoOU2Vzc2lvblNlcnZpY2USTQoMTGlzdFNlc3Npb25zEh0ub3JjaGQudjEuTGlzdFNlc3Npb25zUmVxdWVzdBoeLm9yY2hkLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEkcKCkdldFNlc3Npb24SGy5vcmNoZC52MS5HZXRTZXNzaW9uUmVxdWVzdBocLm9yY2hkLnYxLkdldFNlc3Npb25SZXNwb25zZRJTCg5HZXRTZXNzaW9uTWV0YRIfLm9yY2hkLnYxLkdldFNlc3Npb25NZXRhUmVxdWVzdBogLm9yY2hkLnYxLkdldFNlc3Npb25NZXRhUmVzcG9uc2USaAoVTGlzdFNlc3Npb25UcmFuc2NyaXB0EiYub3JjaGQudjEuTGlzdFNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBonLm9yY2hkLnYxLkxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlc3BvbnNlElAKDUNyZWF0ZVNlc3Npb24SHi5vcmNoZC52MS5DcmVhdGVTZXNzaW9uUmVxdWVzdBofLm9yY2hkLnYxLkNyZWF0ZVNlc3Npb25SZXNwb25zZRJZChBTZW5kU2Vzc2lvbklucHV0EiEub3JjaGQudjEuU2VuZFNlc3Npb25JbnB1dFJlcXVlc3QaIi5vcmNoZC52MS5TZW5kU2Vzc2lvbklucHV0UmVzcG9uc2UScQoYUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsEikub3JjaGQudjEuUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsUmVxdWVzdBoqLm9yY2hkLnYxLlJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlc3BvbnNlEmUKFExpc3RTZXNzaW9uQXJ0aWZhY3RzEiUub3JjaGQudjEuTGlzdFNlc3Npb25BcnRpZmFjdHNSZXF1ZXN0GiYub3JjaGQudjEuTGlzdFNlc3Npb25BcnRpZmFjdHNSZXNwb25zZUKIAQoMY29tLm9yY2hkLnYxQgxTZXNzaW9uUHJvdG9QAVopb3JjaGQvaW50ZXJuYWwvZ2VuL3Byb3RvL29yY2hkL3YxO29yY2hkdjGiAgNPWFiqAghPcmNoZC5WMcoCCE9yY2hkXFYx4gIUT3JjaGRcVjFcR1BCTWV0YWRhdGHqAglPcmNoZDo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_orchd_v1_common]);
 
 /**
  * @generated from message orchd.v1.Session
@@ -42,71 +23,75 @@ export type Session = Message<"orchd.v1.Session"> & {
   /**
    * @generated from field: string id = 1;
    */
-  id: string
+  id: string;
 
   /**
    * @generated from field: string title = 2;
    */
-  title: string
+  title: string;
 
   /**
    * @generated from field: orchd.v1.ProjectRef project = 3;
    */
-  project?: ProjectRef
+  project?: ProjectRef;
 
   /**
    * @generated from field: orchd.v1.SessionStatus status = 4;
    */
-  status: SessionStatus
+  status: SessionStatus;
 
   /**
    * @generated from field: string summary = 5;
    */
-  summary: string
+  summary: string;
 
   /**
    * @generated from field: bool attention_required = 6;
    */
-  attentionRequired: boolean
+  attentionRequired: boolean;
 
   /**
    * @generated from field: string attention_reason = 7;
    */
-  attentionReason: string
+  attentionReason: string;
 
   /**
    * @generated from field: string last_input_hint = 8;
    */
-  lastInputHint: string
+  lastInputHint: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp updated_at = 9;
    */
-  updatedAt?: Timestamp
+  updatedAt?: Timestamp;
 
   /**
    * @generated from field: repeated orchd.v1.ArtifactRef artifacts = 10;
    */
-  artifacts: ArtifactRef[]
+  artifacts: ArtifactRef[];
 
   /**
    * @generated from field: repeated orchd.v1.SessionTranscriptItem transcript_items = 11;
    */
-  transcriptItems: SessionTranscriptItem[]
+  transcriptItems: SessionTranscriptItem[];
 
   /**
    * @generated from field: string backend_key = 12;
    */
-  backendKey: string
-}
+  backendKey: string;
+
+  /**
+   * @generated from field: optional string pending_approval_id = 13;
+   */
+  pendingApprovalId?: string;
+};
 
 /**
  * Describes the message orchd.v1.Session.
  * Use `create(SessionSchema)` to create a new message.
  */
-export const SessionSchema: GenMessage<Session> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 0)
+export const SessionSchema: GenMessage<Session> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 0);
 
 /**
  * @generated from message orchd.v1.SessionMeta
@@ -115,120 +100,122 @@ export type SessionMeta = Message<"orchd.v1.SessionMeta"> & {
   /**
    * @generated from field: string id = 1;
    */
-  id: string
+  id: string;
 
   /**
    * @generated from field: string title = 2;
    */
-  title: string
+  title: string;
 
   /**
    * @generated from field: orchd.v1.ProjectRef project = 3;
    */
-  project?: ProjectRef
+  project?: ProjectRef;
 
   /**
    * @generated from field: orchd.v1.SessionStatus status = 4;
    */
-  status: SessionStatus
+  status: SessionStatus;
 
   /**
    * @generated from field: string summary = 5;
    */
-  summary: string
+  summary: string;
 
   /**
    * @generated from field: bool attention_required = 6;
    */
-  attentionRequired: boolean
+  attentionRequired: boolean;
 
   /**
    * @generated from field: string attention_reason = 7;
    */
-  attentionReason: string
+  attentionReason: string;
 
   /**
    * @generated from field: string last_input_hint = 8;
    */
-  lastInputHint: string
+  lastInputHint: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp updated_at = 9;
    */
-  updatedAt?: Timestamp
+  updatedAt?: Timestamp;
 
   /**
    * @generated from field: repeated orchd.v1.ArtifactRef artifacts = 10;
    */
-  artifacts: ArtifactRef[]
+  artifacts: ArtifactRef[];
 
   /**
    * @generated from field: string backend_key = 11;
    */
-  backendKey: string
+  backendKey: string;
 
   /**
    * @generated from field: bool has_more_before = 12;
    */
-  hasMoreBefore: boolean
+  hasMoreBefore: boolean;
 
   /**
    * @generated from field: uint32 latest_page_size_hint = 13;
    */
-  latestPageSizeHint: number
+  latestPageSizeHint: number;
 
   /**
    * @generated from field: string resume_command = 14;
    */
-  resumeCommand: string
-}
+  resumeCommand: string;
+
+  /**
+   * @generated from field: optional string pending_approval_id = 15;
+   */
+  pendingApprovalId?: string;
+};
 
 /**
  * Describes the message orchd.v1.SessionMeta.
  * Use `create(SessionMetaSchema)` to create a new message.
  */
-export const SessionMetaSchema: GenMessage<SessionMeta> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 1)
+export const SessionMetaSchema: GenMessage<SessionMeta> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 1);
 
 /**
  * @generated from message orchd.v1.SessionTranscriptItem
  */
-export type SessionTranscriptItem =
-  Message<"orchd.v1.SessionTranscriptItem"> & {
-    /**
-     * @generated from field: string id = 1;
-     */
-    id: string
+export type SessionTranscriptItem = Message<"orchd.v1.SessionTranscriptItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
 
-    /**
-     * @generated from field: orchd.v1.SessionTranscriptItemKind kind = 2;
-     */
-    kind: SessionTranscriptItemKind
+  /**
+   * @generated from field: orchd.v1.SessionTranscriptItemKind kind = 2;
+   */
+  kind: SessionTranscriptItemKind;
 
-    /**
-     * @generated from field: string title = 3;
-     */
-    title: string
+  /**
+   * @generated from field: string title = 3;
+   */
+  title: string;
 
-    /**
-     * @generated from field: string body = 4;
-     */
-    body: string
+  /**
+   * @generated from field: string body = 4;
+   */
+  body: string;
 
-    /**
-     * @generated from field: string status = 5;
-     */
-    status: string
-  }
+  /**
+   * @generated from field: string status = 5;
+   */
+  status: string;
+};
 
 /**
  * Describes the message orchd.v1.SessionTranscriptItem.
  * Use `create(SessionTranscriptItemSchema)` to create a new message.
  */
-export const SessionTranscriptItemSchema: GenMessage<SessionTranscriptItem> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 2)
+export const SessionTranscriptItemSchema: GenMessage<SessionTranscriptItem> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 2);
 
 /**
  * @generated from message orchd.v1.SessionListItem
@@ -237,46 +224,45 @@ export type SessionListItem = Message<"orchd.v1.SessionListItem"> & {
   /**
    * @generated from field: string id = 1;
    */
-  id: string
+  id: string;
 
   /**
    * @generated from field: string title = 2;
    */
-  title: string
+  title: string;
 
   /**
    * @generated from field: orchd.v1.ProjectRef project = 3;
    */
-  project?: ProjectRef
+  project?: ProjectRef;
 
   /**
    * @generated from field: orchd.v1.SessionStatus status = 4;
    */
-  status: SessionStatus
+  status: SessionStatus;
 
   /**
    * @generated from field: google.protobuf.Timestamp updated_at = 5;
    */
-  updatedAt?: Timestamp
+  updatedAt?: Timestamp;
 
   /**
    * @generated from field: bool attention_required = 6;
    */
-  attentionRequired: boolean
+  attentionRequired: boolean;
 
   /**
    * @generated from field: string backend_key = 7;
    */
-  backendKey: string
-}
+  backendKey: string;
+};
 
 /**
  * Describes the message orchd.v1.SessionListItem.
  * Use `create(SessionListItemSchema)` to create a new message.
  */
-export const SessionListItemSchema: GenMessage<SessionListItem> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 3)
+export const SessionListItemSchema: GenMessage<SessionListItem> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 3);
 
 /**
  * @generated from message orchd.v1.ListSessionsRequest
@@ -285,21 +271,20 @@ export type ListSessionsRequest = Message<"orchd.v1.ListSessionsRequest"> & {
   /**
    * @generated from field: optional string project_id = 1;
    */
-  projectId?: string
+  projectId?: string;
 
   /**
    * @generated from field: optional uint32 limit = 2;
    */
-  limit?: number
-}
+  limit?: number;
+};
 
 /**
  * Describes the message orchd.v1.ListSessionsRequest.
  * Use `create(ListSessionsRequestSchema)` to create a new message.
  */
-export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 4)
+export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 4);
 
 /**
  * @generated from message orchd.v1.ListSessionsResponse
@@ -308,16 +293,15 @@ export type ListSessionsResponse = Message<"orchd.v1.ListSessionsResponse"> & {
   /**
    * @generated from field: repeated orchd.v1.SessionListItem sessions = 1;
    */
-  sessions: SessionListItem[]
-}
+  sessions: SessionListItem[];
+};
 
 /**
  * Describes the message orchd.v1.ListSessionsResponse.
  * Use `create(ListSessionsResponseSchema)` to create a new message.
  */
-export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 5)
+export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 5);
 
 /**
  * @generated from message orchd.v1.GetSessionRequest
@@ -326,16 +310,15 @@ export type GetSessionRequest = Message<"orchd.v1.GetSessionRequest"> & {
   /**
    * @generated from field: string session_id = 1;
    */
-  sessionId: string
-}
+  sessionId: string;
+};
 
 /**
  * Describes the message orchd.v1.GetSessionRequest.
  * Use `create(GetSessionRequestSchema)` to create a new message.
  */
-export const GetSessionRequestSchema: GenMessage<GetSessionRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 6)
+export const GetSessionRequestSchema: GenMessage<GetSessionRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 6);
 
 /**
  * @generated from message orchd.v1.GetSessionResponse
@@ -344,136 +327,125 @@ export type GetSessionResponse = Message<"orchd.v1.GetSessionResponse"> & {
   /**
    * @generated from field: orchd.v1.Session session = 1;
    */
-  session?: Session
-}
+  session?: Session;
+};
 
 /**
  * Describes the message orchd.v1.GetSessionResponse.
  * Use `create(GetSessionResponseSchema)` to create a new message.
  */
-export const GetSessionResponseSchema: GenMessage<GetSessionResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 7)
+export const GetSessionResponseSchema: GenMessage<GetSessionResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 7);
 
 /**
  * @generated from message orchd.v1.GetSessionMetaRequest
  */
-export type GetSessionMetaRequest =
-  Message<"orchd.v1.GetSessionMetaRequest"> & {
-    /**
-     * @generated from field: string session_id = 1;
-     */
-    sessionId: string
-  }
+export type GetSessionMetaRequest = Message<"orchd.v1.GetSessionMetaRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
 
 /**
  * Describes the message orchd.v1.GetSessionMetaRequest.
  * Use `create(GetSessionMetaRequestSchema)` to create a new message.
  */
-export const GetSessionMetaRequestSchema: GenMessage<GetSessionMetaRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 8)
+export const GetSessionMetaRequestSchema: GenMessage<GetSessionMetaRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 8);
 
 /**
  * @generated from message orchd.v1.GetSessionMetaResponse
  */
-export type GetSessionMetaResponse =
-  Message<"orchd.v1.GetSessionMetaResponse"> & {
-    /**
-     * @generated from field: orchd.v1.SessionMeta session = 1;
-     */
-    session?: SessionMeta
-  }
+export type GetSessionMetaResponse = Message<"orchd.v1.GetSessionMetaResponse"> & {
+  /**
+   * @generated from field: orchd.v1.SessionMeta session = 1;
+   */
+  session?: SessionMeta;
+};
 
 /**
  * Describes the message orchd.v1.GetSessionMetaResponse.
  * Use `create(GetSessionMetaResponseSchema)` to create a new message.
  */
-export const GetSessionMetaResponseSchema: GenMessage<GetSessionMetaResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 9)
+export const GetSessionMetaResponseSchema: GenMessage<GetSessionMetaResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 9);
 
 /**
  * @generated from message orchd.v1.ListSessionTranscriptRequest
  */
-export type ListSessionTranscriptRequest =
-  Message<"orchd.v1.ListSessionTranscriptRequest"> & {
-    /**
-     * @generated from field: string session_id = 1;
-     */
-    sessionId: string
+export type ListSessionTranscriptRequest = Message<"orchd.v1.ListSessionTranscriptRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
 
-    /**
-     * @generated from field: optional string before_cursor = 2;
-     */
-    beforeCursor?: string
+  /**
+   * @generated from field: optional string before_cursor = 2;
+   */
+  beforeCursor?: string;
 
-    /**
-     * @generated from field: optional uint32 limit = 3;
-     */
-    limit?: number
-  }
+  /**
+   * @generated from field: optional uint32 limit = 3;
+   */
+  limit?: number;
+};
 
 /**
  * Describes the message orchd.v1.ListSessionTranscriptRequest.
  * Use `create(ListSessionTranscriptRequestSchema)` to create a new message.
  */
-export const ListSessionTranscriptRequestSchema: GenMessage<ListSessionTranscriptRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 10)
+export const ListSessionTranscriptRequestSchema: GenMessage<ListSessionTranscriptRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 10);
 
 /**
  * @generated from message orchd.v1.SessionTranscriptPage
  */
-export type SessionTranscriptPage =
-  Message<"orchd.v1.SessionTranscriptPage"> & {
-    /**
-     * @generated from field: repeated orchd.v1.SessionTranscriptItem items = 1;
-     */
-    items: SessionTranscriptItem[]
+export type SessionTranscriptPage = Message<"orchd.v1.SessionTranscriptPage"> & {
+  /**
+   * @generated from field: repeated orchd.v1.SessionTranscriptItem items = 1;
+   */
+  items: SessionTranscriptItem[];
 
-    /**
-     * @generated from field: optional string next_before_cursor = 2;
-     */
-    nextBeforeCursor?: string
+  /**
+   * @generated from field: optional string next_before_cursor = 2;
+   */
+  nextBeforeCursor?: string;
 
-    /**
-     * @generated from field: bool has_more_before = 3;
-     */
-    hasMoreBefore: boolean
+  /**
+   * @generated from field: bool has_more_before = 3;
+   */
+  hasMoreBefore: boolean;
 
-    /**
-     * @generated from field: google.protobuf.Timestamp snapshot_updated_at = 4;
-     */
-    snapshotUpdatedAt?: Timestamp
-  }
+  /**
+   * @generated from field: google.protobuf.Timestamp snapshot_updated_at = 4;
+   */
+  snapshotUpdatedAt?: Timestamp;
+};
 
 /**
  * Describes the message orchd.v1.SessionTranscriptPage.
  * Use `create(SessionTranscriptPageSchema)` to create a new message.
  */
-export const SessionTranscriptPageSchema: GenMessage<SessionTranscriptPage> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 11)
+export const SessionTranscriptPageSchema: GenMessage<SessionTranscriptPage> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 11);
 
 /**
  * @generated from message orchd.v1.ListSessionTranscriptResponse
  */
-export type ListSessionTranscriptResponse =
-  Message<"orchd.v1.ListSessionTranscriptResponse"> & {
-    /**
-     * @generated from field: orchd.v1.SessionTranscriptPage page = 1;
-     */
-    page?: SessionTranscriptPage
-  }
+export type ListSessionTranscriptResponse = Message<"orchd.v1.ListSessionTranscriptResponse"> & {
+  /**
+   * @generated from field: orchd.v1.SessionTranscriptPage page = 1;
+   */
+  page?: SessionTranscriptPage;
+};
 
 /**
  * Describes the message orchd.v1.ListSessionTranscriptResponse.
  * Use `create(ListSessionTranscriptResponseSchema)` to create a new message.
  */
-export const ListSessionTranscriptResponseSchema: GenMessage<ListSessionTranscriptResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 12)
+export const ListSessionTranscriptResponseSchema: GenMessage<ListSessionTranscriptResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 12);
 
 /**
  * @generated from message orchd.v1.CreateSessionRequest
@@ -482,204 +454,189 @@ export type CreateSessionRequest = Message<"orchd.v1.CreateSessionRequest"> & {
   /**
    * @generated from field: string project_id = 1;
    */
-  projectId: string
+  projectId: string;
 
   /**
    * @generated from field: optional string title = 2;
    */
-  title?: string
+  title?: string;
 
   /**
    * @generated from field: string prompt = 3;
    */
-  prompt: string
+  prompt: string;
 
   /**
    * @generated from field: optional string backend_key = 4;
    */
-  backendKey?: string
-}
+  backendKey?: string;
+};
 
 /**
  * Describes the message orchd.v1.CreateSessionRequest.
  * Use `create(CreateSessionRequestSchema)` to create a new message.
  */
-export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 13)
+export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 13);
 
 /**
  * @generated from message orchd.v1.CreateSessionResponse
  */
-export type CreateSessionResponse =
-  Message<"orchd.v1.CreateSessionResponse"> & {
-    /**
-     * @generated from field: orchd.v1.Session session = 1;
-     */
-    session?: Session
-  }
+export type CreateSessionResponse = Message<"orchd.v1.CreateSessionResponse"> & {
+  /**
+   * @generated from field: orchd.v1.Session session = 1;
+   */
+  session?: Session;
+};
 
 /**
  * Describes the message orchd.v1.CreateSessionResponse.
  * Use `create(CreateSessionResponseSchema)` to create a new message.
  */
-export const CreateSessionResponseSchema: GenMessage<CreateSessionResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 14)
+export const CreateSessionResponseSchema: GenMessage<CreateSessionResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 14);
 
 /**
  * @generated from message orchd.v1.SendSessionInputRequest
  */
-export type SendSessionInputRequest =
-  Message<"orchd.v1.SendSessionInputRequest"> & {
-    /**
-     * @generated from field: string session_id = 1;
-     */
-    sessionId: string
+export type SendSessionInputRequest = Message<"orchd.v1.SendSessionInputRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
 
-    /**
-     * @generated from field: string input = 2;
-     */
-    input: string
-  }
+  /**
+   * @generated from field: string input = 2;
+   */
+  input: string;
+};
 
 /**
  * Describes the message orchd.v1.SendSessionInputRequest.
  * Use `create(SendSessionInputRequestSchema)` to create a new message.
  */
-export const SendSessionInputRequestSchema: GenMessage<SendSessionInputRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 15)
+export const SendSessionInputRequestSchema: GenMessage<SendSessionInputRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 15);
 
 /**
  * @generated from message orchd.v1.SendSessionInputResponse
  */
-export type SendSessionInputResponse =
-  Message<"orchd.v1.SendSessionInputResponse"> & {
-    /**
-     * @generated from field: bool accepted = 1;
-     */
-    accepted: boolean
+export type SendSessionInputResponse = Message<"orchd.v1.SendSessionInputResponse"> & {
+  /**
+   * @generated from field: bool accepted = 1;
+   */
+  accepted: boolean;
 
-    /**
-     * @generated from field: string session_id = 2;
-     */
-    sessionId: string
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
 
-    /**
-     * @generated from field: google.protobuf.Timestamp updated_at = 3;
-     */
-    updatedAt?: Timestamp
-  }
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 3;
+   */
+  updatedAt?: Timestamp;
+};
 
 /**
  * Describes the message orchd.v1.SendSessionInputResponse.
  * Use `create(SendSessionInputResponseSchema)` to create a new message.
  */
-export const SendSessionInputResponseSchema: GenMessage<SendSessionInputResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 16)
+export const SendSessionInputResponseSchema: GenMessage<SendSessionInputResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 16);
 
 /**
  * @generated from message orchd.v1.RespondToSessionApprovalRequest
  */
-export type RespondToSessionApprovalRequest =
-  Message<"orchd.v1.RespondToSessionApprovalRequest"> & {
-    /**
-     * @generated from field: string session_id = 1;
-     */
-    sessionId: string
+export type RespondToSessionApprovalRequest = Message<"orchd.v1.RespondToSessionApprovalRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
 
-    /**
-     * @generated from field: string approval_id = 2;
-     */
-    approvalId: string
+  /**
+   * @generated from field: string approval_id = 2;
+   */
+  approvalId: string;
 
-    /**
-     * @generated from field: orchd.v1.ApprovalDecision decision = 3;
-     */
-    decision: ApprovalDecision
+  /**
+   * @generated from field: orchd.v1.ApprovalDecision decision = 3;
+   */
+  decision: ApprovalDecision;
 
-    /**
-     * @generated from field: optional string comment = 4;
-     */
-    comment?: string
-  }
+  /**
+   * @generated from field: optional string comment = 4;
+   */
+  comment?: string;
+};
 
 /**
  * Describes the message orchd.v1.RespondToSessionApprovalRequest.
  * Use `create(RespondToSessionApprovalRequestSchema)` to create a new message.
  */
-export const RespondToSessionApprovalRequestSchema: GenMessage<RespondToSessionApprovalRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 17)
+export const RespondToSessionApprovalRequestSchema: GenMessage<RespondToSessionApprovalRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 17);
 
 /**
  * @generated from message orchd.v1.RespondToSessionApprovalResponse
  */
-export type RespondToSessionApprovalResponse =
-  Message<"orchd.v1.RespondToSessionApprovalResponse"> & {
-    /**
-     * @generated from field: bool accepted = 1;
-     */
-    accepted: boolean
+export type RespondToSessionApprovalResponse = Message<"orchd.v1.RespondToSessionApprovalResponse"> & {
+  /**
+   * @generated from field: bool accepted = 1;
+   */
+  accepted: boolean;
 
-    /**
-     * @generated from field: string session_id = 2;
-     */
-    sessionId: string
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
 
-    /**
-     * @generated from field: google.protobuf.Timestamp updated_at = 3;
-     */
-    updatedAt?: Timestamp
-  }
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 3;
+   */
+  updatedAt?: Timestamp;
+};
 
 /**
  * Describes the message orchd.v1.RespondToSessionApprovalResponse.
  * Use `create(RespondToSessionApprovalResponseSchema)` to create a new message.
  */
-export const RespondToSessionApprovalResponseSchema: GenMessage<RespondToSessionApprovalResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 18)
+export const RespondToSessionApprovalResponseSchema: GenMessage<RespondToSessionApprovalResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 18);
 
 /**
  * @generated from message orchd.v1.ListSessionArtifactsRequest
  */
-export type ListSessionArtifactsRequest =
-  Message<"orchd.v1.ListSessionArtifactsRequest"> & {
-    /**
-     * @generated from field: string session_id = 1;
-     */
-    sessionId: string
-  }
+export type ListSessionArtifactsRequest = Message<"orchd.v1.ListSessionArtifactsRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
 
 /**
  * Describes the message orchd.v1.ListSessionArtifactsRequest.
  * Use `create(ListSessionArtifactsRequestSchema)` to create a new message.
  */
-export const ListSessionArtifactsRequestSchema: GenMessage<ListSessionArtifactsRequest> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 19)
+export const ListSessionArtifactsRequestSchema: GenMessage<ListSessionArtifactsRequest> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 19);
 
 /**
  * @generated from message orchd.v1.ListSessionArtifactsResponse
  */
-export type ListSessionArtifactsResponse =
-  Message<"orchd.v1.ListSessionArtifactsResponse"> & {
-    /**
-     * @generated from field: repeated orchd.v1.ArtifactRef artifacts = 1;
-     */
-    artifacts: ArtifactRef[]
-  }
+export type ListSessionArtifactsResponse = Message<"orchd.v1.ListSessionArtifactsResponse"> & {
+  /**
+   * @generated from field: repeated orchd.v1.ArtifactRef artifacts = 1;
+   */
+  artifacts: ArtifactRef[];
+};
 
 /**
  * Describes the message orchd.v1.ListSessionArtifactsResponse.
  * Use `create(ListSessionArtifactsResponseSchema)` to create a new message.
  */
-export const ListSessionArtifactsResponseSchema: GenMessage<ListSessionArtifactsResponse> =
-  /*@__PURE__*/
-  messageDesc(file_orchd_v1_session, 20)
+export const ListSessionArtifactsResponseSchema: GenMessage<ListSessionArtifactsResponse> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_session, 20);
 
 /**
  * @generated from enum orchd.v1.SessionTranscriptItemKind
@@ -724,9 +681,8 @@ export enum SessionTranscriptItemKind {
 /**
  * Describes the enum orchd.v1.SessionTranscriptItemKind.
  */
-export const SessionTranscriptItemKindSchema: GenEnum<SessionTranscriptItemKind> =
-  /*@__PURE__*/
-  enumDesc(file_orchd_v1_session, 0)
+export const SessionTranscriptItemKindSchema: GenEnum<SessionTranscriptItemKind> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_session, 0);
 
 /**
  * @generated from service orchd.v1.SessionService
@@ -736,64 +692,66 @@ export const SessionService: GenService<{
    * @generated from rpc orchd.v1.SessionService.ListSessions
    */
   listSessions: {
-    methodKind: "unary"
-    input: typeof ListSessionsRequestSchema
-    output: typeof ListSessionsResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof ListSessionsRequestSchema;
+    output: typeof ListSessionsResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.GetSession
    */
   getSession: {
-    methodKind: "unary"
-    input: typeof GetSessionRequestSchema
-    output: typeof GetSessionResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof GetSessionRequestSchema;
+    output: typeof GetSessionResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.GetSessionMeta
    */
   getSessionMeta: {
-    methodKind: "unary"
-    input: typeof GetSessionMetaRequestSchema
-    output: typeof GetSessionMetaResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof GetSessionMetaRequestSchema;
+    output: typeof GetSessionMetaResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.ListSessionTranscript
    */
   listSessionTranscript: {
-    methodKind: "unary"
-    input: typeof ListSessionTranscriptRequestSchema
-    output: typeof ListSessionTranscriptResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof ListSessionTranscriptRequestSchema;
+    output: typeof ListSessionTranscriptResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.CreateSession
    */
   createSession: {
-    methodKind: "unary"
-    input: typeof CreateSessionRequestSchema
-    output: typeof CreateSessionResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof CreateSessionRequestSchema;
+    output: typeof CreateSessionResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.SendSessionInput
    */
   sendSessionInput: {
-    methodKind: "unary"
-    input: typeof SendSessionInputRequestSchema
-    output: typeof SendSessionInputResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof SendSessionInputRequestSchema;
+    output: typeof SendSessionInputResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.RespondToSessionApproval
    */
   respondToSessionApproval: {
-    methodKind: "unary"
-    input: typeof RespondToSessionApprovalRequestSchema
-    output: typeof RespondToSessionApprovalResponseSchema
-  }
+    methodKind: "unary";
+    input: typeof RespondToSessionApprovalRequestSchema;
+    output: typeof RespondToSessionApprovalResponseSchema;
+  },
   /**
    * @generated from rpc orchd.v1.SessionService.ListSessionArtifacts
    */
   listSessionArtifacts: {
-    methodKind: "unary"
-    input: typeof ListSessionArtifactsRequestSchema
-    output: typeof ListSessionArtifactsResponseSchema
-  }
-}> = /*@__PURE__*/ serviceDesc(file_orchd_v1_session, 0)
+    methodKind: "unary";
+    input: typeof ListSessionArtifactsRequestSchema;
+    output: typeof ListSessionArtifactsResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_orchd_v1_session, 0);
+

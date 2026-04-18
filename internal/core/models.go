@@ -22,6 +22,13 @@ const (
 	SessionStateDegraded        SessionState = "degraded"
 )
 
+type ApprovalDecision string
+
+const (
+	ApprovalDecisionApprove ApprovalDecision = "approve"
+	ApprovalDecisionReject  ApprovalDecision = "reject"
+)
+
 type ArtifactKind string
 
 const (
@@ -125,6 +132,7 @@ type Session struct {
 	BackendKey        string
 	Title             string
 	BackendThreadID   string
+	PendingApprovalID string
 	ActiveTurnID      string
 	Status            SessionState
 	Summary           string
@@ -168,11 +176,33 @@ const (
 	EventSessionArtifactsChanged EventKind = "session.artifacts.changed"
 )
 
+type SessionLivePatchKind string
+
+const (
+	SessionLivePatchKindUnspecified       SessionLivePatchKind = ""
+	SessionLivePatchKindStatus            SessionLivePatchKind = "status"
+	SessionLivePatchKindDraftDelta        SessionLivePatchKind = "draft_delta"
+	SessionLivePatchKindMessageFinalized  SessionLivePatchKind = "message_finalized"
+	SessionLivePatchKindReconcileRequired SessionLivePatchKind = "reconcile_required"
+)
+
+type SessionLivePatch struct {
+	Kind            SessionLivePatchKind
+	ActiveTurnID    string
+	DraftItemID     string
+	DraftDelta      string
+	FinalItem       *SessionTranscriptItem
+	Status          SessionState
+	Summary         string
+	RequiresRefetch bool
+}
+
 type Event struct {
 	Kind      EventKind
 	ProjectID string
 	SessionID string
 	Summary   string
+	LivePatch *SessionLivePatch
 }
 
 type EventSink interface {
@@ -218,6 +248,7 @@ type CreateSessionInput struct {
 type SessionPatch struct {
 	BackendKey            *string
 	BackendThreadID       *string
+	PendingApprovalID     *string
 	ActiveTurnID          *string
 	Status                *SessionState
 	Summary               *string

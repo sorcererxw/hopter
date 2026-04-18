@@ -97,6 +97,7 @@ type Session struct {
 	Artifacts         []*ArtifactRef           `protobuf:"bytes,10,rep,name=artifacts,proto3" json:"artifacts,omitempty"`
 	TranscriptItems   []*SessionTranscriptItem `protobuf:"bytes,11,rep,name=transcript_items,json=transcriptItems,proto3" json:"transcript_items,omitempty"`
 	BackendKey        string                   `protobuf:"bytes,12,opt,name=backend_key,json=backendKey,proto3" json:"backend_key,omitempty"`
+	PendingApprovalId *string                  `protobuf:"bytes,13,opt,name=pending_approval_id,json=pendingApprovalId,proto3,oneof" json:"pending_approval_id,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -215,6 +216,13 @@ func (x *Session) GetBackendKey() string {
 	return ""
 }
 
+func (x *Session) GetPendingApprovalId() string {
+	if x != nil && x.PendingApprovalId != nil {
+		return *x.PendingApprovalId
+	}
+	return ""
+}
+
 type SessionMeta struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -231,6 +239,7 @@ type SessionMeta struct {
 	HasMoreBefore      bool                   `protobuf:"varint,12,opt,name=has_more_before,json=hasMoreBefore,proto3" json:"has_more_before,omitempty"`
 	LatestPageSizeHint uint32                 `protobuf:"varint,13,opt,name=latest_page_size_hint,json=latestPageSizeHint,proto3" json:"latest_page_size_hint,omitempty"`
 	ResumeCommand      string                 `protobuf:"bytes,14,opt,name=resume_command,json=resumeCommand,proto3" json:"resume_command,omitempty"`
+	PendingApprovalId  *string                `protobuf:"bytes,15,opt,name=pending_approval_id,json=pendingApprovalId,proto3,oneof" json:"pending_approval_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -359,6 +368,13 @@ func (x *SessionMeta) GetLatestPageSizeHint() uint32 {
 func (x *SessionMeta) GetResumeCommand() string {
 	if x != nil {
 		return x.ResumeCommand
+	}
+	return ""
+}
+
+func (x *SessionMeta) GetPendingApprovalId() string {
+	if x != nil && x.PendingApprovalId != nil {
+		return *x.PendingApprovalId
 	}
 	return ""
 }
@@ -1419,7 +1435,7 @@ var File_orchd_v1_session_proto protoreflect.FileDescriptor
 
 const file_orchd_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\x89\x04\n" +
+	"\x16orchd/v1/session.proto\x12\borchd.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x15orchd/v1/common.proto\"\xd6\x04\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -1435,7 +1451,9 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	" \x03(\v2\x15.orchd.v1.ArtifactRefR\tartifacts\x12J\n" +
 	"\x10transcript_items\x18\v \x03(\v2\x1f.orchd.v1.SessionTranscriptItemR\x0ftranscriptItems\x12\x1f\n" +
 	"\vbackend_key\x18\f \x01(\tR\n" +
-	"backendKey\"\xc3\x04\n" +
+	"backendKey\x123\n" +
+	"\x13pending_approval_id\x18\r \x01(\tH\x00R\x11pendingApprovalId\x88\x01\x01B\x16\n" +
+	"\x14_pending_approval_id\"\x90\x05\n" +
 	"\vSessionMeta\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12.\n" +
@@ -1453,7 +1471,9 @@ const file_orchd_v1_session_proto_rawDesc = "" +
 	"backendKey\x12&\n" +
 	"\x0fhas_more_before\x18\f \x01(\bR\rhasMoreBefore\x121\n" +
 	"\x15latest_page_size_hint\x18\r \x01(\rR\x12latestPageSizeHint\x12%\n" +
-	"\x0eresume_command\x18\x0e \x01(\tR\rresumeCommand\"\xa2\x01\n" +
+	"\x0eresume_command\x18\x0e \x01(\tR\rresumeCommand\x123\n" +
+	"\x13pending_approval_id\x18\x0f \x01(\tH\x00R\x11pendingApprovalId\x88\x01\x01B\x16\n" +
+	"\x14_pending_approval_id\"\xa2\x01\n" +
 	"\x15SessionTranscriptItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x127\n" +
 	"\x04kind\x18\x02 \x01(\x0e2#.orchd.v1.SessionTranscriptItemKindR\x04kind\x12\x14\n" +
@@ -1661,6 +1681,8 @@ func file_orchd_v1_session_proto_init() {
 		return
 	}
 	file_orchd_v1_common_proto_init()
+	file_orchd_v1_session_proto_msgTypes[0].OneofWrappers = []any{}
+	file_orchd_v1_session_proto_msgTypes[1].OneofWrappers = []any{}
 	file_orchd_v1_session_proto_msgTypes[4].OneofWrappers = []any{}
 	file_orchd_v1_session_proto_msgTypes[10].OneofWrappers = []any{}
 	file_orchd_v1_session_proto_msgTypes[11].OneofWrappers = []any{}

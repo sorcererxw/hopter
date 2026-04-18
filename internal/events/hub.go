@@ -93,8 +93,9 @@ func (h *Hub) toProto(event core.Event) *orchdv1.WorkspaceEvent {
 		Type:       eventType,
 		OccurredAt: timestamppb.New(time.Now().UTC()),
 		Payload: &orchdv1.WorkspaceEventPayload{
-			RefreshHint: refreshHint,
-			Summary:     event.Summary,
+			RefreshHint:     refreshHint,
+			Summary:         event.Summary,
+			SessionLivePatch: sessionLivePatchToProto(event.LivePatch),
 		},
 	}
 	if event.ProjectID != "" {
@@ -104,4 +105,85 @@ func (h *Hub) toProto(event core.Event) *orchdv1.WorkspaceEvent {
 		evt.SessionId = &event.SessionID
 	}
 	return evt
+}
+
+func sessionLivePatchToProto(patch *core.SessionLivePatch) *orchdv1.SessionLivePatch {
+	if patch == nil {
+		return nil
+	}
+
+	out := &orchdv1.SessionLivePatch{
+		Kind:            mapSessionLivePatchKind(patch.Kind),
+		ActiveTurnId:    patch.ActiveTurnID,
+		DraftItemId:     patch.DraftItemID,
+		DraftDelta:      patch.DraftDelta,
+		Status:          mapSessionState(patch.Status),
+		Summary:         patch.Summary,
+		RequiresRefetch: patch.RequiresRefetch,
+	}
+	if patch.FinalItem != nil {
+		out.FinalItem = &orchdv1.SessionTranscriptItem{
+			Id:     patch.FinalItem.ID,
+			Kind:   mapTranscriptItemKind(patch.FinalItem.Kind),
+			Title:  patch.FinalItem.Title,
+			Body:   patch.FinalItem.Body,
+			Status: patch.FinalItem.Status,
+		}
+	}
+	return out
+}
+
+func mapSessionLivePatchKind(kind core.SessionLivePatchKind) orchdv1.SessionLivePatchKind {
+	switch kind {
+	case core.SessionLivePatchKindStatus:
+		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_STATUS
+	case core.SessionLivePatchKindDraftDelta:
+		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_DRAFT_DELTA
+	case core.SessionLivePatchKindMessageFinalized:
+		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED
+	case core.SessionLivePatchKindReconcileRequired:
+		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED
+	default:
+		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_UNSPECIFIED
+	}
+}
+
+func mapSessionState(state core.SessionState) orchdv1.SessionStatus {
+	switch state {
+	case core.SessionStatePending:
+		return orchdv1.SessionStatus_SESSION_STATUS_PENDING
+	case core.SessionStateRunning:
+		return orchdv1.SessionStatus_SESSION_STATUS_RUNNING
+	case core.SessionStateWaitingInput:
+		return orchdv1.SessionStatus_SESSION_STATUS_WAITING_INPUT
+	case core.SessionStateWaitingApproval:
+		return orchdv1.SessionStatus_SESSION_STATUS_WAITING_APPROVAL
+	case core.SessionStateCompleted:
+		return orchdv1.SessionStatus_SESSION_STATUS_COMPLETED
+	case core.SessionStateFailed:
+		return orchdv1.SessionStatus_SESSION_STATUS_FAILED
+	case core.SessionStateDegraded:
+		return orchdv1.SessionStatus_SESSION_STATUS_DEGRADED
+	default:
+		return orchdv1.SessionStatus_SESSION_STATUS_UNSPECIFIED
+	}
+}
+
+func mapTranscriptItemKind(kind core.SessionTranscriptItemKind) orchdv1.SessionTranscriptItemKind {
+	switch kind {
+	case core.SessionTranscriptItemKindUserMessage:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE
+	case core.SessionTranscriptItemKindAgentMessage:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE
+	case core.SessionTranscriptItemKindReasoning:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_REASONING
+	case core.SessionTranscriptItemKindToolCall:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL
+	case core.SessionTranscriptItemKindCommandExecution:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION
+	case core.SessionTranscriptItemKindFileChange:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE
+	default:
+		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED
+	}
 }

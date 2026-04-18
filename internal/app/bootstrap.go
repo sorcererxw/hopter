@@ -24,7 +24,7 @@ type Runtime struct {
 func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
-	codexManager := codex.NewManager(workspace)
+	codexManager := codex.NewManager(workspace, eventHub)
 	backendManager := backend.NewManager(workspace, map[string]backend.Runtime{
 		backend.DefaultBackendKey: backend.NewCodexRuntime(codexManager),
 		"copilot":                 copilotbackend.NewManager(workspace),

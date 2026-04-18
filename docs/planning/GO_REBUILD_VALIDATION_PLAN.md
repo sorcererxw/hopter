@@ -152,6 +152,54 @@ Until the workspace shell and session workflows exist, this script should emit a
 
 Pass when the browser can drive Codex to completion and the generated Tetris app is demonstrably playable.
 
+## Supplemental runtime lane — App Server streaming and approval semantics
+
+### Goal
+
+Prove the behavior of the live `codex app-server` runtime directly, separate from the broader Tetris proof.
+
+This lane exists because two claims have different evidence status:
+
+- streaming deltas and reconcile behavior are now runtime-proven
+- approval request surfacing is not yet runtime-proven
+
+### Current implementation targets
+
+- `scripts/validate-app-server-runtime.ts`
+- `scripts/validate-app-server-approvals.ts`
+
+### What this lane checks
+
+1. SSE draft deltas arrive before transcript refetch
+2. finalized-message patches are emitted
+3. reconcile-required patches are emitted
+4. raw app-server traces are captured for the exercised sessions
+5. command/file-change approval probes record whether app-server emits any `server_request`
+
+### Current evidence status
+
+Latest streaming + reconcile evidence:
+
+- `storage/artifacts/validation/app_server_runtime_2026-04-18T04-20-19-045Z`
+
+Latest approval probe evidence:
+
+- `storage/artifacts/validation/app_server_approvals_2026-04-18T04-25-33-618Z`
+
+### Current conclusion
+
+- Streaming path: **pass**
+- Reconcile path: **pass**
+- Approval path: **not yet proven**
+
+The approval probes currently show:
+
+- real command/file-change prompts can complete
+- raw app-server traces are captured
+- `server_request` count remains `0` for the tested command and file-change scenarios
+
+That means approval must remain an explicit open item in product and release documents until runtime evidence changes.
+
 ## Suggested implementation order
 
 1. Keep IDL lane green during the rebuild

@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	codexsdk "orchd/internal/codex/sdk"
 	"orchd/internal/core"
 )
 
@@ -25,17 +24,11 @@ type fakeCodexClient struct {
 	readResult   *ReadThreadResult
 	resumeResult *ResumeThreadResult
 	readErr      error
+	respondApprovalCalls []string
 }
 
-type fakeTurnExecutor struct {
-	runCalls []fakeTurnCall
-	runFn    func(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error)
-}
-
-type fakeTurnCall struct {
-	Project  core.Project
-	ThreadID string
-	Input    string
+type fakeEventSink struct {
+	events []core.Event
 }
 
 func readThreadResultWithTurns(turns ...ReadThreadTurn) *ReadThreadResult {
@@ -77,6 +70,11 @@ func (f *fakeCodexClient) ResumeThread(threadID, cwd string) (*ResumeThreadResul
 	return out, nil
 }
 
+func (f *fakeCodexClient) RespondToApproval(rawID json.RawMessage, decision string) error {
+	f.respondApprovalCalls = append(f.respondApprovalCalls, string(rawID)+":"+decision)
+	return nil
+}
+
 func (f *fakeCodexClient) StartThread(cwd string) (*StartThreadResult, error) {
 	f.startThreadCalls++
 	out := &StartThreadResult{}
@@ -99,16 +97,8 @@ func (f *fakeCodexClient) SteerTurn(_, _, _ string) (*StartTurnResult, error) {
 	return out, nil
 }
 
-func (f *fakeTurnExecutor) Run(ctx context.Context, project core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error) {
-	f.runCalls = append(f.runCalls, fakeTurnCall{
-		Project:  project,
-		ThreadID: threadID,
-		Input:    input,
-	})
-	if f.runFn != nil {
-		return f.runFn(ctx, project, threadID, input, onEvent)
-	}
-	return threadID, nil
+func (f *fakeEventSink) Publish(event core.Event) {
+	f.events = append(f.events, event)
 }
 
 func TestGetSessionUsesLiveClientWithoutResume(t *testing.T) {
@@ -176,25 +166,43 @@ func TestGetSessionUsesLiveClientWithoutResume(t *testing.T) {
 	}
 }
 
-func TestCreateSessionRunsThroughTurnExecutorAndUpdatesSession(t *testing.T) {
+func TestCreateSessionRunsThroughAppServerAndUpdatesSession(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
 
-	executor := &fakeTurnExecutor{
-		runFn: func(_ context.Context, _ core.Project, _ string, _ string, onEvent func(codexsdk.Event)) (string, error) {
-			onEvent(&codexsdk.ThreadStartedEvent{ThreadID: "thread-sdk"})
-			onEvent(&codexsdk.ItemCompletedEvent{
-				Item: &codexsdk.AgentMessageItem{ID: "msg-1", Text: "Implemented from SDK path."},
-			})
-			onEvent(&codexsdk.TurnCompletedEvent{
-				Usage: codexsdk.Usage{InputTokens: 1, CachedInputTokens: 0, OutputTokens: 1},
-			})
-			return "thread-sdk", nil
-		},
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{
+				ID:     "turn-started",
+				Status: "completed",
+				Items: []ReadThreadItem{
+					{
+						Type:    "userMessage",
+						ID:      "user-1",
+						Content: json.RawMessage(`[{"type":"text","text":"build something"}]`),
+					},
+					{
+						Type:  "agentMessage",
+						ID:    "agent-1",
+						Text:  "Implemented from app-server path.",
+						Phase: "completed",
+					},
+				},
+			},
+		),
 	}
 
 	manager := NewManager(workspace)
-	manager.execTurns = executor
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
 
 	session, err := manager.CreateSession(core.CreateSessionInput{
 		ProjectID: project.ID,
@@ -208,9 +216,9 @@ func TestCreateSessionRunsThroughTurnExecutorAndUpdatesSession(t *testing.T) {
 	waitFor(t, func() bool {
 		current, ok := workspace.GetSession(session.ID)
 		return ok &&
-			current.BackendThreadID == "thread-sdk" &&
+			current.BackendThreadID == "thread-started" &&
 			current.Status == core.SessionStateCompleted &&
-			current.Summary == "Implemented from SDK path." &&
+			current.Summary == "Implemented from app-server path." &&
 			len(current.TranscriptItems) == 2
 	})
 
@@ -224,22 +232,19 @@ func TestCreateSessionRunsThroughTurnExecutorAndUpdatesSession(t *testing.T) {
 	if current.TranscriptItems[1].Kind != core.SessionTranscriptItemKindAgentMessage {
 		t.Fatalf("second transcript kind = %q", current.TranscriptItems[1].Kind)
 	}
-	if current.TranscriptItems[1].Body != "Implemented from SDK path." {
+	if current.TranscriptItems[1].Body != "Implemented from app-server path." {
 		t.Fatalf("second transcript body = %q", current.TranscriptItems[1].Body)
 	}
 
-	if len(executor.runCalls) != 1 {
-		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))
+	if client.startThreadCalls != 1 {
+		t.Fatalf("StartThread calls = %d, want 1", client.startThreadCalls)
 	}
-	if executor.runCalls[0].ThreadID != "" {
-		t.Fatalf("thread id = %q, want empty for new session", executor.runCalls[0].ThreadID)
-	}
-	if executor.runCalls[0].Input != "build something" {
-		t.Fatalf("input = %q", executor.runCalls[0].Input)
+	if client.startTurnCalls != 1 {
+		t.Fatalf("StartTurn calls = %d, want 1", client.startTurnCalls)
 	}
 }
 
-func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T) {
+func TestSendSessionInputRunsThroughAppServerWithExistingThread(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
 
@@ -264,34 +269,46 @@ func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T)
 		t.Fatalf("UpdateSession: %v", err)
 	}
 
-	executor := &fakeTurnExecutor{
-		runFn: func(_ context.Context, _ core.Project, threadID string, input string, onEvent func(codexsdk.Event)) (string, error) {
-			if threadID != "thread-existing" {
-				t.Fatalf("threadID = %q, want thread-existing", threadID)
-			}
-			if input != "follow up" {
-				t.Fatalf("input = %q, want follow up", input)
-			}
-			onEvent(&codexsdk.ItemCompletedEvent{
-				Item: &codexsdk.AgentMessageItem{ID: "msg-2", Text: "Follow-up handled."},
-			})
-			onEvent(&codexsdk.ItemCompletedEvent{
-				Item: &codexsdk.CommandExecutionItem{
-					ID:               "cmd-1",
-					Command:          "git status",
-					AggregatedOutput: "On branch master",
-					Status:           "completed",
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{
+				ID:     "turn-started",
+				Status: "completed",
+				Items: []ReadThreadItem{
+					{
+						Type:    "userMessage",
+						ID:      "user-1",
+						Content: json.RawMessage(`[{"type":"text","text":"follow up"}]`),
+					},
+					{
+						Type:  "agentMessage",
+						ID:    "msg-2",
+						Text:  "Follow-up handled.",
+						Phase: "completed",
+					},
+					{
+						Type:             "commandExecution",
+						ID:               "cmd-1",
+						Command:          "git status",
+						AggregatedOutput: "On branch master",
+						Status:           "completed",
+					},
 				},
-			})
-			onEvent(&codexsdk.TurnCompletedEvent{
-				Usage: codexsdk.Usage{InputTokens: 1, CachedInputTokens: 0, OutputTokens: 1},
-			})
-			return threadID, nil
-		},
+			},
+		),
 	}
 
 	manager := NewManager(workspace)
-	manager.execTurns = executor
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
 
 	updated, err := manager.SendSessionInput(session.ID, "follow up")
 	if err != nil {
@@ -324,8 +341,11 @@ func TestSendSessionInputRunsThroughTurnExecutorWithExistingThread(t *testing.T)
 		t.Fatalf("command transcript body = %q", current.TranscriptItems[2].Body)
 	}
 
-	if len(executor.runCalls) != 1 {
-		t.Fatalf("runCalls = %d, want 1", len(executor.runCalls))
+	if client.resumeCalls != 1 {
+		t.Fatalf("ResumeThread calls = %d, want 1", client.resumeCalls)
+	}
+	if client.startTurnCalls != 1 {
+		t.Fatalf("StartTurn calls = %d, want 1", client.startTurnCalls)
 	}
 }
 
@@ -611,6 +631,130 @@ func TestGetSessionUsesLiveRawThreadStateForRemoteThreadIDs(t *testing.T) {
 	}
 	if got.LastInputHint != "目前依旧无法顺利发送" {
 		t.Fatalf("last input hint = %q", got.LastInputHint)
+	}
+}
+
+func TestHandleNotificationPublishesDraftDeltaPatch(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	sink := &fakeEventSink{}
+	manager := NewManager(workspace, sink)
+	manager.live["session-1"] = &liveSession{
+		project: project,
+		thread:  "thread-1",
+		active:  "turn-1",
+	}
+
+	manager.handleNotification("session-1", Notification{
+		Method: "item/agentMessage/delta",
+		Params: json.RawMessage(`{"threadId":"thread-1","turnId":"turn-1","itemId":"msg-1","delta":"Hello"}`),
+	})
+
+	if len(sink.events) != 1 {
+		t.Fatalf("published events = %d, want 1", len(sink.events))
+	}
+	patch := sink.events[0].LivePatch
+	if patch == nil {
+		t.Fatalf("live patch = nil")
+	}
+	if patch.Kind != core.SessionLivePatchKindDraftDelta {
+		t.Fatalf("patch kind = %q", patch.Kind)
+	}
+	if patch.DraftItemID != "msg-1" {
+		t.Fatalf("draft item id = %q", patch.DraftItemID)
+	}
+	if patch.DraftDelta != "Hello" {
+		t.Fatalf("draft delta = %q", patch.DraftDelta)
+	}
+
+	live := manager.live["session-1"]
+	if live.draftText != "Hello" {
+		t.Fatalf("live draft text = %q", live.draftText)
+	}
+}
+
+func TestSessionFromLiveRawAppendsDraftTranscriptItem(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	manager := NewManager(workspace)
+	live := &liveSession{
+		project:     project,
+		thread:      "thread-raw",
+		record:      ThreadRecord{ID: "thread-raw", Preview: "preview", Cwd: project.RootPath},
+		draftItemID: "msg-draft",
+		draftText:   "streaming draft",
+	}
+
+	session := manager.sessionFromLiveRaw("thread-raw", live, readThreadResultWithTurns())
+	if len(session.TranscriptItems) != 1 {
+		t.Fatalf("transcript items = %d, want 1", len(session.TranscriptItems))
+	}
+	if session.TranscriptItems[0].ID != "msg-draft" {
+		t.Fatalf("draft item id = %q", session.TranscriptItems[0].ID)
+	}
+	if session.TranscriptItems[0].Body != "streaming draft" {
+		t.Fatalf("draft body = %q", session.TranscriptItems[0].Body)
+	}
+	if session.TranscriptItems[0].Status != "streaming" {
+		t.Fatalf("draft status = %q", session.TranscriptItems[0].Status)
+	}
+}
+
+func TestRespondToSessionApprovalUsesOriginalRequestIdentity(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  "thread-1",
+		active:  "turn-1",
+		pendingApproval: &pendingApproval{
+			ID:      "12",
+			RawID:   json.RawMessage(`12`),
+			Method:  "item/commandExecution/requestApproval",
+			Message: "Codex needs approval to run a command.",
+		},
+	}
+
+	approvalID := "12"
+	waiting := core.SessionStateWaitingApproval
+	attention := true
+	reason := "Codex needs approval to run a command."
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		PendingApprovalID: &approvalID,
+		Status:            &waiting,
+		AttentionRequired: &attention,
+		AttentionReason:   &reason,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	updated, err := manager.RespondToSessionApproval(session.ID, "12", core.ApprovalDecisionApprove)
+	if err != nil {
+		t.Fatalf("RespondToSessionApproval: %v", err)
+	}
+	if len(client.respondApprovalCalls) != 1 {
+		t.Fatalf("respond approval calls = %d, want 1", len(client.respondApprovalCalls))
+	}
+	if client.respondApprovalCalls[0] != `12:approve` {
+		t.Fatalf("respond approval call = %q", client.respondApprovalCalls[0])
+	}
+	if updated.PendingApprovalID != "" {
+		t.Fatalf("pending approval id = %q, want empty", updated.PendingApprovalID)
+	}
+	if updated.Status != core.SessionStateRunning {
+		t.Fatalf("status = %q, want %q", updated.Status, core.SessionStateRunning)
 	}
 }
 

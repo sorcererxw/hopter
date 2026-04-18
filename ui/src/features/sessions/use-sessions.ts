@@ -4,9 +4,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 
-import { SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
+import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
 import type {
-  SessionMeta,
   SessionTranscriptPage,
 } from "@/gen/proto/orchd/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
@@ -24,14 +23,17 @@ type SendSessionInput = {
   input: string
 }
 
+type RespondToApprovalInput = {
+  sessionId: string
+  approvalId: string
+  decision: ApprovalDecision
+}
+
 const defaultTranscriptPageSize = 50
-const activeSessionPollMs = 1500
-const passiveSessionPollMs = 5000
-const sessionListPollMs = 3000
 
 export function useSessions(
   projectId?: string,
-  pollInterval: number | false = sessionListPollMs
+  pollInterval: number | false = false
 ) {
   return useQuery({
     queryKey: queryKeys.sessions(projectId),
@@ -59,17 +61,8 @@ export function useSessionMeta(sessionId?: string) {
       const response = await sessionClient.getSessionMeta({ sessionId })
       return response.session
     },
-    refetchInterval: (query) => {
-      const session = query.state.data as SessionMeta | undefined
-      if (!session) {
-        return false
-      }
-
-      return shouldPollSession(session)
-        ? activeSessionPollMs
-        : passiveSessionPollMs
-    },
-    refetchIntervalInBackground: true,
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
   })
 }
 
@@ -182,15 +175,29 @@ export function useSendSessionInput() {
   })
 }
 
-function shouldPollSession(
-  session: Pick<SessionMeta, "status">
-) {
-  switch (session.status) {
-    case SessionStatus.PENDING:
-    case SessionStatus.RUNNING:
-    case SessionStatus.WAITING_APPROVAL:
-      return true
-    default:
-      return false
-  }
+export function useRespondToSessionApproval() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      approvalId,
+      decision,
+    }: RespondToApprovalInput) => {
+      return sessionClient.respondToSessionApproval({
+        sessionId,
+        approvalId,
+        decision,
+      })
+    },
+    onSuccess: async (_response, variables) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionMeta(variables.sessionId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionTranscript(variables.sessionId),
+      })
+    },
+  })
 }

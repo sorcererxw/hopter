@@ -23,6 +23,7 @@ type sessionRuntime interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string) (core.Session, error)
+	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
 
 type sessionDetailReader interface {
@@ -171,7 +172,23 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 }
 
 func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connect.Request[orchdv1.RespondToSessionApprovalRequest]) (*connect.Response[orchdv1.RespondToSessionApprovalResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("approval handling for session %q is not implemented in the Go skeleton", req.Msg.GetSessionId()))
+	decision, err := mapApprovalDecision(req.Msg.GetDecision())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	session, err := s.codex.RespondToSessionApproval(
+		req.Msg.GetSessionId(),
+		req.Msg.GetApprovalId(),
+		decision,
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	return connect.NewResponse(&orchdv1.RespondToSessionApprovalResponse{
+		Accepted:  true,
+		SessionId: session.ID,
+		UpdatedAt: timestamp(session.UpdatedAt),
+	}), nil
 }
 
 func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Request[orchdv1.ListSessionArtifactsRequest]) (*connect.Response[orchdv1.ListSessionArtifactsResponse], error) {
@@ -193,4 +210,15 @@ func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Re
 		})
 	}
 	return connect.NewResponse(response), nil
+}
+
+func mapApprovalDecision(decision orchdv1.ApprovalDecision) (core.ApprovalDecision, error) {
+	switch decision {
+	case orchdv1.ApprovalDecision_APPROVAL_DECISION_APPROVE:
+		return core.ApprovalDecisionApprove, nil
+	case orchdv1.ApprovalDecision_APPROVAL_DECISION_REJECT:
+		return core.ApprovalDecisionReject, nil
+	default:
+		return "", fmt.Errorf("approval decision is required")
+	}
 }

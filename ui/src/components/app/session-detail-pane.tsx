@@ -17,10 +17,12 @@ import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
 import {
   fetchSessionTranscriptPage,
+  useRespondToSessionApproval,
   useSendSessionInput,
   useSessionMeta,
   useSessionTranscript,
 } from "@/features/sessions/use-sessions"
+import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
 import {
   SessionTranscriptItemKind,
   type Session,
@@ -64,6 +66,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     transcriptPollInterval
   )
   const sendInput = useSendSessionInput()
+  const respondToApproval = useRespondToSessionApproval()
   const [prompt, setPrompt] = useState("")
   const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
   const [inspectorOpen, setInspectorOpen] = useState(true)
@@ -409,6 +412,38 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                       {session.attentionReason ||
                         "This session requires user input."}
                     </p>
+                    {session.pendingApprovalId ? (
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 text-sm font-medium text-emerald-50 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={respondToApproval.isPending}
+                          onClick={() => {
+                            void respondToApproval.mutateAsync({
+                              sessionId,
+                              approvalId: session.pendingApprovalId,
+                              decision: ApprovalDecision.APPROVE,
+                            })
+                          }}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200/20 bg-transparent px-3 text-sm font-medium text-amber-50/85 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                          disabled={respondToApproval.isPending}
+                          onClick={() => {
+                            void respondToApproval.mutateAsync({
+                              sessionId,
+                              approvalId: session.pendingApprovalId,
+                              decision: ApprovalDecision.REJECT,
+                            })
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -527,6 +562,7 @@ function buildSessionDetail(
     artifacts: meta.artifacts,
     transcriptItems,
     backendKey: meta.backendKey,
+    pendingApprovalId: meta.pendingApprovalId,
   } as Session
 }
 

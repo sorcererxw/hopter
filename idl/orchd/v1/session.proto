@@ -31,6 +31,7 @@ message Session {
   repeated ArtifactRef artifacts = 10;
   repeated SessionTranscriptItem transcript_items = 11;
   string backend_key = 12;
+  optional string pending_approval_id = 13;
 }
 
 message SessionMeta {
@@ -48,6 +49,7 @@ message SessionMeta {
   bool has_more_before = 12;
   uint32 latest_page_size_hint = 13;
   string resume_command = 14;
+  optional string pending_approval_id = 15;
 }
 
 enum SessionTranscriptItemKind {

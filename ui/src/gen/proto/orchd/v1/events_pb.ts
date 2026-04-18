@@ -6,15 +6,69 @@ import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2"
 import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { RefreshHint } from "./common_pb";
+import type { RefreshHint, SessionStatus } from "./common_pb";
 import { file_orchd_v1_common } from "./common_pb";
+import type { SessionTranscriptItem } from "./session_pb";
+import { file_orchd_v1_session } from "./session_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file orchd/v1/events.proto.
  */
 export const file_orchd_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("ChVvcmNoZC92MS9ldmVudHMucHJvdG8SCG9yY2hkLnYxIlUKFVdvcmtzcGFjZUV2ZW50UGF5bG9hZBIrCgxyZWZyZXNoX2hpbnQYASABKA4yFS5vcmNoZC52MS5SZWZyZXNoSGludBIPCgdzdW1tYXJ5GAIgASgJIvsBCg5Xb3Jrc3BhY2VFdmVudBIKCgJpZBgBIAEoCRIqCgR0eXBlGAIgASgOMhwub3JjaGQudjEuV29ya3NwYWNlRXZlbnRUeXBlEi8KC29jY3VycmVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIXCgpwcm9qZWN0X2lkGAQgASgJSACIAQESFwoKc2Vzc2lvbl9pZBgFIAEoCUgBiAEBEjAKB3BheWxvYWQYBiABKAsyHy5vcmNoZC52MS5Xb3Jrc3BhY2VFdmVudFBheWxvYWRCDQoLX3Byb2plY3RfaWRCDQoLX3Nlc3Npb25faWQqnAIKEldvcmtzcGFjZUV2ZW50VHlwZRIkCiBXT1JLU1BBQ0VfRVZFTlRfVFlQRV9VTlNQRUNJRklFRBAAEiwKKFdPUktTUEFDRV9FVkVOVF9UWVBFX0hPU1RfU1RBVFVTX0NIQU5HRUQQARIpCiVXT1JLU1BBQ0VfRVZFTlRfVFlQRV9QUk9KRUNUU19DSEFOR0VEEAISKQolV09SS1NQQUNFX0VWRU5UX1RZUEVfU0VTU0lPTlNfQ0hBTkdFRBADEigKJFdPUktTUEFDRV9FVkVOVF9UWVBFX1NFU1NJT05fQ0hBTkdFRBAEEjIKLldPUktTUEFDRV9FVkVOVF9UWVBFX1NFU1NJT05fQVJUSUZBQ1RTX0NIQU5HRUQQBUKHAQoMY29tLm9yY2hkLnYxQgtFdmVudHNQcm90b1ABWilvcmNoZC9pbnRlcm5hbC9nZW4vcHJvdG8vb3JjaGQvdjE7b3JjaGR2MaICA09YWKoCCE9yY2hkLlYxygIIT3JjaGRcVjHiAhRPcmNoZFxWMVxHUEJNZXRhZGF0YeoCCU9yY2hkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_orchd_v1_common]);
+  fileDesc("ChVvcmNoZC92MS9ldmVudHMucHJvdG8SCG9yY2hkLnYxIo0CChBTZXNzaW9uTGl2ZVBhdGNoEiwKBGtpbmQYASABKA4yHi5vcmNoZC52MS5TZXNzaW9uTGl2ZVBhdGNoS2luZBIWCg5hY3RpdmVfdHVybl9pZBgCIAEoCRIVCg1kcmFmdF9pdGVtX2lkGAMgASgJEhMKC2RyYWZ0X2RlbHRhGAQgASgJEjMKCmZpbmFsX2l0ZW0YBSABKAsyHy5vcmNoZC52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SJwoGc3RhdHVzGAYgASgOMhcub3JjaGQudjEuU2Vzc2lvblN0YXR1cxIPCgdzdW1tYXJ5GAcgASgJEhgKEHJlcXVpcmVzX3JlZmV0Y2gYCCABKAgijQEKFVdvcmtzcGFjZUV2ZW50UGF5bG9hZBIrCgxyZWZyZXNoX2hpbnQYASABKA4yFS5vcmNoZC52MS5SZWZyZXNoSGludBIPCgdzdW1tYXJ5GAIgASgJEjYKEnNlc3Npb25fbGl2ZV9wYXRjaBgDIAEoCzIaLm9yY2hkLnYxLlNlc3Npb25MaXZlUGF0Y2gi+wEKDldvcmtzcGFjZUV2ZW50EgoKAmlkGAEgASgJEioKBHR5cGUYAiABKA4yHC5vcmNoZC52MS5Xb3Jrc3BhY2VFdmVudFR5cGUSLwoLb2NjdXJyZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhcKCnByb2plY3RfaWQYBCABKAlIAIgBARIXCgpzZXNzaW9uX2lkGAUgASgJSAGIAQESMAoHcGF5bG9hZBgGIAEoCzIfLm9yY2hkLnYxLldvcmtzcGFjZUV2ZW50UGF5bG9hZEINCgtfcHJvamVjdF9pZEINCgtfc2Vzc2lvbl9pZCqcAgoSV29ya3NwYWNlRXZlbnRUeXBlEiQKIFdPUktTUEFDRV9FVkVOVF9UWVBFX1VOU1BFQ0lGSUVEEAASLAooV09SS1NQQUNFX0VWRU5UX1RZUEVfSE9TVF9TVEFUVVNfQ0hBTkdFRBABEikKJVdPUktTUEFDRV9FVkVOVF9UWVBFX1BST0pFQ1RTX0NIQU5HRUQQAhIpCiVXT1JLU1BBQ0VfRVZFTlRfVFlQRV9TRVNTSU9OU19DSEFOR0VEEAMSKAokV09SS1NQQUNFX0VWRU5UX1RZUEVfU0VTU0lPTl9DSEFOR0VEEAQSMgouV09SS1NQQUNFX0VWRU5UX1RZUEVfU0VTU0lPTl9BUlRJRkFDVFNfQ0hBTkdFRBAFKusBChRTZXNzaW9uTGl2ZVBhdGNoS2luZBInCiNTRVNTSU9OX0xJVkVfUEFUQ0hfS0lORF9VTlNQRUNJRklFRBAAEiIKHlNFU1NJT05fTElWRV9QQVRDSF9LSU5EX1NUQVRVUxABEicKI1NFU1NJT05fTElWRV9QQVRDSF9LSU5EX0RSQUZUX0RFTFRBEAISLQopU0VTU0lPTl9MSVZFX1BBVENIX0tJTkRfTUVTU0FHRV9GSU5BTElaRUQQAxIuCipTRVNTSU9OX0xJVkVfUEFUQ0hfS0lORF9SRUNPTkNJTEVfUkVRVUlSRUQQBEKHAQoMY29tLm9yY2hkLnYxQgtFdmVudHNQcm90b1ABWilvcmNoZC9pbnRlcm5hbC9nZW4vcHJvdG8vb3JjaGQvdjE7b3JjaGR2MaICA09YWKoCCE9yY2hkLlYxygIIT3JjaGRcVjHiAhRPcmNoZFxWMVxHUEJNZXRhZGF0YeoCCU9yY2hkOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_orchd_v1_common, file_orchd_v1_session]);
+
+/**
+ * @generated from message orchd.v1.SessionLivePatch
+ */
+export type SessionLivePatch = Message<"orchd.v1.SessionLivePatch"> & {
+  /**
+   * @generated from field: orchd.v1.SessionLivePatchKind kind = 1;
+   */
+  kind: SessionLivePatchKind;
+
+  /**
+   * @generated from field: string active_turn_id = 2;
+   */
+  activeTurnId: string;
+
+  /**
+   * @generated from field: string draft_item_id = 3;
+   */
+  draftItemId: string;
+
+  /**
+   * @generated from field: string draft_delta = 4;
+   */
+  draftDelta: string;
+
+  /**
+   * @generated from field: orchd.v1.SessionTranscriptItem final_item = 5;
+   */
+  finalItem?: SessionTranscriptItem;
+
+  /**
+   * @generated from field: orchd.v1.SessionStatus status = 6;
+   */
+  status: SessionStatus;
+
+  /**
+   * @generated from field: string summary = 7;
+   */
+  summary: string;
+
+  /**
+   * @generated from field: bool requires_refetch = 8;
+   */
+  requiresRefetch: boolean;
+};
+
+/**
+ * Describes the message orchd.v1.SessionLivePatch.
+ * Use `create(SessionLivePatchSchema)` to create a new message.
+ */
+export const SessionLivePatchSchema: GenMessage<SessionLivePatch> = /*@__PURE__*/
+  messageDesc(file_orchd_v1_events, 0);
 
 /**
  * @generated from message orchd.v1.WorkspaceEventPayload
@@ -29,6 +83,11 @@ export type WorkspaceEventPayload = Message<"orchd.v1.WorkspaceEventPayload"> & 
    * @generated from field: string summary = 2;
    */
   summary: string;
+
+  /**
+   * @generated from field: orchd.v1.SessionLivePatch session_live_patch = 3;
+   */
+  sessionLivePatch?: SessionLivePatch;
 };
 
 /**
@@ -36,7 +95,7 @@ export type WorkspaceEventPayload = Message<"orchd.v1.WorkspaceEventPayload"> & 
  * Use `create(WorkspaceEventPayloadSchema)` to create a new message.
  */
 export const WorkspaceEventPayloadSchema: GenMessage<WorkspaceEventPayload> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_events, 0);
+  messageDesc(file_orchd_v1_events, 1);
 
 /**
  * @generated from message orchd.v1.WorkspaceEvent
@@ -78,7 +137,7 @@ export type WorkspaceEvent = Message<"orchd.v1.WorkspaceEvent"> & {
  * Use `create(WorkspaceEventSchema)` to create a new message.
  */
 export const WorkspaceEventSchema: GenMessage<WorkspaceEvent> = /*@__PURE__*/
-  messageDesc(file_orchd_v1_events, 1);
+  messageDesc(file_orchd_v1_events, 2);
 
 /**
  * @generated from enum orchd.v1.WorkspaceEventType
@@ -120,4 +179,40 @@ export enum WorkspaceEventType {
  */
 export const WorkspaceEventTypeSchema: GenEnum<WorkspaceEventType> = /*@__PURE__*/
   enumDesc(file_orchd_v1_events, 0);
+
+/**
+ * @generated from enum orchd.v1.SessionLivePatchKind
+ */
+export enum SessionLivePatchKind {
+  /**
+   * @generated from enum value: SESSION_LIVE_PATCH_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SESSION_LIVE_PATCH_KIND_STATUS = 1;
+   */
+  STATUS = 1,
+
+  /**
+   * @generated from enum value: SESSION_LIVE_PATCH_KIND_DRAFT_DELTA = 2;
+   */
+  DRAFT_DELTA = 2,
+
+  /**
+   * @generated from enum value: SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED = 3;
+   */
+  MESSAGE_FINALIZED = 3,
+
+  /**
+   * @generated from enum value: SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED = 4;
+   */
+  RECONCILE_REQUIRED = 4,
+}
+
+/**
+ * Describes the enum orchd.v1.SessionLivePatchKind.
+ */
+export const SessionLivePatchKindSchema: GenEnum<SessionLivePatchKind> = /*@__PURE__*/
+  enumDesc(file_orchd_v1_events, 1);
 

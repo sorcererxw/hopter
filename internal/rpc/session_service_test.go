@@ -18,6 +18,12 @@ type fakeSessionRuntime struct {
 	listSessionsResult []backend.ResolvedSession
 	getSession         core.Session
 	getProject         core.Project
+	approvalSession    core.Session
+	approvalCall       struct {
+		sessionID  string
+		approvalID string
+		decision   core.ApprovalDecision
+	}
 }
 
 type fakeSessionDetailReader struct {
@@ -39,6 +45,16 @@ func (f *fakeSessionRuntime) CreateSession(input core.CreateSessionInput) (core.
 
 func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
 	return core.Session{}, nil
+}
+
+func (f *fakeSessionRuntime) RespondToSessionApproval(
+	sessionID, approvalID string,
+	decision core.ApprovalDecision,
+) (core.Session, error) {
+	f.approvalCall.sessionID = sessionID
+	f.approvalCall.approvalID = approvalID
+	f.approvalCall.decision = decision
+	return f.approvalSession, nil
 }
 
 func (f *fakeSessionDetailReader) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
@@ -261,5 +277,37 @@ func TestListSessionsMergesLocalSessionsMissingFromRuntime(t *testing.T) {
 	}
 	if resp.Msg.GetSessions()[0].GetId() != session.ID {
 		t.Fatalf("first session id = %q, want %q", resp.Msg.GetSessions()[0].GetId(), session.ID)
+	}
+}
+
+func TestRespondToSessionApprovalPassesDecisionToRuntime(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	runtime := &fakeSessionRuntime{
+		approvalSession: core.Session{
+			ID:        "sess_1",
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	service := NewSessionService(workspace, runtime, &fakeSessionDetailReader{})
+
+	resp, err := service.RespondToSessionApproval(context.Background(), connect.NewRequest(&orchdv1.RespondToSessionApprovalRequest{
+		SessionId:  "sess_1",
+		ApprovalId: "12",
+		Decision:   orchdv1.ApprovalDecision_APPROVAL_DECISION_APPROVE,
+	}))
+	if err != nil {
+		t.Fatalf("RespondToSessionApproval: %v", err)
+	}
+	if !resp.Msg.GetAccepted() {
+		t.Fatalf("accepted = false, want true")
+	}
+	if runtime.approvalCall.sessionID != "sess_1" {
+		t.Fatalf("sessionID = %q", runtime.approvalCall.sessionID)
+	}
+	if runtime.approvalCall.approvalID != "12" {
+		t.Fatalf("approvalID = %q", runtime.approvalCall.approvalID)
+	}
+	if runtime.approvalCall.decision != core.ApprovalDecisionApprove {
+		t.Fatalf("decision = %q", runtime.approvalCall.decision)
 	}
 }

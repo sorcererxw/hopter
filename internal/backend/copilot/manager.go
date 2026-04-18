@@ -141,6 +141,13 @@ func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, erro
 	return session, project, nil
 }
 
+func (m *Manager) RespondToSessionApproval(
+	sessionID, approvalID string,
+	decision core.ApprovalDecision,
+) (core.Session, error) {
+	return core.Session{}, fmt.Errorf("copilot backend does not support approvals for session %q", sessionID)
+}
+
 func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, error) {
 	project, ok := m.workspace.GetProject(input.ProjectID)
 	if !ok {

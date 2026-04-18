@@ -226,6 +226,9 @@ func (w *InMemoryWorkspace) UpdateSession(sessionID string, patch SessionPatch) 
 	if patch.BackendKey != nil {
 		session.BackendKey = *patch.BackendKey
 	}
+	if patch.PendingApprovalID != nil {
+		session.PendingApprovalID = *patch.PendingApprovalID
+	}
 	if patch.ActiveTurnID != nil {
 		session.ActiveTurnID = *patch.ActiveTurnID
 	}

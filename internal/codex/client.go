@@ -17,7 +17,7 @@ type Notification struct {
 	Params json.RawMessage
 }
 
-type serverRequest struct {
+type ServerRequest struct {
 	ID     json.RawMessage
 	Method string          `json:"method"`
 	Params json.RawMessage `json:"params"`
@@ -43,6 +43,8 @@ type Client struct {
 	done   chan error
 
 	onNotification func(Notification)
+	onServerRequest func(ServerRequest)
+	onTrace         func(TraceEntry)
 	onExit         func()
 }
 
@@ -154,7 +156,14 @@ type ResumeThreadResult struct {
 	Cwd    string       `json:"cwd"`
 }
 
-func Start(ctx context.Context, cwd string, onNotification func(Notification), onExit func()) (*Client, error) {
+func Start(
+	ctx context.Context,
+	cwd string,
+	onNotification func(Notification),
+	onServerRequest func(ServerRequest),
+	onTrace func(TraceEntry),
+	onExit func(),
+) (*Client, error) {
 	cmd := exec.CommandContext(ctx, "codex", "app-server")
 	cmd.Dir = cwd
 
@@ -177,6 +186,8 @@ func Start(ctx context.Context, cwd string, onNotification func(Notification), o
 		wait:           make(map[int64]chan envelope),
 		done:           make(chan error, 1),
 		onNotification: onNotification,
+		onServerRequest: onServerRequest,
+		onTrace:         onTrace,
 		onExit:         onExit,
 	}
 
@@ -222,7 +233,7 @@ func (c *Client) initialize() error {
 func (c *Client) StartThread(cwd string) (*StartThreadResult, error) {
 	raw, err := c.request("thread/start", map[string]any{
 		"cwd":                    cwd,
-		"approvalPolicy":         "never",
+		"approvalPolicy":         "on-request",
 		"sandbox":                "danger-full-access",
 		"experimentalRawEvents":  false,
 		"persistExtendedHistory": false,
@@ -263,7 +274,7 @@ func (c *Client) ListThreads(cwd string, limit uint32) (*ThreadListResult, error
 func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error) {
 	params := map[string]any{
 		"threadId":               threadID,
-		"approvalPolicy":         "never",
+		"approvalPolicy":         "on-request",
 		"sandbox":                "danger-full-access",
 		"persistExtendedHistory": false,
 	}
@@ -283,7 +294,8 @@ func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
 
 func (c *Client) StartTurn(threadID string, text string) (*StartTurnResult, error) {
 	raw, err := c.request("turn/start", map[string]any{
-		"threadId": threadID,
+		"threadId":       threadID,
+		"approvalPolicy": "on-request",
 		"input": []map[string]any{{
 			"type":          "text",
 			"text":          text,
@@ -304,6 +316,7 @@ func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnRes
 	raw, err := c.request("turn/steer", map[string]any{
 		"threadId":       threadID,
 		"expectedTurnId": expectedTurnID,
+		"approvalPolicy": "on-request",
 		"input": []map[string]any{{
 			"type":          "text",
 			"text":          text,
@@ -363,6 +376,13 @@ func (c *Client) request(method string, params any) (json.RawMessage, error) {
 	if _, err := c.stdin.Write(append(payload, '\n')); err != nil {
 		return nil, fmt.Errorf("write request %s: %w", method, err)
 	}
+	c.trace(TraceEntry{
+		Direction: "outgoing",
+		Kind:      "request",
+		Method:    method,
+		ID:        fmt.Sprintf("%d", id),
+		Payload:   append(json.RawMessage(nil), payload...),
+	})
 
 	var (
 		response envelope
@@ -412,15 +432,41 @@ func (c *Client) read(stdout io.Reader) {
 			if ch != nil {
 				ch <- msg
 			}
+			c.trace(TraceEntry{
+				Direction: "incoming",
+				Kind:      "response",
+				ID:        traceID(msg.ID),
+				Payload:   append(json.RawMessage(nil), line...),
+			})
 			continue
 		}
 
 		if msg.Method != "" && len(msg.ID) > 0 {
-			c.respondToServerRequest(serverRequest{ID: msg.ID, Method: msg.Method, Params: msg.Params})
+			c.trace(TraceEntry{
+				Direction: "incoming",
+				Kind:      "server_request",
+				Method:    msg.Method,
+				ID:        traceID(msg.ID),
+				Payload:   append(json.RawMessage(nil), line...),
+			})
+			if c.onServerRequest != nil {
+				req := ServerRequest{
+					ID:     append(json.RawMessage(nil), msg.ID...),
+					Method: msg.Method,
+					Params: append(json.RawMessage(nil), msg.Params...),
+				}
+				go c.onServerRequest(req)
+			}
 			continue
 		}
 
 		if msg.Method != "" && c.onNotification != nil {
+			c.trace(TraceEntry{
+				Direction: "incoming",
+				Kind:      "notification",
+				Method:    msg.Method,
+				Payload:   append(json.RawMessage(nil), line...),
+			})
 			notification := Notification{Method: msg.Method, Params: append(json.RawMessage(nil), msg.Params...)}
 			go c.onNotification(notification)
 		}
@@ -447,25 +493,36 @@ func (c *Client) failPending(err error) {
 	}
 }
 
-func (c *Client) respondToServerRequest(req serverRequest) {
-	result := map[string]any{}
-	switch req.Method {
-	case "item/commandExecution/requestApproval", "item/fileChange/requestApproval":
-		result = map[string]any{"decision": "accept"}
-	case "execCommandApproval", "applyPatchApproval":
-		result = map[string]any{"decision": "approved"}
-	case "item/permissions/requestApproval":
-		result = map[string]any{"permissions": map[string]any{}, "scope": "session"}
-	case "item/tool/requestUserInput":
-		result = map[string]any{"answers": []any{}}
-	}
-
+func (c *Client) respondToRequest(rawID json.RawMessage, result any) error {
 	payload, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
-		"id":      json.RawMessage(req.ID),
+		"id":      json.RawMessage(rawID),
 		"result":  result,
 	})
+	if err != nil {
+		return err
+	}
+	_, err = c.stdin.Write(append(payload, '\n'))
 	if err == nil {
-		_, _ = c.stdin.Write(append(payload, '\n'))
+		c.trace(TraceEntry{
+			Direction: "outgoing",
+			Kind:      "response",
+			ID:        traceID(rawID),
+			Payload:   append(json.RawMessage(nil), payload...),
+		})
+	}
+	return err
+}
+
+func (c *Client) RespondToApproval(rawID json.RawMessage, decision string) error {
+	result := map[string]any{
+		"decision": decision,
+	}
+	return c.respondToRequest(rawID, result)
+}
+
+func (c *Client) trace(entry TraceEntry) {
+	if c.onTrace != nil {
+		c.onTrace(entry)
 	}
 }

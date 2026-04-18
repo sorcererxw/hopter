@@ -39,3 +39,10 @@ func (r *codexRuntime) CreateSession(input core.CreateSessionInput) (core.Sessio
 func (r *codexRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
 	return r.manager.SendSessionInput(sessionID, input)
 }
+
+func (r *codexRuntime) RespondToSessionApproval(
+	sessionID, approvalID string,
+	decision core.ApprovalDecision,
+) (core.Session, error) {
+	return r.manager.RespondToSessionApproval(sessionID, approvalID, decision)
+}

@@ -59,6 +59,8 @@ make validate-go-idl
 make validate-go-server
 make validate-go-ui
 make validate-go-tetris
+make validate-app-server-runtime
+make validate-app-server-approvals
 make validate-all
 ```
 
@@ -79,6 +81,8 @@ bun scripts/validate-go-server.ts
 bun scripts/validate-go-ui.ts
 bun scripts/validate-go-tetris.ts
 bun scripts/validate-live.ts
+bun scripts/validate-app-server-runtime.ts
+bun scripts/validate-app-server-approvals.ts
 ```
 
 `make dev` is the preferred local loop. It now runs an AI-first supervisor that starts:

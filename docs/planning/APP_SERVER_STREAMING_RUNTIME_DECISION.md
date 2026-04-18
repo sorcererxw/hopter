@@ -13,7 +13,7 @@ That means:
 - the live session path is `app-server` only
 - browser updates are driven by server push, not polling
 - browser transport remains `Connect + SSE`
-- approval flow stays on the `app-server` request/response path
+- approval flow stays modeled on the `app-server` request/response path, but is not yet runtime-proven
 - `codex exec` / EEC is removed from the product runtime path
 
 This is the v1 product decision even though OpenAI still documents `exec` / SDK as a good fit for CI and one-shot automation. `orchd` is a session-centric remote control plane. The product gets more clarity from one runtime protocol than from broad interface coverage.
@@ -151,7 +151,18 @@ This keeps the UI current from notifications while still recovering from dropped
 
 ## Approval model
 
-Approval ships in the same runtime redesign.
+Approval remains part of the intended protocol surface, but must be treated as **not yet runtime-proven**.
+
+Current evidence status:
+
+- SSE draft deltas are runtime-proven
+- finalize + reconcile patches are runtime-proven
+- approval request surfacing is **not** runtime-proven under the current `app-server` behavior and runtime configuration
+
+Latest evidence:
+
+- `storage/artifacts/validation/app_server_runtime_2026-04-18T04-20-19-045Z`
+- `storage/artifacts/validation/app_server_approvals_2026-04-18T04-25-33-618Z`
 
 Rules:
 
@@ -164,6 +175,11 @@ Do not:
 
 - auto-approve on the product path
 - invent a fake approval abstraction disconnected from the protocol
+
+Current product constraint:
+
+- remote approval UI may exist
+- validation must not claim approval-complete until raw `app-server` traces show real `server_request` approval events for the tested scenario
 
 ## SSE event contract
 
@@ -324,6 +340,8 @@ The redesign is not done until all of these are true:
 6. `turn/completed` triggers reconciliation and the transcript matches `thread/read`.
 7. Refreshing the browser restores the correct selected-session state.
 8. The product runtime no longer depends on `codex exec` / EEC.
+
+At the moment, items 4 and 5 remain open because approval-request emission has not yet been observed in runtime validation.
 
 ## Validation evidence to record
 

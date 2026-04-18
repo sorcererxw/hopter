@@ -3,8 +3,6 @@ package codex
 import (
 	"encoding/json"
 	"strings"
-
-	codexsdk "orchd/internal/codex/sdk"
 )
 
 type fileChangePayload struct {
@@ -51,34 +49,6 @@ func formatReadThreadFileChangesPayload(changes []ReadThreadFileChange, includeD
 		if includeDiff {
 			payload.Changes[len(payload.Changes)-1].Diff = strings.TrimSpace(change.Diff)
 		}
-	}
-
-	if len(payload.Changes) == 0 {
-		return ""
-	}
-
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return ""
-	}
-	return string(raw)
-}
-
-func formatSDKFileChanges(changes []codexsdk.FileUpdateChange) string {
-	payload := fileChangePayload{
-		Version: 1,
-		Changes: make([]fileChangePayloadEntry, 0, len(changes)),
-	}
-
-	for _, change := range changes {
-		path := strings.TrimSpace(change.Path)
-		if path == "" {
-			continue
-		}
-		payload.Changes = append(payload.Changes, fileChangePayloadEntry{
-			Path: path,
-			Kind: strings.TrimSpace(string(change.Kind)),
-		})
 	}
 
 	if len(payload.Changes) == 0 {
