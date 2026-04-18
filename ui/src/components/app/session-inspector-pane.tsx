@@ -2,6 +2,7 @@ import { X } from "lucide-react"
 import { ArtifactKind } from "@/gen/proto/orchd/v1/common_pb"
 
 import { SessionRichText } from "@/components/app/session-rich-text"
+import { usePathMetadata } from "@/features/host/use-host-browser"
 import type { Session } from "@/gen/proto/orchd/v1/session_pb"
 import {
   formatArtifactKind,
@@ -28,6 +29,7 @@ type SessionInspectorPaneProps = {
   onModeChange: (mode: InspectorMode) => void
   onTabChange: (tab: InspectorTab) => void
   selectedDiff?: InspectorSelectedDiff | null
+  selectedPath?: string | null
   session: Session
 }
 
@@ -124,12 +126,18 @@ export function SessionInspectorPane({
   onModeChange,
   onTabChange,
   selectedDiff,
+  selectedPath,
   session,
 }: SessionInspectorPaneProps) {
   const reviewLabel = "summary.md"
+  const selectedPathQuery = usePathMetadata(selectedPath ?? "", Boolean(selectedPath))
+  const selectedPathMetadata = selectedPathQuery.data
 
   return (
-    <aside className="hidden h-full w-[404px] shrink-0 border-l border-border bg-card lg:flex lg:flex-col">
+    <aside
+      className="flex h-full w-[404px] shrink-0 flex-col border-l border-border bg-card"
+      data-testid="session-inspector-pane"
+    >
       <div className="flex items-center gap-1 border-b border-border bg-popover px-3 py-2">
         <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
           <InspectorTabButton
@@ -178,6 +186,26 @@ export function SessionInspectorPane({
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto">
         {activeTab === "summary" ? (
           <div className="space-y-4 p-4">
+            {selectedPath ? (
+              <div className="rounded-lg border border-border bg-card px-4 py-4">
+                <div className="text-xs font-medium text-muted-foreground">
+                  Linked file
+                </div>
+                <div className="mt-2 font-mono text-sm text-ws-code">
+                  {selectedPathMetadata?.basename || selectedPath.split("/").pop() || selectedPath}
+                </div>
+                <div className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {selectedPathMetadata?.canonicalPath || selectedPath}
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {selectedPathQuery.isLoading
+                    ? "Loading metadata..."
+                    : selectedPathMetadata?.isDirectory
+                      ? "Directory"
+                      : "File"}
+                </div>
+              </div>
+            ) : null}
             <div className="rounded-lg border border-border bg-card">
               <div className="border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
                 Current state

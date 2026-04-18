@@ -38,6 +38,12 @@ type fakeTurnCall struct {
 	Input    string
 }
 
+func readThreadResultWithTurns(turns ...ReadThreadTurn) *ReadThreadResult {
+	result := &ReadThreadResult{}
+	result.Thread.Turns = turns
+	return result
+}
+
 func (f *fakeCodexClient) Close() error { return nil }
 
 func (f *fakeCodexClient) ListThreads(_ string, _ uint32) (*ThreadListResult, error) {
@@ -54,6 +60,10 @@ func (f *fakeCodexClient) ReadThread(_ string) (*ReadThreadResult, error) {
 		return &ReadThreadResult{}, nil
 	}
 	return f.readResult, nil
+}
+
+func (f *fakeCodexClient) ReadThreadMeta(_ string) (*ReadThreadResult, error) {
+	return f.ReadThread("")
 }
 
 func (f *fakeCodexClient) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error) {
@@ -129,15 +139,9 @@ func TestGetSessionUsesLiveClientWithoutResume(t *testing.T) {
 	}
 
 	liveClient := &fakeCodexClient{
-		readResult: &ReadThreadResult{
-			Thread: struct {
-				Turns []ReadThreadTurn `json:"turns"`
-			}{
-				Turns: []ReadThreadTurn{
-					{ID: "old-turn", Status: "completed"},
-				},
-			},
-		},
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{ID: "old-turn", Status: "completed"},
+		),
 	}
 
 	manager := NewManager(workspace)
@@ -352,46 +356,40 @@ func TestGetSessionIncludesTranscriptItems(t *testing.T) {
 	manager.live[session.ID] = &liveSession{
 		project: project,
 		client: &fakeCodexClient{
-			readResult: &ReadThreadResult{
-				Thread: struct {
-					Turns []ReadThreadTurn `json:"turns"`
-				}{
-					Turns: []ReadThreadTurn{
+			readResult: readThreadResultWithTurns(
+				ReadThreadTurn{
+					ID:     "turn-1",
+					Status: "completed",
+					Items: []ReadThreadItem{
 						{
-							ID:     "turn-1",
-							Status: "completed",
-							Items: []ReadThreadItem{
-								{
-									Type:    "userMessage",
-									ID:      "user-1",
-									Content: json.RawMessage(`[{"type":"text","text":"Build a snake game"}]`),
-								},
-								{
-									Type:    "reasoning",
-									ID:      "reasoning-1",
-									Summary: json.RawMessage(`[{"text":"Inspecting existing files"}]`),
-								},
-								{
-									Type:      "mcpToolCall",
-									ID:        "tool-1",
-									Server:    "functions",
-									Tool:      "exec_command",
-									Status:    "completed",
-									Arguments: json.RawMessage(`{"cmd":"rg --files"}`),
-									Result:    json.RawMessage(`{"exit_code":0}`),
-								},
-								{
-									Type:             "agentMessage",
-									ID:               "agent-1",
-									Text:             "Implemented the first pass.",
-									Phase:            "completed",
-									AggregatedOutput: "ignored",
-								},
-							},
+							Type:    "userMessage",
+							ID:      "user-1",
+							Content: json.RawMessage(`[{"type":"text","text":"Build a snake game"}]`),
+						},
+						{
+							Type:    "reasoning",
+							ID:      "reasoning-1",
+							Summary: json.RawMessage(`[{"text":"Inspecting existing files"}]`),
+						},
+						{
+							Type:      "mcpToolCall",
+							ID:        "tool-1",
+							Server:    "functions",
+							Tool:      "exec_command",
+							Status:    "completed",
+							Arguments: json.RawMessage(`{"cmd":"rg --files"}`),
+							Result:    json.RawMessage(`{"exit_code":0}`),
+						},
+						{
+							Type:             "agentMessage",
+							ID:               "agent-1",
+							Text:             "Implemented the first pass.",
+							Phase:            "completed",
+							AggregatedOutput: "ignored",
 						},
 					},
 				},
-			},
+			),
 		},
 		thread: threadID,
 	}
@@ -425,48 +423,42 @@ func TestGetSessionIncludesTranscriptItems(t *testing.T) {
 }
 
 func TestNormalizeTranscriptItemsPreservesChronologicalReadOrder(t *testing.T) {
-	read := &ReadThreadResult{
-		Thread: struct {
-			Turns []ReadThreadTurn `json:"turns"`
-		}{
-			Turns: []ReadThreadTurn{
+	read := readThreadResultWithTurns(
+		ReadThreadTurn{
+			ID:     "turn-1",
+			Status: "completed",
+			Items: []ReadThreadItem{
 				{
-					ID:     "turn-1",
-					Status: "completed",
-					Items: []ReadThreadItem{
-						{
-							Type:    "userMessage",
-							ID:      "user-1",
-							Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
-						},
-						{
-							Type:  "agentMessage",
-							ID:    "agent-1",
-							Text:  "earliest reply",
-							Phase: "completed",
-						},
-					},
+					Type:    "userMessage",
+					ID:      "user-1",
+					Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
 				},
 				{
-					ID:     "turn-2",
-					Status: "completed",
-					Items: []ReadThreadItem{
-						{
-							Type:    "userMessage",
-							ID:      "user-2",
-							Content: json.RawMessage(`[{"type":"text","text":"second"}]`),
-						},
-						{
-							Type:  "agentMessage",
-							ID:    "agent-2",
-							Text:  "latest reply",
-							Phase: "completed",
-						},
-					},
+					Type:  "agentMessage",
+					ID:    "agent-1",
+					Text:  "earliest reply",
+					Phase: "completed",
 				},
 			},
 		},
-	}
+		ReadThreadTurn{
+			ID:     "turn-2",
+			Status: "completed",
+			Items: []ReadThreadItem{
+				{
+					Type:    "userMessage",
+					ID:      "user-2",
+					Content: json.RawMessage(`[{"type":"text","text":"second"}]`),
+				},
+				{
+					Type:  "agentMessage",
+					ID:    "agent-2",
+					Text:  "latest reply",
+					Phase: "completed",
+				},
+			},
+		},
+	)
 
 	got := normalizeTranscriptItems(read)
 	if len(got) != 4 {
@@ -482,38 +474,32 @@ func TestNormalizeTranscriptItemsPreservesChronologicalReadOrder(t *testing.T) {
 }
 
 func TestLatestDerivedValuesUseMostRecentChronologicalTurn(t *testing.T) {
-	read := &ReadThreadResult{
-		Thread: struct {
-			Turns []ReadThreadTurn `json:"turns"`
-		}{
-			Turns: []ReadThreadTurn{
+	read := readThreadResultWithTurns(
+		ReadThreadTurn{
+			ID:     "turn-1",
+			Status: "failed",
+			Items: []ReadThreadItem{
 				{
-					ID:     "turn-1",
-					Status: "failed",
-					Items: []ReadThreadItem{
-						{
-							Type:  "agentMessage",
-							ID:    "agent-1",
-							Text:  "earliest reply",
-							Phase: "failed",
-						},
-					},
-				},
-				{
-					ID:     "turn-2",
-					Status: "inProgress",
-					Items: []ReadThreadItem{
-						{
-							Type:  "agentMessage",
-							ID:    "agent-2",
-							Text:  "latest reply",
-							Phase: "in_progress",
-						},
-					},
+					Type:  "agentMessage",
+					ID:    "agent-1",
+					Text:  "earliest reply",
+					Phase: "failed",
 				},
 			},
 		},
-	}
+		ReadThreadTurn{
+			ID:     "turn-2",
+			Status: "inProgress",
+			Items: []ReadThreadItem{
+				{
+					Type:  "agentMessage",
+					ID:    "agent-2",
+					Text:  "latest reply",
+					Phase: "in_progress",
+				},
+			},
+		},
+	)
 
 	if got := latestAgentSummary(read); got != "latest reply" {
 		t.Fatalf("latestAgentSummary = %q, want %q", got, "latest reply")
@@ -595,15 +581,9 @@ func TestGetSessionUsesLiveRawThreadStateForRemoteThreadIDs(t *testing.T) {
 	manager.live["thread-remote"] = &liveSession{
 		project: project,
 		client: &fakeCodexClient{
-			readResult: &ReadThreadResult{
-				Thread: struct {
-					Turns []ReadThreadTurn `json:"turns"`
-				}{
-					Turns: []ReadThreadTurn{
-						{ID: "old-turn", Status: "completed"},
-					},
-				},
-			},
+			readResult: readThreadResultWithTurns(
+				ReadThreadTurn{ID: "old-turn", Status: "completed"},
+			),
 		},
 		thread:              "thread-remote",
 		active:              "turn-new",

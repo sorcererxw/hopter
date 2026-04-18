@@ -40,6 +40,7 @@ type Client struct {
 	mu     sync.Mutex
 	nextID int64
 	wait   map[int64]chan envelope
+	done   chan error
 
 	onNotification func(Notification)
 	onExit         func()
@@ -132,7 +133,19 @@ type ReadThreadTurn struct {
 
 type ReadThreadResult struct {
 	Thread struct {
-		Turns []ReadThreadTurn `json:"turns"`
+		ID            string           `json:"id"`
+		ForkedFromID  *string          `json:"forkedFromId"`
+		Preview       string           `json:"preview"`
+		Ephemeral     bool             `json:"ephemeral"`
+		ModelProvider string           `json:"modelProvider"`
+		CreatedAt     int64            `json:"createdAt"`
+		UpdatedAt     int64            `json:"updatedAt"`
+		Status        ThreadStatus     `json:"status"`
+		Path          *string          `json:"path"`
+		Cwd           string           `json:"cwd"`
+		CLIVersion    string           `json:"cliVersion"`
+		Name          *string          `json:"name"`
+		Turns         []ReadThreadTurn `json:"turns"`
 	} `json:"thread"`
 }
 
@@ -162,6 +175,7 @@ func Start(ctx context.Context, cwd string, onNotification func(Notification), o
 		cmd:            cmd,
 		stdin:          stdin,
 		wait:           make(map[int64]chan envelope),
+		done:           make(chan error, 1),
 		onNotification: onNotification,
 		onExit:         onExit,
 	}
@@ -307,9 +321,17 @@ func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnRes
 }
 
 func (c *Client) ReadThread(threadID string) (*ReadThreadResult, error) {
+	return c.readThread(threadID, true)
+}
+
+func (c *Client) ReadThreadMeta(threadID string) (*ReadThreadResult, error) {
+	return c.readThread(threadID, false)
+}
+
+func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResult, error) {
 	raw, err := c.request("thread/read", map[string]any{
 		"threadId":     threadID,
-		"includeTurns": true,
+		"includeTurns": includeTurns,
 	})
 	if err != nil {
 		return nil, err
@@ -342,7 +364,24 @@ func (c *Client) request(method string, params any) (json.RawMessage, error) {
 		return nil, fmt.Errorf("write request %s: %w", method, err)
 	}
 
-	response := <-waitCh
+	var (
+		response envelope
+		ok       bool
+	)
+	select {
+	case response, ok = <-waitCh:
+		if !ok {
+			return nil, fmt.Errorf("%s: codex app-server closed the response channel", method)
+		}
+	case err := <-c.done:
+		if err == nil {
+			err = io.EOF
+		}
+		c.mu.Lock()
+		delete(c.wait, id)
+		c.mu.Unlock()
+		return nil, fmt.Errorf("%s: %w", method, err)
+	}
 	if response.Error != nil {
 		return nil, fmt.Errorf("%s: %s", method, response.Error.Message)
 	}
@@ -352,7 +391,7 @@ func (c *Client) request(method string, params any) (json.RawMessage, error) {
 func (c *Client) read(stdout io.Reader) {
 	scanner := bufio.NewScanner(stdout)
 	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 4*1024*1024)
+	scanner.Buffer(buf, 32*1024*1024)
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -385,6 +424,26 @@ func (c *Client) read(stdout io.Reader) {
 			notification := Notification{Method: msg.Method, Params: append(json.RawMessage(nil), msg.Params...)}
 			go c.onNotification(notification)
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		c.failPending(err)
+		return
+	}
+	c.failPending(io.EOF)
+}
+
+func (c *Client) failPending(err error) {
+	select {
+	case c.done <- err:
+	default:
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for id, ch := range c.wait {
+		delete(c.wait, id)
+		close(ch)
 	}
 }
 

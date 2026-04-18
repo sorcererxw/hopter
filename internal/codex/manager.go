@@ -39,6 +39,7 @@ type codexClient interface {
 	Close() error
 	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
 	ReadThread(threadID string) (*ReadThreadResult, error)
+	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
 	ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
 	StartThread(cwd string) (*StartThreadResult, error)
 	StartTurn(threadID string, text string) (*StartTurnResult, error)

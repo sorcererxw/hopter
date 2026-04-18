@@ -22,6 +22,14 @@ type fileChangePayloadEntry struct {
 }
 
 func formatReadThreadFileChanges(changes []ReadThreadFileChange) string {
+	return formatReadThreadFileChangesPayload(changes, true)
+}
+
+func formatReadThreadFileChangesCompact(changes []ReadThreadFileChange) string {
+	return formatReadThreadFileChangesPayload(changes, false)
+}
+
+func formatReadThreadFileChangesPayload(changes []ReadThreadFileChange, includeDiff bool) string {
 	payload := fileChangePayload{
 		Version: 1,
 		Changes: make([]fileChangePayloadEntry, 0, len(changes)),
@@ -39,8 +47,10 @@ func formatReadThreadFileChanges(changes []ReadThreadFileChange) string {
 			MovePath:  change.Kind.MovePath,
 			Additions: additions,
 			Deletions: deletions,
-			Diff:      strings.TrimSpace(change.Diff),
 		})
+		if includeDiff {
+			payload.Changes[len(payload.Changes)-1].Diff = strings.TrimSpace(change.Diff)
+		}
 	}
 
 	if len(payload.Changes) == 0 {

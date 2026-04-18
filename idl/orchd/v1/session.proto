@@ -10,6 +10,8 @@ import "orchd/v1/common.proto";
 service SessionService {
   rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
   rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+  rpc GetSessionMeta(GetSessionMetaRequest) returns (GetSessionMetaResponse);
+  rpc ListSessionTranscript(ListSessionTranscriptRequest) returns (ListSessionTranscriptResponse);
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc SendSessionInput(SendSessionInputRequest) returns (SendSessionInputResponse);
   rpc RespondToSessionApproval(RespondToSessionApprovalRequest) returns (RespondToSessionApprovalResponse);
@@ -29,6 +31,23 @@ message Session {
   repeated ArtifactRef artifacts = 10;
   repeated SessionTranscriptItem transcript_items = 11;
   string backend_key = 12;
+}
+
+message SessionMeta {
+  string id = 1;
+  string title = 2;
+  ProjectRef project = 3;
+  SessionStatus status = 4;
+  string summary = 5;
+  bool attention_required = 6;
+  string attention_reason = 7;
+  string last_input_hint = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  repeated ArtifactRef artifacts = 10;
+  string backend_key = 11;
+  bool has_more_before = 12;
+  uint32 latest_page_size_hint = 13;
+  string resume_command = 14;
 }
 
 enum SessionTranscriptItemKind {
@@ -74,6 +93,31 @@ message GetSessionRequest {
 
 message GetSessionResponse {
   Session session = 1;
+}
+
+message GetSessionMetaRequest {
+  string session_id = 1;
+}
+
+message GetSessionMetaResponse {
+  SessionMeta session = 1;
+}
+
+message ListSessionTranscriptRequest {
+  string session_id = 1;
+  optional string before_cursor = 2;
+  optional uint32 limit = 3;
+}
+
+message SessionTranscriptPage {
+  repeated SessionTranscriptItem items = 1;
+  optional string next_before_cursor = 2;
+  bool has_more_before = 3;
+  google.protobuf.Timestamp snapshot_updated_at = 4;
+}
+
+message ListSessionTranscriptResponse {
+  SessionTranscriptPage page = 1;
 }
 
 message CreateSessionRequest {

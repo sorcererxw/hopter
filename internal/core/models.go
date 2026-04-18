@@ -136,6 +136,28 @@ type Session struct {
 	TranscriptItems   []SessionTranscriptItem
 }
 
+type SessionMeta struct {
+	Session            Session
+	Project            Project
+	HasMoreBefore      bool
+	LatestPageSizeHint uint32
+}
+
+type ListSessionTranscriptInput struct {
+	SessionID    string
+	BeforeCursor string
+	Limit        uint32
+}
+
+type SessionTranscriptPage struct {
+	SessionID         string
+	ProjectID         string
+	Items             []SessionTranscriptItem
+	NextBeforeCursor  string
+	HasMoreBefore     bool
+	SnapshotUpdatedAt time.Time
+}
+
 type EventKind string
 
 const (

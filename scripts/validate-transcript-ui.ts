@@ -18,6 +18,7 @@ const healthUrl =
 const sessionId = "sess_mock";
 const projectId = "proj_mock";
 const updatedAt = "2026-04-16T16:48:00Z";
+const olderCursor = "cursor_older";
 
 function buildFileChangeBody() {
   return JSON.stringify({
@@ -41,70 +42,7 @@ function buildFileChangeBody() {
   });
 }
 
-function buildSessionResponse(state: "initial" | "afterFollowup") {
-  const transcriptItems =
-    state === "initial"
-      ? [
-          {
-            id: "user-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
-            title: "You",
-            body: "Build a transcript-aware validation flow.",
-            status: "",
-          },
-          {
-            id: "agent-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
-            title: "Codex",
-            body: "我跑过的验证：\n- pnpm --dir ui typecheck\n- go test ./internal/codex/...\n- make verify-live",
-            status: "",
-          },
-        ]
-      : [
-          {
-            id: "user-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
-            title: "You",
-            body: "Build a transcript-aware validation flow.",
-            status: "",
-          },
-          {
-            id: "agent-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
-            title: "Codex",
-            body: "Added the first transcript-aware path.",
-            status: "",
-          },
-          {
-            id: "user-2",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
-            title: "You",
-            body: "Follow up with command evidence.",
-            status: "",
-          },
-          {
-            id: "cmd-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
-            title: "Command",
-            body: "git status\n\nstatus: completed\n\noutput:\nOn branch master",
-            status: "completed",
-          },
-          {
-            id: "file-1",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE",
-            title: "File change",
-            body: buildFileChangeBody(),
-            status: "completed",
-          },
-          {
-            id: "agent-2",
-            kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
-            title: "Codex",
-            body: "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
-            status: "",
-          },
-        ];
-
+function buildSessionMetaResponse() {
   return {
     session: {
       id: sessionId,
@@ -115,19 +53,82 @@ function buildSessionResponse(state: "initial" | "afterFollowup") {
         rootPath: "/tmp/probe-project",
       },
       status: "SESSION_STATUS_COMPLETED",
-      summary:
-        state === "initial"
-          ? "Added the first transcript-aware path."
-          : "Captured command output and updated the session transcript.",
+      summary: "Captured command output and updated the session transcript.",
       attentionRequired: false,
       attentionReason: "",
-      lastInputHint:
-        state === "initial"
-          ? "Build a transcript-aware validation flow."
-          : "Follow up with command evidence.",
+      lastInputHint: "Follow up with command evidence.",
       updatedAt,
       artifacts: [],
-      transcriptItems,
+      backendKey: "codex",
+      hasMoreBefore: true,
+      latestPageSizeHint: 3,
+    },
+  };
+}
+
+function buildLatestTranscriptPage() {
+  return {
+    page: {
+      items: [
+        {
+          id: "user-2",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
+          title: "You",
+          body: "Follow up with command evidence.",
+          status: "",
+        },
+        {
+          id: "cmd-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
+          title: "Command",
+          body: "git status\n\nstatus: completed\n\noutput:\nOn branch master",
+          status: "completed",
+        },
+        {
+          id: "agent-2",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+          title: "Codex",
+          body:
+            "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
+          status: "",
+        },
+      ],
+      nextBeforeCursor: olderCursor,
+      hasMoreBefore: true,
+      snapshotUpdatedAt: updatedAt,
+    },
+  };
+}
+
+function buildOlderTranscriptPage() {
+  return {
+    page: {
+      items: [
+        {
+          id: "user-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
+          title: "You",
+          body: "Build a transcript-aware validation flow.",
+          status: "",
+        },
+        {
+          id: "agent-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+          title: "Codex",
+          body:
+            "我跑过的验证：\n- pnpm --dir ui typecheck\n- go test ./internal/codex/...\n- make verify-live",
+          status: "",
+        },
+        {
+          id: "file-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE",
+          title: "File change",
+          body: buildFileChangeBody(),
+          status: "completed",
+        },
+      ],
+      hasMoreBefore: false,
+      snapshotUpdatedAt: updatedAt,
     },
   };
 }
@@ -175,8 +176,6 @@ async function fulfillJSON(route: Route, body: unknown) {
 }
 
 async function wireMockRPC(page: Page) {
-  let state: "initial" | "afterFollowup" = "initial";
-
   await page.route(
     "**/rpc/orchd.v1.ProjectService/ListProjects",
     async (route) => {
@@ -192,21 +191,25 @@ async function wireMockRPC(page: Page) {
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/GetSession",
+    "**/rpc/orchd.v1.SessionService/GetSessionMeta",
     async (route) => {
-      await fulfillJSON(route, buildSessionResponse(state));
+      await fulfillJSON(route, buildSessionMetaResponse());
     },
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/SendSessionInput",
+    "**/rpc/orchd.v1.SessionService/ListSessionTranscript",
     async (route) => {
-      state = "afterFollowup";
-      await fulfillJSON(route, {
-        accepted: true,
-        sessionId,
-        updatedAt,
-      });
+      const payload = route.request().postDataJSON() as
+        | { beforeCursor?: string }
+        | undefined;
+      if (payload?.beforeCursor === olderCursor) {
+        await page.waitForTimeout(350);
+        await fulfillJSON(route, buildOlderTranscriptPage());
+        return;
+      }
+      await page.waitForTimeout(250);
+      await fulfillJSON(route, buildLatestTranscriptPage());
     },
   );
 }
@@ -272,12 +275,16 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ baseURL: baseUrl });
+    const page = await browser.newPage({
+      baseURL: baseUrl,
+      viewport: { width: 1280, height: 720 },
+    });
     await wireMockRPC(page);
 
     await page.goto(`/sessions/${sessionId}`, {
       waitUntil: "domcontentloaded",
     });
+    await page.getByTestId("session-transcript-loading-initial").waitFor();
     await page
       .waitForLoadState("networkidle", { timeout: 15_000 })
       .catch(() => {});
@@ -288,39 +295,28 @@ async function main() {
 
     await page.getByTestId("session-transcript").waitFor();
     await page
-      .getByTestId("session-transcript-user")
-      .filter({ hasText: "Build a transcript-aware validation flow." })
-      .waitFor();
-    await page
       .getByTestId("session-transcript-agent")
-      .filter({ hasText: "我跑过的验证：" })
+      .filter({
+        hasText: "Captured command output and updated the session transcript.",
+      })
       .waitFor();
-    await page
-      .locator("li")
-      .filter({ hasText: "pnpm --dir ui typecheck" })
-      .waitFor();
-    await page
-      .locator("li")
-      .filter({ hasText: "go test ./internal/codex/..." })
-      .waitFor();
-    await page.locator("li").filter({ hasText: "make verify-live" }).waitFor();
-
-    checks.push({
-      name: "initial transcript render",
-      status: "pass",
-      detail:
-        "session route rendered initial agent markdown lists as bullet items",
-    });
-
-    await page
-      .getByTestId("session-prompt-input")
-      .fill("Follow up with command evidence.");
-    await page.getByTestId("session-followup-submit").click();
-
     await page
       .getByTestId("session-transcript-user")
       .filter({ hasText: "Follow up with command evidence." })
       .waitFor();
+    const olderMessage = page
+      .getByTestId("session-transcript-user")
+      .filter({ hasText: "Build a transcript-aware validation flow." });
+    if (await olderMessage.count()) {
+      throw new Error("older transcript page rendered before upward pagination");
+    }
+
+    checks.push({
+      name: "initial latest-page render",
+      status: "pass",
+      detail:
+        "session route rendered only the latest transcript page on first load",
+    });
 
     const commandEntry = page.getByTestId("session-transcript-command");
     await commandEntry.waitFor();
@@ -333,25 +329,6 @@ async function main() {
     }
 
     const fileChangeEntry = page.getByTestId("session-transcript-file-change");
-    await fileChangeEntry.waitFor();
-    await fileChangeEntry
-      .getByRole("button", { name: /Changed 2 files/i })
-      .click();
-    const transcriptFileButton = fileChangeEntry.getByRole("button", {
-      name: /Edited.*internal\/codex\/transcript\.go/i,
-    });
-    await transcriptFileButton.waitFor();
-    await transcriptFileButton.click();
-    await page.getByText("internal/codex/transcript.go").last().waitFor();
-    await page.getByText("Edited  +100 -56").waitFor();
-
-    await page
-      .getByTestId("session-transcript-agent")
-      .filter({
-        hasText: "Captured command output and updated the session transcript.",
-      })
-      .waitFor();
-
     const codeBlock = page
       .locator("pre")
       .filter({
@@ -367,16 +344,60 @@ async function main() {
       .waitFor();
     await page.getByTestId("session-code-copy").waitFor();
 
+    await page.getByTestId("session-transcript").evaluate((node) => {
+      let current = node.parentElement as HTMLElement | null;
+      while (current) {
+        const style = window.getComputedStyle(current);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          current.scrollTop = 0;
+          current.dispatchEvent(new Event("scroll", { bubbles: true }));
+          return;
+        }
+        current = current.parentElement;
+      }
+      throw new Error("could not find transcript scroll container");
+    });
+    await page.getByTestId("session-transcript-loading").waitFor();
+    await olderMessage.waitFor();
+    await page
+      .getByTestId("session-transcript-agent")
+      .filter({ hasText: "我跑过的验证：" })
+      .waitFor();
+    await page
+      .locator("li")
+      .filter({ hasText: "pnpm --dir ui typecheck" })
+      .waitFor();
+    await page
+      .locator("li")
+      .filter({ hasText: "go test ./internal/codex/..." })
+      .waitFor();
+    await page.locator("li").filter({ hasText: "make verify-live" }).waitFor();
+    await page.getByTestId("session-transcript-loading").waitFor({
+      state: "hidden",
+    });
+
+    await fileChangeEntry.waitFor();
+    await fileChangeEntry
+      .getByRole("button", { name: /Changed 2 files/i })
+      .click();
+    const transcriptFileButton = fileChangeEntry.getByRole("button", {
+      name: /Edited.*internal\/codex\/transcript\.go/i,
+    });
+    await transcriptFileButton.waitFor();
+    await transcriptFileButton.click();
+    await page.getByText("internal/codex/transcript.go").last().waitFor();
+    await page.getByText("Edited  +100 -56").waitFor();
+
     await page.screenshot({
       fullPage: true,
-      path: path.join(run.rootDir, "session-followup.png"),
+      path: path.join(run.rootDir, "session-paginated.png"),
     });
 
     checks.push({
-      name: "follow-up transcript render",
+      name: "upward pagination render",
       status: "pass",
       detail:
-        "follow-up input appended user, command, file-change, and agent transcript entries",
+        "scrolling upward fetched the older transcript page with a visible loading row",
     });
     checks.push({
       name: "fenced code block render",

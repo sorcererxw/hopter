@@ -206,7 +206,8 @@ export function HomeWorkspacePane() {
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const navigate = useNavigate()
-  const { eventStreamState, posture, toggleRail, toolbarMode } = useWorkspaceShell()
+  const { eventStreamState, posture, toggleRail, toolbarMode } =
+    useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
   const transcriptPollInterval = useMemo(
     () =>
@@ -217,10 +218,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             : 10_000
           : 5_000
         : sessionMetaQuery.data
-        ? shouldPollSessionState(sessionMetaQuery.data.status)
-          ? 1500
-          : 5000
-        : 1500,
+          ? shouldPollSessionState(sessionMetaQuery.data.status)
+            ? 1500
+            : 5000
+          : 1500,
     [eventStreamState, sessionMetaQuery.data]
   )
   const latestTranscriptQuery = useSessionTranscript(
@@ -280,8 +281,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   }, [session, transcriptItems])
   const shouldShowWorkingStatus = Boolean(
     optimisticPendingInput ||
-      sendInput.isPending ||
-      (session && shouldShowThinkingState(session.status))
+    sendInput.isPending ||
+    (session && shouldShowThinkingState(session.status))
   )
   useEffect(() => {
     if (!optimisticPendingInput) {
@@ -296,7 +297,9 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     )
     const serverHasPending =
       session?.lastInputHint &&
-      normalizeTranscriptText(session.lastInputHint).startsWith(normalizedPending)
+      normalizeTranscriptText(session.lastInputHint).startsWith(
+        normalizedPending
+      )
 
     if (transcriptHasPending || serverHasPending) {
       setOptimisticPendingInput("")
@@ -324,20 +327,22 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     }
 
     if (session && shouldShowWorkingStatus) {
-      const localRoundInFlight = sendInput.isPending || Boolean(optimisticPendingInput)
+      const localRoundInFlight =
+        sendInput.isPending || Boolean(optimisticPendingInput)
       items.push({
         kind: "thinking" as const,
         key: "thinking",
-        summary:
-          localRoundInFlight
-            ? "Codex is working on your latest message…"
-            : session.summary?.trim() || "Codex is thinking…",
+        summary: localRoundInFlight
+          ? "Codex is working on your latest message…"
+          : session.summary?.trim() || "Codex is thinking…",
       })
     } else if (session) {
       items.push({
         kind: "round-status" as const,
         key: "round-status",
-        state: shouldShowAttentionState(session.status) ? "attention" : "finished",
+        state: shouldShowAttentionState(session.status)
+          ? "attention"
+          : "finished",
         summary: shouldShowAttentionState(session.status)
           ? session.attentionReason?.trim() || "This round needs attention."
           : "This round has finished.",
@@ -345,7 +350,14 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     }
 
     return items
-  }, [optimisticPendingInput, sendInput.isPending, session, shouldShowWorkingStatus, showPendingInputHint, transcriptItems])
+  }, [
+    optimisticPendingInput,
+    sendInput.isPending,
+    session,
+    shouldShowWorkingStatus,
+    showPendingInputHint,
+    transcriptItems,
+  ])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
   const hasMoreBefore =
@@ -423,7 +435,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       const grew = nextScrollHeight > lastScrollHeightRef.current
       lastScrollHeightRef.current = nextScrollHeight
 
-      if (!grew || prependSnapshotRef.current || !shouldStickToBottomRef.current) {
+      if (
+        !grew ||
+        prependSnapshotRef.current ||
+        !shouldStickToBottomRef.current
+      ) {
         return
       }
 
@@ -499,6 +515,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         }}
         title={session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
+        resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
         inspectorOpen={inspectorOpen}
         onCommit={() => {
@@ -981,9 +998,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
     if (current.item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
       const groupedItems: SessionTranscriptItem[] = [current.item]
       let next = cursor + 1
-      while (
-        next < items.length
-      ) {
+      while (next < items.length) {
         const candidate = items[next]
         if (
           !isTranscriptActivityItem(candidate) ||
@@ -1006,9 +1021,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
     if (current.item.kind === SessionTranscriptItemKind.FILE_CHANGE) {
       const groupedItems: SessionTranscriptItem[] = [current.item]
       let next = cursor + 1
-      while (
-        next < items.length
-      ) {
+      while (next < items.length) {
         const candidate = items[next]
         if (
           !isTranscriptActivityItem(candidate) ||
@@ -1031,9 +1044,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
     if (current.item.kind === SessionTranscriptItemKind.TOOL_CALL) {
       const groupedItems: SessionTranscriptItem[] = [current.item]
       let next = cursor + 1
-      while (
-        next < items.length
-      ) {
+      while (next < items.length) {
         const candidate = items[next]
         if (
           !isTranscriptActivityItem(candidate) ||
@@ -1566,10 +1577,16 @@ function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
   }
 
   const parts = [
-    reasoningCount > 0 ? `${reasoningCount} thought${reasoningCount === 1 ? "" : "s"}` : null,
+    reasoningCount > 0
+      ? `${reasoningCount} thought${reasoningCount === 1 ? "" : "s"}`
+      : null,
     toolCount > 0 ? `${toolCount} tool${toolCount === 1 ? "" : "s"}` : null,
-    commandCount > 0 ? `${commandCount} command${commandCount === 1 ? "" : "s"}` : null,
-    fileChangeCount > 0 ? `${fileChangeCount} file change${fileChangeCount === 1 ? "" : "s"}` : null,
+    commandCount > 0
+      ? `${commandCount} command${commandCount === 1 ? "" : "s"}`
+      : null,
+    fileChangeCount > 0
+      ? `${fileChangeCount} file change${fileChangeCount === 1 ? "" : "s"}`
+      : null,
   ].filter(Boolean)
 
   if (parts.length === 0) {

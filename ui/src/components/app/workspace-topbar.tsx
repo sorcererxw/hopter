@@ -8,6 +8,7 @@ import {
   PanelRight,
   Terminal,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
 import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
@@ -22,6 +23,7 @@ type WorkspaceTopbarProps = {
   onOpenReview?: () => void
   onToggleInspector?: () => void
   projectName?: string
+  resumeCommand?: string
   sessionId?: string
   showInspectorToggle?: boolean
   showReview?: boolean
@@ -39,6 +41,7 @@ export function WorkspaceTopbar({
   onOpenReview,
   onToggleInspector,
   projectName,
+  resumeCommand,
   sessionId,
   showInspectorToggle = false,
   showReview = false,
@@ -48,7 +51,9 @@ export function WorkspaceTopbar({
 }: WorkspaceTopbarProps) {
   const [commitOpen, setCommitOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copiedItem, setCopiedItem] = useState<
+    "resume-command" | "session-id" | null
+  >(null)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -75,25 +80,33 @@ export function WorkspaceTopbar({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [overflowOpen, commitOpen])
 
-  const handleCopySessionId = useCallback(() => {
-    if (!sessionId) {
-      return
-    }
-
-    navigator.clipboard.writeText(sessionId).then(
-      () => {
-        setCopied(true)
-        if (copiedTimerRef.current) {
-          clearTimeout(copiedTimerRef.current)
-        }
-        copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
-      },
-      () => {
-        // Clipboard write failed; silently ignore
+  const handleCopy = useCallback(
+    (text: string, item: "resume-command" | "session-id") => {
+      if (!text) {
+        return
       }
-    )
-    setOverflowOpen(false)
-  }, [sessionId])
+
+      navigator.clipboard.writeText(text).then(
+        () => {
+          setCopiedItem(item)
+          toast.success(
+            item === "resume-command"
+              ? "Codex command copied"
+              : "Session ID copied"
+          )
+          if (copiedTimerRef.current) {
+            clearTimeout(copiedTimerRef.current)
+          }
+          copiedTimerRef.current = setTimeout(() => setCopiedItem(null), 1500)
+        },
+        () => {
+          // Clipboard write failed; silently ignore
+        }
+      )
+      setOverflowOpen(false)
+    },
+    []
+  )
 
   const leadingButton =
     leadingAction === "back" ? (
@@ -196,12 +209,26 @@ export function WorkspaceTopbar({
                         {inspectorOpen ? "Close inspector" : "Open inspector"}
                       </OverflowMenuItem>
                     ) : null}
+                    {resumeCommand ? (
+                      <OverflowMenuItem
+                        icon={<Terminal className="size-3.5" />}
+                        onClick={() =>
+                          handleCopy(resumeCommand, "resume-command")
+                        }
+                      >
+                        {copiedItem === "resume-command"
+                          ? "Codex command copied"
+                          : "Resume in Codex"}
+                      </OverflowMenuItem>
+                    ) : null}
                     {sessionId ? (
                       <OverflowMenuItem
                         icon={<Copy className="size-3.5" />}
-                        onClick={handleCopySessionId}
+                        onClick={() => handleCopy(sessionId, "session-id")}
                       >
-                        {copied ? "Copied!" : "Copy session ID"}
+                        {copiedItem === "session-id"
+                          ? "Copied!"
+                          : "Copy session ID"}
                       </OverflowMenuItem>
                     ) : null}
                   </div>
@@ -239,12 +266,26 @@ export function WorkspaceTopbar({
                     onClick={() => setOverflowOpen(false)}
                   />
                   <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    {resumeCommand ? (
+                      <OverflowMenuItem
+                        icon={<Terminal className="size-3.5" />}
+                        onClick={() =>
+                          handleCopy(resumeCommand, "resume-command")
+                        }
+                      >
+                        {copiedItem === "resume-command"
+                          ? "Codex command copied"
+                          : "Resume in Codex"}
+                      </OverflowMenuItem>
+                    ) : null}
                     {sessionId ? (
                       <OverflowMenuItem
                         icon={<Copy className="size-3.5" />}
-                        onClick={handleCopySessionId}
+                        onClick={() => handleCopy(sessionId, "session-id")}
                       >
-                        {copied ? "Copied!" : "Copy session ID"}
+                        {copiedItem === "session-id"
+                          ? "Copied!"
+                          : "Copy session ID"}
                       </OverflowMenuItem>
                     ) : null}
                   </div>
@@ -327,11 +368,7 @@ export function WorkspaceTopbar({
   )
 }
 
-function SyncStatusBadge({
-  state,
-}: {
-  state: WorkspaceEventStreamState
-}) {
+function SyncStatusBadge({ state }: { state: WorkspaceEventStreamState }) {
   const label =
     state === "connected"
       ? "Live"

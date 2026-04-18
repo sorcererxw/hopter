@@ -1,6 +1,8 @@
 package rpcserver
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -191,6 +193,73 @@ func sessionToProto(project core.Project, session core.Session) *orchdv1.Session
 	}
 }
 
+func sessionMetaToProto(meta core.SessionMeta) *orchdv1.SessionMeta {
+	artifacts := make([]*orchdv1.ArtifactRef, 0, len(meta.Session.Artifacts))
+	for _, artifact := range meta.Session.Artifacts {
+		artifacts = append(artifacts, &orchdv1.ArtifactRef{
+			Id:          artifact.ID,
+			Kind:        mapArtifactKind(artifact.Kind),
+			Label:       validUTF8(artifact.Label),
+			CreatedAt:   timestamp(artifact.CreatedAt),
+			DownloadUrl: validUTF8(artifact.DownloadURL),
+			ContentType: validUTF8(artifact.ContentType),
+		})
+	}
+	return &orchdv1.SessionMeta{
+		Id:                 meta.Session.ID,
+		Title:              validUTF8(meta.Session.Title),
+		BackendKey:         validUTF8(meta.Session.BackendKey),
+		Project:            projectRef(meta.Project),
+		Status:             mapSessionState(meta.Session.Status),
+		Summary:            validUTF8(meta.Session.Summary),
+		AttentionRequired:  meta.Session.AttentionRequired,
+		AttentionReason:    validUTF8(meta.Session.AttentionReason),
+		LastInputHint:      validUTF8(meta.Session.LastInputHint),
+		UpdatedAt:          timestamp(meta.Session.UpdatedAt),
+		Artifacts:          artifacts,
+		HasMoreBefore:      meta.HasMoreBefore,
+		LatestPageSizeHint: meta.LatestPageSizeHint,
+		ResumeCommand:      buildCodexResumeCommand(meta.Project.RootPath, meta.Session),
+	}
+}
+
+func buildCodexResumeCommand(rootPath string, session core.Session) string {
+	if strings.TrimSpace(session.BackendKey) != "codex" {
+		return ""
+	}
+
+	threadID := strings.TrimSpace(session.BackendThreadID)
+	cwd := strings.TrimSpace(rootPath)
+	if threadID == "" || cwd == "" {
+		return ""
+	}
+
+	return fmt.Sprintf(
+		"codex -C %s resume %s",
+		strconv.Quote(cwd),
+		strconv.Quote(threadID),
+	)
+}
+
+func sessionTranscriptPageToProto(page core.SessionTranscriptPage) *orchdv1.SessionTranscriptPage {
+	items := make([]*orchdv1.SessionTranscriptItem, 0, len(page.Items))
+	for _, item := range page.Items {
+		items = append(items, &orchdv1.SessionTranscriptItem{
+			Id:     item.ID,
+			Kind:   mapTranscriptItemKind(item.Kind),
+			Title:  validUTF8(item.Title),
+			Body:   validUTF8(item.Body),
+			Status: validUTF8(item.Status),
+		})
+	}
+	return &orchdv1.SessionTranscriptPage{
+		Items:             items,
+		NextBeforeCursor:  optionalString(page.NextBeforeCursor),
+		HasMoreBefore:     page.HasMoreBefore,
+		SnapshotUpdatedAt: timestamp(page.SnapshotUpdatedAt),
+	}
+}
+
 func sessionListItemToProto(project core.Project, session core.Session) *orchdv1.SessionListItem {
 	return &orchdv1.SessionListItem{
 		Id:                session.ID,
@@ -205,4 +274,12 @@ func sessionListItemToProto(project core.Project, session core.Session) *orchdv1
 
 func validUTF8(value string) string {
 	return strings.ToValidUTF8(value, "")
+}
+
+func optionalString(value string) *string {
+	normalized := validUTF8(value)
+	if normalized == "" {
+		return nil
+	}
+	return &normalized
 }

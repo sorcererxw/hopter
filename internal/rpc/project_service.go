@@ -22,8 +22,12 @@ type projectSessionLister interface {
 	ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error)
 }
 
-func NewProjectService(workspace core.WorkspaceService, sessions projectSessionLister) *ProjectService {
-	return &ProjectService{workspace: workspace, sessions: sessions}
+func NewProjectService(workspace core.WorkspaceService, sessions ...projectSessionLister) *ProjectService {
+	var sessionLister projectSessionLister
+	if len(sessions) > 0 {
+		sessionLister = sessions[0]
+	}
+	return &ProjectService{workspace: workspace, sessions: sessionLister}
 }
 
 func (s *ProjectService) ListProjects(_ context.Context, _ *connect.Request[orchdv1.ListProjectsRequest]) (*connect.Response[orchdv1.ListProjectsResponse], error) {

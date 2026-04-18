@@ -126,12 +126,14 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 	}
 	meta := core.SessionMeta{
 		Session: core.Session{
-			ID:        "sess_1",
-			ProjectID: project.ID,
-			Title:     "probe",
-			Status:    core.SessionStateCompleted,
-			Summary:   "done",
-			UpdatedAt: time.Now().UTC(),
+			ID:              "sess_1",
+			ProjectID:       project.ID,
+			Title:           "probe",
+			Status:          core.SessionStateCompleted,
+			Summary:         "done",
+			UpdatedAt:       time.Now().UTC(),
+			BackendKey:      "codex",
+			BackendThreadID: "thread_123",
 		},
 		Project:            project,
 		HasMoreBefore:      true,
@@ -165,6 +167,10 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 	if !metaResp.Msg.GetSession().GetHasMoreBefore() {
 		t.Fatalf("meta has_more_before = false, want true")
 	}
+	wantResume := `codex -C "/tmp/probe" resume "thread_123"`
+	if metaResp.Msg.GetSession().GetResumeCommand() != wantResume {
+		t.Fatalf("resume command = %q, want %q", metaResp.Msg.GetSession().GetResumeCommand(), wantResume)
+	}
 
 	pageResp, err := service.ListSessionTranscript(context.Background(), connect.NewRequest(&orchdv1.ListSessionTranscriptRequest{
 		SessionId: meta.Session.ID,
@@ -177,6 +183,44 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 	}
 	if pageResp.Msg.GetPage().GetNextBeforeCursor() != "cursor-1" {
 		t.Fatalf("next cursor = %q", pageResp.Msg.GetPage().GetNextBeforeCursor())
+	}
+}
+
+func TestGetSessionMetaOmitsResumeCommandWithoutCodexThread(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := core.Project{
+		ID:             "proj_1",
+		Name:           "probe",
+		RootPath:       "/tmp/probe",
+		DefaultBackend: "codex",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	meta := core.SessionMeta{
+		Session: core.Session{
+			ID:         "sess_1",
+			ProjectID:  project.ID,
+			Title:      "probe",
+			Status:     core.SessionStateCompleted,
+			Summary:    "done",
+			UpdatedAt:  time.Now().UTC(),
+			BackendKey: "copilot",
+		},
+		Project: project,
+	}
+
+	service := NewSessionService(workspace, &fakeSessionRuntime{}, &fakeSessionDetailReader{
+		meta: meta,
+	})
+
+	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&orchdv1.GetSessionMetaRequest{
+		SessionId: meta.Session.ID,
+	}))
+	if err != nil {
+		t.Fatalf("GetSessionMeta: %v", err)
+	}
+	if metaResp.Msg.GetSession().GetResumeCommand() != "" {
+		t.Fatalf("resume command = %q, want empty", metaResp.Msg.GetSession().GetResumeCommand())
 	}
 }
 
@@ -207,8 +251,7 @@ func TestListSessionsMergesLocalSessionsMissingFromRuntime(t *testing.T) {
 		listSessionsResult: nil,
 	}, &fakeSessionDetailReader{})
 
-	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&orchdv1.ListSessionsRequest{
-	}))
+	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&orchdv1.ListSessionsRequest{}))
 	if err != nil {
 		t.Fatalf("ListSessions: %v", err)
 	}

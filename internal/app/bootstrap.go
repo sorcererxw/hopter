@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -47,6 +48,8 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+
+	go sessionReadModel.PrewarmRecent(context.Background(), 10, 50)
 
 	return &Runtime{
 		Config:    cfg,

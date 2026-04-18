@@ -2,6 +2,7 @@ import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/sonner"
 import { WorkspaceLayout } from "@/components/app/workspace-layout"
 import { queryClient } from "@/lib/query/client"
 import { HomeRoute } from "@/routes/home-route"
@@ -30,6 +31,7 @@ export default function App() {
             </Route>
             <Route path="login" element={<LoginRoute />} />
           </Routes>
+          <Toaster />
         </BrowserRouter>
       </QueryClientProvider>
     </ThemeProvider>

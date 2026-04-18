@@ -1,137 +1,156 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react"
+import { isValidElement, useCallback, useEffect, useRef, useState } from "react"
+import type {
+  AnchorHTMLAttributes,
+  ComponentPropsWithoutRef,
+  ReactElement,
+  ReactNode,
+} from "react"
 import { Check, Copy } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkBreaks from "remark-breaks"
+import remarkGfm from "remark-gfm"
 
 import { cn } from "@/lib/utils"
 
 type SessionRichTextProps = {
   text: string
   className?: string
+  onLocalPathClick?: (path: string, label: string) => void
 }
 
-type RichTextBlock =
-  | {
-      type: "text"
-      text: string
-    }
-  | {
-      type: "code"
-      code: string
-      language?: string
-    }
+type MarkdownCodeProps = ComponentPropsWithoutRef<"code"> & {
+  inline?: boolean
+  node?: unknown
+}
 
-export function SessionRichText({ className, text }: SessionRichTextProps) {
-  const blocks = parseRichTextBlocks(text)
+type MarkdownPreProps = ComponentPropsWithoutRef<"pre"> & {
+  node?: unknown
+}
 
-  const isLongForm = blocks.length > 3
+export function SessionRichText({
+  className,
+  onLocalPathClick,
+  text,
+}: SessionRichTextProps) {
+  const paragraphCount = text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean).length
+  const isLongForm = paragraphCount > 3
 
   return (
     <div
       className={cn(
-        "min-w-0 text-base leading-7 font-medium break-words text-foreground",
+        "min-w-0 break-words text-base leading-7 font-medium text-foreground",
         isLongForm ? "space-y-4" : "space-y-2.5",
         className
       )}
     >
-      {blocks.map((block, index) => {
-        if (block.type === "code") {
-          return (
-            <CodeBlock
-              key={`${block.language || "plain"}-${index}`}
-              code={block.code}
-              language={block.language}
-            />
-          )
-        }
-
-        const lines = block.text.split("\n").map((line) => line.trimEnd())
-        const isList = lines.every((line) => /^[-*]\s+/.test(line))
-        const leadInListLines =
-          lines.length > 1 && /[:：]\s*$/.test(lines[0]) ? lines.slice(1) : []
-        const hasLeadInList =
-          leadInListLines.length > 0 &&
-          leadInListLines.every((line) => /^[-*]\s+/.test(line))
-
-        // Detect heading-like lead lines: "Status:", "Next:", etc.
-        const isLeadIn = /.+[:：]\s*.+/.test(block.text) && lines.length === 1
-
-        if (isList) {
-          return (
-            <ul
-              key={`${block.text.slice(0, 32)}-${index}`}
-              className="space-y-1.5 pl-5"
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          a: ({ children, href, ...props }) => (
+            <MarkdownLink
+              href={href}
+              onLocalPathClick={onLocalPathClick}
+              {...props}
             >
-              {lines.map((line, itemIndex) => (
-                <li
-                  key={`${line.slice(0, 32)}-${itemIndex}`}
-                  className="list-disc text-foreground"
-                >
-                  {renderInline(line.replace(/^[-*]\s+/, ""))}
-                </li>
-              ))}
-            </ul>
-          )
-        }
+              {children}
+            </MarkdownLink>
+          ),
+          code: ({ children, className: _codeClassName, inline }: MarkdownCodeProps) => {
+            const code = flattenMarkdownChildren(children)
 
-        if (hasLeadInList) {
-          return (
-            <Fragment key={`${block.text.slice(0, 32)}-${index}`}>
-              <p>{renderLeadIn(lines[0])}</p>
-              <ul className="space-y-1.5 pl-5">
-                {leadInListLines.map((line, itemIndex) => (
-                  <li
-                    key={`${line.slice(0, 32)}-${itemIndex}`}
-                    className="list-disc text-foreground"
-                  >
-                    {renderInline(line.replace(/^[-*]\s+/, ""))}
-                  </li>
-                ))}
-              </ul>
-            </Fragment>
-          )
-        }
+            if (inline) {
+              return (
+                <code className="rounded-md border border-border bg-secondary px-1.5 py-0.5 font-mono text-[0.92em] text-foreground">
+                  {code}
+                </code>
+              )
+            }
 
-        if (isLeadIn) {
-          return (
-            <p key={`${block.text.slice(0, 32)}-${index}`}>
-              {renderLeadIn(block.text)}
-            </p>
-          )
-        }
+            return (
+              <code className="font-mono text-[0.92em] text-foreground">{code}</code>
+            )
+          },
+          pre: ({ children }: MarkdownPreProps) => {
+            const codeChild = getCodeElement(children)
+            const code = trimTrailingNewline(
+              flattenMarkdownChildren(codeChild?.props.children ?? children)
+            )
+            const language =
+              codeChild?.props.className?.match(/language-([\w-]+)/)?.[1]
 
-        return (
-          <p key={`${block.text.slice(0, 32)}-${index}`}>
-            {renderInline(block.text)}
-          </p>
-        )
-      })}
+            return <CodeBlock code={code} language={language} />
+          },
+          li: ({ children }) => <li className="list-disc text-foreground">{children}</li>,
+          ol: ({ children }) => <ol className="space-y-1.5 pl-5">{children}</ol>,
+          p: ({ children }) => <p>{children}</p>,
+          strong: ({ children }) => (
+            <strong className="font-semibold text-foreground">{children}</strong>
+          ),
+          ul: ({ children }) => <ul className="space-y-1.5 pl-5">{children}</ul>,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
     </div>
   )
 }
 
-function renderLeadIn(text: string) {
-  const separatorIndex = Math.max(text.indexOf(":"), text.indexOf("："))
-  if (separatorIndex < 0) {
-    return renderInline(text)
+function MarkdownLink({
+  children,
+  href,
+  onLocalPathClick,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & {
+  children: ReactNode
+  href?: string
+  onLocalPathClick?: (path: string, label: string) => void
+}) {
+  const label = flattenMarkdownChildren(children)
+
+  if (!href) {
+    return <span>{children}</span>
   }
 
-  const label = text.slice(0, separatorIndex)
-  const separator = text.slice(separatorIndex, separatorIndex + 1)
-  const rest = text.slice(separatorIndex + 1).trim()
+  if (/^https?:\/\//.test(href)) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+        {...props}
+      >
+        {children}
+      </a>
+    )
+  }
 
   return (
-    <>
-      <span className="font-semibold text-foreground">
-        {label}
-        {separator}
-      </span>
-      {rest ? <> {renderInline(rest)}</> : null}
-    </>
+    <a
+      href={href}
+      title={href}
+      onClick={(event) => {
+        if (!onLocalPathClick) {
+          return
+        }
+        event.preventDefault()
+        onLocalPathClick(href, label)
+      }}
+      className="font-mono text-[0.92em] text-ws-code underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+      {...props}
+    >
+      {children}
+    </a>
   )
 }
 
 function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const displayCode = formatCodeForDisplay(code, language)
 
   useEffect(() => {
     return () => {
@@ -169,142 +188,82 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
         aria-label={copied ? "Copied code" : "Copy code"}
         data-testid="session-code-copy"
       >
-        {copied ? (
-          <Check className="size-3.5" />
-        ) : (
-          <Copy className="size-3.5" />
-        )}
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
         <span>{copied ? "Copied" : "Copy"}</span>
       </button>
-      <pre className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 pt-10 pb-3 font-mono text-sm leading-6 text-foreground">
-        <code data-language={language || undefined}>{code}</code>
+      <pre className="workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 pt-4 pb-3 font-mono text-sm leading-6 text-foreground">
+        <code data-language={language || undefined}>{displayCode}</code>
       </pre>
     </div>
   )
 }
 
-function parseRichTextBlocks(text: string): RichTextBlock[] {
-  const normalized = text.replace(/\r\n?/g, "\n")
-  const lines = normalized.split("\n")
-  const blocks: RichTextBlock[] = []
-  let textLines: string[] = []
-  let codeLines: string[] = []
-  let codeLanguage = ""
-  let inCodeBlock = false
-
-  const flushText = () => {
-    const value = textLines.join("\n")
-    textLines = []
-
-    value
-      .split(/\n{2,}/)
-      .map((block) => block.trim())
-      .filter(Boolean)
-      .forEach((block) => {
-        blocks.push({ text: block, type: "text" })
-      })
-  }
-
-  const flushCode = () => {
-    blocks.push({
-      code: codeLines.join("\n").replace(/\n+$/, ""),
-      language: codeLanguage || undefined,
-      type: "code",
-    })
-    codeLines = []
-    codeLanguage = ""
-  }
-
-  lines.forEach((line) => {
-    if (!inCodeBlock) {
-      const codeFence = line.match(/^```([^`]*)$/)
-      if (codeFence) {
-        flushText()
-        inCodeBlock = true
-        codeLanguage = codeFence[1].trim()
-        return
-      }
-
-      textLines.push(line)
-      return
-    }
-
-    if (line === "```") {
-      flushCode()
-      inCodeBlock = false
-      return
-    }
-
-    codeLines.push(line)
-  })
-
-  if (inCodeBlock) {
-    flushCode()
-  } else {
-    flushText()
-  }
-
-  return blocks
+function flattenMarkdownChildren(children: ReactNode): string {
+  return Array.isArray(children)
+    ? children.map((child) => flattenMarkdownChildren(child)).join("")
+    : typeof children === "string" || typeof children === "number"
+      ? String(children)
+      : children && typeof children === "object" && "props" in children
+        ? flattenMarkdownChildren((children as { props?: { children?: ReactNode } }).props?.children ?? "")
+        : ""
 }
 
-function renderInline(text: string) {
-  const parts = text
-    .split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g)
+function getCodeElement(children: ReactNode) {
+  if (isValidElement(children) && children.type === "code") {
+    return children as ReactElement<{ children?: ReactNode; className?: string }>
+  }
+
+  if (Array.isArray(children)) {
+    const element = children.find(
+      (child) => isValidElement(child) && child.type === "code"
+    )
+    if (element && isValidElement(element)) {
+      return element as ReactElement<{ children?: ReactNode; className?: string }>
+    }
+  }
+
+  return null
+}
+
+function trimTrailingNewline(value: string) {
+  return value.replace(/\n$/, "")
+}
+
+function formatCodeForDisplay(code: string, language?: string) {
+  if (language || !looksLikeMarkup(code)) {
+    return code
+  }
+
+  return prettyPrintMarkup(code)
+}
+
+function looksLikeMarkup(code: string) {
+  const trimmed = code.trim()
+  return trimmed.startsWith("<") && trimmed.includes(">") && /<\/?[a-zA-Z]/.test(trimmed)
+}
+
+function prettyPrintMarkup(code: string) {
+  const chunks = code.replace(/>\s*</g, ">\n<").split("\n")
+  let depth = 0
+
+  return chunks
+    .map((chunk) => chunk.trim())
     .filter(Boolean)
-
-  return parts.map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong
-          key={`${part.slice(0, 16)}-${index}`}
-          className="font-semibold text-foreground"
-        >
-          {part.slice(2, -2)}
-        </strong>
-      )
-    }
-
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return (
-        <code
-          key={`${part.slice(0, 16)}-${index}`}
-          className="workspace-inline-code font-mono text-[0.92em]"
-        >
-          {part.slice(1, -1)}
-        </code>
-      )
-    }
-
-    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-    if (linkMatch) {
-      const [, label, href] = linkMatch
-      const isWeb = /^https?:\/\//.test(href)
-
-      if (isWeb) {
-        return (
-          <a
-            key={`${part.slice(0, 16)}-${index}`}
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
-          >
-            {label}
-          </a>
-        )
+    .map((chunk) => {
+      if (/^<\//.test(chunk)) {
+        depth = Math.max(depth - 1, 0)
       }
 
-      return (
-        <span
-          key={`${part.slice(0, 16)}-${index}`}
-          title={href}
-          className="workspace-inline-code font-mono text-[0.92em]"
-        >
-          {label}
-        </span>
-      )
-    }
+      const line = `${"  ".repeat(depth)}${chunk}`
 
-    return <Fragment key={`${part.slice(0, 16)}-${index}`}>{part}</Fragment>
-  })
+      if (
+        /^<[^!?/][^>]*[^/]?>$/.test(chunk) &&
+        !/^<[^>]+>.*<\/[^>]+>$/.test(chunk)
+      ) {
+        depth += 1
+      }
+
+      return line
+    })
+    .join("\n")
 }

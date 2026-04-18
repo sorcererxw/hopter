@@ -6,5 +6,8 @@ export const queryKeys = {
   hostRecentRepos: (limit: number) => ["host", "recent-repos", limit] as const,
   projects: () => ["projects"] as const,
   sessions: (projectId?: string) => ["sessions", { projectId: projectId ?? null }] as const,
-  session: (sessionId: string) => ["session", sessionId] as const,
+  sessionMeta: (sessionId: string) => ["session-meta", sessionId] as const,
+  sessionTranscript: (sessionId: string) => ["session-transcript", sessionId] as const,
+  sessionTranscriptLatest: (sessionId: string, pageSize?: number) =>
+    ["session-transcript", sessionId, { pageSize: pageSize ?? null }] as const,
 } as const
