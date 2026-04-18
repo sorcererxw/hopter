@@ -9,12 +9,9 @@ import {
 } from "react"
 import { matchPath, useLocation } from "react-router-dom"
 
-import {
-  getToolbarMode,
-  getWorkspacePosture,
-  type WorkspacePosture,
-} from "@/components/app/workspace-posture"
+import { getToolbarMode, getWorkspacePosture, type WorkspacePosture } from "@/components/app/workspace-posture"
 import { SessionRail } from "@/components/app/session-rail"
+import { SidebarPane } from "@/components/app/sidebar-pane"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
 
@@ -159,25 +156,18 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
         {showPhoneList ? null : (
           <>
-            <div
-              className="grid h-full min-h-0 min-w-0"
-              style={{
-                gridTemplateColumns: showInlineRail
-                  ? "248px minmax(0,1fr)"
-                  : "minmax(0,1fr)",
-              }}
-            >
+          <div className="flex h-full min-h-0 min-w-0">
               {showInlineRail ? (
-                <aside
-                  className="h-full min-h-0 border-r border-border bg-sidebar"
+                <SidebarPane
+                  className="h-full min-h-0"
                   data-testid="workspace-rail-pane"
                 >
                   {rail}
-                </aside>
+                </SidebarPane>
               ) : null}
 
               <main
-                className="min-h-0 min-w-0 overflow-hidden bg-background"
+                className="min-h-0 min-w-0 flex-1 overflow-hidden bg-background"
                 data-testid={
                   showPhoneDetail
                     ? "workspace-phone-detail"

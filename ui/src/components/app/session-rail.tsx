@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState, type ReactNode } from "react"
+import { Fragment, useMemo, useRef, useState } from "react"
 import {
   ChevronDown,
   FolderOpen,
@@ -9,8 +9,9 @@ import {
   Settings,
   SquarePen,
 } from "lucide-react"
-import { Link, NavLink, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
+import { RailRow } from "@/components/app/rail-row"
 import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
@@ -354,142 +355,3 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
   )
 }
 
-function RailRow({
-  activeClassName,
-  ariaExpanded,
-  asDivInteractive = false,
-  className,
-  fullWidth = true,
-  icon,
-  interactive = false,
-  label,
-  labelFill = true,
-  labelClassName,
-  nav = false,
-  onClick,
-  right,
-  rightClassName,
-  reserveIconSpace = true,
-  title,
-  to,
-}: {
-  activeClassName?: string
-  ariaExpanded?: boolean
-  asDivInteractive?: boolean
-  className?: string
-  fullWidth?: boolean
-  icon: ReactNode
-  interactive?: boolean
-  label: ReactNode
-  labelFill?: boolean
-  labelClassName?: string
-  nav?: boolean
-  onClick?: () => void
-  right?: ReactNode
-  rightClassName?: string
-  reserveIconSpace?: boolean
-  title?: string
-  to?: string
-}) {
-  const isInteractive =
-    interactive || Boolean(to || onClick || ariaExpanded !== undefined)
-  const rowClassName = cn(
-    "group flex items-center gap-2.5 rounded-md px-3 py-1 text-left text-base leading-5 transition",
-    fullWidth ? "w-full" : "w-fit",
-    isInteractive ? "cursor-pointer" : undefined,
-    className
-  )
-
-  const content = (currentIcon: ReactNode) => (
-    <>
-      {reserveIconSpace ? (
-        <span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground">
-          {currentIcon}
-        </span>
-      ) : null}
-      <span
-        className={cn(
-          "min-w-0",
-          labelFill ? "flex-1" : "shrink-0",
-          labelClassName
-        )}
-      >
-        {label}
-      </span>
-      {right ? (
-        <span className={cn("shrink-0", rightClassName)}>{right}</span>
-      ) : null}
-    </>
-  )
-
-  if (to && nav) {
-    return (
-      <NavLink
-        to={to}
-        onClick={onClick}
-        title={title}
-        data-rail-row="true"
-        className={({ isActive }) =>
-          cn(rowClassName, isActive ? activeClassName : undefined)
-        }
-      >
-        {content(icon)}
-      </NavLink>
-    )
-  }
-
-  if (to) {
-    return (
-      <Link
-        to={to}
-        onClick={onClick}
-        title={title}
-        data-rail-row="true"
-        className={rowClassName}
-      >
-        {content(icon)}
-      </Link>
-    )
-  }
-
-  if (asDivInteractive && onClick) {
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        data-rail-row="true"
-        className={rowClassName}
-        onClick={onClick}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault()
-            onClick()
-          }
-        }}
-      >
-        {content(icon)}
-      </div>
-    )
-  }
-
-  if (onClick || ariaExpanded !== undefined) {
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        title={title}
-        aria-expanded={ariaExpanded}
-        data-rail-row="true"
-        className={rowClassName}
-      >
-        {content(icon)}
-      </button>
-    )
-  }
-
-  return (
-    <div data-rail-row="true" className={rowClassName}>
-      {content(icon)}
-    </div>
-  )
-}

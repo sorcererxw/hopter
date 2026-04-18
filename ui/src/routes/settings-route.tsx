@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
+import { RailRow } from "@/components/app/rail-row"
+import { SidebarPane } from "@/components/app/sidebar-pane"
 import { useTheme } from "@/components/theme-provider"
 import { CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -57,48 +59,34 @@ export function SettingsRoute() {
 
   return (
     <div className="flex h-dvh bg-background text-foreground">
-      <div className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar py-4">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-3 justify-start gap-2 px-4 text-muted-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          <span>Back to app</span>
-        </Button>
+      <SidebarPane className="py-4">
+        <div className="mb-3 px-2">
+          <RailRow
+            icon={<ArrowLeft className="size-3.5" />}
+            label="Back to app"
+            onClick={() => navigate(-1)}
+            className="text-muted-foreground hover:bg-accent hover:text-foreground"
+          />
+        </div>
 
-        <div className="space-y-0.5 px-2 text-sm font-medium">
+        <div className="space-y-0.5 px-2 font-medium">
           {NAV_ITEMS.map(({ icon: Icon, id, label }) => (
-            <Button
+            <RailRow
               key={id}
-              type="button"
-              variant={activeSection === id ? "secondary" : "ghost"}
-              size="sm"
+              icon={<Icon className="size-3.5" />}
+              label={label}
               onClick={() => setActiveSection(id)}
               className={cn(
-                "h-auto w-full justify-start gap-2.5 px-3 py-2 text-left",
                 activeSection === id
-                  ? "text-foreground"
-                  : "text-muted-foreground"
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
-            >
-              <Icon
-                className={cn(
-                  "size-3.5",
-                  activeSection === id
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground"
-                )}
-              />
-              <span>{label}</span>
-            </Button>
+            />
           ))}
         </div>
-      </div>
+      </SidebarPane>
 
-      <div className="thin-scrollbar flex-1 overflow-y-auto px-12 py-8 text-sm font-medium text-foreground">
+      <div className="thin-scrollbar flex-1 overflow-y-auto px-12 py-8 font-medium text-foreground">
         {activeSection === "general" ? (
           <div className="w-full">
             <SectionTitle>General</SectionTitle>
@@ -230,7 +218,7 @@ export function SettingsRoute() {
             <SectionTitle>
               {NAV_ITEMS.find((item) => item.id === activeSection)?.label}
             </SectionTitle>
-            <div className="rounded-lg border border-border bg-muted px-5 py-4 text-base leading-7 text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted px-5 py-4 leading-7 text-muted-foreground">
               This section has been visually rebuilt, but the active product
               loop is still the workspace shell, project picker, and session
               continuation flow.
