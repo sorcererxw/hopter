@@ -1,0 +1,206 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect-release-scope:
+    name: Detect Release Scope
+    runs-on: ubuntu-latest
+    outputs:
+      release_needed: ${{ steps.scope.outputs.release_needed }}
+      version: ${{ steps.version.outputs.version }}
+      changed_files: ${{ steps.scope.outputs.changed_files }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect product-surface changes
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+
+          if [[ -z "${before}" || "${before}" == "0000000000000000000000000000000000000000" ]]; then
+            before="$(git rev-list --max-count=1 "${after}^" 2>/dev/null || true)"
+          fi
+
+          changed_file_list="$(mktemp)"
+
+          if [[ -n "${before}" ]]; then
+            git diff --name-only "${before}" "${after}" > "${changed_file_list}"
+          else
+            git show --pretty='' --name-only "${after}" > "${changed_file_list}"
+          fi
+
+          cat "${changed_file_list}"
+
+          release_needed=false
+          if grep -Eq '^(cmd/|internal/|idl/|ui/|scripts/|Makefile$|go\.mod$|go\.sum$|\.air\.toml$)' "${changed_file_list}"; then
+            release_needed=true
+          fi
+
+          {
+            echo "release_needed=${release_needed}"
+            echo "changed_files<<EOF"
+            cat "${changed_file_list}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Compute next 0.0.x version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          latest_tag="$(git tag --list 'v0.0.*' --sort=-version:refname | head -n 1)"
+          if [[ -z "${latest_tag}" ]]; then
+            next_tag="v0.0.1"
+          else
+            current_patch="${latest_tag##*.}"
+            next_tag="v0.0.$((current_patch + 1))"
+          fi
+
+          echo "version=${next_tag}" >> "${GITHUB_OUTPUT}"
+          echo "Next release tag: ${next_tag}"
+
+  build-release-assets:
+    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+    needs: detect-release-scope
+    if: needs.detect-release-scope.outputs.release_needed == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install UI dependencies
+        run: pnpm --dir ui install --frozen-lockfile
+
+      - name: Build embedded UI dist
+        run: pnpm --dir ui build
+
+      - name: Build release archive
+        env:
+          VERSION: ${{ needs.detect-release-scope.outputs.version }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_no_v="${VERSION#v}"
+          archive_dir="release/${GOOS}-${GOARCH}"
+          binary_name="hopter"
+          archive_name="hopter_${version_no_v}_${GOOS}_${GOARCH}.tar.gz"
+
+          mkdir -p "${archive_dir}"
+
+          CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" \
+            go build \
+              -trimpath \
+              -ldflags "-s -w -X main.version=${version_no_v} -X main.installSource=direct" \
+              -o "${archive_dir}/${binary_name}" \
+              ./cmd/hopter
+
+          tar -C "${archive_dir}" -czf "release/${archive_name}" "${binary_name}"
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: release/*.tar.gz
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs:
+      - detect-release-scope
+      - build-release-assets
+    if: needs.detect-release-scope.outputs.release_needed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release
+
+      - name: Generate checksum manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd release
+            sha256sum *.tar.gz > checksums.txt
+          )
+
+      - name: Write release notes preamble
+        shell: bash
+        env:
+          VERSION: ${{ needs.detect-release-scope.outputs.version }}
+        run: |
+          set -euo pipefail
+          cat > release-notes.md <<EOF
+          Automated release for ${VERSION}.
+
+          Triggered by product-surface changes on ${GITHUB_REF_NAME} at ${GITHUB_SHA}.
+
+          Changed files:
+          ${{ needs.detect-release-scope.outputs.changed_files }}
+          EOF
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.detect-release-scope.outputs.version }}
+          name: hopter ${{ needs.detect-release-scope.outputs.version }}
+          body_path: release-notes.md
+          generate_release_notes: true
+          files: |
+            release/*.tar.gz
+            release/checksums.txt
