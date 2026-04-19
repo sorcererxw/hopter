@@ -10,8 +10,8 @@ import (
 
 	githubcopilot "github.com/github/copilot-sdk/go"
 
-	"orchd/internal/backend"
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type Manager struct {

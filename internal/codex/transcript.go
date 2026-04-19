@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const transcriptItemLimit = 200

@@ -82,9 +82,9 @@ func fetchManifest(ctx context.Context, client *http.Client, url string) (manife
 }
 
 func loadManifestPublicKey() (ed25519.PublicKey, error) {
-	encoded := strings.TrimSpace(strings.Trim(strings.TrimSpace(getenv("ORCHD_UPDATE_PUBLIC_KEY_B64")), `"`))
+	encoded := strings.TrimSpace(strings.Trim(envValue("HOPTER_UPDATE_PUBLIC_KEY_B64"), `"`))
 	if encoded == "" {
-		return nil, fmt.Errorf("ORCHD_UPDATE_PUBLIC_KEY_B64 is required for signed manifest verification")
+		return nil, fmt.Errorf("HOPTER_UPDATE_PUBLIC_KEY_B64 is required for signed manifest verification")
 	}
 
 	keyBytes, err := base64.StdEncoding.DecodeString(encoded)

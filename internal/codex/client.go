@@ -42,10 +42,10 @@ type Client struct {
 	wait   map[int64]chan envelope
 	done   chan error
 
-	onNotification func(Notification)
+	onNotification  func(Notification)
 	onServerRequest func(ServerRequest)
 	onTrace         func(TraceEntry)
-	onExit         func()
+	onExit          func()
 }
 
 type StartThreadResult struct {
@@ -181,14 +181,14 @@ func Start(
 	}
 
 	client := &Client{
-		cmd:            cmd,
-		stdin:          stdin,
-		wait:           make(map[int64]chan envelope),
-		done:           make(chan error, 1),
-		onNotification: onNotification,
+		cmd:             cmd,
+		stdin:           stdin,
+		wait:            make(map[int64]chan envelope),
+		done:            make(chan error, 1),
+		onNotification:  onNotification,
 		onServerRequest: onServerRequest,
 		onTrace:         onTrace,
-		onExit:         onExit,
+		onExit:          onExit,
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -222,7 +222,7 @@ func (c *Client) Close() error {
 func (c *Client) initialize() error {
 	_, err := c.request("initialize", map[string]any{
 		"clientInfo": map[string]any{
-			"name":    "orchd-go",
+			"name":    "hopter-go",
 			"version": "0.1.0",
 		},
 		"capabilities": nil,

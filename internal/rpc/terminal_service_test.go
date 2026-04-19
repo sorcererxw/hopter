@@ -7,8 +7,8 @@ import (
 
 	"connectrpc.com/connect"
 
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
-	"orchd/internal/terminal"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
+	"github.com/sorcererxw/hopter/internal/terminal"
 )
 
 type fakeTerminalManager struct {
@@ -97,7 +97,7 @@ func TestTerminalServiceCreateGetTerminate(t *testing.T) {
 	}
 	service := NewTerminalService(manager)
 
-	createResp, err := service.CreateTerminalSession(context.Background(), connect.NewRequest(&orchdv1.CreateTerminalSessionRequest{
+	createResp, err := service.CreateTerminalSession(context.Background(), connect.NewRequest(&hopterv1.CreateTerminalSessionRequest{
 		SessionId:         "sess_1",
 		BrowserInstanceId: "browser_1",
 		TabId:             "tab_1",
@@ -114,7 +114,7 @@ func TestTerminalServiceCreateGetTerminate(t *testing.T) {
 		t.Fatalf("create input = %+v", manager.createInput)
 	}
 
-	getResp, err := service.GetTerminalSession(context.Background(), connect.NewRequest(&orchdv1.GetTerminalSessionRequest{
+	getResp, err := service.GetTerminalSession(context.Background(), connect.NewRequest(&hopterv1.GetTerminalSessionRequest{
 		SessionId:         "sess_1",
 		BrowserInstanceId: "browser_1",
 		TabId:             "tab_1",
@@ -126,17 +126,17 @@ func TestTerminalServiceCreateGetTerminate(t *testing.T) {
 		t.Fatalf("get terminal session id = %q", getResp.Msg.GetTerminal().GetSessionId())
 	}
 
-	terminateResp, err := service.TerminateTerminalSession(context.Background(), connect.NewRequest(&orchdv1.TerminateTerminalSessionRequest{
+	terminateResp, err := service.TerminateTerminalSession(context.Background(), connect.NewRequest(&hopterv1.TerminateTerminalSessionRequest{
 		TerminalId: "term_1",
 	}))
 	if err != nil {
 		t.Fatalf("TerminateTerminalSession: %v", err)
 	}
-	if terminateResp.Msg.GetTerminal().GetStatus() != orchdv1.TerminalStatus_TERMINAL_STATUS_TERMINATED {
+	if terminateResp.Msg.GetTerminal().GetStatus() != hopterv1.TerminalStatus_TERMINAL_STATUS_TERMINATED {
 		t.Fatalf("terminate status = %v", terminateResp.Msg.GetTerminal().GetStatus())
 	}
 
-	tabResp, err := service.TerminateTerminalTab(context.Background(), connect.NewRequest(&orchdv1.TerminateTerminalTabRequest{
+	tabResp, err := service.TerminateTerminalTab(context.Background(), connect.NewRequest(&hopterv1.TerminateTerminalTabRequest{
 		BrowserInstanceId: "browser_1",
 		TabId:             "tab_1",
 	}))

@@ -1,4 +1,4 @@
-module orchd
+module github.com/sorcererxw/hopter
 
 go 1.26.0
 

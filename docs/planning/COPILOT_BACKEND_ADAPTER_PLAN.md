@@ -4,13 +4,13 @@
 
 Proposed implementation plan.
 
-This document defines how `orchd` should add GitHub Copilot as a first-class backend beside Codex without breaking the current Go-first control-plane architecture.
+This document defines how `hopter` should add GitHub Copilot as a first-class backend beside Codex without breaking the current Go-first control-plane architecture.
 
 ## Decision
 
 Add Copilot as a second backend.
 
-Do it now, because the work is not really "add Copilot". The real work is cutting the backend runtime boundary that `orchd` already claims to have but does not yet fully enforce at runtime.
+Do it now, because the work is not really "add Copilot". The real work is cutting the backend runtime boundary that `hopter` already claims to have but does not yet fully enforce at runtime.
 
 Copilot is the forcing function.
 
@@ -23,10 +23,10 @@ The desired product behavior is:
 - each thread shows which backend it belongs to
 - approval handling must align with the Codex path in the long run
 - phase 1 may use yolo / auto-approve so a full vibe-coding loop can be proven quickly
-- no GitHub login flow is added to `orchd`
-- users authenticate Copilot CLI on their own machine before using `orchd`
+- no GitHub login flow is added to `hopter`
+- users authenticate Copilot CLI on their own machine before using `hopter`
 
-That last point matters. `orchd` is not trying to own Copilot auth. It is trying to expose a browser control plane over an already-working local Copilot CLI environment.
+That last point matters. `hopter` is not trying to own Copilot auth. It is trying to expose a browser control plane over an already-working local Copilot CLI environment.
 
 ## Official SDK facts
 
@@ -55,11 +55,11 @@ Facts confirmed from the upstream repo and module metadata:
 
 This clears the threshold question. Copilot is not a dead-end one-shot prompt API. It is a resumable session backend with event semantics and approval hooks.
 
-## Fit with `orchd`
+## Fit with `hopter`
 
 This fits the product direction in the repo:
 
-- `orchd` is a control plane, not a new coding agent
+- `hopter` is a control plane, not a new coding agent
 - backend remains the source of execution truth
 - browser never talks to backend runtime directly
 - Go server is the only backend client
@@ -109,12 +109,12 @@ Get Copilot running in the same UI shell with yolo approval.
 
 Goal:
 
-- prove one complete vibe-coding loop from browser through `orchd` into Copilot and back
+- prove one complete vibe-coding loop from browser through `hopter` into Copilot and back
 
 Approval policy in Phase 1:
 
 - auto-approve everything in the Copilot permission handler
-- preserve approval abstractions in the `orchd` runtime design
+- preserve approval abstractions in the `hopter` runtime design
 - do not ship Phase 1 as "approval-complete"
 
 ### Phase 2
@@ -146,7 +146,7 @@ Do not let `internal/codex` become the global backend abstraction. It is already
 
 ### Runtime interface
 
-The runtime interface should be small and oriented around `orchd`'s real needs:
+The runtime interface should be small and oriented around `hopter`'s real needs:
 
 ```go
 type Runtime interface {
@@ -160,7 +160,7 @@ type Runtime interface {
 }
 ```
 
-The key point is not method names. The key point is that the runtime returns `orchd`-shaped state, not raw backend payloads.
+The key point is not method names. The key point is that the runtime returns `hopter`-shaped state, not raw backend payloads.
 
 ## 2. Make backend identity explicit on thread/session
 
@@ -279,7 +279,7 @@ If this bridge cannot be implemented without a second truth store or a fragile l
 
 ## Authentication
 
-Do not add GitHub auth to `orchd`.
+Do not add GitHub auth to `hopter`.
 
 Use the user's existing Copilot CLI login on the host machine.
 
@@ -289,7 +289,7 @@ Required product behavior:
 - detect whether it is usable enough to create a session
 - surface backend availability honestly in host status
 
-Do not pretend `orchd` can fix auth. If Copilot CLI is not logged in, show degraded / unavailable with a concrete message.
+Do not pretend `hopter` can fix auth. If Copilot CLI is not logged in, show degraded / unavailable with a concrete message.
 
 ## Concrete implementation phases
 

@@ -6,7 +6,7 @@ import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import type {
   DirectoryEntry,
   DirectoryRoot,
-} from "@/gen/proto/orchd/v1/host_pb"
+} from "@/gen/proto/hopter/v1/host_pb"
 import {
   useDirectoryListing,
   useDirectoryRoots,

@@ -3,7 +3,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: orchd/internal/gen/proto
+      value: github.com/sorcererxw/hopter/internal/gen/proto
 plugins:
   - remote: buf.build/protocolbuffers/go
     out: ../internal/gen/proto

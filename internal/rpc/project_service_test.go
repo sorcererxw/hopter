@@ -7,9 +7,9 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/backend"
-	"orchd/internal/core"
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/core"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type fakeProjectSessionLister struct {
@@ -39,7 +39,7 @@ func TestListProjectsIncludesSyntheticSessionProjects(t *testing.T) {
 		},
 	})
 
-	resp, err := service.ListProjects(context.Background(), connect.NewRequest(&orchdv1.ListProjectsRequest{}))
+	resp, err := service.ListProjects(context.Background(), connect.NewRequest(&hopterv1.ListProjectsRequest{}))
 	if err != nil {
 		t.Fatalf("ListProjects: %v", err)
 	}

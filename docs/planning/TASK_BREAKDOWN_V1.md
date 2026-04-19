@@ -19,7 +19,7 @@ The target is a serious personal alpha that can move toward OSS release.
 - one strong full-stack engineer
 - Bun-first runtime
 - single-process monolith
-- working name `orchd`
+- working name `hopter`
 - Codex is the only deeply integrated backend in v1
 - browser web app only
 - terminal is secondary
@@ -426,7 +426,7 @@ Depends on:
 Scope:
 
 - add `Apache-2.0` license choice to release baseline
-- use `orchd` as project/package/app placeholder name consistently
+- use `hopter` as project/package/app placeholder name consistently
 
 Acceptance:
 

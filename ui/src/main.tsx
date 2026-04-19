@@ -15,7 +15,7 @@ if ("serviceWorker" in navigator) {
   registerSW({
     immediate: true,
     onRegisterError(error) {
-      console.error("Failed to register the orchd service worker", error)
+      console.error("Failed to register the hopter service worker", error)
     },
   })
 }

@@ -10,21 +10,21 @@ import (
 	"testing"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type fakeCodexClient struct {
-	listThreadsCalls int
-	readCalls        int
-	resumeCalls      int
-	startThreadCalls int
-	startTurnCalls   int
-	steerTurnCalls   int
+	listThreadsCalls   int
+	readCalls          int
+	resumeCalls        int
+	startThreadCalls   int
+	startTurnCalls     int
+	steerTurnCalls     int
 	interruptTurnCalls []string
 
-	readResult   *ReadThreadResult
-	resumeResult *ResumeThreadResult
-	readErr      error
+	readResult           *ReadThreadResult
+	resumeResult         *ResumeThreadResult
+	readErr              error
 	respondApprovalCalls []string
 }
 

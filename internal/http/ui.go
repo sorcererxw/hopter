@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	appui "orchd/ui"
+	appui "github.com/sorcererxw/hopter/ui"
 )
 
 type UIHandlerOptions struct {
@@ -31,7 +31,7 @@ func NewUIHandler(opts UIHandlerOptions) (http.Handler, error) {
 	if strings.TrimSpace(opts.DevProxyURL) != "" {
 		target, err := url.Parse(opts.DevProxyURL)
 		if err != nil {
-			return nil, fmt.Errorf("parse ORCHD_UI_DEV_PROXY_URL: %w", err)
+			return nil, fmt.Errorf("parse HOPTER_UI_DEV_PROXY_URL: %w", err)
 		}
 		proxy := httputil.NewSingleHostReverseProxy(target)
 		proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {

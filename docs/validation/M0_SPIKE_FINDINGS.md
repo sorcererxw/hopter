@@ -9,7 +9,7 @@ Current evidence shortcuts:
 
 Current implementation constraints:
 
-1. `orchd` should speak to `codex app-server` over `stdio`.
+1. `hopter` should speak to `codex app-server` over `stdio`.
 2. Codex detection must surface missing vs incompatible states explicitly.
 3. Gateway runtime state should keep only lightweight thread references while the process is alive, not full session mirrors.
 4. Bun child-process primitives cover cwd + stdin/stdout lifecycle, but the later terminal drawer still needs a PTY-capable layer for resize fidelity.

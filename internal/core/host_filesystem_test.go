@@ -141,7 +141,7 @@ func TestValidateProjectRootRejectsNonRepoDirectories(t *testing.T) {
 
 func TestCreateProjectCanonicalizesAndDeduplicatesRootPath(t *testing.T) {
 	root := t.TempDir()
-	repoDir := filepath.Join(root, "orchd")
+	repoDir := filepath.Join(root, "hopter")
 	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
 		t.Fatalf("mkdir repo .git: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestCreateProjectCanonicalizesAndDeduplicatesRootPath(t *testing.T) {
 	if project.RootPath != canonicalRepoDir {
 		t.Fatalf("expected canonical repo path %q, got %q", canonicalRepoDir, project.RootPath)
 	}
-	if project.Name != "orchd" {
+	if project.Name != "hopter" {
 		t.Fatalf("expected basename default name, got %q", project.Name)
 	}
 	if project.DefaultBackend != "codex" {
@@ -181,14 +181,14 @@ func TestCreateProjectCanonicalizesAndDeduplicatesRootPath(t *testing.T) {
 
 func TestUpdateSessionAppendsTranscriptItems(t *testing.T) {
 	root := t.TempDir()
-	repoDir := filepath.Join(root, "orchd")
+	repoDir := filepath.Join(root, "hopter")
 	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
 		t.Fatalf("mkdir repo .git: %v", err)
 	}
 
 	workspace := NewInMemoryWorkspace("test-host", nil)
 	project, err := workspace.CreateProject(CreateProjectInput{
-		Name:           "orchd",
+		Name:           "hopter",
 		RootPath:       repoDir,
 		DefaultBackend: "codex",
 	})

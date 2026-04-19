@@ -6,15 +6,15 @@ If you are starting fresh, read this file first.
 
 ## Project
 
-- Name: `orchd`
+- Name: `hopter`
 - License target: `Apache-2.0`
 - Product type: self-hosted remote control plane for local coding agents
 - Primary backend in v1: `Codex`
 - Active runtime direction: **Go-first**
 
-## What orchd is
+## What hopter is
 
-`orchd` is a browser-first remote control plane that runs on the user's own machine and lets them continue using the same local coding environment from phone, laptop, or another browser.
+`hopter` is a browser-first remote control plane that runs on the user's own machine and lets them continue using the same local coding environment from phone, laptop, or another browser.
 
 The wedge is:
 
@@ -24,7 +24,7 @@ The wedge is:
 - same workflow
 - continuous iteration across devices
 
-## What orchd is not
+## What hopter is not
 
 Do **not** turn this into:
 
@@ -44,7 +44,7 @@ Do **not** turn this into:
   - approval semantics
   - artifact semantics
 
-- `orchd` owns only:
+- `hopter` owns only:
   - projects
   - lightweight session references
   - auth state
@@ -185,11 +185,11 @@ Use:
 
 AI agents should read machine state from:
 
-- [~/.orchd/devlogs/codeshell/state.json](/Users/sorcererxw/.orchd/devlogs/codeshell/state.json)
+- [~/.hopter/devlogs/codeshell/state.json](/Users/sorcererxw/.hopter/devlogs/codeshell/state.json)
 
 and logs from:
 
-- [~/.orchd/devlogs/codeshell/timeline.jsonl](/Users/sorcererxw/.orchd/devlogs/codeshell/timeline.jsonl)
+- [~/.hopter/devlogs/codeshell/timeline.jsonl](/Users/sorcererxw/.hopter/devlogs/codeshell/timeline.jsonl)
 
 Deeper reference:
 
@@ -233,4 +233,4 @@ Do not:
 
 ## One-sentence implementation brief
 
-Build `orchd` as a Go-first, Codex-first, thin remote control plane with a React/Vite workspace UI, Connect control-plane APIs, SSE status updates, and evidence-backed validation.
+Build `hopter` as a Go-first, Codex-first, thin remote control plane with a React/Vite workspace UI, Connect control-plane APIs, SSE status updates, and evidence-backed validation.

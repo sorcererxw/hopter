@@ -26,7 +26,7 @@ Companion documents:
 
 Working name:
 
-- `orchd`
+- `hopter`
 
 ## Scope
 
@@ -476,8 +476,8 @@ Request:
 
 ```json
 {
-  "name": "orchd",
-  "repoPath": "/Users/me/src/orchd",
+  "name": "hopter",
+  "repoPath": "/Users/me/src/hopter",
   "defaultBackend": "codex"
 }
 ```
@@ -708,7 +708,7 @@ Request:
 ```json
 {
   "projectId": "proj_123",
-  "cwd": "/Users/me/src/orchd"
+  "cwd": "/Users/me/src/hopter"
 }
 ```
 

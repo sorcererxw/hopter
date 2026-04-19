@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import type {
   SessionFile,
   SessionReview,
-} from "@/gen/proto/orchd/v1/session_pb"
+} from "@/gen/proto/hopter/v1/session_pb"
 import { cn } from "@/lib/utils"
 
 export type SessionSidebarMode = "file" | "review"

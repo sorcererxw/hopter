@@ -1,6 +1,6 @@
 # Validation Harness Guide
 
-This is the progressive-disclosure entry point for validation in `orchd`.
+This is the progressive-disclosure entry point for validation in `hopter`.
 
 Use it when you need to answer one of three questions:
 

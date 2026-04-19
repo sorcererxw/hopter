@@ -6,7 +6,7 @@ import "@wterm/react/css"
 import { Button } from "@/components/ui/button"
 import type { useTerminalSession } from "@/features/terminal/use-terminal-session"
 import type { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
-import { TerminalStatus } from "@/gen/proto/orchd/v1/terminal_pb"
+import { TerminalStatus } from "@/gen/proto/hopter/v1/terminal_pb"
 
 export function SessionTerminalDrawer({
   enabled,

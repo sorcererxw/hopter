@@ -3,8 +3,8 @@ import path from "node:path";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const HEALTH_URL = process.env.ORCHD_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz";
-const READY_URL = process.env.ORCHD_GO_READY_URL?.trim() || "http://127.0.0.1:8787/readyz";
+const HEALTH_URL = process.env.HOPTER_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz";
+const READY_URL = process.env.HOPTER_GO_READY_URL?.trim() || "http://127.0.0.1:8787/readyz";
 
 async function waitForHttp(url: string, timeoutMs = 20_000, intervalMs = 500): Promise<{ ok: boolean; status?: number; body?: string; error?: string }> {
   const started = Date.now();
@@ -27,12 +27,12 @@ async function main(): Promise<void> {
   const run = createValidationRun("go_server");
   const checks: ValidationCheck[] = [];
 
-  const required = checkRequiredPaths(["go.mod", "cmd/orchd/main.go"]);
+  const required = checkRequiredPaths(["go.mod", "cmd/hopter/main.go"]);
   run.writeJson("preflight/required-paths.json", required);
   checks.push({
     name: "required Go entry files",
     status: required.status,
-    detail: required.status === "pass" ? "go.mod and cmd/orchd/main.go exist" : `missing: ${required.missing.join(", ")}`,
+    detail: required.status === "pass" ? "go.mod and cmd/hopter/main.go exist" : `missing: ${required.missing.join(", ")}`,
   });
 
   const goVersion = await runCommand(["go", "version"], process.cwd());
@@ -67,11 +67,11 @@ async function main(): Promise<void> {
 
   const buildDir = path.join(run.rootDir, "bin");
   mkdirSync(buildDir, { recursive: true });
-  const binaryPath = path.join(buildDir, "orchd");
-  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/orchd"], process.cwd());
+  const binaryPath = path.join(buildDir, "hopter");
+  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/hopter"], process.cwd());
   run.writeJson("commands/go-build.json", goBuild);
   checks.push({
-    name: "go build ./cmd/orchd",
+    name: "go build ./cmd/hopter",
     status: goBuild.exitCode === 0 ? "pass" : "fail",
     detail: goBuild.exitCode === 0 ? `built ${binaryPath}` : (goBuild.stderr || goBuild.stdout || "go build failed").trim(),
   });
@@ -94,8 +94,8 @@ async function main(): Promise<void> {
     stderr: "pipe",
     env: {
       ...process.env,
-      ORCHD_HOST: process.env.ORCHD_HOST || "127.0.0.1",
-      ORCHD_PORT: process.env.ORCHD_PORT || "8787",
+      HOPTER_HOST: process.env.HOPTER_HOST || "127.0.0.1",
+      HOPTER_PORT: process.env.HOPTER_PORT || "8787",
     },
   });
 

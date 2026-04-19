@@ -2,7 +2,7 @@
 
 ## Goal
 
-Prove the highest-risk technical assumptions for `orchd` before the full gateway is built:
+Prove the highest-risk technical assumptions for `hopter` before the full gateway is built:
 
 - Bun can host the gateway process cleanly
 - Codex can be detected and version-gated
@@ -17,7 +17,7 @@ Prove the highest-risk technical assumptions for `orchd` before the full gateway
 This spike must preserve the core architecture:
 
 - Codex remains the source of truth for session content, history, approvals, and artifact semantics
-- `orchd` keeps only ephemeral control-plane metadata and durable validation evidence
+- `hopter` keeps only ephemeral control-plane metadata and durable validation evidence
 - the browser never talks to Codex directly
 - the gateway is the only Codex client
 

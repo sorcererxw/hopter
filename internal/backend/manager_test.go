@@ -6,22 +6,22 @@ import (
 	"testing"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type fakeRuntime struct {
-	listResult   []ResolvedSession
-	getSession   core.Session
-	getProject   core.Project
-	createResult core.Session
-	sendResult   core.Session
-	lastCreate   core.CreateSessionInput
-	lastSendID   string
-	lastSendText string
-	lastInterruptID string
-	lastApprovalID string
+	listResult            []ResolvedSession
+	getSession            core.Session
+	getProject            core.Project
+	createResult          core.Session
+	sendResult            core.Session
+	lastCreate            core.CreateSessionInput
+	lastSendID            string
+	lastSendText          string
+	lastInterruptID       string
+	lastApprovalID        string
 	lastApprovalSessionID string
-	lastApprovalDecision core.ApprovalDecision
+	lastApprovalDecision  core.ApprovalDecision
 }
 
 func (f *fakeRuntime) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {

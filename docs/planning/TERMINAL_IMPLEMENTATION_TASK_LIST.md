@@ -10,7 +10,7 @@ This task list operationalizes:
 
 ## Goal
 
-Ship a session-scoped browser terminal for `orchd` with these fixed product semantics:
+Ship a session-scoped browser terminal for `hopter` with these fixed product semantics:
 
 - terminal identity is `browser_instance_id + tab_id + session_id`
 - same-tab refresh may reattach
@@ -37,7 +37,7 @@ No evidence, no pass.
 
 Produce:
 
-- `idl/orchd/v1/terminal.proto`
+- `idl/hopter/v1/terminal.proto`
 - explicit HTTP route plan for terminal stream
 
 Required decisions already locked:
@@ -51,7 +51,7 @@ Acceptance:
 
 - proto surface matches the terminal plan
 - route namespace is explicit:
-  - `POST /rpc/orchd.v1.TerminalService/*`
+  - `POST /rpc/hopter.v1.TerminalService/*`
   - `GET /terminals/:terminalId/stream`
 
 ## Milestone T1 — Backend Core
@@ -230,7 +230,7 @@ Acceptance:
 Files:
 
 - `internal/events/*`
-- `idl/orchd/v1/events.proto` if needed
+- `idl/hopter/v1/events.proto` if needed
 
 Event classes:
 

@@ -4,9 +4,9 @@
 
 Proposed implementation plan.
 
-This document defines how `orchd` should add a Go-native Codex client that is capability-complete with the official TypeScript SDK while staying idiomatic in Go.
+This document defines how `hopter` should add a Go-native Codex client that is capability-complete with the official TypeScript SDK while staying idiomatic in Go.
 
-It is not a plan to port `orchd` to TypeScript.
+It is not a plan to port `hopter` to TypeScript.
 
 ## Why this exists
 
@@ -22,7 +22,7 @@ The official Codex TypeScript SDK is now the clearest reference implementation f
 - turn-scoped cancellation
 - CLI config/env bridging
 
-At the same time, `orchd` is already committed to a Go-first runtime:
+At the same time, `hopter` is already committed to a Go-first runtime:
 
 - the Go server is the only Codex client
 - browser never talks to Codex directly
@@ -111,9 +111,9 @@ This is part of the public contract and must be mirrored.
 
 In Go this should be `context.Context`.
 
-## Product fit inside `orchd`
+## Product fit inside `hopter`
 
-`orchd` currently has a low-level Go-side Codex bridge under `internal/codex/` built around `codex app-server`.
+`hopter` currently has a low-level Go-side Codex bridge under `internal/codex/` built around `codex app-server`.
 
 That low-level bridge is still useful for current control-plane behavior:
 
@@ -148,7 +148,7 @@ while using idiomatic Go APIs:
 
 ## Non-goals
 
-- rewriting `orchd` around the SDK package first
+- rewriting `hopter` around the SDK package first
 - exposing a public OSS Go module in the first pass
 - reproducing the TypeScript SDK's Node package binary discovery logic
 - making the Go API look source-compatible with TypeScript
@@ -623,7 +623,7 @@ Validation:
 - same feature list as the current TS SDK tests covered in Go
 - evidence report written under validation artifacts
 
-### Phase D: `orchd` integration decision
+### Phase D: `hopter` integration decision
 
 Deliver:
 

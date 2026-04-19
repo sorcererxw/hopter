@@ -7,11 +7,11 @@ import { chromium, type Page } from "playwright";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const PORT = Number.parseInt(process.env.ORCHD_TETRIS_PORT?.trim() || "8787", 10);
+const PORT = Number.parseInt(process.env.HOPTER_TETRIS_PORT?.trim() || "8787", 10);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 function createTempRepo(): string {
-  const tempRoot = mkdtempSync(path.join(tmpdir(), "orchd-go-tetris-"));
+  const tempRoot = mkdtempSync(path.join(tmpdir(), "hopter-go-tetris-"));
   const repoPath = path.join(tempRoot, "repo");
   mkdirSync(repoPath, { recursive: true });
   execSync("git init -q", { cwd: repoPath });
@@ -160,11 +160,11 @@ async function main(): Promise<void> {
 
   const buildDir = path.join(run.rootDir, "bin");
   mkdirSync(buildDir, { recursive: true });
-  const binaryPath = path.join(buildDir, "orchd");
-  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/orchd"], process.cwd());
+  const binaryPath = path.join(buildDir, "hopter");
+  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/hopter"], process.cwd());
   run.writeJson("commands/go-build.json", goBuild);
   checks.push({
-    name: "go build ./cmd/orchd",
+    name: "go build ./cmd/hopter",
     status: goBuild.exitCode === 0 ? "pass" : "fail",
     detail: goBuild.exitCode === 0 ? `built ${binaryPath}` : (goBuild.stderr || goBuild.stdout || "go build failed").trim(),
   });
@@ -190,8 +190,8 @@ async function main(): Promise<void> {
     stderr: "pipe",
     env: {
       ...process.env,
-      ORCHD_HOST: "127.0.0.1",
-      ORCHD_PORT: String(PORT),
+      HOPTER_HOST: "127.0.0.1",
+      HOPTER_PORT: String(PORT),
     },
   });
 

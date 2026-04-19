@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const PORT = Number.parseInt(process.env.ORCHD_PROJECT_PICKER_PORT?.trim() || "8890", 10);
+const PORT = Number.parseInt(process.env.HOPTER_PROJECT_PICKER_PORT?.trim() || "8890", 10);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 type Fixture = {
@@ -19,7 +19,7 @@ type Fixture = {
 };
 
 function createFixture(): Fixture {
-  const tempRoot = mkdtempSync(path.join(tmpdir(), "orchd-project-picker-"));
+  const tempRoot = mkdtempSync(path.join(tmpdir(), "hopter-project-picker-"));
   const workspaceDir = path.join(tempRoot, "workspace");
   const orgDir = path.join(workspaceDir, "example-org");
   const repoDir = path.join(orgDir, "demo-repo");
@@ -78,11 +78,11 @@ async function main(): Promise<void> {
 
   const binaryDir = path.join(run.rootDir, "bin");
   mkdirSync(binaryDir, { recursive: true });
-  const binaryPath = path.join(binaryDir, "orchd");
-  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/orchd"], process.cwd());
+  const binaryPath = path.join(binaryDir, "hopter");
+  const goBuild = await runCommand(["go", "build", "-o", binaryPath, "./cmd/hopter"], process.cwd());
   run.writeJson("commands/go-build.json", goBuild);
   checks.push({
-    name: "go build ./cmd/orchd",
+    name: "go build ./cmd/hopter",
     status: goBuild.exitCode === 0 ? "pass" : "fail",
     detail: goBuild.exitCode === 0 ? `built ${binaryPath}` : (goBuild.stderr || goBuild.stdout || "go build failed").trim(),
   });
@@ -102,8 +102,8 @@ async function main(): Promise<void> {
 
   const serverEnv = {
     ...process.env,
-    ORCHD_HOST: "127.0.0.1",
-    ORCHD_PORT: String(PORT),
+    HOPTER_HOST: "127.0.0.1",
+    HOPTER_PORT: String(PORT),
   };
   const server =
     typeof Bun !== "undefined"

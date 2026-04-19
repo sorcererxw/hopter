@@ -4,8 +4,8 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
-const devHost = process.env.ORCHD_UI_DEV_HOST?.trim() || "0.0.0.0"
-const previewHost = process.env.ORCHD_UI_PREVIEW_HOST?.trim() || devHost
+const devHost = process.env.HOPTER_UI_DEV_HOST?.trim() || "0.0.0.0"
+const previewHost = process.env.HOPTER_UI_PREVIEW_HOST?.trim() || devHost
 
 export default defineConfig({
   plugins: [
@@ -14,11 +14,11 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      includeAssets: ["icons/orchd-icon.svg", "icons/orchd-icon-maskable.svg"],
+      includeAssets: ["icons/hopter-icon.svg", "icons/hopter-icon-maskable.svg"],
       manifest: {
         id: "/",
-        name: "orchd workspace",
-        short_name: "orchd",
+        name: "hopter workspace",
+        short_name: "hopter",
         description:
           "Thin remote control plane for local coding sessions, projects, and approvals.",
         theme_color: "#101010",
@@ -30,13 +30,13 @@ export default defineConfig({
         lang: "en",
         icons: [
           {
-            src: "/icons/orchd-icon.svg",
+            src: "/icons/hopter-icon.svg",
             sizes: "any",
             type: "image/svg+xml",
             purpose: "any",
           },
           {
-            src: "/icons/orchd-icon-maskable.svg",
+            src: "/icons/hopter-icon-maskable.svg",
             sizes: "any",
             type: "image/svg+xml",
             purpose: "maskable",

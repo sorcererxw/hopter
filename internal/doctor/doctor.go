@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"orchd/internal/app"
+	"github.com/sorcererxw/hopter/internal/app"
 )
 
 type Check struct {

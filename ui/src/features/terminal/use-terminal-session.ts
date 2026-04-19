@@ -7,8 +7,8 @@ import {
   getBrowserInstanceId,
   getTabId,
 } from "@/features/terminal/browser-identity"
-import type { TerminalSession } from "@/gen/proto/orchd/v1/terminal_pb"
-import { TerminalStatus } from "@/gen/proto/orchd/v1/terminal_pb"
+import type { TerminalSession } from "@/gen/proto/hopter/v1/terminal_pb"
+import { TerminalStatus } from "@/gen/proto/hopter/v1/terminal_pb"
 import { terminalClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 

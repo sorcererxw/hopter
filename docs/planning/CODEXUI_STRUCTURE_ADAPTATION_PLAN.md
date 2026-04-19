@@ -2,15 +2,15 @@
 
 Date: 2026-04-15
 Branch: master
-Request: 参考 `friuns2/codexUI` 的 UI/UX 结构，复刻其整体信息架构和交互节奏，但继续使用 `orchd` 现有的 shadcn token / primitive 体系，不改产品本质。
+Request: 参考 `friuns2/codexUI` 的 UI/UX 结构，复刻其整体信息架构和交互节奏，但继续使用 `hopter` 现有的 shadcn token / primitive 体系，不改产品本质。
 
 ## Plan Summary
 
 把 `codexUI` 借来的东西限定在 **壳层、导航、密度、移动端节奏、底部输入器、左侧树状结构**。
 
-不借它的东西也要说清楚: `orchd` 不能退化成一个通用 chat wrapper。我们的 session detail 仍然必须保持 `status → summary → attention → artifacts → timeline → terminal` 这条产品主线。
+不借它的东西也要说清楚: `hopter` 不能退化成一个通用 chat wrapper。我们的 session detail 仍然必须保持 `status → summary → attention → artifacts → timeline → terminal` 这条产品主线。
 
-所以这不是“照着抄界面”。这是 **用 codexUI 的结构骨架，承载 orchd 自己的控制平面语义**。
+所以这不是“照着抄界面”。这是 **用 codexUI 的结构骨架，承载 hopter 自己的控制平面语义**。
 
 ## User override
 
@@ -22,7 +22,7 @@ Request: 参考 `friuns2/codexUI` 的 UI/UX 结构，复刻其整体信息架构
 - sidebar 不只是 binding/session 导航，也承担更强的 thread-style 工作入口
 - main pane 允许更明显地围绕对话/turn 流展开
 - composer 从“控制动作栏”提升为主交互入口
-- 但仍保留 orchd 现有必须成立的 truth surfaces: degraded honesty、approval identity、artifact inspection
+- 但仍保留 hopter 现有必须成立的 truth surfaces: degraded honesty、approval identity、artifact inspection
 
 这不是原始推荐方案。它是用户明确选择的 override。
 
@@ -70,9 +70,9 @@ Request: 参考 `friuns2/codexUI` 的 UI/UX 结构，复刻其整体信息架构
 - `src/web/app/routes/dashboard.tsx`
 - `src/web/app/routes/binding-detail.tsx`
 - `src/web/app/routes/backend-session-detail.tsx`
-- `src/web/app/components/orchd/page-hero.tsx`
-- `src/web/app/components/orchd/session-list.tsx`
-- `src/web/app/components/orchd/start-session-form.tsx`
+- `src/web/app/components/hopter/page-hero.tsx`
+- `src/web/app/components/hopter/session-list.tsx`
+- `src/web/app/components/hopter/start-session-form.tsx`
 
 ## What codexUI is actually doing well
 
@@ -108,7 +108,7 @@ That is the real value to copy.
 ## What we must not copy
 
 1. **Chat-first product framing**
-   `orchd` is a remote control plane. Not a chat wrapper.
+   `hopter` is a remote control plane. Not a chat wrapper.
 
 2. **Threads as the only truth model**
    Our product model is still `binding -> backend session`, with a cross-binding attention layer.
@@ -120,14 +120,14 @@ That is the real value to copy.
    The user should still land in status/summary/attention first.
 
 5. **Ad hoc Tailwind visual language**
-   We stay on shadcn primitives, semantic tokens, and orchd wrappers.
+   We stay on shadcn primitives, semantic tokens, and hopter wrappers.
 
 6. **codexUI-specific feature payload**
    Do not copy voice dictation, image/file attachment workflow, GitHub skills sync, account switcher, or transcript-heavy command chrome unless there is a separate product requirement.
 
 ## User challenge
 
-The request says “复刻这个项目的 uiux 结构”. If interpreted literally, that would push orchd toward a thread-first chat product.
+The request says “复刻这个项目的 uiux 结构”. If interpreted literally, that would push hopter toward a thread-first chat product.
 
 I recommend a narrower reading:
 
@@ -145,7 +145,7 @@ If we are wrong, the cost is that the result may feel less like a faithful clone
 | Sub-problem | Existing local asset | Reuse strategy |
 |---|---|---|
 | App shell | `src/web/app/shell/app-shell.tsx` | refactor into split-pane codexUI-like shell, do not replace routing model |
-| Status-first cards | `components/orchd/*`, `page-hero.tsx`, `status-badge.tsx` | keep semantics, recompose inside new shell |
+| Status-first cards | `components/hopter/*`, `page-hero.tsx`, `status-badge.tsx` | keep semantics, recompose inside new shell |
 | Bottom action composer | `session-action-bar.tsx`, `start-session-form.tsx` | convert to anchored composer variants |
 | Attention handling | `attention-panel.tsx` | elevate into content-stack block, not hidden modal |
 | Artifacts | `artifact-list.tsx`, `artifact-viewer.tsx` | fit into codexUI-like main pane tabs/panels |
@@ -184,13 +184,13 @@ Pros:
 - fastest path to “looks like the reference”
 
 Cons:
-- violates orchd product semantics
+- violates hopter product semantics
 - demotes status/summary/artifacts into chat-adjacent content
 - makes bindings and sessions feel like generic threads
 
 Verdict: reject.
 
-### Approach B, structural adaptation on top of orchd semantics
+### Approach B, structural adaptation on top of hopter semantics
 
 Copy the **shell grammar**:
 - collapsible/resizable left nav
@@ -200,7 +200,7 @@ Copy the **shell grammar**:
 - anchored bottom composer
 - centered empty states
 
-But keep orchd semantics:
+But keep hopter semantics:
 - bindings and sessions, not generic threads
 - session detail remains status-first
 - attention stays explicit and blocking when needed
@@ -234,11 +234,11 @@ Verdict: reject.
 
 用户 override 后，执行方向改为 **Approach A+**。
 
-One sentence version: **尽量复刻 codexUI 的 shell 和产品语义，但把 orchd 不能丢的 control-plane truth 强行钉住。**
+One sentence version: **尽量复刻 codexUI 的 shell 和产品语义，但把 hopter 不能丢的 control-plane truth 强行钉住。**
 
 ## Structural mapping
 
-| codexUI pattern | orchd equivalent after override |
+| codexUI pattern | hopter equivalent after override |
 |---|---|
 | Sidebar thread tree | primary session tree, repo/context info only appears as session metadata or creation-time selector |
 | New thread action | New session is the primary creation action; binding creation disappears from primary IA |
@@ -264,7 +264,7 @@ Mobile:
 
 ### Sidebar structure
 
-1. `orchd` mark
+1. `hopter` mark
 2. global quick actions
    - New session
 3. search / filter
@@ -366,9 +366,9 @@ Replace the current static two-column layout with a codexUI-like app shell while
 ### Files
 
 - `src/web/app/shell/app-shell.tsx`
-- new `src/web/app/components/orchd/sidebar-shell.tsx`
-- new `src/web/app/components/orchd/sidebar-binding-tree.tsx`
-- new `src/web/app/components/orchd/content-header.tsx`
+- new `src/web/app/components/hopter/sidebar-shell.tsx`
+- new `src/web/app/components/hopter/sidebar-binding-tree.tsx`
+- new `src/web/app/components/hopter/content-header.tsx`
 - new `src/web/app/lib/use-shell-navigation-data.ts`
 - `src/web/app/styles/index.css`
 - optional follow-up: new server summary route if client fan-out becomes too noisy
@@ -401,8 +401,8 @@ Turn the sidebar into a codexUI-like primary thread/navigation surface with bind
 
 - `src/web/app/routes/dashboard.tsx`
 - `src/web/app/routes/binding-detail.tsx`
-- `src/web/app/components/orchd/session-list.tsx`
-- `src/web/app/components/orchd/status-badge.tsx`
+- `src/web/app/components/hopter/session-list.tsx`
+- `src/web/app/components/hopter/status-badge.tsx`
 - new tree/navigation components
 
 ### Tasks
@@ -426,9 +426,9 @@ Make the dashboard feel like the main pane of a real app shell, not a card galle
 ### Files
 
 - `src/web/app/routes/dashboard.tsx`
-- `src/web/app/components/orchd/page-hero.tsx`
-- `src/web/app/components/orchd/empty-state.tsx`
-- `src/web/app/components/orchd/selectable-surface.tsx`
+- `src/web/app/components/hopter/page-hero.tsx`
+- `src/web/app/components/hopter/empty-state.tsx`
+- `src/web/app/components/hopter/selectable-surface.tsx`
 
 ### Tasks
 
@@ -454,8 +454,8 @@ Make binding detail feel less like an admin detail page and more like a project-
 ### Files
 
 - `src/web/app/routes/binding-detail.tsx`
-- `src/web/app/components/orchd/start-session-form.tsx`
-- `src/web/app/components/orchd/session-list.tsx`
+- `src/web/app/components/hopter/start-session-form.tsx`
+- `src/web/app/components/hopter/session-list.tsx`
 
 ### Tasks
 
@@ -477,14 +477,14 @@ This is the hardest and most important slice.
 ### Files
 
 - `src/web/app/routes/backend-session-detail.tsx`
-- `src/web/app/components/orchd/session-hero.tsx`
-- `src/web/app/components/orchd/session-status-summary-row.tsx`
-- `src/web/app/components/orchd/attention-panel.tsx`
-- `src/web/app/components/orchd/session-action-bar.tsx`
-- `src/web/app/components/orchd/artifact-list.tsx`
-- `src/web/app/components/orchd/artifact-viewer.tsx`
-- `src/web/app/components/orchd/timeline-panel.tsx`
-- `src/web/app/components/orchd/terminal-drawer.tsx`
+- `src/web/app/components/hopter/session-hero.tsx`
+- `src/web/app/components/hopter/session-status-summary-row.tsx`
+- `src/web/app/components/hopter/attention-panel.tsx`
+- `src/web/app/components/hopter/session-action-bar.tsx`
+- `src/web/app/components/hopter/artifact-list.tsx`
+- `src/web/app/components/hopter/artifact-viewer.tsx`
+- `src/web/app/components/hopter/timeline-panel.tsx`
+- `src/web/app/components/hopter/terminal-drawer.tsx`
 
 ### Tasks
 
@@ -528,20 +528,20 @@ Land the shell change without breaking the shadcn convergence direction.
 
 Yes, with one correction.
 
-The right problem is not “make orchd look cooler”. The right problem is “make orchd feel like one continuous remote operating surface across desktop and phone”.
+The right problem is not “make hopter look cooler”. The right problem is “make hopter feel like one continuous remote operating surface across desktop and phone”.
 
 `codexUI` is useful because its shell already feels continuous. That is the product gap we should close.
 
 ### Premises
 
 1. Users want codexUI’s shell density more than its product semantics, **accepted**.
-2. A shell-first refactor can happen without violating orchd’s control-plane wedge, **accepted with guardrails**.
+2. A shell-first refactor can happen without violating hopter’s control-plane wedge, **accepted with guardrails**.
 3. The existing shadcn convergence work gives us enough primitive foundation to do this cleanly, **accepted**.
 4. We should import skills-hub/chat semantics because they are visible in the reference, **rejected**.
 
 ### 6-month regret check
 
-The regret scenario is obvious: we do a visual clone, ship a prettier app, and quietly erase the “status / approval / artifact / degraded honesty” hierarchy that makes orchd different.
+The regret scenario is obvious: we do a visual clone, ship a prettier app, and quietly erase the “status / approval / artifact / degraded honesty” hierarchy that makes hopter different.
 
 Avoid that and this direction is good.
 
@@ -593,7 +593,7 @@ High-confidence files:
 - `src/web/app/routes/dashboard.tsx`
 - `src/web/app/routes/binding-detail.tsx`
 - `src/web/app/routes/backend-session-detail.tsx`
-- most `components/orchd/*` surfaces touching navigation, headers, action bars, empty states
+- most `components/hopter/*` surfaces touching navigation, headers, action bars, empty states
 
 ### Hidden complexity
 
@@ -630,7 +630,7 @@ Why:
 
 1. If the sidebar tree hides too much jargon, new users may not know whether they are selecting a binding or a backend session.
 2. If the empty state becomes too cute, first-run clarity drops.
-3. If the composer uses chat-style placeholder copy, it will misframe what orchd does.
+3. If the composer uses chat-style placeholder copy, it will misframe what hopter does.
 
 ### DX verdict
 
@@ -640,7 +640,7 @@ Use the shell to reduce cognitive load, not to cosplay a chat product.
 
 | Failure mode | Why it matters | Mitigation |
 |---|---|---|
-| Session page becomes chat-first | loses orchd wedge | enforce fixed content order in session route and validation screenshots |
+| Session page becomes chat-first | loses hopter wedge | enforce fixed content order in session route and validation screenshots |
 | Sidebar becomes too noisy | mobile usability drops | cap nested session count, add collapse/filter rules |
 | Sticky composer hides artifacts on phone | core jobs become harder | safe-area spacing, artifact area min-height, viewport tests |
 | Attention loses visual priority | approval flow regresses | attention block must remain above composer and above artifacts in DOM and visuals |
@@ -661,7 +661,7 @@ Use the shell to reduce cognitive load, not to cosplay a chat product.
 - backend contract changes
 - replacing React Router
 - replacing shadcn primitives
-- converting orchd into a transcript-first app
+- converting hopter into a transcript-first app
 
 ## Implementation sequencing
 
@@ -728,7 +728,7 @@ No evidence, no pass. This refactor changes primary surfaces.
 
 | # | Phase | Decision | Classification | Principle | Rationale | Rejected |
 |---|---|---|---|---|---|---|
-| 1 | CEO | copy shell grammar, not product semantics | user challenge | explicit over clever | preserves orchd wedge while honoring the reference | literal clone |
+| 1 | CEO | copy shell grammar, not product semantics | user challenge | explicit over clever | preserves hopter wedge while honoring the reference | literal clone |
 | 2 | Design | keep session detail order fixed | mechanical | completeness | product docs already define the order | chat-first reorder |
 | 3 | Eng | keep refactor UI-only | mechanical | pragmatic | avoids risky API churn | backend contract rewrite |
 | 4 | DX | reuse shadcn primitives for drawer/tabs/shell | mechanical | DRY | current system already converging here | custom primitive set |
@@ -739,7 +739,7 @@ No evidence, no pass. This refactor changes primary surfaces.
 
 Proceed with the override.
 
-This now intentionally moves orchd closer to “Codex desktop app in a browser”. That is no longer treated as accidental drift, it is the chosen direction.
+This now intentionally moves hopter closer to “Codex desktop app in a browser”. That is no longer treated as accidental drift, it is the chosen direction.
 
 The one thing we still must defend is truthfulness:
 - approval cannot become a generic chat bubble

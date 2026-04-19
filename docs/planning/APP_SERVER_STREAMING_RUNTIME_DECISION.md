@@ -6,7 +6,7 @@ Accepted for the Go-first rebuild.
 
 ## Decision
 
-`orchd` v1 will use `codex app-server` as the only session runtime protocol.
+`hopter` v1 will use `codex app-server` as the only session runtime protocol.
 
 That means:
 
@@ -16,7 +16,7 @@ That means:
 - approval flow stays modeled on the `app-server` request/response path, but is not yet runtime-proven
 - `codex exec` / EEC is removed from the product runtime path
 
-This is the v1 product decision even though OpenAI still documents `exec` / SDK as a good fit for CI and one-shot automation. `orchd` is a session-centric remote control plane. The product gets more clarity from one runtime protocol than from broad interface coverage.
+This is the v1 product decision even though OpenAI still documents `exec` / SDK as a good fit for CI and one-shot automation. `hopter` is a session-centric remote control plane. The product gets more clarity from one runtime protocol than from broad interface coverage.
 
 ## Why this document exists
 
@@ -45,7 +45,7 @@ Sources:
 
 ## Product-level interpretation
 
-For `orchd`, the right model is:
+For `hopter`, the right model is:
 
 - notifications for latency
 - `thread/read` for correctness
@@ -296,13 +296,13 @@ The final state is still removal. This guardrail only prevents deleting the floo
 - rate-limit per-session event flushes
 - keep one global SSE stream
 
-### 5. `idl/orchd/v1/events.proto`
+### 5. `idl/hopter/v1/events.proto`
 
 - add a live patch payload shape
 - keep refresh hints for coarse invalidation
 - do not expose raw Codex protocol details
 
-### 6. `idl/orchd/v1/session.proto`
+### 6. `idl/hopter/v1/session.proto`
 
 - ensure create/send input shapes can carry structured input, model, and reasoning effort
 - add approval response RPCs if not already present

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 func TestCheckUsesSignedManifest(t *testing.T) {
@@ -24,14 +24,14 @@ func TestCheckUsesSignedManifest(t *testing.T) {
 	}
 
 	payload := manifestPayload{
-		Product:     "orchd",
+		Product:     "hopter",
 		Channel:     "stable",
 		Version:     "1.2.4",
 		PublishedAt: time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC),
-		NotesURL:    "https://orchd.dev/releases/1.2.4",
+		NotesURL:    "https://hopter.dev/releases/1.2.4",
 		Artifacts: map[string]manifestArtifact{
 			currentPlatformKey(): {
-				URL:       "https://updates.orchd.dev/artifacts/1.2.4/orchd",
+				URL:       "https://updates.hopter.dev/artifacts/1.2.4/hopter",
 				SHA256:    strings.Repeat("a", 64),
 				SizeBytes: 42,
 			},
@@ -54,9 +54,9 @@ func TestCheckUsesSignedManifest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("ORCHD_UPDATE_BASE_URL", server.URL)
-	t.Setenv("ORCHD_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("ORCHD_INSTALL_SOURCE", "direct")
+	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
+	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
+	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
 
 	service := NewService("1.2.3", "direct")
 	status, err := service.Check(true)
@@ -81,13 +81,13 @@ func TestCheckFailsOnInvalidSignature(t *testing.T) {
 	}
 
 	payload := manifestPayload{
-		Product:     "orchd",
+		Product:     "hopter",
 		Channel:     "stable",
 		Version:     "1.2.4",
 		PublishedAt: time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC),
 		Artifacts: map[string]manifestArtifact{
 			currentPlatformKey(): {
-				URL:       "https://updates.orchd.dev/artifacts/1.2.4/orchd",
+				URL:       "https://updates.hopter.dev/artifacts/1.2.4/hopter",
 				SHA256:    strings.Repeat("a", 64),
 				SizeBytes: 42,
 			},
@@ -106,8 +106,8 @@ func TestCheckFailsOnInvalidSignature(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("ORCHD_UPDATE_MANIFEST_URL", server.URL)
-	t.Setenv("ORCHD_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
+	t.Setenv("HOPTER_UPDATE_MANIFEST_URL", server.URL)
+	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
 
 	service := NewService("1.2.3", "direct")
 	status, err := service.Check(true)
@@ -123,9 +123,9 @@ func TestCheckFailsOnInvalidSignature(t *testing.T) {
 }
 
 func TestCheckFallsBackToEnvironmentVersion(t *testing.T) {
-	t.Setenv("ORCHD_UPDATE_AVAILABLE_VERSION", "1.2.4")
-	t.Setenv("ORCHD_UPDATE_NOTES_URL", "https://orchd.dev/releases/1.2.4")
-	t.Setenv("ORCHD_INSTALL_SOURCE", "homebrew_formula")
+	t.Setenv("HOPTER_UPDATE_AVAILABLE_VERSION", "1.2.4")
+	t.Setenv("HOPTER_UPDATE_NOTES_URL", "https://hopter.dev/releases/1.2.4")
+	t.Setenv("HOPTER_INSTALL_SOURCE", "homebrew_formula")
 
 	service := NewService("1.2.3", "direct")
 	status, err := service.Check(true)
@@ -135,7 +135,7 @@ func TestCheckFallsBackToEnvironmentVersion(t *testing.T) {
 	if status.UpdatePolicy != core.UpdatePolicyPackageManaged {
 		t.Fatalf("unexpected update policy: %s", status.UpdatePolicy)
 	}
-	if status.UpgradeCommandHint != "brew upgrade orchd" {
+	if status.UpgradeCommandHint != "brew upgrade hopter" {
 		t.Fatalf("unexpected command hint: %q", status.UpgradeCommandHint)
 	}
 	if !status.UpdateAvailable {
@@ -158,7 +158,7 @@ func TestApplyDownloadsVerifiesAndRunsDoctorPreflight(t *testing.T) {
 		switch r.URL.Path {
 		case "/update/v1/manifest.json":
 			_, _ = w.Write(payloadJSON)
-		case "/artifacts/orchd":
+		case "/artifacts/hopter":
 			_, _ = w.Write(artifactBytes)
 		default:
 			http.NotFound(w, r)
@@ -167,13 +167,13 @@ func TestApplyDownloadsVerifiesAndRunsDoctorPreflight(t *testing.T) {
 	defer server.Close()
 
 	payload := manifestPayload{
-		Product:     "orchd",
+		Product:     "hopter",
 		Channel:     "stable",
 		Version:     "1.2.4",
 		PublishedAt: time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC),
 		Artifacts: map[string]manifestArtifact{
 			currentPlatformKey(): {
-				URL:       server.URL + "/artifacts/orchd",
+				URL:       server.URL + "/artifacts/hopter",
 				SHA256:    checksum,
 				SizeBytes: int64(len(artifactBytes)),
 			},
@@ -193,9 +193,9 @@ func TestApplyDownloadsVerifiesAndRunsDoctorPreflight(t *testing.T) {
 	}
 	payloadJSON = signed
 
-	t.Setenv("ORCHD_UPDATE_BASE_URL", server.URL)
-	t.Setenv("ORCHD_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("ORCHD_INSTALL_SOURCE", "direct")
+	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
+	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
+	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
 
 	service := NewService("1.2.3", "direct")
 	if _, err := service.Check(true); err != nil {
@@ -240,7 +240,7 @@ func TestApplyRecordsFailureWhenReexecFails(t *testing.T) {
 		switch r.URL.Path {
 		case "/update/v1/manifest.json":
 			_, _ = w.Write(payloadJSON)
-		case "/artifacts/orchd":
+		case "/artifacts/hopter":
 			_, _ = w.Write(artifactBytes)
 		default:
 			http.NotFound(w, r)
@@ -249,13 +249,13 @@ func TestApplyRecordsFailureWhenReexecFails(t *testing.T) {
 	defer server.Close()
 
 	payload := manifestPayload{
-		Product:     "orchd",
+		Product:     "hopter",
 		Channel:     "stable",
 		Version:     "1.2.4",
 		PublishedAt: time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC),
 		Artifacts: map[string]manifestArtifact{
 			currentPlatformKey(): {
-				URL:       server.URL + "/artifacts/orchd",
+				URL:       server.URL + "/artifacts/hopter",
 				SHA256:    checksum,
 				SizeBytes: int64(len(artifactBytes)),
 			},
@@ -275,9 +275,9 @@ func TestApplyRecordsFailureWhenReexecFails(t *testing.T) {
 	}
 	payloadJSON = signed
 
-	t.Setenv("ORCHD_UPDATE_BASE_URL", server.URL)
-	t.Setenv("ORCHD_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("ORCHD_INSTALL_SOURCE", "direct")
+	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
+	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
+	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
 
 	service := NewService("1.2.3", "direct")
 	if _, err := service.Check(true); err != nil {

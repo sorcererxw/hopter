@@ -39,7 +39,7 @@ Excluded:
     /routes
     /components
       /ui
-      /orchd
+      /hopter
     /features
       /projects
       /sessions
@@ -240,7 +240,7 @@ Mitigation:
 Mitigation:
 
 - enforce CLI-generated primitive policy
-- put orchd-specific semantics above, not inside, the primitive layer
+- put hopter-specific semantics above, not inside, the primitive layer
 
 ## Verification
 

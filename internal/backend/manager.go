@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const DefaultBackendKey = "codex"

@@ -9,9 +9,9 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/backend"
-	"orchd/internal/core"
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/core"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type fakeSessionRuntime struct {
@@ -122,7 +122,7 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 		getProject: project,
 	}, &fakeSessionDetailReader{})
 
-	resp, err := service.GetSession(context.Background(), connect.NewRequest(&orchdv1.GetSessionRequest{
+	resp, err := service.GetSession(context.Background(), connect.NewRequest(&hopterv1.GetSessionRequest{
 		SessionId: session.ID,
 	}))
 	if err != nil {
@@ -136,10 +136,10 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 	if len(got.GetTranscriptItems()) != 2 {
 		t.Fatalf("transcript item count = %d, want 2", len(got.GetTranscriptItems()))
 	}
-	if got.GetTranscriptItems()[0].GetKind() != orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE {
+	if got.GetTranscriptItems()[0].GetKind() != hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE {
 		t.Fatalf("first transcript kind = %v", got.GetTranscriptItems()[0].GetKind())
 	}
-	if got.GetTranscriptItems()[1].GetKind() != orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION {
+	if got.GetTranscriptItems()[1].GetKind() != hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION {
 		t.Fatalf("second transcript kind = %v", got.GetTranscriptItems()[1].GetKind())
 	}
 	if got.GetTranscriptItems()[1].GetStatus() != "completed" {
@@ -188,7 +188,7 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 		page: page,
 	})
 
-	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&orchdv1.GetSessionMetaRequest{
+	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&hopterv1.GetSessionMetaRequest{
 		SessionId: meta.Session.ID,
 	}))
 	if err != nil {
@@ -205,7 +205,7 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 		t.Fatalf("resume command = %q, want %q", metaResp.Msg.GetSession().GetResumeCommand(), wantResume)
 	}
 
-	pageResp, err := service.ListSessionTranscript(context.Background(), connect.NewRequest(&orchdv1.ListSessionTranscriptRequest{
+	pageResp, err := service.ListSessionTranscript(context.Background(), connect.NewRequest(&hopterv1.ListSessionTranscriptRequest{
 		SessionId: meta.Session.ID,
 	}))
 	if err != nil {
@@ -254,7 +254,7 @@ func TestGetSessionReviewAndFile(t *testing.T) {
 		},
 	})
 
-	reviewResp, err := service.GetSessionReview(context.Background(), connect.NewRequest(&orchdv1.GetSessionReviewRequest{
+	reviewResp, err := service.GetSessionReview(context.Background(), connect.NewRequest(&hopterv1.GetSessionReviewRequest{
 		SessionId: "sess_1",
 	}))
 	if err != nil {
@@ -270,7 +270,7 @@ func TestGetSessionReviewAndFile(t *testing.T) {
 		t.Fatalf("pending turn in progress = false, want true")
 	}
 
-	fileResp, err := service.GetSessionFile(context.Background(), connect.NewRequest(&orchdv1.GetSessionFileRequest{
+	fileResp, err := service.GetSessionFile(context.Background(), connect.NewRequest(&hopterv1.GetSessionFileRequest{
 		SessionId: "sess_1",
 		Path:      "foo.go:12",
 	}))
@@ -312,7 +312,7 @@ func TestGetSessionMetaOmitsResumeCommandWithoutCodexThread(t *testing.T) {
 		meta: meta,
 	})
 
-	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&orchdv1.GetSessionMetaRequest{
+	metaResp, err := service.GetSessionMeta(context.Background(), connect.NewRequest(&hopterv1.GetSessionMetaRequest{
 		SessionId: meta.Session.ID,
 	}))
 	if err != nil {
@@ -350,7 +350,7 @@ func TestListSessionsMergesLocalSessionsMissingFromRuntime(t *testing.T) {
 		listSessionsResult: nil,
 	}, &fakeSessionDetailReader{})
 
-	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&orchdv1.ListSessionsRequest{}))
+	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&hopterv1.ListSessionsRequest{}))
 	if err != nil {
 		t.Fatalf("ListSessions: %v", err)
 	}
@@ -373,10 +373,10 @@ func TestRespondToSessionApprovalPassesDecisionToRuntime(t *testing.T) {
 	}
 	service := NewSessionService(workspace, runtime, &fakeSessionDetailReader{})
 
-	resp, err := service.RespondToSessionApproval(context.Background(), connect.NewRequest(&orchdv1.RespondToSessionApprovalRequest{
+	resp, err := service.RespondToSessionApproval(context.Background(), connect.NewRequest(&hopterv1.RespondToSessionApprovalRequest{
 		SessionId:  "sess_1",
 		ApprovalId: "12",
-		Decision:   orchdv1.ApprovalDecision_APPROVAL_DECISION_APPROVE,
+		Decision:   hopterv1.ApprovalDecision_APPROVAL_DECISION_APPROVE,
 	}))
 	if err != nil {
 		t.Fatalf("RespondToSessionApproval: %v", err)
@@ -405,7 +405,7 @@ func TestInterruptSessionPassesToRuntime(t *testing.T) {
 	}
 	service := NewSessionService(workspace, runtime, &fakeSessionDetailReader{})
 
-	resp, err := service.InterruptSession(context.Background(), connect.NewRequest(&orchdv1.InterruptSessionRequest{
+	resp, err := service.InterruptSession(context.Background(), connect.NewRequest(&hopterv1.InterruptSessionRequest{
 		SessionId: "sess_1",
 	}))
 	if err != nil {

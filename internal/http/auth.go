@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const authLogoutCookieName = "orchd_logged_out"
+const authLogoutCookieName = "hopter_logged_out"
 
 type TerminalTabTerminator interface {
 	TerminateBrowserTab(browserInstanceID, tabID string) int

@@ -6,7 +6,7 @@ Start with the thinnest document that answers your question, then drill down onl
 
 ## Fast paths
 
-- what `orchd` is: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
+- what `hopter` is: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
 - rebuilt workspace UI direction: [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
 - workspace UI refinement rules for touch, typography, rail, topbar, and composer: [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md)
 - settings information architecture and routed surface plan: [`docs/planning/SETTINGS_SURFACE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/SETTINGS_SURFACE_PLAN.md)

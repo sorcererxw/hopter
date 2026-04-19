@@ -1,8 +1,8 @@
 package backend
 
 import (
-	"orchd/internal/codex"
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/codex"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type codexRuntime struct {

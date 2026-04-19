@@ -1,9 +1,9 @@
 import { createClient } from "@connectrpc/connect"
 
-import { HostService } from "@/gen/proto/orchd/v1/host_pb"
-import { ProjectService } from "@/gen/proto/orchd/v1/project_pb"
-import { SessionService } from "@/gen/proto/orchd/v1/session_pb"
-import { TerminalService } from "@/gen/proto/orchd/v1/terminal_pb"
+import { HostService } from "@/gen/proto/hopter/v1/host_pb"
+import { ProjectService } from "@/gen/proto/hopter/v1/project_pb"
+import { SessionService } from "@/gen/proto/hopter/v1/session_pb"
+import { TerminalService } from "@/gen/proto/hopter/v1/terminal_pb"
 import { transport } from "@/lib/connect/transport"
 
 export const hostClient = createClient(HostService, transport)

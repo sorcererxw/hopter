@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"orchd/internal/events"
+	"github.com/sorcererxw/hopter/internal/events"
 )
 
 func NewSSEHandler(hub *events.Hub) http.Handler {

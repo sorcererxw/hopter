@@ -7,8 +7,8 @@ import { appendDevLog, getLogsDir, readDevState, waitForHttpOk } from "./lib/dev
 import { createValidationRun } from "./lib/validation.ts"
 import { combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts"
 
-const baseUrl = process.env.ORCHD_LIVE_BASE_URL?.trim() || "http://127.0.0.1:8787"
-const healthUrl = process.env.ORCHD_GO_HEALTH_URL?.trim() || `${baseUrl}/healthz`
+const baseUrl = process.env.HOPTER_LIVE_BASE_URL?.trim() || "http://127.0.0.1:8787"
+const healthUrl = process.env.HOPTER_GO_HEALTH_URL?.trim() || `${baseUrl}/healthz`
 
 function changedFiles() {
   try {

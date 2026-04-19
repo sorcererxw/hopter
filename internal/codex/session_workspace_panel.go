@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const maxSessionFilePreviewBytes = 128 * 1024

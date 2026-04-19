@@ -12,7 +12,7 @@ describe("rebuild validation helpers", () => {
   });
 
   test("checkRequiredPaths reports missing paths as blocked", () => {
-    const root = mkdtempSync(path.join(tmpdir(), "orchd-rebuild-validation-"));
+    const root = mkdtempSync(path.join(tmpdir(), "hopter-rebuild-validation-"));
     mkdirSync(path.join(root, "idl"), { recursive: true });
 
     const result = checkRequiredPaths(["idl", "missing.txt"], root);

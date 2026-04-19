@@ -7,9 +7,9 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/backend"
-	"orchd/internal/core"
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/core"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type SessionService struct {
@@ -42,7 +42,7 @@ func NewSessionService(
 	return &SessionService{workspace: workspace, codex: codexManager, reader: reader}
 }
 
-func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[orchdv1.ListSessionsRequest]) (*connect.Response[orchdv1.ListSessionsResponse], error) {
+func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[hopterv1.ListSessionsRequest]) (*connect.Response[hopterv1.ListSessionsResponse], error) {
 	resolvedSessions, err := s.codex.ListSessions(req.Msg.GetProjectId(), req.Msg.GetLimit())
 	if err != nil {
 		resolvedSessions = nil
@@ -56,8 +56,8 @@ func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[or
 		s.workspace,
 		req.Msg.GetLimit(),
 	)
-	response := &orchdv1.ListSessionsResponse{
-		Sessions: make([]*orchdv1.SessionListItem, 0, len(resolvedSessions)),
+	response := &hopterv1.ListSessionsResponse{
+		Sessions: make([]*hopterv1.SessionListItem, 0, len(resolvedSessions)),
 	}
 	for _, resolved := range resolvedSessions {
 		response.Sessions = append(response.Sessions, sessionListItemToProto(resolved.Project, resolved.Session))
@@ -112,37 +112,37 @@ func mergeResolvedSessions(
 	return merged
 }
 
-func (s *SessionService) GetSession(_ context.Context, req *connect.Request[orchdv1.GetSessionRequest]) (*connect.Response[orchdv1.GetSessionResponse], error) {
+func (s *SessionService) GetSession(_ context.Context, req *connect.Request[hopterv1.GetSessionRequest]) (*connect.Response[hopterv1.GetSessionResponse], error) {
 	session, project, err := s.codex.GetSession(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
 	}
-	return connect.NewResponse(&orchdv1.GetSessionResponse{
+	return connect.NewResponse(&hopterv1.GetSessionResponse{
 		Session: sessionToProto(project, session),
 	}), nil
 }
 
-func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[orchdv1.GetSessionMetaRequest]) (*connect.Response[orchdv1.GetSessionMetaResponse], error) {
+func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[hopterv1.GetSessionMetaRequest]) (*connect.Response[hopterv1.GetSessionMetaResponse], error) {
 	meta, err := s.reader.GetSessionMeta(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
 	}
-	return connect.NewResponse(&orchdv1.GetSessionMetaResponse{
+	return connect.NewResponse(&hopterv1.GetSessionMetaResponse{
 		Session: sessionMetaToProto(meta),
 	}), nil
 }
 
-func (s *SessionService) GetSessionReview(_ context.Context, req *connect.Request[orchdv1.GetSessionReviewRequest]) (*connect.Response[orchdv1.GetSessionReviewResponse], error) {
+func (s *SessionService) GetSessionReview(_ context.Context, req *connect.Request[hopterv1.GetSessionReviewRequest]) (*connect.Response[hopterv1.GetSessionReviewResponse], error) {
 	review, err := s.reader.GetSessionReview(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q review not found", req.Msg.GetSessionId()))
 	}
-	return connect.NewResponse(&orchdv1.GetSessionReviewResponse{
+	return connect.NewResponse(&hopterv1.GetSessionReviewResponse{
 		Review: sessionReviewToProto(review),
 	}), nil
 }
 
-func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[orchdv1.GetSessionFileRequest]) (*connect.Response[orchdv1.GetSessionFileResponse], error) {
+func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[hopterv1.GetSessionFileRequest]) (*connect.Response[hopterv1.GetSessionFileResponse], error) {
 	file, err := s.reader.GetSessionFile(core.GetSessionFileInput{
 		SessionID: req.Msg.GetSessionId(),
 		Path:      req.Msg.GetPath(),
@@ -152,12 +152,12 @@ func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q file not found", req.Msg.GetSessionId()))
 	}
-	return connect.NewResponse(&orchdv1.GetSessionFileResponse{
+	return connect.NewResponse(&hopterv1.GetSessionFileResponse{
 		File: sessionFileToProto(file),
 	}), nil
 }
 
-func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.Request[orchdv1.ListSessionTranscriptRequest]) (*connect.Response[orchdv1.ListSessionTranscriptResponse], error) {
+func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.Request[hopterv1.ListSessionTranscriptRequest]) (*connect.Response[hopterv1.ListSessionTranscriptResponse], error) {
 	page, err := s.reader.ListSessionTranscript(core.ListSessionTranscriptInput{
 		SessionID:    req.Msg.GetSessionId(),
 		BeforeCursor: req.Msg.GetBeforeCursor(),
@@ -166,12 +166,12 @@ func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q transcript not found", req.Msg.GetSessionId()))
 	}
-	return connect.NewResponse(&orchdv1.ListSessionTranscriptResponse{
+	return connect.NewResponse(&hopterv1.ListSessionTranscriptResponse{
 		Page: sessionTranscriptPageToProto(page),
 	}), nil
 }
 
-func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[orchdv1.CreateSessionRequest]) (*connect.Response[orchdv1.CreateSessionResponse], error) {
+func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[hopterv1.CreateSessionRequest]) (*connect.Response[hopterv1.CreateSessionResponse], error) {
 	session, err := s.codex.CreateSession(core.CreateSessionInput{
 		ProjectID:  req.Msg.GetProjectId(),
 		BackendKey: req.Msg.GetBackendKey(),
@@ -182,36 +182,36 @@ func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[o
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	project, _ := s.workspace.GetProject(session.ProjectID)
-	return connect.NewResponse(&orchdv1.CreateSessionResponse{
+	return connect.NewResponse(&hopterv1.CreateSessionResponse{
 		Session: sessionToProto(project, session),
 	}), nil
 }
 
-func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Request[orchdv1.SendSessionInputRequest]) (*connect.Response[orchdv1.SendSessionInputResponse], error) {
+func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Request[hopterv1.SendSessionInputRequest]) (*connect.Response[hopterv1.SendSessionInputResponse], error) {
 	session, err := s.codex.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return connect.NewResponse(&orchdv1.SendSessionInputResponse{
+	return connect.NewResponse(&hopterv1.SendSessionInputResponse{
 		Accepted:  true,
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),
 	}), nil
 }
 
-func (s *SessionService) InterruptSession(_ context.Context, req *connect.Request[orchdv1.InterruptSessionRequest]) (*connect.Response[orchdv1.InterruptSessionResponse], error) {
+func (s *SessionService) InterruptSession(_ context.Context, req *connect.Request[hopterv1.InterruptSessionRequest]) (*connect.Response[hopterv1.InterruptSessionResponse], error) {
 	session, err := s.codex.InterruptSession(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return connect.NewResponse(&orchdv1.InterruptSessionResponse{
+	return connect.NewResponse(&hopterv1.InterruptSessionResponse{
 		Accepted:  true,
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),
 	}), nil
 }
 
-func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connect.Request[orchdv1.RespondToSessionApprovalRequest]) (*connect.Response[orchdv1.RespondToSessionApprovalResponse], error) {
+func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connect.Request[hopterv1.RespondToSessionApprovalRequest]) (*connect.Response[hopterv1.RespondToSessionApprovalResponse], error) {
 	decision, err := mapApprovalDecision(req.Msg.GetDecision())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -224,23 +224,23 @@ func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connec
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return connect.NewResponse(&orchdv1.RespondToSessionApprovalResponse{
+	return connect.NewResponse(&hopterv1.RespondToSessionApprovalResponse{
 		Accepted:  true,
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),
 	}), nil
 }
 
-func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Request[orchdv1.ListSessionArtifactsRequest]) (*connect.Response[orchdv1.ListSessionArtifactsResponse], error) {
+func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Request[hopterv1.ListSessionArtifactsRequest]) (*connect.Response[hopterv1.ListSessionArtifactsResponse], error) {
 	artifacts, err := s.workspace.ListSessionArtifacts(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	response := &orchdv1.ListSessionArtifactsResponse{
-		Artifacts: make([]*orchdv1.ArtifactRef, 0, len(artifacts)),
+	response := &hopterv1.ListSessionArtifactsResponse{
+		Artifacts: make([]*hopterv1.ArtifactRef, 0, len(artifacts)),
 	}
 	for _, artifact := range artifacts {
-		response.Artifacts = append(response.Artifacts, &orchdv1.ArtifactRef{
+		response.Artifacts = append(response.Artifacts, &hopterv1.ArtifactRef{
 			Id:          artifact.ID,
 			Kind:        mapArtifactKind(artifact.Kind),
 			Label:       artifact.Label,
@@ -252,11 +252,11 @@ func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Re
 	return connect.NewResponse(response), nil
 }
 
-func mapApprovalDecision(decision orchdv1.ApprovalDecision) (core.ApprovalDecision, error) {
+func mapApprovalDecision(decision hopterv1.ApprovalDecision) (core.ApprovalDecision, error) {
 	switch decision {
-	case orchdv1.ApprovalDecision_APPROVAL_DECISION_APPROVE:
+	case hopterv1.ApprovalDecision_APPROVAL_DECISION_APPROVE:
 		return core.ApprovalDecisionApprove, nil
-	case orchdv1.ApprovalDecision_APPROVAL_DECISION_REJECT:
+	case hopterv1.ApprovalDecision_APPROVAL_DECISION_REJECT:
 		return core.ApprovalDecisionReject, nil
 	default:
 		return "", fmt.Errorf("approval decision is required")

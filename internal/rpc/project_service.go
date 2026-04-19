@@ -8,9 +8,9 @@ import (
 
 	"connectrpc.com/connect"
 
-	"orchd/internal/backend"
-	"orchd/internal/core"
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/core"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type ProjectService struct {
@@ -30,11 +30,11 @@ func NewProjectService(workspace core.WorkspaceService, sessions ...projectSessi
 	return &ProjectService{workspace: workspace, sessions: sessionLister}
 }
 
-func (s *ProjectService) ListProjects(_ context.Context, _ *connect.Request[orchdv1.ListProjectsRequest]) (*connect.Response[orchdv1.ListProjectsResponse], error) {
+func (s *ProjectService) ListProjects(_ context.Context, _ *connect.Request[hopterv1.ListProjectsRequest]) (*connect.Response[hopterv1.ListProjectsResponse], error) {
 	projects := s.workspace.ListProjects()
 	projects = appendSyntheticProjects(projects, s.sessions)
-	response := &orchdv1.ListProjectsResponse{
-		Projects: make([]*orchdv1.Project, 0, len(projects)),
+	response := &hopterv1.ListProjectsResponse{
+		Projects: make([]*hopterv1.Project, 0, len(projects)),
 	}
 	for _, project := range projects {
 		response.Projects = append(response.Projects, projectToProto(project))
@@ -78,7 +78,7 @@ func projectDedupKey(project core.Project) string {
 	return strings.TrimSpace(project.ID)
 }
 
-func (s *ProjectService) CreateProject(_ context.Context, req *connect.Request[orchdv1.CreateProjectRequest]) (*connect.Response[orchdv1.CreateProjectResponse], error) {
+func (s *ProjectService) CreateProject(_ context.Context, req *connect.Request[hopterv1.CreateProjectRequest]) (*connect.Response[hopterv1.CreateProjectResponse], error) {
 	project, err := s.workspace.CreateProject(core.CreateProjectInput{
 		Name:           req.Msg.GetName(),
 		RootPath:       req.Msg.GetRootPath(),
@@ -87,17 +87,17 @@ func (s *ProjectService) CreateProject(_ context.Context, req *connect.Request[o
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return connect.NewResponse(&orchdv1.CreateProjectResponse{
+	return connect.NewResponse(&hopterv1.CreateProjectResponse{
 		Project: projectToProto(project),
 	}), nil
 }
 
-func (s *ProjectService) GetProject(_ context.Context, req *connect.Request[orchdv1.GetProjectRequest]) (*connect.Response[orchdv1.GetProjectResponse], error) {
+func (s *ProjectService) GetProject(_ context.Context, req *connect.Request[hopterv1.GetProjectRequest]) (*connect.Response[hopterv1.GetProjectResponse], error) {
 	project, ok := s.workspace.GetProject(req.Msg.GetProjectId())
 	if !ok {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project %q not found", req.Msg.GetProjectId()))
 	}
-	return connect.NewResponse(&orchdv1.GetProjectResponse{
+	return connect.NewResponse(&hopterv1.GetProjectResponse{
 		Project: projectToProto(project),
 	}), nil
 }

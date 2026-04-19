@@ -2,7 +2,7 @@
 
 ## Working Title
 
-orchd
+hopter
 
 ## One-line definition
 
@@ -10,7 +10,7 @@ A self-hosted gateway server that runs on the user's own machine, connects to ex
 
 ## Open source baseline
 
-- working project name: `orchd`
+- working project name: `hopter`
 - v1 license target: `Apache-2.0`
 
 ## Problem

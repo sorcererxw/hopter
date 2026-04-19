@@ -30,7 +30,7 @@ Excluded:
 /idl
   /buf.yaml
   /buf.gen.yaml
-  /orchd/v1/*.proto
+  /hopter/v1/*.proto
 ```
 
 Generated outputs should be checked into predictable generated-code locations chosen by the implementation, but generation itself must be driven only through Buf.
@@ -63,11 +63,11 @@ Keep method names concrete and unsurprising.
 ## First-pass package layout
 
 ```text
-orchd/v1/common.proto
-orchd/v1/host.proto
-orchd/v1/project.proto
-orchd/v1/session.proto
-orchd/v1/events.proto
+hopter/v1/common.proto
+hopter/v1/host.proto
+hopter/v1/project.proto
+hopter/v1/session.proto
+hopter/v1/events.proto
 ```
 
 This does not require five generated service surfaces if some messages remain shared-only; it simply keeps the domain boundaries clear from the start.
@@ -153,7 +153,7 @@ Generate:
 
 Chosen output directory:
 
-- `internal/gen/proto/orchd/v1/...`
+- `internal/gen/proto/hopter/v1/...`
 
 ### TypeScript output
 
@@ -163,11 +163,11 @@ Generate:
 
 Chosen output directory:
 
-- `ui/src/gen/proto/orchd/v1/...`
+- `ui/src/gen/proto/hopter/v1/...`
 
 ## Evolution strategy
 
-The first protocol version should be `orchd.v1`.
+The first protocol version should be `hopter.v1`.
 
 Within the rebuild phase:
 

@@ -2,8 +2,8 @@ root = "."
 tmp_dir = "tmp/air"
 
 [build]
-cmd = "go build -o ./tmp/air/orchd ./cmd/orchd"
-entrypoint = ["./tmp/air/orchd"]
+cmd = "go build -o ./tmp/air/hopter ./cmd/hopter"
+entrypoint = ["./tmp/air/hopter"]
 include_ext = ["go"]
 exclude_dir = ["tmp", "storage", "ui", "node_modules", ".git"]
 delay = 300

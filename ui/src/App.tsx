@@ -83,7 +83,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="orchd-theme">
+    <ThemeProvider defaultTheme="system" storageKey="hopter-theme">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>

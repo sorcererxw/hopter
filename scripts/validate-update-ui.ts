@@ -11,15 +11,15 @@ import {
 } from "./lib/rebuild-validation.ts";
 
 const PACKAGE_PORT = Number.parseInt(
-  process.env.ORCHD_UPDATE_UI_PACKAGE_PORT?.trim() || "8896",
+  process.env.HOPTER_UPDATE_UI_PACKAGE_PORT?.trim() || "8896",
   10
 );
 const DIRECT_PORT = Number.parseInt(
-  process.env.ORCHD_UPDATE_UI_DIRECT_PORT?.trim() || "8897",
+  process.env.HOPTER_UPDATE_UI_DIRECT_PORT?.trim() || "8897",
   10
 );
 const DEV_PROXY_URL =
-  process.env.ORCHD_UPDATE_UI_DEV_PROXY_URL?.trim() || "http://127.0.0.1:5173";
+  process.env.HOPTER_UPDATE_UI_DEV_PROXY_URL?.trim() || "http://127.0.0.1:5173";
 
 async function waitForHttp(
   url: string,
@@ -51,11 +51,11 @@ function spawnServer(
     stderr: "pipe",
     env: {
       ...process.env,
-      ORCHD_HOST: "127.0.0.1",
-      ORCHD_PORT: String(port),
-      ORCHD_UI_DEV_PROXY_URL: DEV_PROXY_URL,
-      ORCHD_UPDATE_AVAILABLE_VERSION: availableVersion,
-      ORCHD_INSTALL_SOURCE: installSource,
+      HOPTER_HOST: "127.0.0.1",
+      HOPTER_PORT: String(port),
+      HOPTER_UI_DEV_PROXY_URL: DEV_PROXY_URL,
+      HOPTER_UPDATE_AVAILABLE_VERSION: availableVersion,
+      HOPTER_INSTALL_SOURCE: installSource,
     },
   });
 }
@@ -76,16 +76,16 @@ async function main(): Promise<void> {
   });
 
   const goBuild = await runCommand(
-    ["go", "build", "-o", path.join(run.rootDir, "bin", "orchd"), "./cmd/orchd"],
+    ["go", "build", "-o", path.join(run.rootDir, "bin", "hopter"), "./cmd/hopter"],
     process.cwd()
   );
   run.writeJson("commands/go-build.json", goBuild);
   checks.push({
-    name: "go build ./cmd/orchd",
+    name: "go build ./cmd/hopter",
     status: goBuild.exitCode === 0 ? "pass" : "fail",
     detail:
       goBuild.exitCode === 0
-        ? `built ${path.join(run.rootDir, "bin", "orchd")}`
+        ? `built ${path.join(run.rootDir, "bin", "hopter")}`
         : (goBuild.stderr || goBuild.stdout || "go build failed").trim(),
   });
 
@@ -103,7 +103,7 @@ async function main(): Promise<void> {
   }
 
   mkdirSync(path.join(run.rootDir, "screenshots"), { recursive: true });
-  const binaryPath = path.join(run.rootDir, "bin", "orchd");
+  const binaryPath = path.join(run.rootDir, "bin", "hopter");
 
   const packageServer = spawnServer(binaryPath, PACKAGE_PORT, "homebrew_formula", "1.2.4");
   const directServer = spawnServer(binaryPath, DIRECT_PORT, "direct", "1.2.4");
@@ -151,11 +151,11 @@ async function main(): Promise<void> {
       });
 
       const packageCommandText = (
-        await packagePage.getByText("brew upgrade orchd").textContent()
+        await packagePage.getByText("brew upgrade hopter").textContent()
       )?.trim();
       checks.push({
         name: "package-managed update dialog",
-        status: packageCommandText === "brew upgrade orchd" ? "pass" : "fail",
+        status: packageCommandText === "brew upgrade hopter" ? "pass" : "fail",
         detail: packageCommandText
           ? `dialog rendered command: ${packageCommandText}`
           : "package-managed dialog did not show brew command",

@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"orchd/internal/backend"
-	copilotbackend "orchd/internal/backend/copilot"
-	"orchd/internal/codex"
-	"orchd/internal/core"
-	"orchd/internal/events"
-	serverhttp "orchd/internal/http"
-	rpcserver "orchd/internal/rpc"
-	"orchd/internal/terminal"
-	"orchd/internal/update"
+	"github.com/sorcererxw/hopter/internal/backend"
+	copilotbackend "github.com/sorcererxw/hopter/internal/backend/copilot"
+	"github.com/sorcererxw/hopter/internal/codex"
+	"github.com/sorcererxw/hopter/internal/core"
+	"github.com/sorcererxw/hopter/internal/events"
+	serverhttp "github.com/sorcererxw/hopter/internal/http"
+	rpcserver "github.com/sorcererxw/hopter/internal/rpc"
+	"github.com/sorcererxw/hopter/internal/terminal"
+	"github.com/sorcererxw/hopter/internal/update"
 )
 
 type Runtime struct {

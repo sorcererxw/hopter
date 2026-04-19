@@ -1,6 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf/wkt"
 
-import { ArtifactKind, SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
+import { ArtifactKind, SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 
 export function formatSessionStatus(status: SessionStatus | string | number) {
   switch (status) {

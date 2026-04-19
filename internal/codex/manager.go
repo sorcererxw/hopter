@@ -11,13 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type Manager struct {
 	mu        sync.Mutex
 	workspace core.WorkspaceService
-	eventSink  core.EventSink
+	eventSink core.EventSink
 	live      map[string]*liveSession
 	start     clientStarter
 }
@@ -78,7 +78,7 @@ func NewManager(workspace core.WorkspaceService, eventSink ...core.EventSink) *M
 	}
 	return &Manager{
 		workspace: workspace,
-		eventSink:  sink,
+		eventSink: sink,
 		live:      make(map[string]*liveSession),
 		start: func(
 			ctx context.Context,
@@ -368,11 +368,11 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			reason := ""
 			m.updateWorkspaceSession(sessionID, core.SessionPatch{
 				PendingApprovalID: &approvalID,
-				ActiveTurnID: &active,
-				Status:       &running,
-				Summary:      &summary,
+				ActiveTurnID:      &active,
+				Status:            &running,
+				Summary:           &summary,
 				AttentionRequired: &attention,
-				AttentionReason: &reason,
+				AttentionReason:   &reason,
 			})
 			m.mu.Lock()
 			var projectID string
@@ -436,9 +436,9 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 
 		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			PendingApprovalID: &approvalID,
-			ActiveTurnID: &active,
-			Status:       &status,
-			Summary:      &summary,
+			ActiveTurnID:      &active,
+			Status:            &status,
+			Summary:           &summary,
 		})
 		if live != nil {
 			m.publishLivePatch(sessionID, live.project.ID, core.SessionLivePatch{
@@ -763,7 +763,7 @@ func (m *Manager) failSession(sessionID string, err error) {
 	attention := true
 	summary := err.Error()
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
-		PendingApprovalID:  &approvalID,
+		PendingApprovalID: &approvalID,
 		ActiveTurnID:      &active,
 		Status:            &status,
 		Summary:           &summary,
@@ -808,12 +808,12 @@ func (m *Manager) RespondToSessionApproval(
 	summary := "Approval submitted. Codex is resuming…"
 	clearApprovalID := ""
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
-		PendingApprovalID:  &clearApprovalID,
-		Status:             &running,
-		AttentionRequired:  &attention,
-		AttentionReason:    &reason,
-		Summary:            &summary,
-		ActiveTurnID:       &activeTurnID,
+		PendingApprovalID: &clearApprovalID,
+		Status:            &running,
+		AttentionRequired: &attention,
+		AttentionReason:   &reason,
+		Summary:           &summary,
+		ActiveTurnID:      &activeTurnID,
 	})
 	m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
 		Kind:         core.SessionLivePatchKindStatus,

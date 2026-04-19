@@ -8,7 +8,7 @@ import {
   type ValidationCheck,
 } from "./lib/rebuild-validation.ts";
 
-const BASE_URL = process.env.ORCHD_BASE_URL?.trim() || "http://127.0.0.1:8787";
+const BASE_URL = process.env.HOPTER_BASE_URL?.trim() || "http://127.0.0.1:8787";
 const REPO_ROOT = process.cwd();
 
 type Project = {
@@ -73,12 +73,12 @@ async function rpc<T>(service: string, method: string, body: unknown): Promise<T
 }
 
 async function listProjects() {
-  return rpc<{ projects?: Project[] }>("orchd.v1.ProjectService", "ListProjects", {});
+  return rpc<{ projects?: Project[] }>("hopter.v1.ProjectService", "ListProjects", {});
 }
 
 async function createSession(projectId: string, prompt: string, title: string) {
   return rpc<{ session?: { id: string } }>(
-    "orchd.v1.SessionService",
+    "hopter.v1.SessionService",
     "CreateSession",
     {
       projectId,
@@ -91,7 +91,7 @@ async function createSession(projectId: string, prompt: string, title: string) {
 
 async function getSessionMeta(sessionId: string) {
   return rpc<{ session?: SessionMeta }>(
-    "orchd.v1.SessionService",
+    "hopter.v1.SessionService",
     "GetSessionMeta",
     { sessionId }
   );
@@ -99,7 +99,7 @@ async function getSessionMeta(sessionId: string) {
 
 async function listTranscript(sessionId: string) {
   return rpc<{ page?: { items?: TranscriptItem[] } }>(
-    "orchd.v1.SessionService",
+    "hopter.v1.SessionService",
     "ListSessionTranscript",
     {
       sessionId,
@@ -114,7 +114,7 @@ async function respondToApproval(
   decision: "APPROVAL_DECISION_APPROVE" | "APPROVAL_DECISION_REJECT"
 ) {
   return rpc(
-    "orchd.v1.SessionService",
+    "hopter.v1.SessionService",
     "RespondToSessionApproval",
     {
       sessionId,

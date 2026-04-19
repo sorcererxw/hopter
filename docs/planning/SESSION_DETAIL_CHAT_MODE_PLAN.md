@@ -40,7 +40,7 @@ Relevant files today:
 - `ui/src/components/app/session-detail-pane.tsx`
 - `ui/src/components/app/session-composer.tsx`
 - `ui/src/features/sessions/use-sessions.ts`
-- `idl/orchd/v1/session.proto`
+- `idl/hopter/v1/session.proto`
 - `internal/codex/client.go`
 - `internal/codex/manager.go`
 - `internal/rpc/session_service.go`
@@ -160,7 +160,7 @@ We must not build a heavy persistent mirror of Codex history in the Go backend.
 So the conversation plan is:
 
 - Codex thread history remains canonical
-- orchd stores only lightweight session refs plus UI-facing session metadata
+- hopter stores only lightweight session refs plus UI-facing session metadata
 - transcript is normalized from `thread/read` on demand and from live turn notifications during active work
 - only small ephemeral draft state is kept in memory for live streaming
 
@@ -170,8 +170,8 @@ So the conversation plan is:
 
 Primary target:
 
-- `idl/orchd/v1/common.proto`
-- `idl/orchd/v1/session.proto`
+- `idl/hopter/v1/common.proto`
+- `idl/hopter/v1/session.proto`
 
 ### Add a normalized reasoning-effort enum
 
@@ -263,7 +263,7 @@ Important boundary:
 Persistence rule:
 
 - lightweight session record may store current model/effort and backend thread id
-- full transcript does not persist in orchd storage
+- full transcript does not persist in hopter storage
 
 ## 3. Codex client and manager changes
 
@@ -281,7 +281,7 @@ Add support for:
 - `turn/start` with `model`, `effort`, and structured input items
 - `turn/steer` with `model`, `effort`, and structured input items
 
-Add request helpers for converting orchd input items into Codex app-server items:
+Add request helpers for converting hopter input items into Codex app-server items:
 
 - text -> `type: "text"`
 - pasted image bytes -> backend writes temp file -> `type: "localImage"`, `path: ...`
@@ -470,7 +470,7 @@ The following stay out of this feature:
 - voice input
 - drag-and-drop file uploads beyond pasted images
 - arbitrary non-image attachments
-- durable orchd-side transcript persistence
+- durable hopter-side transcript persistence
 - multi-model comparison or per-message model badges unless already available from normalized data
 
 ## Failure modes and rescue plan
@@ -493,8 +493,8 @@ This slice also adds `HostService.ListModels`, because the create-session compos
 
 Files:
 
-- `idl/orchd/v1/common.proto`
-- `idl/orchd/v1/session.proto`
+- `idl/hopter/v1/common.proto`
+- `idl/hopter/v1/session.proto`
 - generated Go/TS outputs
 - `internal/core/models.go`
 - `internal/codex/client.go`
@@ -594,7 +594,7 @@ Required proof before calling the feature done:
 2. Summary and attention stay above the transcript, not removed.
 3. Model and reasoning-effort selection are shared between create and follow-up flows.
 4. Pasted images ship through structured RPC with a size cap, not a separate upload API.
-5. Codex remains the transcript source-of-truth. orchd normalizes, it does not persist a heavy mirror.
+5. Codex remains the transcript source-of-truth. hopter normalizes, it does not persist a heavy mirror.
 6. Raw timeline/tool noise stays out of the main transcript.
 
 ## Open questions

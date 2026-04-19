@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package hopter.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+message Empty {}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_PENDING = 1;
+  SESSION_STATUS_RUNNING = 2;
+  SESSION_STATUS_WAITING_INPUT = 3;
+  SESSION_STATUS_WAITING_APPROVAL = 4;
+  SESSION_STATUS_COMPLETED = 5;
+  SESSION_STATUS_FAILED = 6;
+  SESSION_STATUS_DEGRADED = 7;
+}
+
+enum ArtifactKind {
+  ARTIFACT_KIND_UNSPECIFIED = 0;
+  ARTIFACT_KIND_SUMMARY = 1;
+  ARTIFACT_KIND_CHANGED_FILES = 2;
+  ARTIFACT_KIND_TEST_RESULT = 3;
+  ARTIFACT_KIND_SCREENSHOT = 4;
+  ARTIFACT_KIND_LOG = 5;
+  ARTIFACT_KIND_OTHER = 6;
+}
+
+enum HostStatusKind {
+  HOST_STATUS_KIND_UNSPECIFIED = 0;
+  HOST_STATUS_KIND_HEALTHY = 1;
+  HOST_STATUS_KIND_DEGRADED = 2;
+  HOST_STATUS_KIND_UNAVAILABLE = 3;
+}
+
+enum ApprovalDecision {
+  APPROVAL_DECISION_UNSPECIFIED = 0;
+  APPROVAL_DECISION_APPROVE = 1;
+  APPROVAL_DECISION_REJECT = 2;
+}
+
+enum RefreshHint {
+  REFRESH_HINT_UNSPECIFIED = 0;
+  REFRESH_HINT_REFETCH_HOST = 1;
+  REFRESH_HINT_REFETCH_PROJECTS = 2;
+  REFRESH_HINT_REFETCH_SESSIONS = 3;
+  REFRESH_HINT_REFETCH_SESSION = 4;
+  REFRESH_HINT_REFETCH_ARTIFACTS = 5;
+}
+
+message ProjectRef {
+  string id = 1;
+  string name = 2;
+  string root_path = 3;
+}
+
+message SessionRef {
+  string id = 1;
+  string title = 2;
+  ProjectRef project = 3;
+  SessionStatus status = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  bool attention_required = 6;
+}
+
+message ArtifactRef {
+  string id = 1;
+  ArtifactKind kind = 2;
+  string label = 3;
+  google.protobuf.Timestamp created_at = 4;
+  string download_url = 5;
+  string content_type = 6;
+}

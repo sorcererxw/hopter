@@ -64,7 +64,7 @@ Prove that the new Go entrypoint can compile, start, and answer health probes.
 ### Required checks
 
 - `go test ./...`
-- `go run ./cmd/orchd` (or equivalent entry command)
+- `go run ./cmd/hopter` (or equivalent entry command)
 - `GET /healthz`
 - optional `GET /readyz`
 - evidence capture for stdout/stderr and probe responses
@@ -75,7 +75,7 @@ Prove that the new Go entrypoint can compile, start, and answer health probes.
 
 ### Honest blocking rule
 
-If the repo does not yet contain `go.mod` or `cmd/orchd/main.go`, the lane must report **blocked**, not pass.
+If the repo does not yet contain `go.mod` or `cmd/hopter/main.go`, the lane must report **blocked**, not pass.
 
 ### Exit condition
 
@@ -203,7 +203,7 @@ That means approval must remain an explicit open item in product and release doc
 ## Suggested implementation order
 
 1. Keep IDL lane green during the rebuild
-2. Bring up the Go server lane once `go.mod` and `cmd/orchd` exist
+2. Bring up the Go server lane once `go.mod` and `cmd/hopter` exist
 3. Bring up the UI build lane once `ui/package.json` exists
 4. Wire the Tetris proof lane only after backend + frontend flows are operational
 

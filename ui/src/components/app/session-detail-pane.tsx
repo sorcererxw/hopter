@@ -46,14 +46,14 @@ import {
   useSessionReview,
   useSessionTranscript,
 } from "@/features/sessions/use-sessions"
-import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
+import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
 import {
   SessionTranscriptItemKind,
   type Session,
   type SessionMeta,
   type SessionTranscriptPage,
   type SessionTranscriptItem,
-} from "@/gen/proto/orchd/v1/session_pb"
+} from "@/gen/proto/hopter/v1/session_pb"
 import { formatArtifactKind, formatSessionStatus } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
@@ -63,7 +63,7 @@ const SessionInspectorPane = lazy(() =>
   }))
 )
 
-const sessionSidebarWidthStorageKey = "orchd.sessionSidebarWidth"
+const sessionSidebarWidthStorageKey = "hopter.sessionSidebarWidth"
 const minSessionSidebarWidth = 440
 const maxSessionSidebarWidth = 920
 const defaultSessionSidebarWidth = 640

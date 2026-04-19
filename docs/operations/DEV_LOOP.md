@@ -1,6 +1,6 @@
 # Dev Loop
 
-This document is the progressive-disclosure reference for local development in `orchd`.
+This document is the progressive-disclosure reference for local development in `hopter`.
 
 Use it when you need to answer one of four questions:
 
@@ -69,13 +69,13 @@ make dev
 If you want a different bind host:
 
 ```bash
-ORCHD_UI_DEV_HOST=127.0.0.1 ORCHD_HOST=127.0.0.1 make dev
+HOPTER_UI_DEV_HOST=127.0.0.1 HOPTER_HOST=127.0.0.1 make dev
 ```
 
 If you want to force a specific `air` binary:
 
 ```bash
-ORCHD_AIR_BIN=/path/to/air make dev
+HOPTER_AIR_BIN=/path/to/air make dev
 ```
 
 ## What is watched automatically
@@ -118,13 +118,13 @@ The config lives in [`.air.toml`](/Users/sorcererxw/repo/sorcererxw/codeshell/.a
 The local loop writes state to:
 
 ```text
-~/.orchd/devlogs/<repo-slug>/state.json
+~/.hopter/devlogs/<repo-slug>/state.json
 ```
 
 For this repo the usual path is:
 
 ```text
-~/.orchd/devlogs/codeshell/state.json
+~/.hopter/devlogs/codeshell/state.json
 ```
 
 State values:
@@ -140,7 +140,7 @@ AI agents should treat this file as the authority for "should I wait, or is the 
 Typical usage:
 
 ```bash
-cat ~/.orchd/devlogs/codeshell/state.json
+cat ~/.hopter/devlogs/codeshell/state.json
 ```
 
 ## File-based log plane
@@ -148,7 +148,7 @@ cat ~/.orchd/devlogs/codeshell/state.json
 The local loop writes append-only JSONL logs to:
 
 ```text
-~/.orchd/devlogs/<repo-slug>/
+~/.hopter/devlogs/<repo-slug>/
 ```
 
 Files:
@@ -170,9 +170,9 @@ Do not wrap this in another local API for AI. Read the files directly.
 Examples:
 
 ```bash
-tail -f ~/.orchd/devlogs/codeshell/timeline.jsonl
-rg '"status":"build_failed"|Port 5173|address already in use' ~/.orchd/devlogs/codeshell/
-jq -c 'select(.source=="supervisor")' ~/.orchd/devlogs/codeshell/timeline.jsonl | tail -n 20
+tail -f ~/.hopter/devlogs/codeshell/timeline.jsonl
+rg '"status":"build_failed"|Port 5173|address already in use' ~/.hopter/devlogs/codeshell/
+jq -c 'select(.source=="supervisor")' ~/.hopter/devlogs/codeshell/timeline.jsonl | tail -n 20
 ```
 
 ## Console logs vs file logs
@@ -254,8 +254,8 @@ lsof -iTCP:8787 -sTCP:LISTEN -n -P
 Read:
 
 ```bash
-cat ~/.orchd/devlogs/codeshell/state.json
-tail -n 50 ~/.orchd/devlogs/codeshell/timeline.jsonl
+cat ~/.hopter/devlogs/codeshell/state.json
+tail -n 50 ~/.hopter/devlogs/codeshell/timeline.jsonl
 ```
 
 If the state is `rebuilding`, wait.
@@ -266,8 +266,8 @@ If the state is `build_failed`, inspect `go.jsonl`.
 Read:
 
 ```bash
-cat ~/.orchd/devlogs/codeshell/state.json
-tail -n 100 ~/.orchd/devlogs/codeshell/browser.jsonl
+cat ~/.hopter/devlogs/codeshell/state.json
+tail -n 100 ~/.hopter/devlogs/codeshell/browser.jsonl
 cat storage/artifacts/validation/latest-verify-live.txt
 ```
 
@@ -281,7 +281,7 @@ There are now two lanes:
 
 - `make dev`
 - `make verify-live`
-- file-based logs in `~/.orchd/devlogs/`
+- file-based logs in `~/.hopter/devlogs/`
 
 ### Evidence / proof lane
 

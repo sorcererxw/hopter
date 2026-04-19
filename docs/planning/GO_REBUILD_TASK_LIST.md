@@ -54,13 +54,13 @@ Acceptance:
 Create:
 
 - `go.mod`
-- `cmd/orchd/main.go`
+- `cmd/hopter/main.go`
 - `internal/app/*`
 - `internal/http/*`
 
 Acceptance:
 
-- `go run ./cmd/orchd` starts
+- `go run ./cmd/hopter` starts
 - `/healthz` and `/version` respond
 
 ### T102 Frontend skeleton
@@ -290,7 +290,7 @@ Acceptance:
 ### Backend lane ownership
 
 - `go.mod`
-- `cmd/orchd/**`
+- `cmd/hopter/**`
 - `internal/**`
 - `idl/**`
 - build/run integration

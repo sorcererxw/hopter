@@ -4,7 +4,7 @@
 
 Proposed implementation plan.
 
-This document defines how `orchd` should add terminal capability without breaking the product's core shape:
+This document defines how `hopter` should add terminal capability without breaking the product's core shape:
 
 - session-first
 - Codex-first
@@ -53,7 +53,7 @@ The gap is "no honest fallback when artifact-first surfaces are not enough."
 
 This plan does not do the following:
 
-- turn `orchd` into a browser IDE
+- turn `hopter` into a browser IDE
 - make terminal the main page
 - expose arbitrary remote hosts as first-class targets
 - introduce SSH key management as a core product concept
@@ -103,16 +103,16 @@ SSH sounds tempting because it is a mature terminal protocol. In this product it
 - an SSH server lifecycle
 - host key management
 - user key or password management
-- another auth and trust story separate from `orchd`
+- another auth and trust story separate from `hopter`
 - PTY allocation behind SSH anyway
 - browser-side SSH bridging because browsers do not speak SSH natively
-- a second mental model: "am I in orchd or in the host's SSH service?"
+- a second mental model: "am I in hopter or in the host's SSH service?"
 
 That is a lot of machinery to rediscover the same local machine we already own.
 
 ### Product mismatch
 
-`orchd` is not a remote shell product.
+`hopter` is not a remote shell product.
 It is a remote control plane for an existing local coding environment.
 
 SSH makes the terminal look like the product.
@@ -136,7 +136,7 @@ SSH does not reduce the core architecture. It adds a parallel one.
 |---|---|---|---|---|
 | A. Local PTY + Connect + SSE + WebSocket | Go server spawns PTY locally and streams it to browser | matches product wedge, no extra host auth layer, keeps browser talking only to Go, easiest UX alignment | requires a small custom stream protocol | **Recommended** |
 | B. SSH passthrough to localhost | Browser or gateway connects to an SSH daemon on the same machine | mature protocol, reuse SSH semantics | wrong product center, extra auth/key lifecycle, browser does not speak SSH natively, duplicated trust boundary | Reject |
-| C. Embedded SSH server inside `orchd` | `orchd` becomes an SSH server | single binary story | makes `orchd` partly an SSH product, heavy implementation and security burden | Reject |
+| C. Embedded SSH server inside `hopter` | `hopter` becomes an SSH server | single binary story | makes `hopter` partly an SSH product, heavy implementation and security burden | Reject |
 | D. Connect streaming only | stream terminal data over RPC | keeps one transport family | Connect is wrong for long-lived bidirectional terminal byte flow | Reject |
 | E. SSE only | use server push only | simple server stream | no bidirectional input, no resize, cannot support interactive shell | Reject |
 
@@ -163,7 +163,7 @@ This keeps the mental model honest:
 
 `TerminalSession` belongs to the gateway, not to Codex.
 
-That means `orchd` may store lightweight terminal metadata because this is gateway-owned state, unlike Codex transcript truth.
+That means `hopter` may store lightweight terminal metadata because this is gateway-owned state, unlike Codex transcript truth.
 
 Allowed persistent fields:
 
@@ -352,7 +352,7 @@ This is the one justified exception to "Connect + SSE first" because terminal is
 
 Reserve explicit terminal routes early:
 
-- `POST /rpc/orchd.v1.TerminalService/*`
+- `POST /rpc/hopter.v1.TerminalService/*`
 - `GET /terminals/:terminalId/stream`
 
 That keeps the route tree honest and avoids terminal transport leaking into generic app paths later.
@@ -400,7 +400,7 @@ Add a new `terminal.proto` for terminal control-plane metadata only.
 ### Proposed package
 
 ```text
-/idl/orchd/v1/terminal.proto
+/idl/hopter/v1/terminal.proto
 ```
 
 ### Proposed service
@@ -575,7 +575,7 @@ Treat it accordingly.
 
 ### v1 security rules
 
-1. only available on the same auth path as the rest of `orchd`
+1. only available on the same auth path as the rest of `hopter`
 2. enforce same-origin and authenticated browser session checks
 3. restrict cwd to:
    - the session's project root only in v1
@@ -597,7 +597,7 @@ It will require stronger auth review.
 
 Resolve in this order:
 
-1. explicit configured shell for `orchd`
+1. explicit configured shell for `hopter`
 2. project/user environment shell
 3. `/bin/zsh`
 4. `/bin/bash`
@@ -646,7 +646,7 @@ The embedded terminal is **not** the blessed way to continue the same Codex conv
 
 Why:
 
-- `orchd` already owns the session control surface
+- `hopter` already owns the session control surface
 - interactive `codex` inside terminal creates parallel state mutation
 - the browser cannot know whether that shell activity changed the live Codex thread model
 
@@ -670,7 +670,7 @@ If users do it manually, treat that as unsupported power-user behavior, not firs
 
 Deliverables:
 
-- `idl/orchd/v1/terminal.proto`
+- `idl/hopter/v1/terminal.proto`
 - generated Go and TS artifacts
 - `TerminalService` Connect handlers
 - terminal metadata store
@@ -801,7 +801,7 @@ storage/artifacts/validation/latest-go-terminal.txt
 ## Why this is the right scope
 
 This plan gives users a real terminal when they need it.
-It does not change what `orchd` fundamentally is.
+It does not change what `hopter` fundamentally is.
 
 The user still lands in:
 
@@ -820,5 +820,5 @@ Build terminal support as a **project-scoped, optionally session-linked local PT
 
 Do not use SSH as the primary v1 protocol.
 
-SSH is mature technology, but it solves the wrong center-of-gravity problem for `orchd`.
+SSH is mature technology, but it solves the wrong center-of-gravity problem for `hopter`.
 The product needs a thin, honest, same-machine terminal escape hatch, not a second remote access stack.

@@ -8,7 +8,7 @@ This document supersedes the Bun-first implementation direction in the older v1 
 
 ## Goal
 
-Rebuild `orchd` as:
+Rebuild `hopter` as:
 
 - a Go-native local control-plane service
 - a React + Vite browser UI served through the Go server
@@ -116,7 +116,7 @@ Exit criteria:
 Deliverables:
 
 - Go module root
-- `/cmd/orchd` bootstrap
+- `/cmd/hopter` bootstrap
 - `/internal` service skeleton
 - `/ui` Vite app shell
 - `/idl` Buf configuration
@@ -132,7 +132,7 @@ Exit criteria:
 
 Deliverables:
 
-- first protobuf packages under `/idl/orchd/v1`
+- first protobuf packages under `/idl/hopter/v1`
 - Connect handlers mounted on `http.ServeMux`
 - SSE event hub and global event stream
 - auth bypass middleware for local dev
@@ -257,7 +257,7 @@ All other app routes should resolve to the SPA shell.
 
 ### New active areas
 
-- `cmd/orchd`
+- `cmd/hopter`
 - `internal/...`
 - `ui/...`
 - `idl/...`

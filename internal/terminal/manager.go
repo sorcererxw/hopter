@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type Manager struct {
@@ -39,8 +39,8 @@ type CreateInput struct {
 }
 
 func NewManager(workspace core.WorkspaceService) *Manager {
-	cleanupDelay := durationFromEnv("ORCHD_TERMINAL_DETACH_TTL_MS", 5*time.Minute)
-	promptPollInterval := durationFromEnv("ORCHD_TERMINAL_PROMPT_POLL_MS", time.Second)
+	cleanupDelay := durationFromEnv(5*time.Minute, "HOPTER_TERMINAL_DETACH_TTL_MS")
+	promptPollInterval := durationFromEnv(time.Second, "HOPTER_TERMINAL_PROMPT_POLL_MS")
 	return &Manager{
 		workspace:          workspace,
 		store:              NewInMemoryStore(),
@@ -500,8 +500,14 @@ func looksLikePrompt(chunk []byte) bool {
 		strings.Contains(text, "% ")
 }
 
-func durationFromEnv(name string, fallback time.Duration) time.Duration {
-	raw := strings.TrimSpace(os.Getenv(name))
+func durationFromEnv(fallback time.Duration, names ...string) time.Duration {
+	raw := ""
+	for _, name := range names {
+		raw = strings.TrimSpace(os.Getenv(name))
+		if raw != "" {
+			break
+		}
+	}
 	if raw == "" {
 		return fallback
 	}

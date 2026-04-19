@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 func TestUpdateCleanupTimerLockedStartsOnlyForDetachedPromptState(t *testing.T) {

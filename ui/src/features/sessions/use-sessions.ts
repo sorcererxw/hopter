@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { ApprovalDecision } from "@/gen/proto/orchd/v1/common_pb"
-import type { SessionTranscriptPage } from "@/gen/proto/orchd/v1/session_pb"
+import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
+import type { SessionTranscriptPage } from "@/gen/proto/hopter/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 

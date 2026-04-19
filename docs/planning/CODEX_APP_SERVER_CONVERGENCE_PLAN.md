@@ -6,7 +6,7 @@ Proposed implementation plan.
 
 ## Decision
 
-`orchd` should converge its `server <-> codex` runtime to an **app-server-first** architecture.
+`hopter` should converge its `server <-> codex` runtime to an **app-server-first** architecture.
 
 That means:
 
@@ -16,13 +16,13 @@ That means:
   - one-shot automation where a session runtime is not needed
   - emergency fallback while migration is incomplete
 
-This is the best-practice-aligned end state for `orchd` because the product is a session-centric remote control plane, not a one-shot CLI wrapper.
+This is the best-practice-aligned end state for `hopter` because the product is a session-centric remote control plane, not a one-shot CLI wrapper.
 
 ## Best-practice basis
 
 OpenAI's public Codex guidance now positions **App Server** as the primary integration method for client and UI integrations, with `exec` positioned for one-shot automation and CI. The closest public statement is the OpenAI article "Unlocking the Codex Harness", which describes App Server as a client-friendly bidirectional JSON-RPC API with a stable UI-friendly event stream and states that customers are recommended to integrate through App Server by default.
 
-Practical interpretation for `orchd`:
+Practical interpretation for `hopter`:
 
 - use `app-server` for long-lived session runtime
 - use notifications for low-latency live UI updates
@@ -122,7 +122,7 @@ Out of scope for this document:
 ## Constraints
 
 - Codex remains the source of truth for session content, history, approvals, and artifact semantics.
-- `orchd` must not build a heavy persistent mirror of Codex history.
+- `hopter` must not build a heavy persistent mirror of Codex history.
 - Browser never talks to Codex directly.
 - Go server remains the only Codex client.
 - Validation evidence is required for completion.
@@ -277,9 +277,9 @@ Acceptance criteria:
 
 Primary files:
 
-- `idl/orchd/v1/common.proto`
-- `idl/orchd/v1/session.proto`
-- `idl/orchd/v1/host.proto`
+- `idl/hopter/v1/common.proto`
+- `idl/hopter/v1/session.proto`
+- `idl/hopter/v1/host.proto`
 - `internal/rpc/session_service.go`
 - `internal/rpc/host_service.go`
 - `internal/rpc/helpers.go`
@@ -469,6 +469,6 @@ The migration is complete only when all of the following are true:
 
 ## Non-negotiable success condition
 
-`orchd` should be able to truthfully say:
+`hopter` should be able to truthfully say:
 
 > The Go server uses `codex app-server` as the single long-running Codex session protocol. Live updates come from app-server notifications, and final session truth is reconciled from `thread/read`. `codex exec --experimental-json` is no longer the main runtime path for remote control-plane sessions.

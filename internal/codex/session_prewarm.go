@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const (

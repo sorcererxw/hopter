@@ -2,7 +2,7 @@
 
 ## Active stack
 
-`orchd` is now actively developed as:
+`hopter` is now actively developed as:
 
 - Go backend
 - Connect control-plane API
@@ -54,12 +54,12 @@ make validate-all
 
 ```bash
 go test ./...
-go run ./cmd/orchd
+go run ./cmd/hopter
 pnpm --dir ui typecheck
 pnpm --dir ui build
 pnpm --dir ui lint
 pnpm --dir ui dev
-ORCHD_UI_DEV_PROXY_URL=http://127.0.0.1:5173 go run ./cmd/orchd
+HOPTER_UI_DEV_PROXY_URL=http://127.0.0.1:5173 go run ./cmd/hopter
 cd idl && buf lint
 cd idl && buf generate
 bun scripts/validate-docs.ts
@@ -73,7 +73,7 @@ bun scripts/validate-live.ts
 
 ## Distribution build contract
 
-`orchd` uses build-time install-source metadata to decide update ownership.
+`hopter` uses build-time install-source metadata to decide update ownership.
 
 Required ldflags:
 
@@ -83,8 +83,8 @@ Required ldflags:
 Examples:
 
 ```bash
-go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/orchd
-go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/orchd
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/hopter
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/hopter
 ```
 
 Current intended values:
@@ -103,7 +103,7 @@ Current intended values:
 Rules:
 
 1. Treat build-time `installSource` as the primary product signal.
-2. Use `ORCHD_INSTALL_SOURCE` only for debugging, validation, and local overrides.
+2. Use `HOPTER_INSTALL_SOURCE` only for debugging, validation, and local overrides.
 3. Do not rely on runtime path guessing for the normal ownership decision.
 
 In dev, the browser should still enter through the Go origin.
@@ -112,8 +112,8 @@ In dev, the browser should still enter through the Go origin.
 
 - starts Vite
 - starts Go hot reload through `air`
-- writes machine-readable dev state to `~/.orchd/devlogs/<repo-slug>/state.json`
-- writes persistent append-only logs to `~/.orchd/devlogs/<repo-slug>/`
+- writes machine-readable dev state to `~/.hopter/devlogs/<repo-slug>/state.json`
+- writes persistent append-only logs to `~/.hopter/devlogs/<repo-slug>/`
 - keeps the browser entering through the Go origin in dev
 
 The dev state is the authority for AI agents:
@@ -129,7 +129,7 @@ Use `make verify-live` after edits. It attaches to the current dev loop, waits f
 Persistent log files:
 
 ```text
-~/.orchd/devlogs/<repo-slug>/
+~/.hopter/devlogs/<repo-slug>/
   supervisor.jsonl
   go.jsonl
   vite.jsonl
@@ -149,9 +149,9 @@ Examples:
 make dev
 ```
 
-The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the default local loop. Set `ORCHD_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
+The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the default local loop. Set `HOPTER_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
 
-If you need a different bind host for debugging, you can still override `ORCHD_UI_DEV_HOST` and/or `ORCHD_HOST`.
+If you need a different bind host for debugging, you can still override `HOPTER_UI_DEV_HOST` and/or `HOPTER_HOST`.
 
 ## UI system workflow
 

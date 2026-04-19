@@ -9,20 +9,20 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"orchd/internal/core"
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
+	"github.com/sorcererxw/hopter/internal/core"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type Hub struct {
 	mu          sync.RWMutex
 	nextSubID   uint64
 	nextEventID uint64
-	subscribers map[uint64]chan *orchdv1.WorkspaceEvent
+	subscribers map[uint64]chan *hopterv1.WorkspaceEvent
 }
 
 func NewHub() *Hub {
 	return &Hub{
-		subscribers: make(map[uint64]chan *orchdv1.WorkspaceEvent),
+		subscribers: make(map[uint64]chan *hopterv1.WorkspaceEvent),
 	}
 }
 
@@ -42,9 +42,9 @@ func (h *Hub) Publish(event core.Event) {
 	}
 }
 
-func (h *Hub) Subscribe(ctx context.Context) <-chan *orchdv1.WorkspaceEvent {
+func (h *Hub) Subscribe(ctx context.Context) <-chan *hopterv1.WorkspaceEvent {
 	id := atomic.AddUint64(&h.nextSubID, 1)
-	ch := make(chan *orchdv1.WorkspaceEvent, 16)
+	ch := make(chan *hopterv1.WorkspaceEvent, 16)
 
 	h.mu.Lock()
 	h.subscribers[id] = ch
@@ -61,40 +61,40 @@ func (h *Hub) Subscribe(ctx context.Context) <-chan *orchdv1.WorkspaceEvent {
 	return ch
 }
 
-func (h *Hub) toProto(event core.Event) *orchdv1.WorkspaceEvent {
+func (h *Hub) toProto(event core.Event) *hopterv1.WorkspaceEvent {
 	var (
-		eventType   orchdv1.WorkspaceEventType
-		refreshHint orchdv1.RefreshHint
+		eventType   hopterv1.WorkspaceEventType
+		refreshHint hopterv1.RefreshHint
 	)
 
 	switch event.Kind {
 	case core.EventHostChanged:
-		eventType = orchdv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED
-		refreshHint = orchdv1.RefreshHint_REFRESH_HINT_REFETCH_HOST
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_HOST
 	case core.EventProjectsChanged:
-		eventType = orchdv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED
-		refreshHint = orchdv1.RefreshHint_REFRESH_HINT_REFETCH_PROJECTS
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_PROJECTS
 	case core.EventSessionsChanged:
-		eventType = orchdv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED
-		refreshHint = orchdv1.RefreshHint_REFRESH_HINT_REFETCH_SESSIONS
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_SESSIONS
 	case core.EventSessionChanged:
-		eventType = orchdv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_CHANGED
-		refreshHint = orchdv1.RefreshHint_REFRESH_HINT_REFETCH_SESSION
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_SESSION
 	case core.EventSessionArtifactsChanged:
-		eventType = orchdv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED
-		refreshHint = orchdv1.RefreshHint_REFRESH_HINT_REFETCH_ARTIFACTS
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_ARTIFACTS
 	default:
 		return nil
 	}
 
 	id := atomic.AddUint64(&h.nextEventID, 1)
-	evt := &orchdv1.WorkspaceEvent{
+	evt := &hopterv1.WorkspaceEvent{
 		Id:         fmt.Sprintf("evt_%06d", id),
 		Type:       eventType,
 		OccurredAt: timestamppb.New(time.Now().UTC()),
-		Payload: &orchdv1.WorkspaceEventPayload{
-			RefreshHint:     refreshHint,
-			Summary:         event.Summary,
+		Payload: &hopterv1.WorkspaceEventPayload{
+			RefreshHint:      refreshHint,
+			Summary:          event.Summary,
 			SessionLivePatch: sessionLivePatchToProto(event.LivePatch),
 		},
 	}
@@ -107,12 +107,12 @@ func (h *Hub) toProto(event core.Event) *orchdv1.WorkspaceEvent {
 	return evt
 }
 
-func sessionLivePatchToProto(patch *core.SessionLivePatch) *orchdv1.SessionLivePatch {
+func sessionLivePatchToProto(patch *core.SessionLivePatch) *hopterv1.SessionLivePatch {
 	if patch == nil {
 		return nil
 	}
 
-	out := &orchdv1.SessionLivePatch{
+	out := &hopterv1.SessionLivePatch{
 		Kind:            mapSessionLivePatchKind(patch.Kind),
 		ActiveTurnId:    patch.ActiveTurnID,
 		DraftItemId:     patch.DraftItemID,
@@ -122,7 +122,7 @@ func sessionLivePatchToProto(patch *core.SessionLivePatch) *orchdv1.SessionLiveP
 		RequiresRefetch: patch.RequiresRefetch,
 	}
 	if patch.FinalItem != nil {
-		out.FinalItem = &orchdv1.SessionTranscriptItem{
+		out.FinalItem = &hopterv1.SessionTranscriptItem{
 			Id:     patch.FinalItem.ID,
 			Kind:   mapTranscriptItemKind(patch.FinalItem.Kind),
 			Title:  patch.FinalItem.Title,
@@ -133,57 +133,57 @@ func sessionLivePatchToProto(patch *core.SessionLivePatch) *orchdv1.SessionLiveP
 	return out
 }
 
-func mapSessionLivePatchKind(kind core.SessionLivePatchKind) orchdv1.SessionLivePatchKind {
+func mapSessionLivePatchKind(kind core.SessionLivePatchKind) hopterv1.SessionLivePatchKind {
 	switch kind {
 	case core.SessionLivePatchKindStatus:
-		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_STATUS
+		return hopterv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_STATUS
 	case core.SessionLivePatchKindDraftDelta:
-		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_DRAFT_DELTA
+		return hopterv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_DRAFT_DELTA
 	case core.SessionLivePatchKindMessageFinalized:
-		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED
+		return hopterv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_MESSAGE_FINALIZED
 	case core.SessionLivePatchKindReconcileRequired:
-		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED
+		return hopterv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_RECONCILE_REQUIRED
 	default:
-		return orchdv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_UNSPECIFIED
+		return hopterv1.SessionLivePatchKind_SESSION_LIVE_PATCH_KIND_UNSPECIFIED
 	}
 }
 
-func mapSessionState(state core.SessionState) orchdv1.SessionStatus {
+func mapSessionState(state core.SessionState) hopterv1.SessionStatus {
 	switch state {
 	case core.SessionStatePending:
-		return orchdv1.SessionStatus_SESSION_STATUS_PENDING
+		return hopterv1.SessionStatus_SESSION_STATUS_PENDING
 	case core.SessionStateRunning:
-		return orchdv1.SessionStatus_SESSION_STATUS_RUNNING
+		return hopterv1.SessionStatus_SESSION_STATUS_RUNNING
 	case core.SessionStateWaitingInput:
-		return orchdv1.SessionStatus_SESSION_STATUS_WAITING_INPUT
+		return hopterv1.SessionStatus_SESSION_STATUS_WAITING_INPUT
 	case core.SessionStateWaitingApproval:
-		return orchdv1.SessionStatus_SESSION_STATUS_WAITING_APPROVAL
+		return hopterv1.SessionStatus_SESSION_STATUS_WAITING_APPROVAL
 	case core.SessionStateCompleted:
-		return orchdv1.SessionStatus_SESSION_STATUS_COMPLETED
+		return hopterv1.SessionStatus_SESSION_STATUS_COMPLETED
 	case core.SessionStateFailed:
-		return orchdv1.SessionStatus_SESSION_STATUS_FAILED
+		return hopterv1.SessionStatus_SESSION_STATUS_FAILED
 	case core.SessionStateDegraded:
-		return orchdv1.SessionStatus_SESSION_STATUS_DEGRADED
+		return hopterv1.SessionStatus_SESSION_STATUS_DEGRADED
 	default:
-		return orchdv1.SessionStatus_SESSION_STATUS_UNSPECIFIED
+		return hopterv1.SessionStatus_SESSION_STATUS_UNSPECIFIED
 	}
 }
 
-func mapTranscriptItemKind(kind core.SessionTranscriptItemKind) orchdv1.SessionTranscriptItemKind {
+func mapTranscriptItemKind(kind core.SessionTranscriptItemKind) hopterv1.SessionTranscriptItemKind {
 	switch kind {
 	case core.SessionTranscriptItemKindUserMessage:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE
 	case core.SessionTranscriptItemKindAgentMessage:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE
 	case core.SessionTranscriptItemKindReasoning:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_REASONING
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_REASONING
 	case core.SessionTranscriptItemKindToolCall:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_TOOL_CALL
 	case core.SessionTranscriptItemKindCommandExecution:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION
 	case core.SessionTranscriptItemKindFileChange:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE
 	default:
-		return orchdv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED
+		return hopterv1.SessionTranscriptItemKind_SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED
 	}
 }

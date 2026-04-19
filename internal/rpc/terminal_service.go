@@ -6,9 +6,9 @@ import (
 
 	"connectrpc.com/connect"
 
-	orchdv1 "orchd/internal/gen/proto/orchd/v1"
-	"orchd/internal/gen/proto/orchd/v1/orchdv1connect"
-	"orchd/internal/terminal"
+	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
+	"github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1/hopterv1connect"
+	"github.com/sorcererxw/hopter/internal/terminal"
 )
 
 type TerminalService struct {
@@ -22,7 +22,7 @@ type terminalManager interface {
 	TerminateBrowserTab(browserInstanceID, tabID string) int
 }
 
-var _ orchdv1connect.TerminalServiceHandler = (*TerminalService)(nil)
+var _ hopterv1connect.TerminalServiceHandler = (*TerminalService)(nil)
 
 func NewTerminalService(terminals terminalManager) *TerminalService {
 	return &TerminalService{terminals: terminals}
@@ -30,8 +30,8 @@ func NewTerminalService(terminals terminalManager) *TerminalService {
 
 func (s *TerminalService) CreateTerminalSession(
 	ctx context.Context,
-	req *connect.Request[orchdv1.CreateTerminalSessionRequest],
-) (*connect.Response[orchdv1.CreateTerminalSessionResponse], error) {
+	req *connect.Request[hopterv1.CreateTerminalSessionRequest],
+) (*connect.Response[hopterv1.CreateTerminalSessionResponse], error) {
 	session, err := s.terminals.CreateTerminalSession(ctx, terminal.CreateInput{
 		SessionID:         req.Msg.GetSessionId(),
 		BrowserInstanceID: req.Msg.GetBrowserInstanceId(),
@@ -42,15 +42,15 @@ func (s *TerminalService) CreateTerminalSession(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	return connect.NewResponse(&orchdv1.CreateTerminalSessionResponse{
+	return connect.NewResponse(&hopterv1.CreateTerminalSessionResponse{
 		Terminal: terminalSessionToProto(session),
 	}), nil
 }
 
 func (s *TerminalService) GetTerminalSession(
 	_ context.Context,
-	req *connect.Request[orchdv1.GetTerminalSessionRequest],
-) (*connect.Response[orchdv1.GetTerminalSessionResponse], error) {
+	req *connect.Request[hopterv1.GetTerminalSessionRequest],
+) (*connect.Response[hopterv1.GetTerminalSessionResponse], error) {
 	session, err := s.terminals.GetTerminalSession(
 		req.Msg.GetSessionId(),
 		req.Msg.GetBrowserInstanceId(),
@@ -59,41 +59,41 @@ func (s *TerminalService) GetTerminalSession(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
-	return connect.NewResponse(&orchdv1.GetTerminalSessionResponse{
+	return connect.NewResponse(&hopterv1.GetTerminalSessionResponse{
 		Terminal: terminalSessionToProto(session),
 	}), nil
 }
 
 func (s *TerminalService) TerminateTerminalSession(
 	_ context.Context,
-	req *connect.Request[orchdv1.TerminateTerminalSessionRequest],
-) (*connect.Response[orchdv1.TerminateTerminalSessionResponse], error) {
+	req *connect.Request[hopterv1.TerminateTerminalSessionRequest],
+) (*connect.Response[hopterv1.TerminateTerminalSessionResponse], error) {
 	session, err := s.terminals.TerminateTerminalSession(req.Msg.GetTerminalId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	}
-	return connect.NewResponse(&orchdv1.TerminateTerminalSessionResponse{
+	return connect.NewResponse(&hopterv1.TerminateTerminalSessionResponse{
 		Terminal: terminalSessionToProto(session),
 	}), nil
 }
 
 func (s *TerminalService) TerminateTerminalTab(
 	_ context.Context,
-	req *connect.Request[orchdv1.TerminateTerminalTabRequest],
-) (*connect.Response[orchdv1.TerminateTerminalTabResponse], error) {
+	req *connect.Request[hopterv1.TerminateTerminalTabRequest],
+) (*connect.Response[hopterv1.TerminateTerminalTabResponse], error) {
 	browserInstanceID := req.Msg.GetBrowserInstanceId()
 	tabID := req.Msg.GetTabId()
 	if browserInstanceID == "" || tabID == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("browser instance id and tab id are required"))
 	}
 	terminatedCount := s.terminals.TerminateBrowserTab(browserInstanceID, tabID)
-	return connect.NewResponse(&orchdv1.TerminateTerminalTabResponse{
+	return connect.NewResponse(&hopterv1.TerminateTerminalTabResponse{
 		TerminatedCount: uint32(terminatedCount),
 	}), nil
 }
 
-func terminalSessionToProto(session terminal.Session) *orchdv1.TerminalSession {
-	msg := &orchdv1.TerminalSession{
+func terminalSessionToProto(session terminal.Session) *hopterv1.TerminalSession {
+	msg := &hopterv1.TerminalSession{
 		Id:                           session.ID,
 		ProjectId:                    session.ProjectID,
 		SessionId:                    session.SessionID,
@@ -116,22 +116,22 @@ func terminalSessionToProto(session terminal.Session) *orchdv1.TerminalSession {
 	return msg
 }
 
-func mapTerminalStatus(status terminal.Status) orchdv1.TerminalStatus {
+func mapTerminalStatus(status terminal.Status) hopterv1.TerminalStatus {
 	switch status {
 	case terminal.StatusStarting:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_STARTING
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_STARTING
 	case terminal.StatusLive:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_LIVE
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_LIVE
 	case terminal.StatusExited:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_EXITED
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_EXITED
 	case terminal.StatusTerminated:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_TERMINATED
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_TERMINATED
 	case terminal.StatusDegraded:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_DEGRADED
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_DEGRADED
 	case terminal.StatusFailed:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_FAILED
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_FAILED
 	default:
-		return orchdv1.TerminalStatus_TERMINAL_STATUS_UNSPECIFIED
+		return hopterv1.TerminalStatus_TERMINAL_STATUS_UNSPECIFIED
 	}
 }
 

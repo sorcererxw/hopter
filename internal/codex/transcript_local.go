@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 func userTranscriptItem(input string) core.SessionTranscriptItem {

@@ -234,7 +234,7 @@ Use it as quick access above or below the columns.
 ## Component plan
 
 ### New UI component
-- `src/web/app/components/orchd/add-repo-dialog.tsx`
+- `src/web/app/components/hopter/add-repo-dialog.tsx`
 
 Sub-pieces inside it:
 - `FinderColumnBrowser`

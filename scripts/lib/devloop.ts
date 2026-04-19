@@ -32,7 +32,7 @@ export function getRepoSlug(repoRoot = getRepoRoot()) {
 }
 
 export function getLogsDir(repoRoot = getRepoRoot()) {
-  return path.join(homedir(), ".orchd", "devlogs", getRepoSlug(repoRoot))
+  return path.join(homedir(), ".hopter", "devlogs", getRepoSlug(repoRoot))
 }
 
 export function getStatePath(repoRoot = getRepoRoot()) {

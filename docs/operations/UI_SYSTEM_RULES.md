@@ -1,6 +1,6 @@
 # UI System Rules
 
-`orchd` uses a shadcn-style UI system on top of the `ui/` React + Vite app.
+`hopter` uses a shadcn-style UI system on top of the `ui/` React + Vite app.
 
 The goal is one primitive layer, one token system, and one workspace-first product hierarchy.
 

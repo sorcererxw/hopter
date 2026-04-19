@@ -1,4 +1,4 @@
-# orchd
+# hopter
 
 Go-native remote control plane for local coding agents, with a React + Vite UI served by the same Go process.
 
@@ -69,7 +69,7 @@ make validate-all
 
 ```bash
 go test ./...
-go run ./cmd/orchd
+go run ./cmd/hopter
 pnpm --dir ui dev
 pnpm --dir ui typecheck
 pnpm --dir ui build
@@ -89,7 +89,7 @@ bun scripts/validate-interrupt-ui.ts
 
 ## Build metadata and install source
 
-`orchd` now expects two important build-time ldflags:
+`hopter` now expects two important build-time ldflags:
 
 - `main.version`
 - `main.installSource`
@@ -103,16 +103,16 @@ The install source controls update ownership:
 Minimal direct build example:
 
 ```bash
-go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/orchd
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/hopter
 ```
 
 Homebrew formula build example:
 
 ```bash
-go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/orchd
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/hopter
 ```
 
-`ORCHD_INSTALL_SOURCE` still exists as a runtime override for validation and debugging, but the normal product path should treat the build-time install source as the primary signal.
+`HOPTER_INSTALL_SOURCE` still exists as a runtime override for validation and debugging, but the normal product path should treat the build-time install source as the primary signal.
 
 `make dev` is the preferred local loop. It now runs an AI-first supervisor that starts:
 
@@ -122,7 +122,7 @@ go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula"
 The supervisor keeps a persistent machine-readable dev state under:
 
 ```text
-~/.orchd/devlogs/<repo-slug>/state.json
+~/.hopter/devlogs/<repo-slug>/state.json
 ```
 
 State values:
@@ -136,7 +136,7 @@ State values:
 It also keeps append-only JSONL logs under:
 
 ```text
-~/.orchd/devlogs/<repo-slug>/
+~/.hopter/devlogs/<repo-slug>/
   supervisor.jsonl
   go.jsonl
   vite.jsonl
@@ -165,9 +165,9 @@ make verify-live
 storage/artifacts/validation/verify_live_<timestamp>/
 ```
 
-By default, `make dev` keeps the Go server aligned with the UI dev bind host, so both Vite and Go listen on `0.0.0.0`. Set `ORCHD_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
+By default, `make dev` keeps the Go server aligned with the UI dev bind host, so both Vite and Go listen on `0.0.0.0`. Set `HOPTER_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
 
-If you need a different bind host for debugging, you can still override `ORCHD_UI_DEV_HOST` and/or `ORCHD_HOST`.
+If you need a different bind host for debugging, you can still override `HOPTER_UI_DEV_HOST` and/or `HOPTER_HOST`.
 
 ## Current proof point
 

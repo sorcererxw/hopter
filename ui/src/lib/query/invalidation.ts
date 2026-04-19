@@ -3,8 +3,8 @@ import type { QueryClient } from "@tanstack/react-query"
 import {
   SessionLivePatchKind,
   WorkspaceEventType,
-} from "@/gen/proto/orchd/v1/events_pb"
-import { SessionStatus } from "@/gen/proto/orchd/v1/common_pb"
+} from "@/gen/proto/hopter/v1/events_pb"
+import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import { queryKeys } from "@/lib/query/keys"
 
 export type WorkspaceEventEnvelope = {

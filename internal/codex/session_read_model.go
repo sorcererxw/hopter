@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const (

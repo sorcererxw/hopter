@@ -11,9 +11,9 @@ import {
 import { createValidationRun } from "./lib/validation.ts";
 
 const baseUrl =
-  process.env.ORCHD_LIVE_BASE_URL?.trim() || "http://127.0.0.1:8787";
+  process.env.HOPTER_LIVE_BASE_URL?.trim() || "http://127.0.0.1:8787";
 const healthUrl =
-  process.env.ORCHD_GO_HEALTH_URL?.trim() || `${baseUrl}/healthz`;
+  process.env.HOPTER_GO_HEALTH_URL?.trim() || `${baseUrl}/healthz`;
 
 const sessionId = "sess_interrupt_mock";
 const projectId = "proj_interrupt_mock";
@@ -112,35 +112,35 @@ async function fulfillJSON(route: Route, body: unknown) {
 
 async function wireMockRPC(page: Page, interruptCalls: Array<Record<string, unknown>>) {
   await page.route(
-    "**/rpc/orchd.v1.ProjectService/ListProjects",
+    "**/rpc/hopter.v1.ProjectService/ListProjects",
     async (route) => {
       await fulfillJSON(route, buildListProjectsResponse());
     },
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/ListSessions",
+    "**/rpc/hopter.v1.SessionService/ListSessions",
     async (route) => {
       await fulfillJSON(route, buildListSessionsResponse());
     },
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/GetSessionMeta",
+    "**/rpc/hopter.v1.SessionService/GetSessionMeta",
     async (route) => {
       await fulfillJSON(route, buildSessionMetaResponse());
     },
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/ListSessionTranscript",
+    "**/rpc/hopter.v1.SessionService/ListSessionTranscript",
     async (route) => {
       await fulfillJSON(route, buildTranscriptResponse());
     },
   );
 
   await page.route(
-    "**/rpc/orchd.v1.SessionService/InterruptSession",
+    "**/rpc/hopter.v1.SessionService/InterruptSession",
     async (route) => {
       interruptCalls.push(route.request().postDataJSON() as Record<string, unknown>);
       await fulfillJSON(route, {

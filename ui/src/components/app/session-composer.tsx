@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button"
 import { useHostSkills } from "@/features/host/use-host-skills"
-import type { SkillSummary } from "@/gen/proto/orchd/v1/host_pb"
+import type { SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
 const MAX_SKILL_SUGGESTIONS = 8

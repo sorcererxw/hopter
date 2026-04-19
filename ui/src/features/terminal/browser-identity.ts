@@ -1,5 +1,5 @@
-const browserInstanceStorageKey = "orchd.browserInstanceId"
-const tabStorageKey = "orchd.tabId"
+const browserInstanceStorageKey = "hopter.browserInstanceId"
+const tabStorageKey = "hopter.tabId"
 
 function nextID(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {

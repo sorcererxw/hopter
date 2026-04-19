@@ -11,7 +11,7 @@ import {
 } from "./lib/rebuild-validation.ts";
 
 async function findAvailablePort() {
-  const preferred = process.env.ORCHD_TERMINAL_PORT?.trim();
+  const preferred = process.env.HOPTER_TERMINAL_PORT?.trim();
   if (preferred) {
     return Number.parseInt(preferred, 10);
   }
@@ -74,7 +74,7 @@ async function rpc<T>(
 async function listProjects(baseUrl: string) {
   return rpc<{ projects?: Project[] }>(
     baseUrl,
-    "orchd.v1.ProjectService",
+    "hopter.v1.ProjectService",
     "ListProjects",
     {},
   );
@@ -88,7 +88,7 @@ async function createSession(
 ) {
   return rpc<{ session?: { id: string } }>(
     baseUrl,
-    "orchd.v1.SessionService",
+    "hopter.v1.SessionService",
     "CreateSession",
     {
       projectId,
@@ -107,7 +107,7 @@ async function getTerminalSession(
 ) {
   return rpc<TerminalLookup>(
     baseUrl,
-    "orchd.v1.TerminalService",
+    "hopter.v1.TerminalService",
     "GetTerminalSession",
     {
       sessionId,
@@ -200,14 +200,14 @@ async function main() {
 
     const buildDir = path.join(run.rootDir, "bin");
     mkdirSync(buildDir, { recursive: true });
-    const binaryPath = path.join(buildDir, "orchd");
+    const binaryPath = path.join(buildDir, "hopter");
     const goBuild = await runCommand(
-      ["go", "build", "-o", binaryPath, "./cmd/orchd"],
+      ["go", "build", "-o", binaryPath, "./cmd/hopter"],
       process.cwd(),
     );
     run.writeJson("commands/go-build.json", goBuild);
     checks.push({
-      name: "go build ./cmd/orchd",
+      name: "go build ./cmd/hopter",
       status: goBuild.exitCode === 0 ? "pass" : "fail",
       detail:
         goBuild.exitCode === 0
@@ -227,10 +227,10 @@ async function main() {
       stderr: "pipe",
       env: {
         ...process.env,
-        ORCHD_HOST: "127.0.0.1",
-        ORCHD_PORT: String(port),
-        ORCHD_TERMINAL_DETACH_TTL_MS: "2000",
-        ORCHD_TERMINAL_PROMPT_POLL_MS: "200",
+        HOPTER_HOST: "127.0.0.1",
+        HOPTER_PORT: String(port),
+        HOPTER_TERMINAL_DETACH_TTL_MS: "2000",
+        HOPTER_TERMINAL_PROMPT_POLL_MS: "200",
       },
     });
 
@@ -320,10 +320,10 @@ async function main() {
           .textContent()
           .catch(() => "");
         const browserInstanceId = await page.evaluate(() =>
-          window.localStorage.getItem("orchd.browserInstanceId"),
+          window.localStorage.getItem("hopter.browserInstanceId"),
         );
         const tabId = await page.evaluate(() =>
-          window.sessionStorage.getItem("orchd.tabId"),
+          window.sessionStorage.getItem("hopter.tabId"),
         );
         if (!browserInstanceId || !tabId) {
           throw new Error(

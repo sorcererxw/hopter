@@ -46,7 +46,7 @@ go-test:
 	go test ./...
 
 go-run:
-	go run ./cmd/orchd
+	go run ./cmd/hopter
 
 ui-dev:
 	pnpm --dir ui dev

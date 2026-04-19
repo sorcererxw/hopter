@@ -6,15 +6,15 @@ Proposed implementation plan.
 
 ## Decision
 
-`orchd` will support a **single-binary self-update path** for direct installs while preserving the foreground terminal session.
+`hopter` will support a **single-binary self-update path** for direct installs while preserving the foreground terminal session.
 
 That means:
 
-- the shipped product artifact remains **one `orchd` binary**
+- the shipped product artifact remains **one `hopter` binary**
 - direct installs and `unknown` installs are treated as **self-managed**
 - package-manager installs remain **version-aware only**
-- the running foreground `orchd` process does **not** hand off to a second helper binary
-- the running foreground `orchd` process performs a **self-reexec** into the newly downloaded binary
+- the running foreground `hopter` process does **not** hand off to a second helper binary
+- the running foreground `hopter` process performs a **self-reexec** into the newly downloaded binary
 - the shell must **not** regain the prompt during a successful update
 
 This plan intentionally accepts the reliability boundary of a single-process reexec model in exchange for keeping the product lightweight and preserving the single-binary distribution shape.
@@ -23,8 +23,8 @@ This plan intentionally accepts the reliability boundary of a single-process ree
 
 ### Distribution
 
-- product distribution remains one binary: `orchd`
-- no second shipped `orchd-updater` helper
+- product distribution remains one binary: `hopter`
+- no second shipped `hopter-updater` helper
 - no packaged `.app`, `.pkg`, or multi-file runtime is introduced for the update path
 
 ### UI entry point
@@ -41,10 +41,10 @@ This plan intentionally accepts the reliability boundary of a single-process ree
 
 ### Terminal behavior
 
-- user may have launched `orchd` directly in a foreground terminal
+- user may have launched `hopter` directly in a foreground terminal
 - during a successful self-update:
   - the shell must not regain the prompt
-  - the terminal session must continue running `orchd`
+  - the terminal session must continue running `hopter`
   - the browser waits for the new version to come back healthy and then refreshes
 
 ## Why this plan exists
@@ -65,16 +65,16 @@ The chosen mechanism is a compromise that fits those constraints:
 
 The direct-install update path is:
 
-1. running `orchd` checks a signed update manifest
+1. running `hopter` checks a signed update manifest
 2. if a newer version exists, the UI exposes an update entry
 3. user clicks update
-4. `orchd` downloads the new binary to a staging path
-5. `orchd` verifies:
+4. `hopter` downloads the new binary to a staging path
+5. `hopter` verifies:
    - manifest signature
    - artifact checksum
    - local preflight/doctor run
-6. `orchd` atomically swaps the binary on disk
-7. `orchd` calls `exec(...)` on the current binary path
+6. `hopter` atomically swaps the binary on disk
+7. `hopter` calls `exec(...)` on the current binary path
 8. the process image is replaced by the new version
 9. the foreground shell session stays attached to the same running process slot
 10. the browser waits for health recovery and exact target-version match, then refreshes
@@ -117,7 +117,7 @@ This is an inherent tradeoff of the single-process self-reexec model.
 The updater needs two concepts:
 
 - `install_source`: where this copy appears to come from
-- `update_policy`: whether `orchd` is allowed to apply updates itself
+- `update_policy`: whether `hopter` is allowed to apply updates itself
 
 In the current implementation direction, `install_source` should come primarily from **build-time injected metadata** in the binary, not from runtime path guessing.
 
@@ -153,7 +153,7 @@ In the current implementation direction, `install_source` should come primarily 
 Priority order:
 
 1. build-time injected `installSource`
-2. runtime override via `ORCHD_INSTALL_SOURCE` for debugging and validation
+2. runtime override via `HOPTER_INSTALL_SOURCE` for debugging and validation
 3. fallback `direct`
 
 This plan intentionally does **not** optimize for hand-moved binaries or unusual local copying flows.
@@ -167,7 +167,7 @@ The updater compares:
 
 ### Current version
 
-`orchd` knows its own version from build-time injected metadata:
+`hopter` knows its own version from build-time injected metadata:
 
 - `Version`
 - `Commit`
@@ -178,18 +178,18 @@ Do not infer the current version from file names or install paths.
 
 ### Latest version
 
-`orchd` fetches a signed update manifest from a fixed base URL.
+`hopter` fetches a signed update manifest from a fixed base URL.
 
 Recommended default:
 
 ```text
-https://updates.orchd.dev/update/v1/manifest.json
+https://updates.hopter.dev/update/v1/manifest.json
 ```
 
 Recommended overrides:
 
-- `ORCHD_UPDATE_BASE_URL`
-- `ORCHD_UPDATE_CHANNEL`
+- `HOPTER_UPDATE_BASE_URL`
+- `HOPTER_UPDATE_CHANNEL`
 
 ## Manifest contract
 
@@ -198,15 +198,15 @@ Recommended JSON structure:
 ```json
 {
   "payload": {
-    "product": "orchd",
+    "product": "hopter",
     "channel": "stable",
     "version": "0.4.2",
     "published_at": "2026-04-19T10:00:00Z",
-    "notes_url": "https://orchd.dev/releases/0.4.2",
+    "notes_url": "https://hopter.dev/releases/0.4.2",
     "min_upgradable_version": "0.3.0",
     "artifacts": {
       "darwin-arm64": {
-        "url": "https://updates.orchd.dev/artifacts/0.4.2/orchd-darwin-arm64",
+        "url": "https://updates.hopter.dev/artifacts/0.4.2/hopter-darwin-arm64",
         "sha256": "5b7f...",
         "size_bytes": 18432000
       }
@@ -227,7 +227,7 @@ Rules:
 
 System protections like permissions and Gatekeeper may block some bad outcomes on macOS, but they are **not** the primary defense.
 
-`orchd` must assume that:
+`hopter` must assume that:
 
 - a non-sandboxed local CLI can often download and execute files in writable locations
 - OS-level blocking is not a sufficient trust model for self-update
@@ -248,13 +248,13 @@ Downloaded binaries must be validated locally before swapping the current binary
 Recommended command:
 
 ```text
-orchd doctor
+hopter doctor
 ```
 
 For automated update preflight, prefer:
 
 ```text
-orchd doctor --json
+hopter doctor --json
 ```
 
 ### Preflight should verify
@@ -355,12 +355,12 @@ Package-managed installs still use the same manifest to detect newer versions, b
 
 ### Example command hints
 
-- Homebrew formula: `brew upgrade orchd`
-- Homebrew cask: `brew upgrade --cask orchd`
-- APT: `sudo apt update && sudo apt upgrade orchd`
-- DNF: `sudo dnf upgrade orchd`
-- MacPorts: `sudo port selfupdate && sudo port upgrade orchd`
-- winget: `winget upgrade orchd`
+- Homebrew formula: `brew upgrade hopter`
+- Homebrew cask: `brew upgrade --cask hopter`
+- APT: `sudo apt update && sudo apt upgrade hopter`
+- DNF: `sudo dnf upgrade hopter`
+- MacPorts: `sudo port selfupdate && sudo port upgrade hopter`
+- winget: `winget upgrade hopter`
 
 ## Proposed API surface
 
@@ -398,7 +398,7 @@ New backend modules:
 
 Existing files expected to change:
 
-- `idl/orchd/v1/host.proto`
+- `idl/hopter/v1/host.proto`
 - `internal/core/models.go`
 - `internal/rpc/host_service.go`
 - relevant frontend rail/sidebar components

@@ -19,7 +19,7 @@ import (
 	"syscall"
 	"time"
 
-	"orchd/internal/core"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 var (
@@ -41,11 +41,11 @@ type Service struct {
 }
 
 func NewService(currentVersion string, installSource string) *Service {
-	channel := strings.TrimSpace(os.Getenv("ORCHD_UPDATE_CHANNEL"))
+	channel := envValue("HOPTER_UPDATE_CHANNEL")
 	if channel == "" {
 		channel = "stable"
 	}
-	currentCommit := strings.TrimSpace(os.Getenv("ORCHD_COMMIT"))
+	currentCommit := envValue("HOPTER_COMMIT")
 	if currentCommit == "" {
 		currentCommit = "unknown"
 	}
@@ -182,7 +182,7 @@ func cloneStatus(status core.UpdateStatus) core.UpdateStatus {
 }
 
 func resolveInstallSource(buildInstallSource string) core.InstallSource {
-	if source := parseInstallSource(strings.TrimSpace(os.Getenv("ORCHD_INSTALL_SOURCE"))); source != "" {
+	if source := parseInstallSource(envValue("HOPTER_INSTALL_SOURCE")); source != "" {
 		return source
 	}
 	if source := parseInstallSource(strings.TrimSpace(buildInstallSource)); source != "" {
@@ -234,23 +234,23 @@ func policyForInstallSource(source core.InstallSource) core.UpdatePolicy {
 func commandHintForInstallSource(source core.InstallSource) string {
 	switch source {
 	case core.InstallSourceHomebrewFormula:
-		return "brew upgrade orchd"
+		return "brew upgrade hopter"
 	case core.InstallSourceHomebrewCask:
-		return "brew upgrade --cask orchd"
+		return "brew upgrade --cask hopter"
 	case core.InstallSourceAPT:
-		return "sudo apt update && sudo apt upgrade orchd"
+		return "sudo apt update && sudo apt upgrade hopter"
 	case core.InstallSourceDNF:
-		return "sudo dnf upgrade orchd"
+		return "sudo dnf upgrade hopter"
 	case core.InstallSourceWinget:
-		return "winget upgrade orchd"
+		return "winget upgrade hopter"
 	case core.InstallSourceNix:
-		return "nix profile upgrade orchd"
+		return "nix profile upgrade hopter"
 	case core.InstallSourceMacPorts:
-		return "sudo port selfupdate && sudo port upgrade orchd"
+		return "sudo port selfupdate && sudo port upgrade hopter"
 	case core.InstallSourceSnap:
-		return "sudo snap refresh orchd"
+		return "sudo snap refresh hopter"
 	case core.InstallSourceFlatpak:
-		return "flatpak update orchd"
+		return "flatpak update hopter"
 	default:
 		return ""
 	}
@@ -262,7 +262,7 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 		if err != nil {
 			return "", "", time.Time{}, nil, err
 		}
-		if payload.Product != "orchd" {
+		if payload.Product != "hopter" {
 			return "", "", time.Time{}, nil, fmt.Errorf("manifest product mismatch: %q", payload.Product)
 		}
 		if payload.Channel != "" && payload.Channel != s.channel {
@@ -285,8 +285,8 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 		}, nil
 	}
 
-	availableVersion := strings.TrimSpace(os.Getenv("ORCHD_UPDATE_AVAILABLE_VERSION"))
-	notesURL := strings.TrimSpace(os.Getenv("ORCHD_UPDATE_NOTES_URL"))
+	availableVersion := envValue("HOPTER_UPDATE_AVAILABLE_VERSION")
+	notesURL := envValue("HOPTER_UPDATE_NOTES_URL")
 	return availableVersion, notesURL, time.Now().UTC(), &core.AvailableUpdate{
 		Version:     availableVersion,
 		NotesURL:    notesURL,
@@ -295,18 +295,23 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 }
 
 func updateManifestURL() string {
-	if directURL := strings.TrimSpace(getenv("ORCHD_UPDATE_MANIFEST_URL")); directURL != "" {
+	if directURL := envValue("HOPTER_UPDATE_MANIFEST_URL"); directURL != "" {
 		return directURL
 	}
-	baseURL := strings.TrimRight(strings.TrimSpace(getenv("ORCHD_UPDATE_BASE_URL")), "/")
+	baseURL := strings.TrimRight(envValue("HOPTER_UPDATE_BASE_URL"), "/")
 	if baseURL == "" {
 		return ""
 	}
 	return baseURL + "/update/v1/manifest.json"
 }
 
-func getenv(key string) string {
-	return os.Getenv(key)
+func envValue(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func currentPlatformKey() string {
@@ -324,11 +329,11 @@ func (s *Service) downloadAndValidateUpdate(status *core.UpdateStatus) (string, 
 		return "", fmt.Errorf("available update is missing artifact checksum")
 	}
 
-	stageDir, err := os.MkdirTemp("", "orchd-update-*")
+	stageDir, err := os.MkdirTemp("", "hopter-update-*")
 	if err != nil {
 		return "", fmt.Errorf("create staging directory: %w", err)
 	}
-	stagePath := filepath.Join(stageDir, "orchd")
+	stagePath := filepath.Join(stageDir, "hopter")
 
 	status.State = core.UpdateStateDownloading
 	s.status = cloneStatus(*status)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"orchd/internal/terminal"
+	"github.com/sorcererxw/hopter/internal/terminal"
 )
 
 type TerminalStreamHandler interface {

@@ -10,11 +10,11 @@ async function main(): Promise<void> {
   const required = checkRequiredPaths([
     "idl/buf.yaml",
     "idl/buf.gen.yaml",
-    "idl/orchd/v1/common.proto",
-    "idl/orchd/v1/host.proto",
-    "idl/orchd/v1/project.proto",
-    "idl/orchd/v1/session.proto",
-    "idl/orchd/v1/events.proto",
+    "idl/hopter/v1/common.proto",
+    "idl/hopter/v1/host.proto",
+    "idl/hopter/v1/project.proto",
+    "idl/hopter/v1/session.proto",
+    "idl/hopter/v1/events.proto",
   ]);
 
   run.writeJson("preflight/required-paths.json", required);
@@ -63,15 +63,15 @@ async function main(): Promise<void> {
   }
 
   const generated = checkRequiredPaths([
-    "internal/gen/proto/orchd/v1/common.pb.go",
-    "internal/gen/proto/orchd/v1/host.pb.go",
-    "internal/gen/proto/orchd/v1/project.pb.go",
-    "internal/gen/proto/orchd/v1/session.pb.go",
-    "internal/gen/proto/orchd/v1/orchdv1connect/host.connect.go",
-    "ui/src/gen/proto/orchd/v1/common_pb.ts",
-    "ui/src/gen/proto/orchd/v1/host_pb.ts",
-    "ui/src/gen/proto/orchd/v1/project_pb.ts",
-    "ui/src/gen/proto/orchd/v1/session_pb.ts",
+    "internal/gen/proto/hopter/v1/common.pb.go",
+    "internal/gen/proto/hopter/v1/host.pb.go",
+    "internal/gen/proto/hopter/v1/project.pb.go",
+    "internal/gen/proto/hopter/v1/session.pb.go",
+    "internal/gen/proto/hopter/v1/hopterv1connect/host.connect.go",
+    "ui/src/gen/proto/hopter/v1/common_pb.ts",
+    "ui/src/gen/proto/hopter/v1/host_pb.ts",
+    "ui/src/gen/proto/hopter/v1/project_pb.ts",
+    "ui/src/gen/proto/hopter/v1/session_pb.ts",
   ]);
   run.writeJson("generated/required-paths.json", generated);
   checks.push({

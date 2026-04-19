@@ -356,10 +356,10 @@ Developer tool, browser-first control plane for local coding agents.
 
 | Stage | What the developer does | Desired experience |
 |---|---|---|
-| 1 | Opens orchd on phone | sees thread list immediately |
+| 1 | Opens hopter on phone | sees thread list immediately |
 | 2 | Opens a running thread | detail page reads as a second-level screen |
 | 3 | Wants to go back | back button is obvious and reliable, and deep links still fall back to the thread list |
-| 4 | Opens orchd on compact tablet or narrow desktop | shell remains one app, not a phone clone |
+| 4 | Opens hopter on compact tablet or narrow desktop | shell remains one app, not a phone clone |
 | 5 | Needs thread list temporarily | rail toggle is obvious |
 | 6 | Opens rail in compact mode | toolbar adapts while the inline rail narrows the detail pane |
 | 7 | Closes rail again | toolbar expands back into desktop mode |

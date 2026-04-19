@@ -31,7 +31,7 @@ import {
   UpdatePolicy,
   UpdateState,
   type UpdateStatus,
-} from "@/gen/proto/orchd/v1/host_pb"
+} from "@/gen/proto/hopter/v1/host_pb"
 import {
   useApplyUpdate,
   useHostUpdates,
@@ -194,7 +194,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
       if (targetVersion) {
         setReloadTargetVersion(targetVersion)
       }
-      toast.success("orchd is applying the update")
+      toast.success("hopter is applying the update")
     } catch (error) {
       toast.error(getErrorMessage(error, "Unable to apply update"))
     }
@@ -483,7 +483,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
             <DialogDescription>
               Run this command on the machine that is currently running{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
-                orchd
+                hopter
               </code>
               .
             </DialogDescription>
@@ -554,7 +554,7 @@ function UpdateRailAction({
         title={
           status.availableUpdate?.version
             ? `Update to ${status.availableUpdate.version}`
-            : "Update orchd"
+            : "Update hopter"
         }
       >
         <RefreshCw className="size-3" />

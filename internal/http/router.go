@@ -6,18 +6,18 @@ import (
 	"net/http"
 	"strings"
 
-	"orchd/internal/events"
-	"orchd/internal/gen/proto/orchd/v1/orchdv1connect"
+	"github.com/sorcererxw/hopter/internal/events"
+	"github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1/hopterv1connect"
 )
 
 type RouterOptions struct {
 	Version                string
 	UI                     UIHandlerOptions
 	EventHub               *events.Hub
-	HostServiceHandler     orchdv1connect.HostServiceHandler
-	ProjectServiceHandler  orchdv1connect.ProjectServiceHandler
-	SessionServiceHandler  orchdv1connect.SessionServiceHandler
-	TerminalServiceHandler orchdv1connect.TerminalServiceHandler
+	HostServiceHandler     hopterv1connect.HostServiceHandler
+	ProjectServiceHandler  hopterv1connect.ProjectServiceHandler
+	SessionServiceHandler  hopterv1connect.SessionServiceHandler
+	TerminalServiceHandler hopterv1connect.TerminalServiceHandler
 	TerminalStreamHandler  TerminalStreamHandler
 }
 
@@ -37,15 +37,15 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 
 	connectMux := http.NewServeMux()
 	registerConnectHandlers(connectMux,
-		func() (string, http.Handler) { return orchdv1connect.NewHostServiceHandler(opts.HostServiceHandler) },
+		func() (string, http.Handler) { return hopterv1connect.NewHostServiceHandler(opts.HostServiceHandler) },
 		func() (string, http.Handler) {
-			return orchdv1connect.NewProjectServiceHandler(opts.ProjectServiceHandler)
+			return hopterv1connect.NewProjectServiceHandler(opts.ProjectServiceHandler)
 		},
 		func() (string, http.Handler) {
-			return orchdv1connect.NewSessionServiceHandler(opts.SessionServiceHandler)
+			return hopterv1connect.NewSessionServiceHandler(opts.SessionServiceHandler)
 		},
 		func() (string, http.Handler) {
-			return orchdv1connect.NewTerminalServiceHandler(opts.TerminalServiceHandler)
+			return hopterv1connect.NewTerminalServiceHandler(opts.TerminalServiceHandler)
 		},
 	)
 	mux.Handle("/rpc/", authGate(http.StripPrefix("/rpc", connectMux)))

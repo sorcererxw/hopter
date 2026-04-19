@@ -10,7 +10,7 @@
 
 The current settings route mixes real controls with placeholder desktop-app preferences.
 
-That is the wrong shape for `orchd`.
+That is the wrong shape for `hopter`.
 
 The product docs already define settings as a low-frequency system control surface, not a giant preferences center. This plan locks the settings scope to that reality so implementation does not drift back into fake toggles and empty categories.
 

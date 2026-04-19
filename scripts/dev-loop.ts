@@ -13,12 +13,12 @@ import {
 const repoRoot = getRepoRoot()
 const sessionId = `dev-${Date.now()}`
 
-const uiDevHost = process.env.ORCHD_UI_DEV_HOST?.trim() || "0.0.0.0"
-const uiDevProxyHost = normalizeProxyHost(process.env.ORCHD_UI_DEV_PROXY_HOST?.trim() || uiDevHost)
-const goDevHost = process.env.ORCHD_HOST?.trim() || uiDevHost
-const goLocalhostOnlyNoAuth = process.env.ORCHD_LOCALHOST_ONLY_NO_AUTH?.trim() || "false"
-const uiDevProxyUrl = process.env.ORCHD_UI_DEV_PROXY_URL?.trim() || `http://${uiDevProxyHost}:5173`
-const healthUrl = process.env.ORCHD_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz"
+const uiDevHost = process.env.HOPTER_UI_DEV_HOST?.trim() || "0.0.0.0"
+const uiDevProxyHost = normalizeProxyHost(process.env.HOPTER_UI_DEV_PROXY_HOST?.trim() || uiDevHost)
+const goDevHost = process.env.HOPTER_HOST?.trim() || uiDevHost
+const goLocalhostOnlyNoAuth = process.env.HOPTER_LOCALHOST_ONLY_NO_AUTH?.trim() || "false"
+const uiDevProxyUrl = process.env.HOPTER_UI_DEV_PROXY_URL?.trim() || `http://${uiDevProxyHost}:5173`
+const healthUrl = process.env.HOPTER_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz"
 
 let viteProc: ReturnType<typeof spawn> | null = null
 let goProc: ReturnType<typeof spawn> | null = null
@@ -106,7 +106,7 @@ async function describePortOwner(port: number) {
 async function preflightPorts() {
   const checks = [
     { name: "vite", port: 5173 },
-    { name: "orchd", port: 8787 },
+    { name: "hopter", port: 8787 },
   ]
 
   const failures: string[] = []
@@ -125,7 +125,7 @@ async function preflightPorts() {
     throw new Error(
       `dev preflight failed: ${failures.join(
         "; "
-      )}. Stop the old listeners or change ORCHD_HOST/ORCHD_PORT and ORCHD_UI_DEV_HOST first.`
+      )}. Stop the old listeners or change HOPTER_HOST/HOPTER_PORT and HOPTER_UI_DEV_HOST first.`
     )
   }
 }
@@ -223,7 +223,7 @@ async function startVite() {
     cwd: repoRoot,
     env: {
       ...process.env,
-      ORCHD_UI_DEV_HOST: uiDevHost,
+      HOPTER_UI_DEV_HOST: uiDevHost,
     },
     stdio: ["ignore", "pipe", "pipe"],
   })
@@ -267,7 +267,7 @@ async function startVite() {
 }
 
 function resolveGoRunner() {
-  const airBin = process.env.ORCHD_AIR_BIN?.trim()
+  const airBin = process.env.HOPTER_AIR_BIN?.trim()
   if (airBin) {
     return { command: airBin, args: ["-c", ".air.toml"] }
   }
@@ -294,9 +294,9 @@ async function startGoLoop() {
     cwd: repoRoot,
     env: {
       ...process.env,
-      ORCHD_HOST: goDevHost,
-      ORCHD_LOCALHOST_ONLY_NO_AUTH: goLocalhostOnlyNoAuth,
-      ORCHD_UI_DEV_PROXY_URL: uiDevProxyUrl,
+      HOPTER_HOST: goDevHost,
+      HOPTER_LOCALHOST_ONLY_NO_AUTH: goLocalhostOnlyNoAuth,
+      HOPTER_UI_DEV_PROXY_URL: uiDevProxyUrl,
     },
     stdio: ["ignore", "pipe", "pipe"],
   })

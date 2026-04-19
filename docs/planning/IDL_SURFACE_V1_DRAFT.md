@@ -28,7 +28,7 @@ This document is intentionally narrow. It defines only the services and messages
 
 ```text
 idl/
-  orchd/v1/
+  hopter/v1/
     common.proto
     host.proto
     project.proto
@@ -38,8 +38,8 @@ idl/
 
 Generated outputs currently land in:
 
-- `internal/gen/proto/orchd/v1/...` for Go
-- `ui/src/gen/proto/orchd/v1/...` for TypeScript
+- `internal/gen/proto/hopter/v1/...` for Go
+- `ui/src/gen/proto/hopter/v1/...` for TypeScript
 
 ## Service overview
 
@@ -514,7 +514,7 @@ Recommendation:
 
 ## Immediate next implementation follow-up
 
-1. create actual proto files under `idl/orchd/v1`
+1. create actual proto files under `idl/hopter/v1`
 2. create `buf.yaml` and `buf.gen.yaml`
 3. choose generated output paths for Go and TypeScript
 4. wire one `HostService` RPC end to end through Go + UI

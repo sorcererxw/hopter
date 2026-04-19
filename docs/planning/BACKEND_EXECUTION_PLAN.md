@@ -15,7 +15,7 @@ Build the new Go backend that becomes the single runtime entrypoint for:
 Included:
 
 - Go module bootstrap
-- `cmd/orchd`
+- `cmd/hopter`
 - `internal` package layout
 - `http.ServeMux` routing
 - Connect handler registration
@@ -34,7 +34,7 @@ Excluded in this plan:
 ## Repository targets
 
 ```text
-/cmd/orchd
+/cmd/hopter
 /internal/app
 /internal/http
 /internal/rpc
@@ -50,7 +50,7 @@ Excluded in this plan:
 
 Create:
 
-- `cmd/orchd/main.go`
+- `cmd/hopter/main.go`
 - `internal/app/config.go`
 - `internal/app/bootstrap.go`
 
@@ -66,7 +66,7 @@ Requirements:
 
 Acceptance criteria:
 
-- `go run ./cmd/orchd` starts a server
+- `go run ./cmd/hopter` starts a server
 - `/healthz` and `/version` respond
 - config errors fail fast with actionable output
 
