@@ -12,3 +12,9 @@ tmp
 ui/node_modules
 ui/.omx
 ui/.turbo
+
+# Site (marketing)
+site/node_modules
+site/dist
+site/.astro
+site/.wrangler
