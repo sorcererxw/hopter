@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
+
+  /* Colors — Vercel-inspired dark palette */
+  --color-background: #000000;
+  --color-foreground: #ededed;
+  --color-muted: #888888;
+  --color-muted-foreground: #a1a1a1;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-strong: rgba(255, 255, 255, 0.2);
+  --color-surface: #111111;
+  --color-surface-elevated: #171717;
+  --color-accent: #0070f3;
+  --color-accent-hover: #0060df;
+  --color-success: #0070f3;
+  --color-warning: #f5a623;
+  --color-error: #ee0000;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(0, 112, 243, 0.3);
+  color: #ffffff;
+}
