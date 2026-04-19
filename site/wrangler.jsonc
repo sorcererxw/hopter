@@ -7,9 +7,10 @@
     "directory": "./dist"
   },
   "compatibility_date": "2026-04-19",
-  "kv_namespaces": [
+  "routes": [
     {
-      "binding": "SESSION"
+      "pattern": "hopter.dev",
+      "custom_domain": true
     }
   ]
 }
