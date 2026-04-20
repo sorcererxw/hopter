@@ -155,6 +155,30 @@ export function SessionRichText({
             <ol className="space-y-1.5 pl-5">{children}</ol>
           ),
           p: ({ children }) => <p>{children}</p>,
+          table: ({ children }) => (
+            <div className="workspace-scrollbar my-3 max-w-full overflow-x-auto">
+              <table className="min-w-full border-separate border-spacing-0 border border-border text-left text-sm">
+                {children}
+              </table>
+            </div>
+          ),
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          td: ({ children }) => (
+            <td className="border-r border-b border-border px-3 py-2 align-top text-foreground last:border-r-0">
+              {children}
+            </td>
+          ),
+          th: ({ children }) => (
+            <th className="border-r border-b border-border bg-muted px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
+              {children}
+            </th>
+          ),
+          thead: ({ children }) => <thead>{children}</thead>,
+          tr: ({ children }) => (
+            <tr className="bg-background even:bg-muted/20 [&:last-child>td]:border-b-0 [&:last-child>th]:border-b-0">
+              {children}
+            </tr>
+          ),
           strong: ({ children }) => (
             <strong className="font-semibold text-foreground">
               {children}

@@ -183,12 +183,14 @@
 
   .workspace-inline-code {
     background: var(--muted);
-    border: 1px solid var(--border);
     border-radius: 0.5rem;
     color: var(--foreground);
-    display: inline-block;
+    display: inline;
     line-height: 1.4;
+    overflow-wrap: anywhere;
     padding: 0.1rem 0.45rem;
+    white-space: break-spaces;
+    word-break: break-word;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
   }

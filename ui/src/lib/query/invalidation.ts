@@ -77,6 +77,9 @@ export function applyWorkspaceEventInvalidation(
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       if (sessionId) {
         client.invalidateQueries({ queryKey: queryKeys.sessionMeta(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionArtifacts(sessionId),
+        })
         client.invalidateQueries({ queryKey: queryKeys.sessionTranscript(sessionId) })
       }
       return
@@ -87,6 +90,9 @@ export function applyWorkspaceEventInvalidation(
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       if (sessionId) {
         client.invalidateQueries({ queryKey: queryKeys.sessionMeta(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionArtifacts(sessionId),
+        })
         client.invalidateQueries({ queryKey: queryKeys.sessionTranscript(sessionId) })
       }
       return

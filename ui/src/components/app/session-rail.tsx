@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react"
+import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import {
   ChevronDown,
   Copy,
@@ -7,16 +7,14 @@ import {
   FolderPlus,
   Grid2x2,
   LoaderCircle,
-  RefreshCw,
   Search,
   Settings,
   SquarePen,
-  Wrench,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import { RailRow } from "@/components/app/rail-row"
+import { RailRow, type RailRowProps } from "@/components/app/rail-row"
 import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
 import { Button } from "@/components/ui/button"
 import {
@@ -88,9 +86,123 @@ function sessionDot(status: string) {
   }
 }
 
+function RailBrand({ right }: { right?: ReactNode }) {
+  return (
+    <RailRow
+      icon={
+        <svg
+          viewBox="0 0 200 186"
+          aria-hidden="true"
+          className="size-3.5 text-foreground"
+          fill="none"
+        >
+          <path
+            d="M180 154.858C180 148.718 175.011 143.716 168.828 143.716L149.016 143.71L159.045 160.252L159.096 160.336L159.145 160.42C161.089 163.773 164.7 166 168.828 166C175.011 166 180 160.999 180 154.858ZM81.1475 123.69L113.496 123.7L95.6289 94.2285L81.1475 123.69ZM105.883 31.1416C105.883 25.0016 100.895 20.0002 94.7119 20C88.5288 20 83.5402 25.0015 83.54 31.1416C83.54 33.0245 84.0012 34.7716 84.8086 36.3057L94.7109 53.4404L104.62 36.2939C105.424 34.7627 105.883 33.0197 105.883 31.1416ZM20 154.819C20.0001 160.96 24.9888 165.961 31.1719 165.961C35.2008 165.961 38.7371 163.839 40.7119 160.619L49.0371 143.682L31.1709 143.678C24.9881 143.678 20 148.679 20 154.819ZM125.883 31.1416C125.883 36.4459 124.548 41.4686 122.187 45.8613L122.113 45.9971L122.036 46.1299L106.331 73.3027L136.889 123.707L168.831 123.716C186.033 123.717 200 137.647 200 154.858C200 172.071 186.03 186 168.828 186C157.343 186 147.317 179.788 141.919 170.582L125.624 143.704L71.3193 143.688L58.3301 170.116L58.1582 170.413C52.779 179.691 42.7111 185.961 31.1719 185.961C13.9696 185.961 0.000107326 172.032 0 154.819C2.86102e-06 137.607 13.9695 123.678 31.1719 123.678L58.8652 123.685L83.3818 73.8066L67.3867 46.1299L67.3096 45.9971L67.2363 45.8604C64.8753 41.4677 63.54 36.4457 63.54 31.1416C63.5402 13.9293 77.5097 0 94.7119 0C111.914 0.000230651 125.883 13.9294 125.883 31.1416Z"
+            fill="currentColor"
+          />
+        </svg>
+      }
+      interactive={false}
+      className="text-foreground"
+      labelClassName="min-w-0 font-semibold tracking-tight text-foreground"
+      label="Hopter"
+      right={right}
+      rightClassName="opacity-100"
+    />
+  )
+}
+
 type SessionRailProps = {
   onNavigate?: () => void
   onOpenSearch: () => void
+}
+
+const sessionRailUiStateStorageKey = "hopter.sessionRailUiState"
+
+type SessionRailUiState = {
+  closedProjectIds: Record<string, boolean>
+  collapsedProjectIds: Record<string, boolean>
+  projectsCollapsed: boolean
+}
+
+function readSessionRailUiState(): SessionRailUiState {
+  if (typeof window === "undefined") {
+    return {
+      closedProjectIds: {},
+      collapsedProjectIds: {},
+      projectsCollapsed: false,
+    }
+  }
+
+  try {
+    const stored = window.localStorage.getItem(sessionRailUiStateStorageKey)
+    if (!stored) {
+      return {
+        closedProjectIds: {},
+        collapsedProjectIds: {},
+        projectsCollapsed: false,
+      }
+    }
+
+    const parsed = JSON.parse(stored) as Partial<SessionRailUiState>
+    return {
+      closedProjectIds:
+        parsed.closedProjectIds &&
+        typeof parsed.closedProjectIds === "object" &&
+        !Array.isArray(parsed.closedProjectIds)
+          ? parsed.closedProjectIds
+          : {},
+      collapsedProjectIds:
+        parsed.collapsedProjectIds &&
+        typeof parsed.collapsedProjectIds === "object" &&
+        !Array.isArray(parsed.collapsedProjectIds)
+          ? parsed.collapsedProjectIds
+          : {},
+      projectsCollapsed: parsed.projectsCollapsed === true,
+    }
+  } catch {
+    return {
+      closedProjectIds: {},
+      collapsedProjectIds: {},
+      projectsCollapsed: false,
+    }
+  }
+}
+
+type SessionRailConfiguredItem =
+  | {
+      key: string
+      kind: "brand"
+      right?: ReactNode
+    }
+  | {
+      key: string
+      kind: "row"
+      props: RailRowProps
+    }
+  | {
+      key: string
+      kind: "spacer"
+      className: string
+    }
+
+function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
+  switch (item.kind) {
+    case "brand":
+      return (
+        <li key={item.key}>
+          <RailBrand right={item.right} />
+        </li>
+      )
+    case "row":
+      return (
+        <li key={item.key}>
+          <RailRow {...item.props} />
+        </li>
+      )
+    case "spacer":
+      return <li key={item.key} className={item.className} aria-hidden="true" />
+  }
 }
 
 export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
@@ -112,13 +224,9 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     isError,
     isLoading,
   } = useSessions(undefined, eventStreamState === "connected" ? 10_000 : 3_000)
-  const [closedProjectIds, setClosedProjectIds] = useState<
-    Record<string, boolean>
-  >({})
-  const [collapsedProjectIds, setCollapsedProjectIds] = useState<
-    Record<string, boolean>
-  >({})
-  const [projectsCollapsed, setProjectsCollapsed] = useState(false)
+  const [railUiState, setRailUiState] = useState<SessionRailUiState>(() =>
+    readSessionRailUiState()
+  )
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [reloadTargetVersion, setReloadTargetVersion] = useState<string | null>(
     null
@@ -184,6 +292,20 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     window.location.reload()
   }, [reloadTargetVersion, updateStatus?.currentVersion])
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    window.localStorage.setItem(
+      sessionRailUiStateStorageKey,
+      JSON.stringify(railUiState)
+    )
+  }, [railUiState])
+
+  const { closedProjectIds, collapsedProjectIds, projectsCollapsed } =
+    railUiState
+
   const updateControl = getUpdateControl(updateStatus, applyUpdate.isPending)
 
   async function handleApplyUpdate() {
@@ -210,6 +332,116 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
     )
   }
 
+  const configuredRailItems: SessionRailConfiguredItem[] = [
+    {
+      key: "brand",
+      kind: "brand",
+      right: updateControl.visible ? (
+        <UpdateRailAction
+          commandHint={updateStatus?.upgradeCommandHint ?? ""}
+          onApply={handleApplyUpdate}
+          onOpenDialog={() => setUpdateDialogOpen(true)}
+          status={updateStatus}
+        />
+      ) : null,
+    },
+    {
+      key: "new-chat",
+      kind: "row",
+      props: {
+        asDivInteractive: true,
+        icon: <SquarePen className="size-3.5" />,
+        label: "New chat",
+        onClick: () => {
+          onNavigate?.()
+          navigate("/?compose=1")
+        },
+        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+      },
+    },
+    {
+      key: "search",
+      kind: "row",
+      props: {
+        icon: <Search className="size-3.5" />,
+        label: "Search",
+        onClick: onOpenSearch,
+        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        right: (
+          <span className="workspace-kbd text-base opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
+            ⌘K
+          </span>
+        ),
+      },
+    },
+    {
+      key: "skills-apps",
+      kind: "row",
+      props: {
+        icon: <Grid2x2 className="size-3.5" />,
+        label: "Skills & Apps",
+        onClick: onNavigate,
+        to: "/settings/plugins#skills",
+        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+      },
+    },
+    {
+      key: "new-project",
+      kind: "row",
+      props: {
+        icon: <FolderPlus className="size-3.5" />,
+        label: "New project",
+        onClick: () => {
+          onNavigate?.()
+          openProjectPicker()
+        },
+        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+      },
+    },
+    {
+      key: "settings",
+      kind: "row",
+      props: {
+        icon: <Settings className="size-3.5" />,
+        label: "Settings",
+        onClick: onNavigate,
+        to: "/settings",
+        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+      },
+    },
+    {
+      key: "section-gap",
+      kind: "spacer",
+      className: "h-3",
+    },
+    {
+      key: "projects-toggle",
+      kind: "row",
+      props: {
+        icon: null,
+        label: "Projects",
+        onClick: () =>
+          setRailUiState((current) => ({
+            ...current,
+            projectsCollapsed: !current.projectsCollapsed,
+          })),
+        asDivInteractive: true,
+        reserveIconSpace: false,
+        labelFill: false,
+        labelClassName: "select-none tracking-tight text-muted-foreground",
+        className: "text-muted-foreground",
+        right: (
+          <ChevronDown
+            className={cn(
+              "size-3 transition-transform",
+              projectsCollapsed ? "-rotate-90" : "rotate-0"
+            )}
+          />
+        ),
+      },
+    },
+  ]
+
   return (
     <div
       className={cn(
@@ -229,94 +461,7 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
             data-rail-list="true"
             className="flex min-h-full flex-col gap-1"
           >
-            <li>
-              <RailRow
-                asDivInteractive
-                icon={<SquarePen className="size-3.5" />}
-                label="New chat"
-                onClick={() => {
-                  onNavigate?.()
-                  navigate("/?compose=1")
-                }}
-                className="text-muted-foreground hover:bg-accent hover:text-foreground"
-                right={
-                  updateControl.visible ? (
-                    <UpdateRailAction
-                      commandHint={updateStatus?.upgradeCommandHint ?? ""}
-                      onApply={handleApplyUpdate}
-                      onOpenDialog={() => setUpdateDialogOpen(true)}
-                      status={updateStatus}
-                    />
-                  ) : null
-                }
-                rightClassName="opacity-100"
-              />
-            </li>
-            <li>
-              <RailRow
-                icon={<Search className="size-3.5" />}
-                label="Search"
-                onClick={onOpenSearch}
-                className="text-muted-foreground hover:bg-accent hover:text-foreground"
-                right={
-                  <span className="workspace-kbd text-base opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
-                    ⌘K
-                  </span>
-                }
-              />
-            </li>
-            <li>
-              <RailRow
-                icon={<Grid2x2 className="size-3.5" />}
-                label="Skills & Apps"
-                onClick={onNavigate}
-                to="/settings/plugins#skills"
-                className="text-muted-foreground hover:bg-accent hover:text-foreground"
-              />
-            </li>
-            <li>
-              <RailRow
-                icon={<FolderPlus className="size-3.5" />}
-                label="New project"
-                onClick={() => {
-                  onNavigate?.()
-                  openProjectPicker()
-                }}
-                className="text-muted-foreground hover:bg-accent hover:text-foreground"
-              />
-            </li>
-            <li>
-              <RailRow
-                icon={<Settings className="size-3.5" />}
-                label="Settings"
-                onClick={onNavigate}
-                to="/settings"
-                className="text-muted-foreground hover:bg-accent hover:text-foreground"
-              />
-            </li>
-
-            <li className="h-3" aria-hidden="true" />
-
-            <li>
-              <RailRow
-                icon={null}
-                label="Projects"
-                onClick={() => setProjectsCollapsed((current) => !current)}
-                asDivInteractive
-                reserveIconSpace={false}
-                labelFill={false}
-                labelClassName="select-none tracking-tight text-muted-foreground"
-                className="text-muted-foreground"
-                right={
-                  <ChevronDown
-                    className={cn(
-                      "size-3 transition-transform",
-                      projectsCollapsed ? "-rotate-90" : "rotate-0"
-                    )}
-                  />
-                }
-              />
-            </li>
+            {configuredRailItems.map(renderConfiguredRailItem)}
 
             {isLoading ? (
               <li>
@@ -373,9 +518,12 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           label={group.projectName}
                           title={group.projectRootPath || group.projectName}
                           onClick={() =>
-                            setClosedProjectIds((current) => ({
+                            setRailUiState((current) => ({
                               ...current,
-                              [groupKey]: !current[groupKey],
+                              closedProjectIds: {
+                                ...current.closedProjectIds,
+                                [groupKey]: !current.closedProjectIds[groupKey],
+                              },
                             }))
                           }
                           right={
@@ -452,11 +600,14 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           <RailRow
                             asDivInteractive
                             icon={null}
-                            label={sessionsCollapsed ? "展开显示" : "折叠显示"}
+                            label={sessionsCollapsed ? "Show expanded" : "Show collapsed"}
                             onClick={() =>
-                              setCollapsedProjectIds((current) => ({
+                              setRailUiState((current) => ({
                                 ...current,
-                                [groupKey]: !sessionsCollapsed,
+                                collapsedProjectIds: {
+                                  ...current.collapsedProjectIds,
+                                  [groupKey]: !sessionsCollapsed,
+                                },
                               }))
                             }
                             labelClassName="text-muted-foreground"
@@ -534,49 +685,44 @@ function UpdateRailAction({
 
   if (busy) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-foreground/70">
-        <LoaderCircle className="size-3 animate-spin" />
-        Updating
-      </span>
+      <Button disabled>
+        Upgrading
+      </Button>
     )
   }
 
   if (status.updatePolicy === UpdatePolicy.SELF_MANAGED) {
     return (
-      <button
+      <Button
         type="button"
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
           onApply()
         }}
-        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-foreground/80 transition hover:bg-accent hover:text-foreground"
         title={
           status.availableUpdate?.version
-            ? `Update to ${status.availableUpdate.version}`
-            : "Update hopter"
+            ? `Upgrade to ${status.availableUpdate.version}`
+            : "Upgrade hopter"
         }
       >
-        <RefreshCw className="size-3" />
-        Update
-      </button>
+        Upgrade
+      </Button>
     )
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()
         onOpenDialog()
       }}
-      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-foreground/80 transition hover:bg-accent hover:text-foreground"
-      title={commandHint || "Show update command"}
+      title={commandHint || "Show upgrade command"}
     >
-      <Wrench className="size-3" />
-      Update
-    </button>
+      Upgrade
+    </Button>
   )
 }
 

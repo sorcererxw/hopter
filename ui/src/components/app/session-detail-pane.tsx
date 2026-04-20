@@ -9,15 +9,14 @@ import {
 } from "react"
 import {
   ChevronRight,
-  FileText,
   Lightbulb,
   LoaderCircle,
   Wrench,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
+import { SessionArtifactWorkspace } from "@/components/app/session-artifact-workspace"
 import { SessionComposer } from "@/components/app/session-composer"
-import { parseReferencedFiles } from "@/components/app/session-derived"
 import {
   buildClosedPanelParams,
   buildFilePanelParams,
@@ -53,7 +52,7 @@ import {
   type SessionTranscriptPage,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
-import { formatArtifactKind, formatSessionStatus } from "@/lib/format/proto"
+import { formatSessionStatus } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
 const SessionInspectorPane = lazy(() =>
@@ -639,8 +638,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                     transcriptVisible ? "opacity-100" : "opacity-0"
                   )}
                 >
-                  <ArtifactPills session={session} />
-
                   {session.attentionRequired ? (
                     <div className="rounded-lg border border-amber-300/15 bg-amber-300/8 px-4 py-3">
                       <div className="mb-1 text-sm font-medium text-amber-100/80">
@@ -699,7 +696,19 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                       openFilePanel(path)
                     }}
                   />
-                  <ArtifactStrip session={session} />
+                  <SessionArtifactWorkspace
+                    artifacts={session.artifacts}
+                    onOpenReview={() => {
+                      openReviewPanel({
+                        reviewFile:
+                          panelState.reviewFile ||
+                          reviewQuery.data?.files[0]?.path ||
+                          null,
+                        reviewView: panelState.reviewView,
+                      })
+                    }}
+                    sessionId={sessionId}
+                  />
                 </div>
                 {!transcriptVisible ? (
                   <div className="pointer-events-none absolute inset-x-0 top-0 flex min-h-full items-center justify-center">
@@ -873,83 +882,6 @@ function buildSessionDetail(
     backendKey: meta.backendKey,
     pendingApprovalId: meta.pendingApprovalId,
   } as Session
-}
-
-function ArtifactPills({ session }: { session: Session }) {
-  const referencedFiles = parseReferencedFiles(session.summary || "")
-  const fallbackPills =
-    session.artifacts.length === 0
-      ? referencedFiles.length > 0
-        ? [
-            {
-              id: "referenced-files",
-              label: `Referenced ${referencedFiles.length} file${referencedFiles.length === 1 ? "" : "s"}`,
-            },
-          ]
-        : []
-      : []
-
-  const pills = session.artifacts.slice(0, 4).map((artifact) => ({
-    id: artifact.id,
-    label: artifact.label,
-  }))
-
-  const visiblePills = pills.length > 0 ? pills : fallbackPills
-
-  if (visiblePills.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {visiblePills.map((artifact) => (
-        <button
-          key={artifact.id}
-          type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-accent px-3 py-1.5 text-muted-foreground transition hover:bg-accent"
-        >
-          <FileText className="size-3.5 text-muted-foreground" />
-          <span>{artifact.label}</span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function ArtifactStrip({ session }: { session: Session }) {
-  if (session.artifacts.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="space-y-3">
-      {session.artifacts.slice(0, 2).map((artifact) => (
-        <div
-          key={artifact.id}
-          className="rounded-lg border border-border bg-card px-4 py-4"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="truncate text-foreground">{artifact.label}</div>
-              <div className="mt-1 text-muted-foreground">
-                {formatArtifactKind(artifact.kind)}
-              </div>
-            </div>
-            {artifact.downloadUrl ? (
-              <a
-                href={artifact.downloadUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="shrink-0 rounded-md border border-border bg-secondary px-2.5 py-1 text-muted-foreground transition hover:bg-accent"
-              >
-                Open
-              </a>
-            ) : null}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
 }
 
 type ActivityItem =

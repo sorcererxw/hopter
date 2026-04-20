@@ -13,6 +13,8 @@ export const queryKeys = {
   sessions: (projectId?: string) =>
     ["sessions", { projectId: projectId ?? null }] as const,
   sessionMeta: (sessionId: string) => ["session-meta", sessionId] as const,
+  sessionArtifacts: (sessionId: string) =>
+    ["session-artifacts", sessionId] as const,
   sessionReview: (sessionId: string) => ["session-review", sessionId] as const,
   sessionFile: (
     sessionId: string,

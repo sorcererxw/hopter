@@ -71,6 +71,23 @@ export function useSessionMeta(sessionId?: string) {
   })
 }
 
+export function useSessionArtifacts(sessionId?: string, enabled = true) {
+  return useQuery({
+    enabled: Boolean(sessionId) && enabled,
+    queryKey: queryKeys.sessionArtifacts(sessionId ?? "pending"),
+    queryFn: async () => {
+      if (!sessionId) {
+        throw new Error("sessionId is required")
+      }
+
+      const response = await sessionClient.listSessionArtifacts({ sessionId })
+      return response.artifacts
+    },
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+  })
+}
+
 export function useSessionReview(sessionId?: string, enabled = true) {
   return useQuery({
     enabled: Boolean(sessionId) && enabled,

@@ -45,7 +45,7 @@ export function RailRow({
   const isInteractive =
     interactive || Boolean(to || onClick || ariaExpanded !== undefined)
   const rowClassName = cn(
-    "group flex items-center gap-2.5 rounded-md px-3 py-1 text-left text-base leading-5 transition",
+    "group flex items-center gap-2.5 rounded-md px-3 py-1 text-left text-base leading-5 transition select-none",
     fullWidth ? "w-full" : "w-fit",
     isInteractive ? "cursor-pointer" : undefined,
     className
