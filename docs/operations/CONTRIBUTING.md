@@ -106,6 +106,8 @@ Rules:
 2. Use `HOPTER_INSTALL_SOURCE` only for debugging, validation, and local overrides.
 3. Do not rely on runtime path guessing for the normal ownership decision.
 
+Unless a signed update manifest or explicit update env override is configured, `hopter` now checks the latest GitHub release on `sorcererxw/hopter`. Direct-install self-update expects the release to publish raw per-platform binaries named `hopter-<os>-<arch>` alongside `checksums.txt`.
+
 In dev, the browser should still enter through the Go origin.
 
 `make dev` is the recommended local workflow. It now runs a Bun supervisor that:

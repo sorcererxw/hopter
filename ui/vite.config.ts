@@ -14,7 +14,15 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      includeAssets: ["icons/hopter-icon.svg", "icons/hopter-icon-maskable.svg"],
+      includeAssets: [
+        "favicon.ico",
+        "apple-touch-icon.png",
+        "icons/hopter-icon.svg",
+        "icons/hopter-icon-192.png",
+        "icons/hopter-icon-512.png",
+        "icons/hopter-icon-maskable.svg",
+        "icons/hopter-icon-maskable-512.png",
+      ],
       manifest: {
         id: "/",
         name: "hopter workspace",
@@ -36,9 +44,21 @@ export default defineConfig({
             purpose: "any",
           },
           {
-            src: "/icons/hopter-icon-maskable.svg",
-            sizes: "any",
-            type: "image/svg+xml",
+            src: "/icons/hopter-icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/hopter-icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/hopter-icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
             purpose: "maskable",
           },
         ],

@@ -8,7 +8,6 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react"
 import {
-  ChevronDown,
   ChevronRight,
   FileText,
   Lightbulb,

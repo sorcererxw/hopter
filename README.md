@@ -114,6 +114,8 @@ go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula"
 
 `HOPTER_INSTALL_SOURCE` still exists as a runtime override for validation and debugging, but the normal product path should treat the build-time install source as the primary signal.
 
+By default, update detection now falls through to the latest GitHub release on `sorcererxw/hopter` when no signed manifest or explicit update env override is configured. Direct installs use the per-platform `hopter-<os>-<arch>` release asset plus `checksums.txt`.
+
 `make dev` is the preferred local loop. It now runs an AI-first supervisor that starts:
 
 - `pnpm --dir ui dev`

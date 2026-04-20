@@ -143,6 +143,65 @@ func TestCheckFallsBackToEnvironmentVersion(t *testing.T) {
 	}
 }
 
+func TestCheckFallsBackToGitHubLatestRelease(t *testing.T) {
+	assetName := "hopter-" + currentPlatformKey()
+	checksum := strings.Repeat("b", 64)
+	var baseURL string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/sorcererxw/hopter/releases/latest":
+			_ = json.NewEncoder(w).Encode(githubReleaseResponse{
+				TagName:     "v0.0.9",
+				HTMLURL:     "https://github.com/sorcererxw/hopter/releases/tag/v0.0.9",
+				PublishedAt: time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC),
+				Assets: []githubReleaseAsset{
+					{
+						Name:               assetName,
+						BrowserDownloadURL: baseURL + "/download/" + assetName,
+						Size:               123,
+					},
+					{
+						Name:               "checksums.txt",
+						BrowserDownloadURL: baseURL + "/download/checksums.txt",
+						Size:               456,
+					},
+				},
+			})
+		case "/download/checksums.txt":
+			_, _ = w.Write([]byte(checksum + "  " + assetName + "\n"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	baseURL = server.URL
+
+	t.Setenv("HOPTER_UPDATE_GITHUB_API_BASE_URL", server.URL)
+	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
+
+	service := NewService("0.0.8", "direct")
+	status, err := service.Check(true)
+	if err != nil {
+		t.Fatalf("check update: %v", err)
+	}
+	if !status.UpdateAvailable {
+		t.Fatalf("expected update available")
+	}
+	if status.AvailableUpdate == nil {
+		t.Fatalf("expected available update")
+	}
+	if status.AvailableUpdate.Version != "v0.0.9" {
+		t.Fatalf("version = %q, want v0.0.9", status.AvailableUpdate.Version)
+	}
+	if status.AvailableUpdate.ArtifactURL != server.URL+"/download/"+assetName {
+		t.Fatalf("artifact url = %q", status.AvailableUpdate.ArtifactURL)
+	}
+	if status.AvailableUpdate.SHA256 != checksum {
+		t.Fatalf("checksum = %q, want %q", status.AvailableUpdate.SHA256, checksum)
+	}
+}
+
 func TestApplyDownloadsVerifiesAndRunsDoctorPreflight(t *testing.T) {
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {

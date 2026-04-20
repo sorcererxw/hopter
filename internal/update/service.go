@@ -287,11 +287,24 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 
 	availableVersion := envValue("HOPTER_UPDATE_AVAILABLE_VERSION")
 	notesURL := envValue("HOPTER_UPDATE_NOTES_URL")
-	return availableVersion, notesURL, time.Now().UTC(), &core.AvailableUpdate{
-		Version:     availableVersion,
-		NotesURL:    notesURL,
-		PublishedAt: time.Now().UTC(),
-	}, nil
+	if strings.TrimSpace(availableVersion) != "" {
+		return availableVersion, notesURL, time.Now().UTC(), &core.AvailableUpdate{
+			Version:     availableVersion,
+			NotesURL:    notesURL,
+			PublishedAt: time.Now().UTC(),
+		}, nil
+	}
+
+	update, err := fetchLatestGitHubRelease(
+		ctx,
+		s.httpClient,
+		updateReleaseRepository(),
+		s.status.UpdatePolicy == core.UpdatePolicySelfManaged,
+	)
+	if err != nil {
+		return "", "", time.Time{}, nil, err
+	}
+	return update.Version, update.NotesURL, update.PublishedAt, update, nil
 }
 
 func updateManifestURL() string {

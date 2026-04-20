@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { ChevronRight, File, Folder, FolderGit2, X } from "lucide-react"
+import { File, Folder, FolderGit2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
@@ -13,7 +13,6 @@ import {
   usePathMetadata,
 } from "@/features/host/use-host-browser"
 import { useCreateProject } from "@/features/projects/use-projects"
-import { queryClient } from "@/lib/query/client"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"

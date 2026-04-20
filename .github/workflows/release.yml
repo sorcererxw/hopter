@@ -1,5 +1,8 @@
 name: Release
 
+env:
+  RELEASE_REPOSITORY: sorcererxw/hopter
+
 on:
   push:
     branches:
@@ -68,7 +71,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          latest_tag="$(git tag --list 'v0.0.*' --sort=-version:refname | head -n 1)"
+          latest_tag="$(
+            git ls-remote --tags --refs "https://github.com/${RELEASE_REPOSITORY}.git" 'v0.0.*' \
+              | awk -F/ '{print $3}' \
+              | sort -V \
+              | tail -n 1
+          )"
           if [[ -z "${latest_tag}" ]]; then
             next_tag="v0.0.1"
           else
@@ -135,6 +143,7 @@ jobs:
           version_no_v="${VERSION#v}"
           archive_dir="release/${GOOS}-${GOARCH}"
           binary_name="hopter"
+          binary_asset_name="hopter-${GOOS}-${GOARCH}"
           archive_name="hopter_${version_no_v}_${GOOS}_${GOARCH}.tar.gz"
 
           mkdir -p "${archive_dir}"
@@ -146,13 +155,16 @@ jobs:
               -o "${archive_dir}/${binary_name}" \
               ./cmd/hopter
 
+          cp "${archive_dir}/${binary_name}" "release/${binary_asset_name}"
           tar -C "${archive_dir}" -czf "release/${archive_name}" "${binary_name}"
 
       - name: Upload release archive
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: release/*.tar.gz
+          path: |
+            release/hopter-${{ matrix.goos }}-${{ matrix.goarch }}
+            release/*.tar.gz
           if-no-files-found: error
 
   publish-release:
@@ -176,7 +188,7 @@ jobs:
           set -euo pipefail
           (
             cd release
-            sha256sum *.tar.gz > checksums.txt
+            sha256sum hopter-* *.tar.gz > checksums.txt
           )
 
       - name: Write release notes preamble
@@ -188,7 +200,9 @@ jobs:
           cat > release-notes.md <<EOF
           Automated release for ${VERSION}.
 
-          Triggered by product-surface changes on ${GITHUB_REF_NAME} at ${GITHUB_SHA}.
+          Published to ${RELEASE_REPOSITORY}.
+
+          Triggered by product-surface changes from ${GITHUB_REPOSITORY} on ${GITHUB_REF_NAME} at ${GITHUB_SHA}.
 
           Changed files:
           ${{ needs.detect-release-scope.outputs.changed_files }}
@@ -197,10 +211,11 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          repository: ${{ env.RELEASE_REPOSITORY }}
           tag_name: ${{ needs.detect-release-scope.outputs.version }}
           name: hopter ${{ needs.detect-release-scope.outputs.version }}
           body_path: release-notes.md
           generate_release_notes: true
           files: |
-            release/*.tar.gz
-            release/checksums.txt
+            release/*
+          token: ${{ secrets.RELEASE_TOKEN }}
