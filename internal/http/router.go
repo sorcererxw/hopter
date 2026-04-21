@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sorcererxw/hopter/internal/core"
 	"github.com/sorcererxw/hopter/internal/events"
 	"github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1/hopterv1connect"
 )
@@ -19,6 +20,7 @@ type RouterOptions struct {
 	SessionServiceHandler  hopterv1connect.SessionServiceHandler
 	TerminalServiceHandler hopterv1connect.TerminalServiceHandler
 	TerminalStreamHandler  TerminalStreamHandler
+	Workspace              core.WorkspaceService
 }
 
 func NewRouter(opts RouterOptions) (http.Handler, error) {
@@ -32,6 +34,7 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 	mux.HandleFunc("GET /readyz", handleReady)
 	mux.HandleFunc("GET /version", versionHandler(opts.Version, opts.UI.Mode()))
 	mux.Handle("GET /events", authGate(NewSSEHandler(opts.EventHub)))
+	mux.Handle("GET /api/image-proxy", authGate(NewImageProxyHandler(opts.Workspace)))
 	mux.Handle("GET /terminals/{terminalId}/stream", authGate(NewTerminalWSHandler(opts.TerminalStreamHandler)))
 	registerAuthHandlers(mux, opts.TerminalStreamHandler)
 

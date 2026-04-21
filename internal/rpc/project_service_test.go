@@ -7,16 +7,16 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/core"
 	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type fakeProjectSessionLister struct {
-	listSessionsResult []backend.ResolvedSession
+	listSessionsResult []agents.ResolvedSession
 }
 
-func (f *fakeProjectSessionLister) ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error) {
+func (f *fakeProjectSessionLister) ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error) {
 	return f.listSessionsResult, nil
 }
 
@@ -31,7 +31,7 @@ func TestListProjectsIncludesSyntheticSessionProjects(t *testing.T) {
 		UpdatedAt:      time.Now().UTC(),
 	}
 	service := NewProjectService(workspace, &fakeProjectSessionLister{
-		listSessionsResult: []backend.ResolvedSession{
+		listSessionsResult: []agents.ResolvedSession{
 			{
 				Project: syntheticProject,
 				Session: core.Session{ID: "sess_1", ProjectID: syntheticProject.ID},

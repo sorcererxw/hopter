@@ -9,13 +9,13 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/core"
 	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
 
 type fakeSessionRuntime struct {
-	listSessionsResult []backend.ResolvedSession
+	listSessionsResult []agents.ResolvedSession
 	getSession         core.Session
 	getProject         core.Project
 	approvalSession    core.Session
@@ -35,7 +35,7 @@ type fakeSessionDetailReader struct {
 	page   core.SessionTranscriptPage
 }
 
-func (f *fakeSessionRuntime) ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error) {
+func (f *fakeSessionRuntime) ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error) {
 	return f.listSessionsResult, nil
 }
 

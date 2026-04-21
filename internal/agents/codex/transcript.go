@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -125,15 +126,17 @@ func normalizeThreadItem(item ReadThreadItem) (core.SessionTranscriptItem, bool)
 func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormalizeOptions) (core.SessionTranscriptItem, bool) {
 	switch item.Type {
 	case "userMessage":
-		body := strings.TrimSpace(formatContent(item.Content))
+		body, displayBody, attachments := formatUserContent(item.ID, item.Content)
 		if body == "" {
 			return core.SessionTranscriptItem{}, false
 		}
 		return core.SessionTranscriptItem{
-			ID:    item.ID,
-			Kind:  core.SessionTranscriptItemKindUserMessage,
-			Title: "You",
-			Body:  body,
+			ID:          item.ID,
+			Kind:        core.SessionTranscriptItemKindUserMessage,
+			Title:       "You",
+			Body:        body,
+			DisplayBody: displayBody,
+			Attachments: attachments,
 		}, true
 	case "agentMessage":
 		body := strings.TrimSpace(item.Text)
@@ -208,18 +211,25 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 	}
 }
 
-func formatContent(raw json.RawMessage) string {
+func formatUserContent(rawID string, raw json.RawMessage) (string, string, []core.SessionTranscriptAttachment) {
+	body, attachments := formatContent(rawID, raw)
+	displayBody := strings.TrimSpace(formatUserMessageForDisplay(body))
+	return strings.TrimSpace(body), displayBody, attachments
+}
+
+func formatContent(rawID string, raw json.RawMessage) (string, []core.SessionTranscriptAttachment) {
 	if len(raw) == 0 {
-		return ""
+		return "", nil
 	}
 
 	var parts []map[string]any
 	if err := json.Unmarshal(raw, &parts); err != nil {
-		return compactJSON(raw, 1200)
+		return compactJSON(raw, 1200), nil
 	}
 
 	lines := make([]string, 0, len(parts))
-	for _, part := range parts {
+	attachments := make([]core.SessionTranscriptAttachment, 0)
+	for index, part := range parts {
 		partType, _ := part["type"].(string)
 		switch partType {
 		case "text":
@@ -229,15 +239,31 @@ func formatContent(raw json.RawMessage) string {
 		case "localImage":
 			if path, _ := part["path"].(string); strings.TrimSpace(path) != "" {
 				lines = append(lines, "[image] "+path)
+				attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindImage, attachmentLabel(part, "Image"), path, imageProxyPathURL(path), contentType(part)))
 			} else {
 				lines = append(lines, "[image]")
+				attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindImage, "Image", "", "", contentType(part)))
 			}
 		case "image":
-			if url, _ := part["image_url"].(string); strings.TrimSpace(url) != "" {
-				lines = append(lines, "[image] "+url)
+			if imageURL := imageURL(part); imageURL != "" {
+				lines = append(lines, "[image] "+imageURL)
+				attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindImage, attachmentLabel(part, "Image"), "", imageAttachmentURL(imageURL), contentType(part)))
 			} else {
 				lines = append(lines, "[image]")
+				attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindImage, "Image", "", "", contentType(part)))
 			}
+		case "file", "localFile":
+			path, _ := part["path"].(string)
+			url, _ := part["url"].(string)
+			label := attachmentLabel(part, "File")
+			if strings.TrimSpace(path) != "" {
+				lines = append(lines, "[file] "+strings.TrimSpace(path))
+			} else if strings.TrimSpace(url) != "" {
+				lines = append(lines, "[file] "+strings.TrimSpace(url))
+			} else {
+				lines = append(lines, "[file]")
+			}
+			attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindFile, label, path, url, contentType(part)))
 		default:
 			if partType != "" {
 				lines = append(lines, "["+partType+"]")
@@ -245,7 +271,181 @@ func formatContent(raw json.RawMessage) string {
 		}
 	}
 
-	return strings.Join(lines, "\n")
+	return strings.Join(lines, "\n"), attachments
+}
+
+func imageProxyPathURL(path string) string {
+	normalized := strings.TrimSpace(path)
+	if normalized == "" {
+		return ""
+	}
+	return "/api/image-proxy?path=" + url.QueryEscape(normalized)
+}
+
+func imageProxyRemoteURL(rawURL string) string {
+	normalized := strings.TrimSpace(rawURL)
+	if normalized == "" {
+		return ""
+	}
+	return "/api/image-proxy?url=" + url.QueryEscape(normalized)
+}
+
+func imageAttachmentURL(rawURL string) string {
+	normalized := strings.TrimSpace(rawURL)
+	if normalized == "" {
+		return ""
+	}
+	if strings.HasPrefix(strings.ToLower(normalized), "data:image/") {
+		return normalized
+	}
+	return imageProxyRemoteURL(normalized)
+}
+
+func imageURL(part map[string]any) string {
+	for _, key := range []string{"image_url", "imageUrl", "url", "source"} {
+		if value, _ := part[key].(string); strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func transcriptAttachment(
+	itemID string,
+	index int,
+	kind core.SessionTranscriptAttachmentKind,
+	label string,
+	path string,
+	url string,
+	contentType string,
+) core.SessionTranscriptAttachment {
+	return core.SessionTranscriptAttachment{
+		ID:          fmt.Sprintf("%s-attachment-%d", itemID, index),
+		Kind:        kind,
+		Label:       strings.TrimSpace(label),
+		Path:        strings.TrimSpace(path),
+		URL:         strings.TrimSpace(url),
+		ContentType: strings.TrimSpace(contentType),
+	}
+}
+
+func contentType(part map[string]any) string {
+	if value, _ := part["content_type"].(string); strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value)
+	}
+	if value, _ := part["mime_type"].(string); strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value)
+	}
+	return ""
+}
+
+func attachmentLabel(part map[string]any, fallback string) string {
+	if value, _ := part["name"].(string); strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value)
+	}
+	if value, _ := part["label"].(string); strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value)
+	}
+	if value, _ := part["path"].(string); strings.TrimSpace(value) != "" {
+		segments := strings.FieldsFunc(strings.TrimSpace(value), func(r rune) bool {
+			return r == '/' || r == '\\'
+		})
+		if len(segments) > 0 {
+			return segments[len(segments)-1]
+		}
+	}
+	return fallback
+}
+
+func formatUserMessageForDisplay(value string) string {
+	if comments := extractDiffCommentBodies(value); len(comments) == 1 {
+		return comments[0]
+	} else if len(comments) > 1 {
+		numbered := make([]string, 0, len(comments))
+		for index, comment := range comments {
+			numbered = append(numbered, fmt.Sprintf("%d. %s", index+1, comment))
+		}
+		return strings.Join(numbered, "\n")
+	}
+
+	const marker = "## My request for Codex:"
+	markerIndex := strings.Index(value, marker)
+	if markerIndex < 0 {
+		return value
+	}
+
+	afterMarker := value[markerIndex+len(marker):]
+	imageNarrativeIndex := strings.Index(afterMarker, "\nThe next image shows the browser page")
+	if imageNarrativeIndex < 0 {
+		imageNarrativeIndex = strings.Index(afterMarker, "\nThe next image shows")
+	}
+	if imageNarrativeIndex >= 0 {
+		afterMarker = afterMarker[:imageNarrativeIndex]
+	}
+
+	return cleanUserMessageFragment(afterMarker)
+}
+
+func extractDiffCommentBodies(value string) []string {
+	if !strings.Contains(value, "# Diff comments:") {
+		return nil
+	}
+
+	comments := make([]string, 0)
+	lines := strings.Split(value, "\n")
+	collecting := false
+	buffer := make([]string, 0)
+
+	flush := func() {
+		if len(buffer) == 0 {
+			return
+		}
+		body := cleanUserMessageFragment(strings.Join(buffer, "\n"))
+		if body != "" {
+			comments = append(comments, body)
+		}
+		buffer = buffer[:0]
+	}
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if collecting {
+			if strings.HasPrefix(trimmed, "## Comment ") ||
+				trimmed == "# In app browser (IAB):" ||
+				trimmed == "## My request for Codex:" {
+				collecting = false
+				flush()
+			} else {
+				buffer = append(buffer, line)
+				continue
+			}
+		}
+		if trimmed == "Comment:" {
+			collecting = true
+			buffer = buffer[:0]
+		}
+	}
+	if collecting {
+		flush()
+	}
+
+	return comments
+}
+
+func cleanUserMessageFragment(value string) string {
+	cleaned := strings.TrimSpace(value)
+	cleaned = strings.TrimPrefix(cleaned, ":")
+	cleaned = strings.TrimPrefix(cleaned, "：")
+	cleaned = strings.TrimSpace(cleaned)
+	if index := strings.Index(cleaned, "\nThe next image shows the browser page"); index >= 0 {
+		cleaned = cleaned[:index]
+	}
+	if index := strings.Index(cleaned, "\nThe next image shows"); index >= 0 {
+		cleaned = cleaned[:index]
+	}
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.TrimSuffix(cleaned, "[image]")
+	return strings.TrimSpace(cleaned)
 }
 
 func formatToolCall(item ReadThreadItem) string {

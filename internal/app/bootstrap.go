@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sorcererxw/hopter/internal/backend"
-	copilotbackend "github.com/sorcererxw/hopter/internal/backend/copilot"
-	"github.com/sorcererxw/hopter/internal/codex"
+	"github.com/sorcererxw/hopter/internal/agents"
+	"github.com/sorcererxw/hopter/internal/agents/codex"
+	copilotagent "github.com/sorcererxw/hopter/internal/agents/copilot"
 	"github.com/sorcererxw/hopter/internal/core"
 	"github.com/sorcererxw/hopter/internal/events"
 	serverhttp "github.com/sorcererxw/hopter/internal/http"
@@ -29,21 +29,22 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	updateService := update.NewService(cfg.Version, cfg.InstallSource)
 	codexManager := codex.NewManager(workspace, eventHub)
 	terminalManager := terminal.NewManager(workspace)
-	backendManager := backend.NewManager(workspace, map[string]backend.Runtime{
-		backend.DefaultBackendKey: backend.NewCodexRuntime(codexManager),
-		"copilot":                 copilotbackend.NewManager(workspace),
+	agentManager := agents.NewManager(workspace, map[string]agents.Runtime{
+		agents.DefaultBackendKey: codex.NewRuntime(codexManager),
+		"copilot":                copilotagent.NewManager(workspace),
 	})
-	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, backendManager)
+	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, agentManager)
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
 		Version:                cfg.Version,
 		UI:                     serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
 		EventHub:               eventHub,
 		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService),
-		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, backendManager),
-		SessionServiceHandler:  rpcserver.NewSessionService(workspace, backendManager, sessionReadModel),
+		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, agentManager),
+		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager, sessionReadModel),
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
 		TerminalStreamHandler:  terminalManager,
+		Workspace:              workspace,
 	})
 	if err != nil {
 		return nil, err

@@ -2,21 +2,34 @@ import {
   Suspense,
   lazy,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type RefObject,
   type MouseEvent as ReactMouseEvent,
 } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import {
+  ArrowDown,
   ChevronRight,
+  FileImage,
+  FileText,
   Lightbulb,
   LoaderCircle,
   Wrench,
+  X,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionArtifactWorkspace } from "@/components/app/session-artifact-workspace"
 import { SessionComposer } from "@/components/app/session-composer"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   buildClosedPanelParams,
   buildFilePanelParams,
@@ -44,15 +57,25 @@ import {
   useSessionReview,
   useSessionTranscript,
 } from "@/features/sessions/use-sessions"
-import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
 import {
+  ApprovalDecision,
+  ArtifactKind,
+  SessionStatus,
+} from "@/gen/proto/hopter/v1/common_pb"
+import {
+  SessionTranscriptAttachmentKind,
   SessionTranscriptItemKind,
   type Session,
   type SessionMeta,
+  type SessionTranscriptAttachment,
   type SessionTranscriptPage,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
-import { formatSessionStatus } from "@/lib/format/proto"
+import {
+  formatBackendKey,
+  formatSessionStatus,
+  formatUpdatedAt,
+} from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
 const SessionInspectorPane = lazy(() =>
@@ -121,12 +144,16 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   })
   const sidebarDraggingRef = useRef(false)
   const [transcriptVisible, setTranscriptVisible] = useState(false)
+  const [transcriptAwayFromBottom, setTranscriptAwayFromBottom] =
+    useState(false)
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const transcriptContentRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
   const lastScrollHeightRef = useRef(0)
   const lastSessionIdRef = useRef(sessionId)
+  const loadedTranscriptSessionRef = useRef(sessionId)
   const lastActivityCountRef = useRef(0)
+  const historyBackfillRunningRef = useRef(false)
   const prependSnapshotRef = useRef<{
     scrollHeight: number
   } | null>(null)
@@ -263,7 +290,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   ])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
-  const hasMoreBefore =
+  const hasUnloadedTranscriptHistory =
     transcriptPages[0]?.hasMoreBefore ??
     sessionMetaQuery.data?.hasMoreBefore ??
     false
@@ -274,15 +301,37 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const panelAsPage = posture !== "wide" && panelVisible
 
   useEffect(() => {
-    if (!latestTranscriptQuery.data) {
+    const latestPage = latestTranscriptQuery.data
+    if (!latestPage) {
       setTranscriptPages([])
       return
     }
-    setTranscriptPages([latestTranscriptQuery.data])
+    const latestSnapshotKey = transcriptPageSnapshotKey(latestPage)
+    setTranscriptPages((current) => {
+      const sessionChanged = loadedTranscriptSessionRef.current !== sessionId
+      loadedTranscriptSessionRef.current = sessionId
+
+      if (sessionChanged || current.length === 0) {
+        return [latestPage]
+      }
+
+      const currentSnapshotKey = transcriptPageSnapshotKey(current.at(-1))
+      if (currentSnapshotKey !== latestSnapshotKey) {
+        historyBackfillRunningRef.current = false
+        prependSnapshotRef.current = null
+        setIsFetchingPreviousPage(false)
+        return [latestPage]
+      }
+
+      return [...current.slice(0, -1), latestPage]
+    })
   }, [latestTranscriptQuery.data, sessionId])
 
   useEffect(() => {
     setOptimisticPendingInput("")
+    setTranscriptAwayFromBottom(false)
+    loadedTranscriptSessionRef.current = sessionId
+    historyBackfillRunningRef.current = false
     prependSnapshotRef.current = null
   }, [sessionId])
 
@@ -374,7 +423,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       !sessionChanged && countChanged && lastActivityKey !== ""
 
     if (sessionChanged || (lastKeyChanged && shouldStickToBottomRef.current)) {
-      container.scrollTop = container.scrollHeight
+      stickTranscriptToBottom(container)
     }
 
     lastSessionIdRef.current = sessionId
@@ -391,19 +440,25 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     lastScrollHeightRef.current = container.scrollHeight
 
     const observer = new ResizeObserver(() => {
+      const previousScrollHeight = lastScrollHeightRef.current
+      const previousDistanceFromBottom =
+        previousScrollHeight - container.scrollTop - container.clientHeight
       const nextScrollHeight = container.scrollHeight
-      const grew = nextScrollHeight > lastScrollHeightRef.current
+      const grew = nextScrollHeight > previousScrollHeight
+      const wasPinnedBeforeGrowth =
+        previousDistanceFromBottom < 120 || shouldStickToBottomRef.current
       lastScrollHeightRef.current = nextScrollHeight
 
       if (
         !grew ||
         prependSnapshotRef.current ||
-        !shouldStickToBottomRef.current
+        !wasPinnedBeforeGrowth
       ) {
+        updateTranscriptBottomState(container)
         return
       }
 
-      container.scrollTop = container.scrollHeight
+      stickTranscriptToBottom(container)
     })
 
     observer.observe(content)
@@ -415,13 +470,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     syncScrollbar()
   }, [syncScrollbar, transcriptPages, transcriptVisible])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = transcriptScrollRef.current
     const snapshot = prependSnapshotRef.current
     if (!container || !snapshot) {
-      return
-    }
-    if (isFetchingPreviousPage) {
       return
     }
     if (transcriptPageCount < 2) {
@@ -430,8 +482,102 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
     const delta = container.scrollHeight - snapshot.scrollHeight
     container.scrollTop += delta
+    lastScrollHeightRef.current = container.scrollHeight
+    updateTranscriptBottomState(container)
     prependSnapshotRef.current = null
-  }, [transcriptPageCount, isFetchingPreviousPage])
+  }, [transcriptPageCount])
+
+  useEffect(() => {
+    const firstPage = transcriptPages[0]
+    if (
+      !firstPage?.hasMoreBefore ||
+      !firstPage.nextBeforeCursor ||
+      historyBackfillRunningRef.current
+    ) {
+      historyBackfillRunningRef.current = false
+      setIsFetchingPreviousPage(false)
+      return
+    }
+
+    let cancelled = false
+    historyBackfillRunningRef.current = true
+    setIsFetchingPreviousPage(true)
+
+    async function loadHistory() {
+      let cursor = firstPage!.nextBeforeCursor
+      const seenCursors = new Set<string>()
+
+      try {
+        while (!cancelled && cursor) {
+          if (seenCursors.has(cursor)) {
+            break
+          }
+          seenCursors.add(cursor)
+
+          const page = await fetchSessionTranscriptPage(sessionId, cursor)
+          if (cancelled || !page) {
+            break
+          }
+          if (!sameTranscriptSnapshot(firstPage!, page)) {
+            break
+          }
+
+          const container = transcriptScrollRef.current
+          if (container) {
+            prependSnapshotRef.current = {
+              scrollHeight: container.scrollHeight,
+            }
+          }
+
+          setTranscriptPages((current) => {
+            const currentIds = new Set(
+              current.flatMap((existing) =>
+                (existing.items ?? []).map((item) => item.id)
+              )
+            )
+            const nextItems = (page.items ?? []).filter(
+              (item) => !currentIds.has(item.id)
+            )
+
+            if (nextItems.length === 0) {
+              return current
+            }
+
+            return [
+              {
+                ...page,
+                items: nextItems,
+              } as SessionTranscriptPage,
+              ...current,
+            ]
+          })
+
+          await nextAnimationFrame()
+
+          if (!page.hasMoreBefore || !page.nextBeforeCursor) {
+            break
+          }
+
+          cursor = page.nextBeforeCursor
+        }
+      } finally {
+        historyBackfillRunningRef.current = false
+        if (!cancelled) {
+          setIsFetchingPreviousPage(false)
+        }
+      }
+    }
+
+    void loadHistory()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    sessionId,
+    transcriptPages[0]?.hasMoreBefore,
+    transcriptPages[0]?.nextBeforeCursor,
+  ])
 
   function handleTranscriptScroll() {
     const container = transcriptScrollRef.current
@@ -443,27 +589,57 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight
     shouldStickToBottomRef.current = distanceFromBottom < 120
+    setTranscriptAwayFromBottom(distanceFromBottom > 160)
+  }
 
-    if (container.scrollTop <= 80 && hasMoreBefore && !isFetchingPreviousPage) {
-      const beforeCursor = transcriptPages[0]?.nextBeforeCursor
-      if (!beforeCursor) {
-        return
-      }
-      prependSnapshotRef.current = {
-        scrollHeight: container.scrollHeight,
-      }
-      setIsFetchingPreviousPage(true)
-      void fetchSessionTranscriptPage(sessionId, beforeCursor)
-        .then((page) => {
-          if (!page) {
-            return
-          }
-          setTranscriptPages((current) => [page, ...current])
-        })
-        .finally(() => {
-          setIsFetchingPreviousPage(false)
-        })
+  function scrollTranscriptToBottom() {
+    const container = transcriptScrollRef.current
+    if (!container) {
+      return
     }
+
+    shouldStickToBottomRef.current = true
+    setTranscriptAwayFromBottom(false)
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    })
+  }
+
+  function updateTranscriptBottomState(container: HTMLDivElement) {
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight
+    const shouldStick = distanceFromBottom < 120
+    shouldStickToBottomRef.current = shouldStick
+    setTranscriptAwayFromBottom(distanceFromBottom > 160)
+  }
+
+  function stickTranscriptToBottom(container: HTMLDivElement) {
+    shouldStickToBottomRef.current = true
+    container.scrollTop = container.scrollHeight
+    setTranscriptAwayFromBottom(false)
+  }
+
+  function nextAnimationFrame() {
+    return new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve())
+    })
+  }
+
+  function sameTranscriptSnapshot(
+    left: SessionTranscriptPage,
+    right: SessionTranscriptPage
+  ) {
+    return transcriptPageSnapshotKey(left) === transcriptPageSnapshotKey(right)
+  }
+
+  function transcriptPageSnapshotKey(page: SessionTranscriptPage | undefined) {
+    const snapshot = page?.snapshotUpdatedAt
+    if (!snapshot) {
+      return ""
+    }
+
+    return `${String(snapshot.seconds ?? "")}:${String(snapshot.nanos ?? "")}`
   }
 
   function openFilePanel(rawPath: string) {
@@ -634,57 +810,45 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 <div
                   ref={transcriptContentRef}
                   className={cn(
-                    "mx-auto max-w-[720px] space-y-0 transition-opacity duration-200 ease-out",
+                    "mx-auto max-w-[720px] space-y-3 py-4 transition-opacity duration-200 ease-out md:py-6",
                     transcriptVisible ? "opacity-100" : "opacity-0"
                   )}
                 >
-                  {session.attentionRequired ? (
-                    <div className="rounded-lg border border-amber-300/15 bg-amber-300/8 px-4 py-3">
-                      <div className="mb-1 text-sm font-medium text-amber-100/80">
-                        Attention
-                      </div>
-                      <p className="text-base leading-7 font-medium text-amber-50/85">
-                        {session.attentionReason ||
-                          "This session requires user input."}
-                      </p>
-                      {session.pendingApprovalId ? (
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            type="button"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 font-medium text-emerald-50 transition hover:bg-emerald-300/15 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={respondToApproval.isPending}
-                            onClick={() => {
-                              void respondToApproval.mutateAsync({
-                                sessionId,
-                                approvalId: session.pendingApprovalId!,
-                                decision: ApprovalDecision.APPROVE,
-                              })
-                            }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex h-8 items-center justify-center rounded-lg border border-amber-200/20 bg-transparent px-3 font-medium text-amber-50/85 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={respondToApproval.isPending}
-                            onClick={() => {
-                              void respondToApproval.mutateAsync({
-                                sessionId,
-                                approvalId: session.pendingApprovalId!,
-                                decision: ApprovalDecision.REJECT,
-                              })
-                            }}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  <SessionStatusHeader session={session} />
+                  <SessionConnectionBlock state={eventStreamState} />
+                  <SessionSummaryBlock session={session} />
+                  <SessionCompletedResultBlock session={session} />
+
+                  <SessionAttentionBlock
+                    onApprove={() => {
+                      if (!session.pendingApprovalId) {
+                        return
+                      }
+                      void respondToApproval.mutateAsync({
+                        sessionId,
+                        approvalId: session.pendingApprovalId,
+                        decision: ApprovalDecision.APPROVE,
+                      })
+                    }}
+                    onReject={() => {
+                      if (!session.pendingApprovalId) {
+                        return
+                      }
+                      void respondToApproval.mutateAsync({
+                        sessionId,
+                        approvalId: session.pendingApprovalId,
+                        decision: ApprovalDecision.REJECT,
+                      })
+                    }}
+                    responding={respondToApproval.isPending}
+                    session={session}
+                  />
 
                   <TranscriptTimeline
                     items={activityItems}
-                    isFetchingPreviousPage={isFetchingPreviousPage}
+                    isFetchingPreviousPage={
+                      isFetchingPreviousPage && hasUnloadedTranscriptHistory
+                    }
                     isLoadingInitialTranscript={isLoadingInitialTranscript}
                     onSelectDiff={(diff) => {
                       openReviewPanel({
@@ -695,6 +859,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                     onSelectPath={(path) => {
                       openFilePanel(path)
                     }}
+                    scrollElementRef={transcriptScrollRef}
                   />
                   <SessionArtifactWorkspace
                     artifacts={session.artifacts}
@@ -722,6 +887,23 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 thumbOffset={thumbOffset}
                 visible={scrollbarVisible}
               />
+              <button
+                type="button"
+                aria-label="Scroll to latest message"
+                aria-hidden={!transcriptVisible || !transcriptAwayFromBottom}
+                tabIndex={
+                  transcriptVisible && transcriptAwayFromBottom ? 0 : -1
+                }
+                className={cn(
+                  "absolute bottom-4 left-1/2 z-10 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition-[opacity,background-color] duration-200 ease-out hover:bg-card",
+                  transcriptVisible && transcriptAwayFromBottom
+                    ? "opacity-100"
+                    : "pointer-events-none opacity-0"
+                )}
+                onClick={scrollTranscriptToBottom}
+              >
+                <ArrowDown className="size-4" />
+              </button>
             </div>
 
             {session && shouldShowWorkingStatus ? (
@@ -884,6 +1066,447 @@ function buildSessionDetail(
   } as Session
 }
 
+function SessionStatusHeader({ session }: { session: Session }) {
+  const status = getSessionStatusDisplay(session)
+  const backend = formatBackendKey(session.backendKey)
+  const updatedAt = formatUpdatedAt(session.updatedAt)
+  const projectName = session.project?.name || "Local"
+
+  return (
+    <section
+      className="rounded-lg border border-border bg-card px-4 py-3"
+      data-testid="session-status-header"
+      aria-label="Session status"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "size-2 rounded-full",
+                status.dotClassName
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "rounded-md px-2 py-1 text-sm font-medium",
+                status.badgeClassName
+              )}
+            >
+              {status.label}
+            </span>
+            {session.pendingApprovalId ? (
+              <span className="rounded-md bg-amber-400/10 px-2 py-1 text-sm font-medium text-amber-700 dark:text-amber-200">
+                Approval pending
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-base leading-6 font-medium text-foreground">
+            {status.description}
+          </p>
+        </div>
+
+        <div className="min-w-40 text-right text-sm text-muted-foreground">
+          <div className="truncate">{projectName}</div>
+          <div className="mt-1 truncate">{backend}</div>
+          <div className="mt-1 truncate">{updatedAt}</div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SessionSummaryBlock({ session }: { session: Session }) {
+  const summary = session.summary.trim()
+  const lastInputHint = session.lastInputHint.trim()
+
+  return (
+    <section
+      className="rounded-lg border border-border bg-card px-4 py-3"
+      data-testid="session-summary-block"
+      aria-label="Session summary"
+    >
+      <div className="text-sm font-medium text-foreground">Summary</div>
+      {summary ? (
+        <SessionRichText
+          text={summary}
+          className="mt-2 text-base leading-6"
+        />
+      ) : (
+        <div className="mt-2 text-base leading-6 text-muted-foreground">
+          <p>
+            No summary yet. Useful progress will appear here when this thread
+            has a meaningful state to report.
+          </p>
+          {lastInputHint ? (
+            <p className="mt-2">
+              Latest input:{" "}
+              <span className="text-foreground">{lastInputHint}</span>
+            </p>
+          ) : null}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function SessionConnectionBlock({
+  state,
+}: {
+  state: "connecting" | "connected" | "reconnecting" | "offline"
+}) {
+  if (state === "connected") {
+    return null
+  }
+
+  const display = getConnectionDisplay(state)
+
+  return (
+    <section
+      className={cn(
+        "rounded-lg border px-4 py-3",
+        display.containerClassName
+      )}
+      data-testid="session-connection-block"
+      aria-label={display.title}
+    >
+      <div className={cn("text-sm font-medium", display.titleClassName)}>
+        {display.title}
+      </div>
+      <p className={cn("mt-1 text-base leading-6 font-medium", display.bodyClassName)}>
+        {display.body}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        {display.detail}
+      </p>
+    </section>
+  )
+}
+
+function getConnectionDisplay(
+  state: "connecting" | "connected" | "reconnecting" | "offline"
+) {
+  switch (state) {
+    case "connecting":
+      return {
+        body: "Connecting to live session updates.",
+        bodyClassName: "text-muted-foreground",
+        containerClassName: "border-border bg-card",
+        detail:
+          "The cached session view is visible while the browser opens the event stream.",
+        title: "Connecting",
+        titleClassName: "text-foreground",
+      }
+    case "reconnecting":
+      return {
+        body: "Live updates are reconnecting.",
+        bodyClassName: "text-amber-900 dark:text-amber-50",
+        containerClassName: "border-amber-400/20 bg-amber-400/10",
+        detail:
+          "Inspect history and artifacts normally, but wait for reconnection before trusting live control state.",
+        title: "Reconnecting",
+        titleClassName: "text-amber-800 dark:text-amber-100",
+      }
+    case "offline":
+      return {
+        body: "The browser is offline.",
+        bodyClassName: "text-destructive",
+        containerClassName: "border-destructive/20 bg-destructive/10",
+        detail:
+          "This page is effectively read-only until network connectivity returns.",
+        title: "Offline",
+        titleClassName: "text-destructive",
+      }
+    case "connected":
+    default:
+      return {
+        body: "",
+        bodyClassName: "",
+        containerClassName: "",
+        detail: "",
+        title: "",
+        titleClassName: "",
+      }
+  }
+}
+
+function SessionCompletedResultBlock({ session }: { session: Session }) {
+  if (session.status !== SessionStatus.COMPLETED) {
+    return null
+  }
+
+  const artifactSummary = summarizeArtifacts(session)
+
+  return (
+    <section
+      className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-4 py-3"
+      data-testid="session-completed-result"
+      aria-label="Completed result"
+    >
+      <div className="text-sm font-medium text-emerald-700 dark:text-emerald-100">
+        Completed result
+      </div>
+      <p className="mt-1 text-base leading-6 font-medium text-emerald-800 dark:text-emerald-50">
+        {session.summary.trim() || "The latest turn completed."}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+        <span className="rounded-md bg-background px-2 py-1 text-muted-foreground">
+          {session.artifacts.length} artifact
+          {session.artifacts.length === 1 ? "" : "s"}
+        </span>
+        {artifactSummary.map((item) => (
+          <span
+            key={item.label}
+            className="rounded-md bg-background px-2 py-1 text-muted-foreground"
+          >
+            {item.count} {item.label}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function summarizeArtifacts(session: Session) {
+  const counts = new Map<ArtifactKind, number>()
+
+  for (const artifact of session.artifacts) {
+    counts.set(artifact.kind, (counts.get(artifact.kind) ?? 0) + 1)
+  }
+
+  return [
+    { kind: ArtifactKind.SUMMARY, label: "summary" },
+    { kind: ArtifactKind.CHANGED_FILES, label: "changed files" },
+    { kind: ArtifactKind.TEST_RESULT, label: "test result" },
+    { kind: ArtifactKind.SCREENSHOT, label: "screenshot" },
+    { kind: ArtifactKind.LOG, label: "log" },
+    { kind: ArtifactKind.OTHER, label: "other" },
+  ]
+    .map((item) => ({
+      count: counts.get(item.kind) ?? 0,
+      label: item.label,
+    }))
+    .filter((item) => item.count > 0)
+}
+
+function SessionAttentionBlock({
+  onApprove,
+  onReject,
+  responding,
+  session,
+}: {
+  onApprove: () => void
+  onReject: () => void
+  responding: boolean
+  session: Session
+}) {
+  const attention = getSessionAttentionDisplay(session)
+
+  if (!attention) {
+    return null
+  }
+
+  return (
+    <section
+      className={cn(
+        "rounded-lg border px-4 py-3",
+        attention.containerClassName
+      )}
+      data-testid="session-attention-block"
+      aria-label={attention.title}
+    >
+      <div className={cn("mb-1 text-sm font-medium", attention.titleClassName)}>
+        {attention.title}
+      </div>
+      <p className={cn("text-base leading-7 font-medium", attention.bodyClassName)}>
+        {attention.body}
+      </p>
+      {attention.detail ? (
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          {attention.detail}
+        </p>
+      ) : null}
+      {session.pendingApprovalId ? (
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 font-medium text-emerald-700 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-100"
+            disabled={responding}
+            onClick={onApprove}
+          >
+            Approve
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-transparent px-3 font-medium text-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={responding}
+            onClick={onReject}
+          >
+            Reject
+          </button>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function getSessionAttentionDisplay(session: Session) {
+  const reason = session.attentionReason.trim()
+  const summary = session.summary.trim()
+
+  if (session.pendingApprovalId || session.status === SessionStatus.WAITING_APPROVAL) {
+    return {
+      body: reason || "Codex needs approval before it can continue.",
+      bodyClassName: "text-amber-900 dark:text-amber-50",
+      containerClassName: "border-amber-400/20 bg-amber-400/10",
+      detail: "Review the request before approving or rejecting the next step.",
+      title: "Approval required",
+      titleClassName: "text-amber-800 dark:text-amber-100",
+    }
+  }
+
+  if (session.status === SessionStatus.FAILED) {
+    return {
+      body: reason || summary || "This thread failed before it could complete.",
+      bodyClassName: "text-destructive",
+      containerClassName: "border-destructive/20 bg-destructive/10",
+      detail: "You can send a follow-up with more context or retry from the composer.",
+      title: "Turn failed",
+      titleClassName: "text-destructive",
+    }
+  }
+
+  if (session.status === SessionStatus.DEGRADED) {
+    return {
+      body:
+        reason ||
+        summary ||
+        "This thread is available, but live state may be incomplete.",
+      bodyClassName: "text-amber-900 dark:text-amber-50",
+      containerClassName: "border-amber-400/20 bg-amber-400/10",
+      detail:
+        "Inspect history and artifacts normally, but treat live control state as partially reliable.",
+      title: "Degraded state",
+      titleClassName: "text-amber-800 dark:text-amber-100",
+    }
+  }
+
+  if (session.status === SessionStatus.WAITING_INPUT) {
+    return {
+      body: reason || "Codex is waiting for your next instruction.",
+      bodyClassName: "text-amber-900 dark:text-amber-50",
+      containerClassName: "border-amber-400/20 bg-amber-400/10",
+      detail: "Use the composer below to steer this thread.",
+      title: "Input needed",
+      titleClassName: "text-amber-800 dark:text-amber-100",
+    }
+  }
+
+  if (session.attentionRequired) {
+    return {
+      body: reason || "This session requires user input.",
+      bodyClassName: "text-amber-900 dark:text-amber-50",
+      containerClassName: "border-amber-400/20 bg-amber-400/10",
+      detail: "",
+      title: "Attention",
+      titleClassName: "text-amber-800 dark:text-amber-100",
+    }
+  }
+
+  return null
+}
+
+function getSessionStatusDisplay(session: Session) {
+  const formattedStatus = formatSessionStatus(session.status)
+  const title = titleCaseStatus(formattedStatus)
+
+  switch (session.status) {
+    case SessionStatus.PENDING:
+      return {
+        badgeClassName:
+          "bg-secondary text-secondary-foreground",
+        description:
+          session.lastInputHint.trim() ||
+          "This thread is queued and waiting for Codex to start.",
+        dotClassName: "bg-muted-foreground",
+        label: title,
+      }
+    case SessionStatus.RUNNING:
+      return {
+        badgeClassName: "bg-sky-400/10 text-sky-700 dark:text-sky-200",
+        description:
+          session.summary.trim() || "Codex is actively working on this thread.",
+        dotClassName: "bg-sky-400",
+        label: title,
+      }
+    case SessionStatus.WAITING_INPUT:
+      return {
+        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
+        description:
+          session.attentionReason.trim() ||
+          "Codex is waiting for your next instruction.",
+        dotClassName: "bg-amber-400",
+        label: title,
+      }
+    case SessionStatus.WAITING_APPROVAL:
+      return {
+        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
+        description:
+          session.attentionReason.trim() ||
+          "Codex needs approval before it can continue.",
+        dotClassName: "bg-amber-400",
+        label: title,
+      }
+    case SessionStatus.COMPLETED:
+      return {
+        badgeClassName:
+          "bg-emerald-400/10 text-emerald-700 dark:text-emerald-200",
+        description:
+          session.summary.trim() || "This thread has completed its latest turn.",
+        dotClassName: "bg-emerald-500",
+        label: title,
+      }
+    case SessionStatus.FAILED:
+      return {
+        badgeClassName: "bg-destructive/10 text-destructive",
+        description:
+          session.attentionReason.trim() ||
+          session.summary.trim() ||
+          "This thread failed before it could complete.",
+        dotClassName: "bg-destructive",
+        label: title,
+      }
+    case SessionStatus.DEGRADED:
+      return {
+        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
+        description:
+          session.attentionReason.trim() ||
+          session.summary.trim() ||
+          "This thread is available, but live state may be incomplete.",
+        dotClassName: "bg-amber-400",
+        label: title,
+      }
+    case SessionStatus.UNSPECIFIED:
+    default:
+      return {
+        badgeClassName:
+          "bg-secondary text-secondary-foreground",
+        description:
+          session.summary.trim() || "The current thread state is not specified.",
+        dotClassName: "bg-muted-foreground",
+        label: title,
+      }
+  }
+}
+
+function titleCaseStatus(value: string) {
+  return value
+    .split(" ")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
+    .join(" ")
+}
+
 type ActivityItem =
   | {
       item: SessionTranscriptItem
@@ -962,82 +1585,157 @@ function TranscriptTimeline({
   isLoadingInitialTranscript,
   onSelectDiff,
   onSelectPath,
+  scrollElementRef,
 }: {
   items: ActivityItem[]
   isFetchingPreviousPage: boolean
   isLoadingInitialTranscript: boolean
   onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
+  scrollElementRef: RefObject<HTMLDivElement | null>
 }) {
   const timelineItems = groupTimelineItems(items)
+  const timelineRef = useRef<HTMLDivElement | null>(null)
+  const [scrollMargin, setScrollMargin] = useState(0)
+  const virtualizer = useVirtualizer({
+    count: timelineItems.length,
+    estimateSize: () => 96,
+    getItemKey: (index) => timelineItems[index]?.key ?? index,
+    getScrollElement: () => scrollElementRef.current,
+    measureElement: (element) => element.getBoundingClientRect().height,
+    overscan: 8,
+    scrollMargin,
+  })
+
+  useLayoutEffect(() => {
+    const scrollElement = scrollElementRef.current
+    const timelineElement = timelineRef.current
+    if (!scrollElement || !timelineElement) {
+      return
+    }
+
+    function updateScrollMargin() {
+      const scrollRect = scrollElement!.getBoundingClientRect()
+      const timelineRect = timelineElement!.getBoundingClientRect()
+      setScrollMargin(timelineRect.top - scrollRect.top + scrollElement!.scrollTop)
+    }
+
+    updateScrollMargin()
+
+    if (typeof ResizeObserver === "undefined") {
+      return
+    }
+
+    const observer = new ResizeObserver(updateScrollMargin)
+    if (timelineElement.parentElement) {
+      observer.observe(timelineElement.parentElement)
+    }
+    observer.observe(scrollElement)
+
+    return () => observer.disconnect()
+  }, [scrollElementRef, timelineItems.length])
 
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
-    return null
+    return (
+      <div
+        className="rounded-lg border border-border bg-card px-4 py-6 text-sm text-muted-foreground"
+        data-testid="session-transcript-empty"
+      >
+        No timeline events yet. Messages, tool calls, commands, and file changes
+        will appear here as Codex works.
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-2" data-testid="session-transcript">
+    <div
+      ref={timelineRef}
+      className="relative"
+      data-testid="session-transcript"
+    >
       {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
-      {timelineItems.map((item) => {
-        switch (item.kind) {
-          case "transcript":
-            return (
-              <TranscriptEntry
-                key={item.key}
-                item={item.item}
-                onSelectDiff={onSelectDiff}
-                onSelectPath={onSelectPath}
-              />
-            )
-          case "thinking":
-            return <ThinkingEntry key={item.key} summary={item.summary} />
-          case "round-status":
-            return (
-              <RoundStatusEntry
-                key={item.key}
-                state={item.state}
-                summary={item.summary}
-              />
-            )
-          case "pending-input":
-            return (
-              <PendingInputEntry
-                key={item.key}
-                onSelectPath={onSelectPath}
-                text={item.text}
-              />
-            )
-          case "command-group":
-            return <CommandGroupEntry key={item.key} items={item.items} />
-          case "file-change-group":
-            return (
-              <FileChangeGroupEntry
-                key={item.key}
-                items={item.items}
-                onSelectDiff={onSelectDiff}
-              />
-            )
-          case "tool-group":
-            return <ToolGroupEntry key={item.key} items={item.items} />
-          case "thought-group":
-            return (
-              <ThoughtProcessGroupEntry
-                key={item.key}
-                items={item.items}
-                onSelectDiff={onSelectDiff}
-                onSelectPath={onSelectPath}
-              />
-            )
-        }
-      })}
+      <div
+        className="relative w-full"
+        style={{ height: virtualizer.getTotalSize() }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const item = timelineItems[virtualItem.index]
+          if (!item) {
+            return null
+          }
+
+          return (
+            <div
+              key={virtualItem.key}
+              ref={virtualizer.measureElement}
+              data-index={virtualItem.index}
+              className="absolute left-0 top-0 w-full pb-2"
+              style={{
+                transform: `translateY(${virtualItem.start - scrollMargin}px)`,
+              }}
+            >
+              {renderTimelineItem(item, { onSelectDiff, onSelectPath })}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
+}
+
+function renderTimelineItem(
+  item: TimelineItem,
+  handlers: {
+    onSelectDiff: (diff: ParsedFileChange) => void
+    onSelectPath: (path: string) => void
+  }
+) {
+  switch (item.kind) {
+    case "transcript":
+      return (
+        <TranscriptEntry
+          item={item.item}
+          onSelectDiff={handlers.onSelectDiff}
+          onSelectPath={handlers.onSelectPath}
+        />
+      )
+    case "thinking":
+      return <ThinkingEntry summary={item.summary} />
+    case "round-status":
+      return <RoundStatusEntry state={item.state} summary={item.summary} />
+    case "pending-input":
+      return (
+        <PendingInputEntry
+          onSelectPath={handlers.onSelectPath}
+          text={item.text}
+        />
+      )
+    case "command-group":
+      return <CommandGroupEntry items={item.items} />
+    case "file-change-group":
+      return (
+        <FileChangeGroupEntry
+          items={item.items}
+          onSelectDiff={handlers.onSelectDiff}
+        />
+      )
+    case "tool-group":
+      return <ToolGroupEntry items={item.items} />
+    case "thought-group":
+      return (
+        <ThoughtProcessGroupEntry
+          items={item.items}
+          onSelectDiff={handlers.onSelectDiff}
+          onSelectPath={handlers.onSelectPath}
+        />
+      )
+  }
 }
 
 function TranscriptLoadingRow() {
   return (
     <div
-      className="flex items-center justify-center py-2"
+      className="pointer-events-none absolute inset-x-0 -top-10 z-10 flex items-center justify-center"
       data-testid="session-transcript-loading"
     >
       <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm">
@@ -1244,20 +1942,237 @@ function UserMessageEntry({
   item: SessionTranscriptItem
   onSelectPath: (path: string) => void
 }) {
+  const displayText =
+    item.displayBody.trim() || formatUserMessageForDisplay(item.body)
+
   return (
     <div className="flex justify-end" data-testid="session-transcript-user">
       <div className="max-w-[85%]">
         <SessionRichText
-          text={item.body}
+          text={displayText}
           className="rounded-lg bg-muted px-3 py-2.5 leading-6"
           markdown={false}
           onLocalPathClick={onSelectPath}
+        />
+        <TranscriptAttachments
+          attachments={item.attachments}
+          onSelectPath={onSelectPath}
         />
       </div>
     </div>
   )
 }
 
+function TranscriptAttachments({
+  attachments,
+  onSelectPath,
+}: {
+  attachments: SessionTranscriptAttachment[]
+  onSelectPath: (path: string) => void
+}) {
+  if (attachments.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap justify-end gap-2">
+      {attachments.map((attachment) => (
+        <TranscriptAttachmentPill
+          attachment={attachment}
+          key={attachment.id || `${attachment.kind}-${attachment.label}`}
+          onSelectPath={onSelectPath}
+        />
+      ))}
+    </div>
+  )
+}
+
+function TranscriptAttachmentPill({
+  attachment,
+  onSelectPath,
+}: {
+  attachment: SessionTranscriptAttachment
+  onSelectPath: (path: string) => void
+}) {
+  const label =
+    attachment.label ||
+    attachment.path ||
+    attachment.url ||
+    (attachment.kind === SessionTranscriptAttachmentKind.IMAGE
+      ? "Image"
+      : "File")
+  const Icon =
+    attachment.kind === SessionTranscriptAttachmentKind.IMAGE
+      ? FileImage
+      : FileText
+
+  if (attachment.kind === SessionTranscriptAttachmentKind.IMAGE) {
+    return (
+      <TranscriptImageAttachment
+        attachment={attachment}
+        icon={<Icon className="size-5 text-muted-foreground" />}
+        label={label}
+      />
+    )
+  }
+
+  const content = (
+    <>
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate">{label}</span>
+    </>
+  )
+  const className =
+    "inline-flex max-w-72 items-center gap-2 rounded-md bg-card px-2.5 py-1.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
+
+  if (attachment.url) {
+    return (
+      <a
+        href={attachment.url}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+      >
+        {content}
+      </a>
+    )
+  }
+
+  if (attachment.path && attachment.kind === SessionTranscriptAttachmentKind.FILE) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onSelectPath(attachment.path)}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return <span className={className}>{content}</span>
+}
+
+function TranscriptImageAttachment({
+  attachment,
+  icon,
+  label,
+}: {
+  attachment: SessionTranscriptAttachment
+  icon: React.ReactNode
+  label: string
+}) {
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const thumbnail = attachment.url
+  const content = thumbnail ? (
+    <img
+      src={thumbnail}
+      alt={label}
+      className="h-full w-full object-cover"
+      loading="lazy"
+    />
+  ) : (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted px-2 text-center">
+      {icon}
+      <span className="max-w-full truncate text-xs text-muted-foreground">
+        {label}
+      </span>
+      <span className="max-w-full truncate text-[11px] text-muted-foreground/70">
+        Preview unavailable
+      </span>
+    </div>
+  )
+
+  const className =
+    "block size-20 overflow-hidden rounded-lg border border-border bg-card transition hover:border-border-strong"
+
+  if (attachment.url) {
+    return (
+      <>
+        <button
+          type="button"
+          className={className}
+          title={label}
+          onClick={() => setPreviewOpen(true)}
+        >
+          {content}
+        </button>
+        {previewOpen ? (
+          <ImagePreviewDialog
+            label={label}
+            open={previewOpen}
+            onOpenChange={setPreviewOpen}
+            src={attachment.url}
+          />
+        ) : null}
+      </>
+    )
+  }
+
+  return (
+    <div className={className} title={attachment.path || label}>
+      {content}
+    </div>
+  )
+}
+
+function ImagePreviewDialog({
+  label,
+  onOpenChange,
+  open,
+  src,
+}: {
+  label: string
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  src: string
+}) {
+  const { posture } = useWorkspaceShell()
+  const fullscreen = posture === "phone"
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={cn(
+          fullscreen
+            ? "h-[100dvh] max-h-none w-screen max-w-none rounded-none bg-black p-0 text-white sm:max-w-none"
+            : "max-h-[80vh] max-w-[80vw] p-2 sm:max-w-[80vw]"
+        )}
+        showCloseButton={!fullscreen}
+      >
+        <DialogTitle className="sr-only">{label}</DialogTitle>
+        {fullscreen ? (
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-black/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+            <div className="min-w-0 truncate text-sm font-medium text-white">
+              {label}
+            </div>
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10"
+                aria-label="Close image preview"
+              >
+                <X className="size-4" />
+              </button>
+            </DialogClose>
+          </div>
+        ) : null}
+        <img
+          src={src}
+          alt={label}
+          className={cn(
+            fullscreen
+              ? "h-full w-full object-contain px-2 pb-[env(safe-area-inset-bottom)] pt-[calc(env(safe-area-inset-top)+4rem)]"
+              : "max-h-[calc(80vh-2rem)] max-w-full rounded-lg object-contain"
+          )}
+          loading="eager"
+          draggable={false}
+          onClick={(event) => event.stopPropagation()}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
 function AgentMessageEntry({
   item,
   onSelectPath,
@@ -1729,6 +2644,99 @@ function formatFileChangePath(path: string) {
 
 function normalizeTranscriptText(value: string) {
   return value.trim().replace(/\s+/g, " ")
+}
+
+function formatUserMessageForDisplay(value: string) {
+  const diffComments = extractDiffCommentBodies(value)
+  if (diffComments.length === 1) {
+    return diffComments[0]
+  }
+  if (diffComments.length > 1) {
+    return diffComments
+      .map((comment, index) => `${index + 1}. ${comment}`)
+      .join("\n")
+  }
+
+  const marker = "## My request for Codex:"
+  const markerIndex = value.indexOf(marker)
+  if (markerIndex < 0) {
+    return value
+  }
+
+  const requestStart = markerIndex + marker.length
+  const afterMarker = value.slice(requestStart)
+  const imageNarrativeIndex = afterMarker.search(
+    /\n\s*The next image shows the browser page\b/
+  )
+  const selectedText =
+    imageNarrativeIndex >= 0
+      ? afterMarker.slice(0, imageNarrativeIndex)
+      : afterMarker
+  const cleaned = selectedText
+    .replace(/^\s*[:：]?\s*/, "")
+    .replace(/\n\s*\[image\]\s*$/g, "")
+    .trim()
+
+  return cleaned || value
+}
+
+function extractDiffCommentBodies(value: string) {
+  if (!/^# Diff comments:/m.test(value)) {
+    return []
+  }
+
+  const comments: string[] = []
+  const lines = value.split("\n")
+  let collecting = false
+  let buffer: string[] = []
+
+  function flush() {
+    if (buffer.length === 0) {
+      return
+    }
+
+    const body = cleanUserMessageFragment(buffer.join("\n"))
+    if (body) {
+      comments.push(body)
+    }
+    buffer = []
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+
+    if (collecting) {
+      if (
+        /^## Comment \d+/.test(trimmed) ||
+        /^# In app browser \(IAB\):/.test(trimmed) ||
+        /^## My request for Codex:/.test(trimmed)
+      ) {
+        collecting = false
+        flush()
+      } else {
+        buffer.push(line)
+        continue
+      }
+    }
+
+    if (trimmed === "Comment:") {
+      collecting = true
+      buffer = []
+    }
+  }
+
+  if (collecting) {
+    flush()
+  }
+
+  return comments
+}
+
+function cleanUserMessageFragment(value: string) {
+  return value
+    .replace(/\n\s*The next image shows the browser page[\s\S]*$/m, "")
+    .replace(/\n\s*\[image\]\s*$/g, "")
+    .trim()
 }
 
 function summarizeCommandExecution(body: string) {

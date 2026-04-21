@@ -37,10 +37,13 @@ type SessionLivePatchEnvelope = {
 }
 
 type SessionTranscriptItemEnvelope = {
+  attachments?: unknown[]
   id?: string
   kind?: string | number
   title?: string
   body?: string
+  displayBody?: string
+  display_body?: string
   status?: string
 }
 
@@ -145,6 +148,7 @@ function applySessionLivePatch(
           items[index] = {
             ...items[index],
             body: `${items[index].body || ""}${delta}`,
+            displayBody: `${items[index].displayBody || items[index].body || ""}${delta}`,
             status: "streaming",
           }
         } else {
@@ -153,6 +157,8 @@ function applySessionLivePatch(
             kind: 2,
             title: "Codex",
             body: delta,
+            displayBody: delta,
+            attachments: [],
             status: "streaming",
           })
         }
@@ -176,6 +182,9 @@ function applySessionLivePatch(
           kind: normalizeTranscriptItemKind(finalItem.kind),
           title: finalItem.title || "Codex",
           body: finalItem.body || "",
+          displayBody:
+            finalItem.displayBody || finalItem.display_body || finalItem.body || "",
+          attachments: finalItem.attachments || [],
           status: finalItem.status || "",
         }
         const index = items.findIndex((item) => item.id === finalItem.id)

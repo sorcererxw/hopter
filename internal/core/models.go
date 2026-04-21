@@ -90,12 +90,30 @@ const (
 	SessionTranscriptItemKindFileChange       SessionTranscriptItemKind = "file_change"
 )
 
+type SessionTranscriptAttachmentKind string
+
+const (
+	SessionTranscriptAttachmentKindImage SessionTranscriptAttachmentKind = "image"
+	SessionTranscriptAttachmentKindFile  SessionTranscriptAttachmentKind = "file"
+)
+
+type SessionTranscriptAttachment struct {
+	ID          string
+	Kind        SessionTranscriptAttachmentKind
+	Label       string
+	Path        string
+	URL         string
+	ContentType string
+}
+
 type SessionTranscriptItem struct {
-	ID     string
-	Kind   SessionTranscriptItemKind
-	Title  string
-	Body   string
-	Status string
+	ID          string
+	Kind        SessionTranscriptItemKind
+	Title       string
+	Body        string
+	Status      string
+	DisplayBody string
+	Attachments []SessionTranscriptAttachment
 }
 
 type Backend struct {

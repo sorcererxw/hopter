@@ -65,12 +65,29 @@ enum SessionTranscriptItemKind {
   SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE = 6;
 }
 
+enum SessionTranscriptAttachmentKind {
+  SESSION_TRANSCRIPT_ATTACHMENT_KIND_UNSPECIFIED = 0;
+  SESSION_TRANSCRIPT_ATTACHMENT_KIND_IMAGE = 1;
+  SESSION_TRANSCRIPT_ATTACHMENT_KIND_FILE = 2;
+}
+
+message SessionTranscriptAttachment {
+  string id = 1;
+  SessionTranscriptAttachmentKind kind = 2;
+  string label = 3;
+  string path = 4;
+  string url = 5;
+  string content_type = 6;
+}
+
 message SessionTranscriptItem {
   string id = 1;
   SessionTranscriptItemKind kind = 2;
   string title = 3;
   string body = 4;
   string status = 5;
+  string display_body = 6;
+  repeated SessionTranscriptAttachment attachments = 7;
 }
 
 message SessionListItem {

@@ -10,7 +10,7 @@ import (
 
 	githubcopilot "github.com/github/copilot-sdk/go"
 
-	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
@@ -38,7 +38,7 @@ func NewManager(workspace core.WorkspaceService) *Manager {
 	}
 }
 
-func (m *Manager) ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error) {
+func (m *Manager) ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -59,7 +59,7 @@ func (m *Manager) ListSessions(projectID string, limit uint32) ([]backend.Resolv
 	}
 
 	projects := m.workspace.ListProjects()
-	result := make([]backend.ResolvedSession, 0, len(metadata))
+	result := make([]agents.ResolvedSession, 0, len(metadata))
 	for _, item := range metadata {
 		project := projectForMetadata(projects, item)
 		if strings.TrimSpace(projectID) != "" && project.ID != projectID {
@@ -82,7 +82,7 @@ func (m *Manager) ListSessions(projectID string, limit uint32) ([]backend.Resolv
 				session.Status = local.Status
 			}
 		}
-		result = append(result, backend.ResolvedSession{
+		result = append(result, agents.ResolvedSession{
 			Project: project,
 			Session: session,
 		})

@@ -7,7 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/core"
 	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
@@ -19,7 +19,7 @@ type SessionService struct {
 }
 
 type sessionRuntime interface {
-	ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error)
+	ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error)
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string) (core.Session, error)
@@ -66,12 +66,12 @@ func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[ho
 }
 
 func mergeResolvedSessions(
-	remote []backend.ResolvedSession,
+	remote []agents.ResolvedSession,
 	local []core.Session,
 	workspace core.WorkspaceService,
 	limit uint32,
-) []backend.ResolvedSession {
-	merged := make([]backend.ResolvedSession, 0, len(remote)+len(local))
+) []agents.ResolvedSession {
+	merged := make([]agents.ResolvedSession, 0, len(remote)+len(local))
 	seen := make(map[string]struct{}, len(remote)+len(local))
 
 	for _, resolved := range remote {
@@ -87,14 +87,14 @@ func mergeResolvedSessions(
 		if !ok {
 			continue
 		}
-		merged = append(merged, backend.ResolvedSession{
+		merged = append(merged, agents.ResolvedSession{
 			Project: project,
 			Session: session,
 		})
 		seen[session.ID] = struct{}{}
 	}
 
-	slices.SortFunc(merged, func(left, right backend.ResolvedSession) int {
+	slices.SortFunc(merged, func(left, right agents.ResolvedSession) int {
 		switch {
 		case left.Session.UpdatedAt.After(right.Session.UpdatedAt):
 			return -1

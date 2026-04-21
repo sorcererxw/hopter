@@ -122,15 +122,44 @@ func sessionLivePatchToProto(patch *core.SessionLivePatch) *hopterv1.SessionLive
 		RequiresRefetch: patch.RequiresRefetch,
 	}
 	if patch.FinalItem != nil {
-		out.FinalItem = &hopterv1.SessionTranscriptItem{
-			Id:     patch.FinalItem.ID,
-			Kind:   mapTranscriptItemKind(patch.FinalItem.Kind),
-			Title:  patch.FinalItem.Title,
-			Body:   patch.FinalItem.Body,
-			Status: patch.FinalItem.Status,
-		}
+		out.FinalItem = sessionTranscriptItemToProto(*patch.FinalItem)
 	}
 	return out
+}
+
+func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.SessionTranscriptItem {
+	attachments := make([]*hopterv1.SessionTranscriptAttachment, 0, len(item.Attachments))
+	for _, attachment := range item.Attachments {
+		attachments = append(attachments, &hopterv1.SessionTranscriptAttachment{
+			Id:          attachment.ID,
+			Kind:        mapTranscriptAttachmentKind(attachment.Kind),
+			Label:       attachment.Label,
+			Path:        attachment.Path,
+			Url:         attachment.URL,
+			ContentType: attachment.ContentType,
+		})
+	}
+
+	return &hopterv1.SessionTranscriptItem{
+		Id:          item.ID,
+		Kind:        mapTranscriptItemKind(item.Kind),
+		Title:       item.Title,
+		Body:        item.Body,
+		Status:      item.Status,
+		DisplayBody: item.DisplayBody,
+		Attachments: attachments,
+	}
+}
+
+func mapTranscriptAttachmentKind(kind core.SessionTranscriptAttachmentKind) hopterv1.SessionTranscriptAttachmentKind {
+	switch kind {
+	case core.SessionTranscriptAttachmentKindImage:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_IMAGE
+	case core.SessionTranscriptAttachmentKindFile:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_FILE
+	default:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_UNSPECIFIED
+	}
 }
 
 func mapSessionLivePatchKind(kind core.SessionLivePatchKind) hopterv1.SessionLivePatchKind {

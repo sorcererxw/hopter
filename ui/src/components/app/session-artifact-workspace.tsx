@@ -56,7 +56,7 @@ export function SessionArtifactWorkspace({
   }
 
   if (artifactList.length === 0) {
-    return null
+    return <ArtifactWorkspaceEmpty />
   }
 
   const selectedArtifact =
@@ -332,6 +332,28 @@ function ArtifactWorkspaceLoading() {
     >
       <ArtifactPreviewLoading label="Loading artifacts..." />
     </div>
+  )
+}
+
+function ArtifactWorkspaceEmpty() {
+  return (
+    <section
+      className="space-y-3"
+      data-testid="session-artifact-workspace-empty"
+      aria-label="Session artifacts"
+    >
+      <div>
+        <div className="text-sm font-medium text-foreground">Artifacts</div>
+        <div className="text-sm text-muted-foreground">
+          Review summaries, screenshots, logs, tests, and changed files without
+          leaving the thread.
+        </div>
+      </div>
+      <div className="rounded-lg border border-border bg-card px-4 py-6 text-sm text-muted-foreground">
+        No artifacts yet. When Codex produces summaries, screenshots, test
+        results, logs, or changed-file evidence, they will appear here.
+      </div>
+    </section>
   )
 }
 

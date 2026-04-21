@@ -7,7 +7,8 @@ import type {
 } from "react"
 import { Check, Copy } from "lucide-react"
 
-import { CodeContainer } from "@/components/app/code-container"
+import { ShikiCodeFrame } from "@/components/app/shiki-code-frame"
+import type { HighlightLanguage } from "@/lib/shiki/highlighter"
 import { cn } from "@/lib/utils"
 
 type SessionRichTextProps = {
@@ -128,9 +129,13 @@ export function SessionRichText({
           ),
           code: ({
             children,
-            className: _codeClassName,
+            className: codeClassName,
           }: MarkdownCodeProps) => {
             const code = flattenMarkdownChildren(children)
+
+            if (codeClassName?.includes("language-")) {
+              return <code className={codeClassName}>{code}</code>
+            }
 
             return (
               <code className="workspace-inline-code font-mono text-sm">
@@ -270,6 +275,8 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const displayCode = formatCodeForDisplay(code, language)
+  const highlightLanguage = normalizeMarkdownCodeLanguage(language, displayCode)
+  const languageLabel = formatCodeLanguageLabel(language, highlightLanguage)
 
   useEffect(() => {
     return () => {
@@ -299,26 +306,42 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   }, [code])
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-        aria-label={copied ? "Copied code" : "Copy code"}
-        data-testid="session-code-copy"
-      >
-        {copied ? (
-          <Check className="size-3.5" />
-        ) : (
-          <Copy className="size-3.5" />
-        )}
-        <span>{copied ? "Copied" : "Copy"}</span>
-      </button>
-      <CodeContainer as="pre" className="pt-4 pb-3">
-        <code data-language={language || undefined}>{displayCode}</code>
-      </CodeContainer>
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border bg-muted px-3 py-1.5">
+        <div className="font-mono text-xs text-muted-foreground">
+          {languageLabel || "text"}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          aria-label={copied ? "Copied code" : "Copy code"}
+          data-testid="session-code-copy"
+        >
+          {copied ? (
+            <Check className="size-3.5" />
+          ) : (
+            <Copy className="size-3.5" />
+          )}
+          <span>{copied ? "Copied" : "Copy"}</span>
+        </button>
+      </div>
+      <ShikiCodeFrame
+        code={displayCode}
+        className="[&>div]:rounded-none [&>div]:border-0"
+        language={highlightLanguage}
+        showLineNumbers={false}
+      />
     </div>
   )
+}
+
+function formatCodeLanguageLabel(
+  rawLanguage: string | undefined,
+  highlightLanguage: HighlightLanguage
+) {
+  const label = (rawLanguage || "").trim() || highlightLanguage
+  return label === "text" ? "" : label
 }
 
 function flattenMarkdownChildren(children: ReactNode): string {
@@ -367,6 +390,65 @@ function formatCodeForDisplay(code: string, language?: string) {
   }
 
   return prettyPrintMarkup(code)
+}
+
+function normalizeMarkdownCodeLanguage(
+  language: string | undefined,
+  code: string
+): HighlightLanguage {
+  const normalized = (language || "").trim().toLowerCase()
+
+  switch (normalized) {
+    case "ts":
+      return "typescript"
+    case "tsx":
+      return "tsx"
+    case "js":
+    case "mjs":
+    case "cjs":
+      return "javascript"
+    case "jsx":
+      return "jsx"
+    case "go":
+      return "go"
+    case "json":
+      return "json"
+    case "md":
+    case "markdown":
+      return "markdown"
+    case "css":
+      return "css"
+    case "html":
+      return "html"
+    case "yaml":
+    case "yml":
+      return "yaml"
+    case "toml":
+      return "toml"
+    case "bash":
+    case "sh":
+    case "zsh":
+    case "shell":
+      return "bash"
+    case "diff":
+    case "patch":
+      return "diff"
+    case "proto":
+    case "protobuf":
+      return "proto"
+    case "":
+      return inferPlainCodeLanguage(code)
+    default:
+      return "text"
+  }
+}
+
+function inferPlainCodeLanguage(code: string): HighlightLanguage {
+  if (looksLikeMarkup(code)) {
+    return "html"
+  }
+
+  return "text"
 }
 
 function looksLikeMarkup(code: string) {

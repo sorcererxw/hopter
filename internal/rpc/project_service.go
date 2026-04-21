@@ -8,7 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/sorcererxw/hopter/internal/backend"
+	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/core"
 	hopterv1 "github.com/sorcererxw/hopter/internal/gen/proto/hopter/v1"
 )
@@ -19,7 +19,7 @@ type ProjectService struct {
 }
 
 type projectSessionLister interface {
-	ListSessions(projectID string, limit uint32) ([]backend.ResolvedSession, error)
+	ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error)
 }
 
 func NewProjectService(workspace core.WorkspaceService, sessions ...projectSessionLister) *ProjectService {

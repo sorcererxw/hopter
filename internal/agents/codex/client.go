@@ -87,9 +87,12 @@ type StartTurnResult struct {
 }
 
 type ReadThreadContentPart struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-	Path string `json:"path"`
+	Type     string `json:"type"`
+	Text     string `json:"text"`
+	Path     string `json:"path"`
+	ImageURL string `json:"image_url"`
+	Name     string `json:"name"`
+	MimeType string `json:"mime_type"`
 }
 
 type ReadThreadFileChange struct {

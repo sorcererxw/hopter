@@ -133,7 +133,7 @@ export function WorkspaceTopbar({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground"
+      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5 font-medium text-foreground"
       data-testid="workspace-topbar"
       data-toolbar-mode={toolbarMode}
     >
@@ -303,7 +303,6 @@ export function WorkspaceTopbar({
                 <Button
                   type="button"
                   variant="secondary"
-                  size="sm"
                   onClick={() => setCommitOpen((prev) => !prev)}
                   className="gap-1.5 text-foreground"
                 >

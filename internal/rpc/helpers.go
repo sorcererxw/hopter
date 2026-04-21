@@ -84,6 +84,17 @@ func mapTranscriptItemKind(kind core.SessionTranscriptItemKind) hopterv1.Session
 	}
 }
 
+func mapTranscriptAttachmentKind(kind core.SessionTranscriptAttachmentKind) hopterv1.SessionTranscriptAttachmentKind {
+	switch kind {
+	case core.SessionTranscriptAttachmentKindImage:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_IMAGE
+	case core.SessionTranscriptAttachmentKindFile:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_FILE
+	default:
+		return hopterv1.SessionTranscriptAttachmentKind_SESSION_TRANSCRIPT_ATTACHMENT_KIND_UNSPECIFIED
+	}
+}
+
 func timestamp(t time.Time) *timestamppb.Timestamp {
 	if t.IsZero() {
 		return nil
@@ -169,13 +180,7 @@ func sessionToProto(project core.Project, session core.Session) *hopterv1.Sessio
 	}
 	transcriptItems := make([]*hopterv1.SessionTranscriptItem, 0, len(session.TranscriptItems))
 	for _, item := range session.TranscriptItems {
-		transcriptItems = append(transcriptItems, &hopterv1.SessionTranscriptItem{
-			Id:     item.ID,
-			Kind:   mapTranscriptItemKind(item.Kind),
-			Title:  validUTF8(item.Title),
-			Body:   validUTF8(item.Body),
-			Status: validUTF8(item.Status),
-		})
+		transcriptItems = append(transcriptItems, sessionTranscriptItemToProto(item))
 	}
 	return &hopterv1.Session{
 		Id:                session.ID,
@@ -291,19 +296,37 @@ func buildCodexResumeCommand(rootPath string, session core.Session) string {
 func sessionTranscriptPageToProto(page core.SessionTranscriptPage) *hopterv1.SessionTranscriptPage {
 	items := make([]*hopterv1.SessionTranscriptItem, 0, len(page.Items))
 	for _, item := range page.Items {
-		items = append(items, &hopterv1.SessionTranscriptItem{
-			Id:     item.ID,
-			Kind:   mapTranscriptItemKind(item.Kind),
-			Title:  validUTF8(item.Title),
-			Body:   validUTF8(item.Body),
-			Status: validUTF8(item.Status),
-		})
+		items = append(items, sessionTranscriptItemToProto(item))
 	}
 	return &hopterv1.SessionTranscriptPage{
 		Items:             items,
 		NextBeforeCursor:  optionalString(page.NextBeforeCursor),
 		HasMoreBefore:     page.HasMoreBefore,
 		SnapshotUpdatedAt: timestamp(page.SnapshotUpdatedAt),
+	}
+}
+
+func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.SessionTranscriptItem {
+	attachments := make([]*hopterv1.SessionTranscriptAttachment, 0, len(item.Attachments))
+	for _, attachment := range item.Attachments {
+		attachments = append(attachments, &hopterv1.SessionTranscriptAttachment{
+			Id:          validUTF8(attachment.ID),
+			Kind:        mapTranscriptAttachmentKind(attachment.Kind),
+			Label:       validUTF8(attachment.Label),
+			Path:        validUTF8(attachment.Path),
+			Url:         validUTF8(attachment.URL),
+			ContentType: validUTF8(attachment.ContentType),
+		})
+	}
+
+	return &hopterv1.SessionTranscriptItem{
+		Id:          validUTF8(item.ID),
+		Kind:        mapTranscriptItemKind(item.Kind),
+		Title:       validUTF8(item.Title),
+		Body:        validUTF8(item.Body),
+		Status:      validUTF8(item.Status),
+		DisplayBody: validUTF8(item.DisplayBody),
+		Attachments: attachments,
 	}
 }
 

@@ -22,6 +22,7 @@ type ShikiCodeFrameProps = {
   code: string
   filePath?: string
   language?: HighlightLanguage
+  showLineNumbers?: boolean
   targetLine?: number
 }
 
@@ -35,6 +36,7 @@ export function ShikiCodeFrame({
   code,
   filePath,
   language,
+  showLineNumbers = true,
   targetLine,
 }: ShikiCodeFrameProps) {
   const { resolvedTheme } = useTheme()
@@ -103,14 +105,16 @@ export function ShikiCodeFrame({
                 )}
                 data-line-number={lineNumber}
               >
-              <div
-                className={cn(
-                  "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted-foreground select-none",
-                  highlighted ? "text-amber-100" : null
-                )}
-              >
-                {lineNumber}
-              </div>
+              {showLineNumbers ? (
+                <div
+                  className={cn(
+                    "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted-foreground select-none",
+                    highlighted ? "text-amber-100" : null
+                  )}
+                >
+                  {lineNumber}
+                </div>
+              ) : null}
               <pre className="m-0 flex-1 pr-4 font-mono leading-6 whitespace-pre-wrap text-foreground">
                 {line || " "}
               </pre>
@@ -138,14 +142,16 @@ export function ShikiCodeFrame({
               )}
               data-line-number={lineNumber}
             >
-              <div
-                className={cn(
-                  "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted-foreground select-none",
-                  highlighted ? "text-amber-100" : null
-                )}
-              >
-                {lineNumber}
-              </div>
+              {showLineNumbers ? (
+                <div
+                  className={cn(
+                    "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted-foreground select-none",
+                    highlighted ? "text-amber-100" : null
+                  )}
+                >
+                  {lineNumber}
+                </div>
+              ) : null}
               <pre className="m-0 flex-1 pr-4 font-mono leading-6 whitespace-pre-wrap text-foreground">
                 {line.length === 0 ? " " : null}
                 {line.map((token, tokenIndex) => (
