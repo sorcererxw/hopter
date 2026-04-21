@@ -20,7 +20,7 @@ export function ScrollbarIndicator({
     >
       <div
         className={cn(
-          "scrollbar-indicator-thumb absolute right-0 w-1 rounded-full",
+          "absolute right-0 w-1 rounded-full bg-border transition-opacity duration-300 ease-out",
           visible && scrollable ? "opacity-100" : "opacity-0"
         )}
         style={{

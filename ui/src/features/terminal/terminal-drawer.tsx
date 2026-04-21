@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from "react"
+import type { CSSProperties } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import { MoreHorizontal, X } from "lucide-react"
 import { Terminal, useTerminal } from "@wterm/react"
 import "@wterm/react/css"
@@ -7,6 +8,16 @@ import { Button } from "@/components/ui/button"
 import type { useTerminalSession } from "@/features/terminal/use-terminal-session"
 import type { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
 import { TerminalStatus } from "@/gen/proto/hopter/v1/terminal_pb"
+
+const terminalStyle = {
+  "--term-font-family": "var(--font-mono)",
+  "--term-font-size": "0.875rem",
+  "--term-line-height": "1.25rem",
+  "--term-row-height": "20px",
+  borderRadius: 0,
+  boxShadow: "none",
+  height: "100%",
+} as CSSProperties
 
 export function SessionTerminalDrawer({
   enabled,
@@ -18,47 +29,130 @@ export function SessionTerminalDrawer({
   uiState: ReturnType<typeof useTerminalUIState>
 }) {
   const { ref, focus } = useTerminal()
+  const surfaceRef = useRef<HTMLDivElement | null>(null)
+  const fitFrameRef = useRef<number | null>(null)
+  const fitSizeRef = useRef({ cols: 0, rows: 0 })
   const resizeStateRef = useRef<{
     originY: number
     startHeight: number
   } | null>(null)
   const previousOpenRef = useRef(uiState.open)
+  const { header, height, open, setHeader, setHeight, setOpen } = uiState
 
   useEffect(() => {
     terminal.setTerminalHandle(ref.current)
   }, [ref, terminal.setTerminalHandle])
 
+  const fitTerminalToSurface = useCallback(() => {
+    const handle = ref.current
+    const instance = handle?.instance
+    const element = instance?.element
+    const surface = surfaceRef.current
+    if (!handle || !element || !surface) {
+      return
+    }
+    element.style.height = "100%"
+
+    const styles = window.getComputedStyle(element)
+    const paddingX =
+      parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight)
+    const paddingY =
+      parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom)
+    const row = element.querySelector(".term-row")
+    const rowHeight = row?.getBoundingClientRect().height || 20
+    const probe = document.createElement("span")
+    probe.textContent = "W"
+    probe.style.position = "absolute"
+    probe.style.visibility = "hidden"
+    probe.style.whiteSpace = "pre"
+    element.appendChild(probe)
+    const charWidth = probe.getBoundingClientRect().width || 8
+    probe.remove()
+
+    const cols = Math.max(
+      20,
+      Math.floor((surface.clientWidth - paddingX) / charWidth)
+    )
+    const rows = Math.max(
+      1,
+      Math.floor((surface.clientHeight - paddingY) / rowHeight)
+    )
+    if (cols === fitSizeRef.current.cols && rows === fitSizeRef.current.rows) {
+      return
+    }
+    fitSizeRef.current = { cols, rows }
+    handle.resize(cols, rows)
+  }, [ref])
+
+  const requestTerminalFit = useCallback(() => {
+    if (fitFrameRef.current != null) {
+      return
+    }
+    fitFrameRef.current = window.requestAnimationFrame(() => {
+      fitFrameRef.current = null
+      fitTerminalToSurface()
+    })
+  }, [fitTerminalToSurface])
+
+  useEffect(() => {
+    return () => {
+      if (fitFrameRef.current != null) {
+        window.cancelAnimationFrame(fitFrameRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!open || !surfaceRef.current) {
+      return
+    }
+    const observer = new ResizeObserver(() => requestTerminalFit())
+    observer.observe(surfaceRef.current)
+    requestTerminalFit()
+    return () => observer.disconnect()
+  }, [open, requestTerminalFit])
+
+  useEffect(() => {
+    if (terminal.streamStatus !== "live") {
+      return
+    }
+    fitSizeRef.current = { cols: 0, rows: 0 }
+    requestTerminalFit()
+  }, [requestTerminalFit, terminal.streamStatus])
+
   useEffect(() => {
     const wasOpen = previousOpenRef.current
-    previousOpenRef.current = uiState.open
+    previousOpenRef.current = open
 
     if (!enabled) {
       return
     }
 
-    if (!wasOpen && uiState.open) {
+    if (!wasOpen && open) {
       void terminal.ensureTerminal().then(() => {
+        requestTerminalFit()
         focus()
       })
       return
     }
 
-    if (wasOpen && !uiState.open) {
+    if (wasOpen && !open) {
       terminal.disconnect()
     }
   }, [
     enabled,
     focus,
+    open,
+    requestTerminalFit,
     terminal.disconnect,
     terminal.ensureTerminal,
-    uiState.open,
   ])
 
   useEffect(() => {
     if (!terminal.terminal) {
       return
     }
-    uiState.setHeader({
+    setHeader({
       shell: terminal.terminal.shell,
       cwd: shortPath(terminal.terminal.cwd),
       status: statusLabel(terminal.streamStatus, terminal.terminal.status),
@@ -68,10 +162,10 @@ export function SessionTerminalDrawer({
           ? ""
           : terminal.terminal.lastForegroundCommandSummary,
     })
-  }, [terminal.streamStatus, terminal.terminal, uiState])
+  }, [setHeader, terminal.streamStatus, terminal.terminal])
 
   useEffect(() => {
-    if (!uiState.open) {
+    if (!open) {
       return
     }
     const handleMove = (event: MouseEvent) => {
@@ -80,7 +174,7 @@ export function SessionTerminalDrawer({
         return
       }
       const delta = state.originY - event.clientY
-      uiState.setHeight(state.startHeight + delta)
+      setHeight(state.startHeight + delta)
     }
     const handleUp = () => {
       resizeStateRef.current = null
@@ -93,7 +187,7 @@ export function SessionTerminalDrawer({
       window.removeEventListener("mousemove", handleMove)
       window.removeEventListener("mouseup", handleUp)
     }
-  }, [uiState, uiState.open])
+  }, [open, setHeight])
 
   const isLive = Boolean(
     terminal.terminal &&
@@ -102,20 +196,20 @@ export function SessionTerminalDrawer({
   )
 
   const showRunningSummary = useMemo(() => {
-    if (!uiState.header?.commandSummary) {
+    if (!header?.commandSummary) {
       return false
     }
     return terminal.streamStatus === "live"
-  }, [terminal.streamStatus, uiState.header?.commandSummary])
+  }, [header?.commandSummary, terminal.streamStatus])
 
   if (!enabled) {
     return null
   }
 
-  return uiState.open ? (
+  return open ? (
     <div
       className="border-t border-border bg-card"
-      style={{ height: uiState.height }}
+      style={{ height }}
       data-testid="session-terminal-drawer"
     >
       <div
@@ -125,7 +219,7 @@ export function SessionTerminalDrawer({
         onMouseDown={(event) => {
           resizeStateRef.current = {
             originY: event.clientY,
-            startHeight: uiState.height,
+            startHeight: height,
           }
         }}
       >
@@ -139,14 +233,14 @@ export function SessionTerminalDrawer({
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="font-mono text-foreground">
-                {uiState.header?.shell || "shell"}
+                {header?.shell || "shell"}
               </span>
-              <span className="truncate">{uiState.header?.cwd || ""}</span>
-              <span>{uiState.header?.status || "Starting terminal..."}</span>
+              <span className="truncate">{header?.cwd || ""}</span>
+              <span>{header?.status || "Starting terminal..."}</span>
             </div>
             {showRunningSummary ? (
               <div className="truncate pt-1 text-xs text-muted-foreground">
-                Running: {uiState.header?.commandSummary}
+                Running: {header?.commandSummary}
               </div>
             ) : null}
           </div>
@@ -181,7 +275,7 @@ export function SessionTerminalDrawer({
               size="icon"
               aria-label="Hide terminal"
               className="text-muted-foreground"
-              onClick={() => uiState.setOpen(false)}
+              onClick={() => setOpen(false)}
             >
               <X className="size-4" />
             </Button>
@@ -213,13 +307,16 @@ export function SessionTerminalDrawer({
             ) : null}
             <div className="relative h-full min-h-0">
               <div
-                className="h-full min-h-0 [&_.wt-term]:h-full [&_.wt-term]:min-h-0 [&_.wt-term]:overflow-auto [&_.wt-term]:bg-transparent [&_.wt-term]:px-4 [&_.wt-term]:py-3 [&_.wt-term]:font-mono [&_.wt-term]:text-sm"
+                ref={surfaceRef}
+                className="h-full min-h-0"
                 data-testid="session-terminal-surface"
               >
                 <Terminal
+                  autoResize={false}
+                  cols={120}
+                  rows={12}
                   ref={ref}
-                  className="h-full min-h-0 bg-transparent text-foreground"
-                  autoResize
+                  className="h-full min-h-0 overflow-hidden rounded-none px-4 py-3 font-mono text-sm leading-5 text-foreground shadow-none"
                   cursorBlink
                   onData={(data) => terminal.sendInput(data)}
                   onError={() => {
@@ -227,9 +324,12 @@ export function SessionTerminalDrawer({
                   }}
                   onReady={() => {
                     terminal.setTerminalHandle(ref.current)
+                    fitSizeRef.current = { cols: 0, rows: 0 }
+                    requestTerminalFit()
                     focus()
                   }}
                   onResize={(cols, rows) => terminal.resize(cols, rows)}
+                  style={terminalStyle}
                 />
               </div>
 
@@ -245,8 +345,10 @@ export function SessionTerminalDrawer({
                   <StatePanel
                     actionLabel="Retry"
                     description={terminal.errorMessage}
-                    label="Reconnection failed"
-                    onAction={() => terminal.reconnect()}
+                    label="Terminal unavailable"
+                    onAction={() => {
+                      void terminal.ensureTerminal()
+                    }}
                   />
                 </div>
               ) : null}
@@ -337,7 +439,7 @@ function statusLabel(streamStatus: string, terminalStatus?: TerminalStatus) {
     case "reconnecting":
       return "Reconnecting..."
     case "error":
-      return "Reconnection failed"
+      return "Terminal unavailable"
   }
 
   switch (terminalStatus) {

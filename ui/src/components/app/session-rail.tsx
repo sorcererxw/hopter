@@ -1,4 +1,11 @@
-import { Fragment, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import {
+  Fragment,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import {
   ChevronDown,
   Copy,
@@ -356,7 +363,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           onNavigate?.()
           navigate("/?compose=1")
         },
-        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
       },
     },
     {
@@ -366,9 +374,10 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         icon: <Search className="size-3.5" />,
         label: "Search",
         onClick: onOpenSearch,
-        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
         right: (
-          <span className="workspace-kbd text-base opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
+          <span className="rounded-md border border-border bg-secondary px-1.5 py-px text-[10px] leading-snug text-muted-foreground opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
             ⌘K
           </span>
         ),
@@ -382,7 +391,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         label: "Skills & Apps",
         onClick: onNavigate,
         to: "/settings/plugins#skills",
-        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
       },
     },
     {
@@ -395,7 +405,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           onNavigate?.()
           openProjectPicker()
         },
-        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
       },
     },
     {
@@ -406,7 +417,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         label: "Settings",
         onClick: onNavigate,
         to: "/settings",
-        className: "text-muted-foreground hover:bg-accent hover:text-foreground",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
       },
     },
     {
@@ -600,7 +612,11 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
                           <RailRow
                             asDivInteractive
                             icon={null}
-                            label={sessionsCollapsed ? "Show expanded" : "Show collapsed"}
+                            label={
+                              sessionsCollapsed
+                                ? "Show expanded"
+                                : "Show collapsed"
+                            }
                             onClick={() =>
                               setRailUiState((current) => ({
                                 ...current,
@@ -684,11 +700,7 @@ function UpdateRailAction({
   }
 
   if (busy) {
-    return (
-      <Button disabled>
-        Upgrading
-      </Button>
-    )
+    return <Button disabled>Upgrading</Button>
   }
 
   if (status.updatePolicy === UpdatePolicy.SELF_MANAGED) {

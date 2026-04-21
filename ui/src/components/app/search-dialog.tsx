@@ -70,7 +70,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             placeholder="Search threads, projects, and actions"
             className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
           />
-          <span className="workspace-kbd">esc</span>
+          <span className="rounded-md border border-border bg-secondary px-1.5 py-px text-[10px] leading-snug text-muted-foreground">
+            esc
+          </span>
         </div>
 
         <div className="max-h-[560px] overflow-y-auto p-3 text-sm text-foreground">

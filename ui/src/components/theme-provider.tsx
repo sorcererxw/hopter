@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
-type Theme = "dark" | "light" | "system"
+export type Theme = "dark" | "light" | "system"
 type ResolvedTheme = "dark" | "light"
 
 type ThemeProviderProps = {
@@ -9,6 +9,8 @@ type ThemeProviderProps = {
   defaultTheme?: Theme
   storageKey?: string
   disableTransitionOnChange?: boolean
+  onThemeChange?: (theme: Theme) => void
+  theme?: Theme
 }
 
 type ThemeProviderState = {
@@ -30,6 +32,19 @@ function isTheme(value: string | null): value is Theme {
   }
 
   return THEME_VALUES.includes(value as Theme)
+}
+
+function readStoredTheme(storageKey: string, defaultTheme: Theme): Theme {
+  if (typeof window === "undefined") {
+    return defaultTheme
+  }
+
+  const storedTheme = localStorage.getItem(storageKey)
+  if (isTheme(storedTheme)) {
+    return storedTheme
+  }
+
+  return defaultTheme
 }
 
 function getSystemTheme(): ResolvedTheme {
@@ -98,26 +113,30 @@ export function ThemeProvider({
   defaultTheme = "system",
   storageKey = "theme",
   disableTransitionOnChange = true,
+  onThemeChange,
+  theme: controlledTheme,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(() => {
-    const storedTheme = localStorage.getItem(storageKey)
-    if (isTheme(storedTheme)) {
-      return storedTheme
-    }
-
-    return defaultTheme
-  })
+  const isControlled = controlledTheme !== undefined
+  const [uncontrolledTheme, setUncontrolledTheme] = React.useState<Theme>(() =>
+    readStoredTheme(storageKey, defaultTheme)
+  )
+  const theme = controlledTheme ?? uncontrolledTheme
   const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>(() =>
     (theme === "system" ? getSystemTheme() : theme)
   )
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
+      if (isControlled) {
+        onThemeChange?.(nextTheme)
+        return
+      }
+
       localStorage.setItem(storageKey, nextTheme)
-      setThemeState(nextTheme)
+      setUncontrolledTheme(nextTheme)
     },
-    [storageKey]
+    [isControlled, onThemeChange, storageKey]
   )
 
   const applyTheme = React.useCallback(
@@ -178,19 +197,16 @@ export function ThemeProvider({
         return
       }
 
-      setThemeState((currentTheme) => {
-        const nextTheme =
-          currentTheme === "dark"
-            ? "light"
-            : currentTheme === "light"
-              ? "dark"
-              : getSystemTheme() === "dark"
-                ? "light"
-                : "dark"
+      const nextTheme =
+        theme === "dark"
+          ? "light"
+          : theme === "light"
+            ? "dark"
+            : getSystemTheme() === "dark"
+              ? "light"
+              : "dark"
 
-        localStorage.setItem(storageKey, nextTheme)
-        return nextTheme
-      })
+      setTheme(nextTheme)
     }
 
     window.addEventListener("keydown", handleKeyDown)
@@ -198,9 +214,13 @@ export function ThemeProvider({
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [storageKey])
+  }, [setTheme, theme])
 
   React.useEffect(() => {
+    if (isControlled) {
+      return undefined
+    }
+
     const handleStorageChange = (event: StorageEvent) => {
       if (event.storageArea !== localStorage) {
         return
@@ -211,11 +231,11 @@ export function ThemeProvider({
       }
 
       if (isTheme(event.newValue)) {
-        setThemeState(event.newValue)
+        setUncontrolledTheme(event.newValue)
         return
       }
 
-      setThemeState(defaultTheme)
+      setUncontrolledTheme(defaultTheme)
     }
 
     window.addEventListener("storage", handleStorageChange)
@@ -223,7 +243,7 @@ export function ThemeProvider({
     return () => {
       window.removeEventListener("storage", handleStorageChange)
     }
-  }, [defaultTheme, storageKey])
+  }, [defaultTheme, isControlled, storageKey])
 
   const value = React.useMemo(
     () => ({

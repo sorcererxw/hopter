@@ -65,6 +65,9 @@ export function applyWorkspaceEventInvalidation(
   const eventType = normalizeWorkspaceEventType(event.type)
 
   switch (eventType) {
+    case WorkspaceEventType.CONFIG_CHANGED:
+      client.invalidateQueries({ queryKey: queryKeys.config() })
+      return
     case WorkspaceEventType.HOST_STATUS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.host() })
       client.invalidateQueries({ queryKey: queryKeys.hostUpdates() })
@@ -87,6 +90,7 @@ export function applyWorkspaceEventInvalidation(
       }
       return
     default:
+      client.invalidateQueries({ queryKey: queryKeys.config() })
       client.invalidateQueries({ queryKey: queryKeys.host() })
       client.invalidateQueries({ queryKey: queryKeys.hostUpdates() })
       client.invalidateQueries({ queryKey: queryKeys.projects() })
@@ -234,6 +238,9 @@ function normalizeWorkspaceEventType(value: string | number | undefined) {
     case WorkspaceEventType.SESSION_ARTIFACTS_CHANGED:
     case "WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED":
       return WorkspaceEventType.SESSION_ARTIFACTS_CHANGED
+    case WorkspaceEventType.CONFIG_CHANGED:
+    case "WORKSPACE_EVENT_TYPE_CONFIG_CHANGED":
+      return WorkspaceEventType.CONFIG_CHANGED
     default:
       return WorkspaceEventType.UNSPECIFIED
   }

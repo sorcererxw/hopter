@@ -31,6 +31,7 @@ const (
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED          WorkspaceEventType = 3
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_CHANGED           WorkspaceEventType = 4
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED WorkspaceEventType = 5
+	WorkspaceEventType_WORKSPACE_EVENT_TYPE_CONFIG_CHANGED            WorkspaceEventType = 6
 )
 
 // Enum value maps for WorkspaceEventType.
@@ -42,6 +43,7 @@ var (
 		3: "WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED",
 		4: "WORKSPACE_EVENT_TYPE_SESSION_CHANGED",
 		5: "WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED",
+		6: "WORKSPACE_EVENT_TYPE_CONFIG_CHANGED",
 	}
 	WorkspaceEventType_value = map[string]int32{
 		"WORKSPACE_EVENT_TYPE_UNSPECIFIED":               0,
@@ -50,6 +52,7 @@ var (
 		"WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED":          3,
 		"WORKSPACE_EVENT_TYPE_SESSION_CHANGED":           4,
 		"WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED": 5,
+		"WORKSPACE_EVENT_TYPE_CONFIG_CHANGED":            6,
 	}
 )
 
@@ -410,14 +413,15 @@ const file_hopter_v1_events_proto_rawDesc = "" +
 	"session_id\x18\x05 \x01(\tH\x01R\tsessionId\x88\x01\x01\x12:\n" +
 	"\apayload\x18\x06 \x01(\v2 .hopter.v1.WorkspaceEventPayloadR\apayloadB\r\n" +
 	"\v_project_idB\r\n" +
-	"\v_session_id*\x9c\x02\n" +
+	"\v_session_id*\xc5\x02\n" +
 	"\x12WorkspaceEventType\x12$\n" +
 	" WORKSPACE_EVENT_TYPE_UNSPECIFIED\x10\x00\x12,\n" +
 	"(WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED\x10\x01\x12)\n" +
 	"%WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED\x10\x02\x12)\n" +
 	"%WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED\x10\x03\x12(\n" +
 	"$WORKSPACE_EVENT_TYPE_SESSION_CHANGED\x10\x04\x122\n" +
-	".WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED\x10\x05*\xeb\x01\n" +
+	".WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED\x10\x05\x12'\n" +
+	"#WORKSPACE_EVENT_TYPE_CONFIG_CHANGED\x10\x06*\xeb\x01\n" +
 	"\x14SessionLivePatchKind\x12'\n" +
 	"#SESSION_LIVE_PATCH_KIND_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eSESSION_LIVE_PATCH_KIND_STATUS\x10\x01\x12'\n" +

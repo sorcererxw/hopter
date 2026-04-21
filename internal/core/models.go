@@ -311,6 +311,7 @@ type EventKind string
 
 const (
 	EventHostChanged             EventKind = "host.changed"
+	EventConfigChanged           EventKind = "config.changed"
 	EventProjectsChanged         EventKind = "projects.changed"
 	EventSessionsChanged         EventKind = "sessions.changed"
 	EventSessionChanged          EventKind = "session.changed"

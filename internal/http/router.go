@@ -15,6 +15,7 @@ type RouterOptions struct {
 	Version                string
 	UI                     UIHandlerOptions
 	EventHub               *events.Hub
+	ConfigServiceHandler   hopterv1connect.ConfigServiceHandler
 	HostServiceHandler     hopterv1connect.HostServiceHandler
 	ProjectServiceHandler  hopterv1connect.ProjectServiceHandler
 	SessionServiceHandler  hopterv1connect.SessionServiceHandler
@@ -40,6 +41,9 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 
 	connectMux := http.NewServeMux()
 	registerConnectHandlers(connectMux,
+		func() (string, http.Handler) {
+			return hopterv1connect.NewConfigServiceHandler(opts.ConfigServiceHandler)
+		},
 		func() (string, http.Handler) { return hopterv1connect.NewHostServiceHandler(opts.HostServiceHandler) },
 		func() (string, http.Handler) {
 			return hopterv1connect.NewProjectServiceHandler(opts.ProjectServiceHandler)
@@ -104,6 +108,8 @@ func isUIPath(path string) bool {
 	case path == "/projects/new":
 		return true
 	case path == "/settings":
+		return true
+	case strings.HasPrefix(path, "/settings/"):
 		return true
 	default:
 		return false

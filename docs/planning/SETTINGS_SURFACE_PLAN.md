@@ -185,6 +185,30 @@ These items are explicitly rejected and should not survive the rebuild:
 
 ## Data contract requirements
 
+## Settings source of truth
+
+User-configurable settings are owned by the Go server and persisted in:
+
+```text
+~/.hopter/config.json
+```
+
+The browser must not read or write this file directly.
+
+Settings updates flow through Connect:
+
+```text
+browser /settings
+  -> ConfigService.UpdateConfig
+  -> Go server validates and atomically writes ~/.hopter/config.json
+  -> SSE publishes CONFIG_CHANGED with REFETCH_CONFIG
+  -> every browser refetches ConfigService.GetConfig
+```
+
+The SSE event is a synchronization hint, not a full config payload. This keeps the config file and the Go server as the durable source of truth while letting all connected browser devices converge on the latest settings.
+
+Browser-local storage remains acceptable only for per-browser UI state, such as pane widths, rail disclosure state, browser instance ID, or tab ID. Auth state remains cookie-backed and is not part of user settings.
+
 ## Already available
 
 These can already back the new settings surface:

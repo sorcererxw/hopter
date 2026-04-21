@@ -211,8 +211,10 @@ async function run() {
     const pageText = await page.textContent("body")
     const homeLooksHealthy =
       pageText?.includes("Start building") ||
+      pageText?.includes("Start a new session") ||
       pageText?.includes("Loading threads") ||
       pageText?.includes("The shell is ready") ||
+      pageText?.includes("New Session") ||
       pageText?.includes("New Thread")
 
     checks.push({

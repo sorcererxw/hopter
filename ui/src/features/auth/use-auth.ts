@@ -68,6 +68,7 @@ export function useLogin() {
     mutationFn: loginRequest,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.authStatus() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.config() })
     },
   })
 }
@@ -78,6 +79,7 @@ export function useLogout() {
     mutationFn: logoutRequest,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.authStatus() })
+      queryClient.removeQueries({ queryKey: queryKeys.config() })
     },
   })
 }

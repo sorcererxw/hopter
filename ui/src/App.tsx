@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from "react"
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react"
 import {
   BrowserRouter,
   Navigate,
@@ -8,8 +8,14 @@ import {
 } from "react-router-dom"
 import { QueryClientProvider } from "@tanstack/react-query"
 
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider, type Theme } from "@/components/theme-provider"
 import { useAuthStatus } from "@/features/auth/use-auth"
+import {
+  themePreferenceFromConfig,
+  themePreferenceToProto,
+  useConfig,
+  useUpdateConfig,
+} from "@/features/config/use-config"
 import { queryClient } from "@/lib/query/client"
 const HomeRoute = lazy(() =>
   import("@/routes/home-route").then((module) => ({
@@ -81,10 +87,51 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function ConfigBackedThemeProvider({ children }: { children: ReactNode }) {
+  const configQuery = useConfig()
+  const updateConfig = useUpdateConfig()
+  const configTheme = themePreferenceFromConfig(configQuery.data)
+  const [optimisticTheme, setOptimisticTheme] = useState<Theme | null>(null)
+  const theme = optimisticTheme ?? configTheme
+
+  useEffect(() => {
+    if (optimisticTheme === configTheme) {
+      setOptimisticTheme(null)
+    }
+  }, [configTheme, optimisticTheme])
+
+  function handleThemeChange(nextTheme: Theme) {
+    setOptimisticTheme(nextTheme)
+    updateConfig.mutate(
+      {
+        appearance: {
+          theme: themePreferenceToProto(nextTheme),
+        },
+        expectedRevision: configQuery.data?.revision ?? 0n,
+      },
+      {
+        onError: () => {
+          setOptimisticTheme(null)
+        },
+      }
+    )
+  }
+
+  return (
+    <ThemeProvider
+      defaultTheme="system"
+      onThemeChange={handleThemeChange}
+      theme={theme}
+    >
+      {children}
+    </ThemeProvider>
+  )
+}
+
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="hopter-theme">
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ConfigBackedThemeProvider>
         <BrowserRouter>
           <Routes>
             <Route path="login" element={renderLazyRoute(<LoginRoute />)} />
@@ -129,7 +176,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
+      </ConfigBackedThemeProvider>
+    </QueryClientProvider>
   )
 }

@@ -71,6 +71,9 @@ func (h *Hub) toProto(event core.Event) *hopterv1.WorkspaceEvent {
 	case core.EventHostChanged:
 		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED
 		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_HOST
+	case core.EventConfigChanged:
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_CONFIG_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_CONFIG
 	case core.EventProjectsChanged:
 		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED
 		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_PROJECTS

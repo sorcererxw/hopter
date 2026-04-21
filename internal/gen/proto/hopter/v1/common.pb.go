@@ -257,6 +257,7 @@ const (
 	RefreshHint_REFRESH_HINT_REFETCH_SESSIONS  RefreshHint = 3
 	RefreshHint_REFRESH_HINT_REFETCH_SESSION   RefreshHint = 4
 	RefreshHint_REFRESH_HINT_REFETCH_ARTIFACTS RefreshHint = 5
+	RefreshHint_REFRESH_HINT_REFETCH_CONFIG    RefreshHint = 6
 )
 
 // Enum value maps for RefreshHint.
@@ -268,6 +269,7 @@ var (
 		3: "REFRESH_HINT_REFETCH_SESSIONS",
 		4: "REFRESH_HINT_REFETCH_SESSION",
 		5: "REFRESH_HINT_REFETCH_ARTIFACTS",
+		6: "REFRESH_HINT_REFETCH_CONFIG",
 	}
 	RefreshHint_value = map[string]int32{
 		"REFRESH_HINT_UNSPECIFIED":       0,
@@ -276,6 +278,7 @@ var (
 		"REFRESH_HINT_REFETCH_SESSIONS":  3,
 		"REFRESH_HINT_REFETCH_SESSION":   4,
 		"REFRESH_HINT_REFETCH_ARTIFACTS": 5,
+		"REFRESH_HINT_REFETCH_CONFIG":    6,
 	}
 )
 
@@ -623,14 +626,15 @@ const file_hopter_v1_common_proto_rawDesc = "" +
 	"\x10ApprovalDecision\x12!\n" +
 	"\x1dAPPROVAL_DECISION_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19APPROVAL_DECISION_APPROVE\x10\x01\x12\x1c\n" +
-	"\x18APPROVAL_DECISION_REJECT\x10\x02*\xd6\x01\n" +
+	"\x18APPROVAL_DECISION_REJECT\x10\x02*\xf7\x01\n" +
 	"\vRefreshHint\x12\x1c\n" +
 	"\x18REFRESH_HINT_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19REFRESH_HINT_REFETCH_HOST\x10\x01\x12!\n" +
 	"\x1dREFRESH_HINT_REFETCH_PROJECTS\x10\x02\x12!\n" +
 	"\x1dREFRESH_HINT_REFETCH_SESSIONS\x10\x03\x12 \n" +
 	"\x1cREFRESH_HINT_REFETCH_SESSION\x10\x04\x12\"\n" +
-	"\x1eREFRESH_HINT_REFETCH_ARTIFACTS\x10\x05B\xa5\x01\n" +
+	"\x1eREFRESH_HINT_REFETCH_ARTIFACTS\x10\x05\x12\x1f\n" +
+	"\x1bREFRESH_HINT_REFETCH_CONFIG\x10\x06B\xa5\x01\n" +
 	"\rcom.hopter.v1B\vCommonProtoP\x01ZBgithub.com/sorcererxw/hopter/internal/gen/proto/hopter/v1;hopterv1\xa2\x02\x03HXX\xaa\x02\tHopter.V1\xca\x02\tHopter\\V1\xe2\x02\x15Hopter\\V1\\GPBMetadata\xea\x02\n" +
 	"Hopter::V1b\x06proto3"
 

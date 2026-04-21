@@ -19,6 +19,7 @@ import (
 type Manager struct {
 	mu                 sync.Mutex
 	workspace          core.WorkspaceService
+	resolver           SessionResolver
 	store              *InMemoryStore
 	runtimes           map[string]*PTYRuntime
 	buffers            map[string]*ReplayBuffer
@@ -30,6 +31,10 @@ type Manager struct {
 	promptPollInterval time.Duration
 }
 
+type SessionResolver interface {
+	GetSession(sessionID string) (core.Session, core.Project, error)
+}
+
 type CreateInput struct {
 	SessionID         string
 	BrowserInstanceID string
@@ -39,10 +44,15 @@ type CreateInput struct {
 }
 
 func NewManager(workspace core.WorkspaceService) *Manager {
+	return NewManagerWithResolver(workspace, nil)
+}
+
+func NewManagerWithResolver(workspace core.WorkspaceService, resolver SessionResolver) *Manager {
 	cleanupDelay := durationFromEnv(5*time.Minute, "HOPTER_TERMINAL_DETACH_TTL_MS")
 	promptPollInterval := durationFromEnv(time.Second, "HOPTER_TERMINAL_PROMPT_POLL_MS")
 	return &Manager{
 		workspace:          workspace,
+		resolver:           resolver,
 		store:              NewInMemoryStore(),
 		runtimes:           make(map[string]*PTYRuntime),
 		buffers:            make(map[string]*ReplayBuffer),
@@ -64,29 +74,38 @@ func (m *Manager) CreateTerminalSession(_ context.Context, input CreateInput) (S
 	}
 
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if existing, ok := m.store.GetByKey(key); ok {
 		if existing.Status != StatusExited &&
 			existing.Status != StatusTerminated &&
 			existing.Status != StatusFailed {
+			m.mu.Unlock()
 			return existing, nil
 		}
 	}
+	m.mu.Unlock()
 
-	session, ok := m.workspace.GetSession(key.SessionID)
-	if !ok {
-		return Session{}, fmt.Errorf("session %q not found", key.SessionID)
-	}
-	project, ok := m.workspace.GetProject(session.ProjectID)
-	if !ok {
-		return Session{}, fmt.Errorf("project %q not found", session.ProjectID)
+	session, project, err := m.resolveSessionProject(key.SessionID)
+	if err != nil {
+		return Session{}, err
 	}
 
 	shellPath := defaultShellPath()
 	runtime, err := StartPTY(context.Background(), shellPath, project.RootPath, uint16(input.Cols), uint16(input.Rows))
 	if err != nil {
 		return Session{}, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if existing, ok := m.store.GetByKey(key); ok {
+		if existing.Status != StatusExited &&
+			existing.Status != StatusTerminated &&
+			existing.Status != StatusFailed {
+			_ = runtime.Kill()
+			_ = runtime.Close()
+			return existing, nil
+		}
 	}
 
 	now := time.Now().UTC()
@@ -115,6 +134,37 @@ func (m *Manager) CreateTerminalSession(_ context.Context, input CreateInput) (S
 	go m.watchForegroundState(record.ID, runtime)
 
 	return record, nil
+}
+
+func (m *Manager) resolveSessionProject(sessionID string) (core.Session, core.Project, error) {
+	sessionID = strings.TrimSpace(sessionID)
+	if sessionID == "" {
+		return core.Session{}, core.Project{}, fmt.Errorf("session id is required")
+	}
+
+	if session, ok := m.workspace.GetSession(sessionID); ok {
+		project, ok := m.workspace.GetProject(session.ProjectID)
+		if !ok {
+			return core.Session{}, core.Project{}, fmt.Errorf("project %q not found", session.ProjectID)
+		}
+		return session, project, nil
+	}
+
+	if m.resolver == nil {
+		return core.Session{}, core.Project{}, fmt.Errorf("session %q not found", sessionID)
+	}
+
+	session, project, err := m.resolver.GetSession(sessionID)
+	if err != nil {
+		return core.Session{}, core.Project{}, err
+	}
+	if strings.TrimSpace(session.ID) == "" {
+		session.ID = sessionID
+	}
+	if strings.TrimSpace(project.RootPath) == "" {
+		return core.Session{}, core.Project{}, fmt.Errorf("project root for session %q not found", sessionID)
+	}
+	return session, project, nil
 }
 
 func (m *Manager) GetTerminalSession(sessionID, browserInstanceID, tabID string) (Session, error) {

@@ -256,7 +256,7 @@ export function SessionComposer({
       <div
         className={cn(
           placement === "sticky"
-            ? "composer-foreground px-6 pb-3 md:pb-4"
+            ? "sticky bottom-0 z-20 bg-background px-6 pb-3 md:pb-4"
             : "w-full"
         )}
         data-testid={composerTestId}

@@ -62,6 +62,11 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
   })
 
   const createTerminal = useMutation({
+    onMutate: () => {
+      setErrorMessage("")
+      setLastExitCode(null)
+      setStreamStatus("starting")
+    },
     mutationFn: async () => {
       const response = await terminalClient.createTerminalSession({
         sessionId,
@@ -79,6 +84,10 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
         queryKeys.terminalSession(sessionId, browserInstanceId, tabId),
         terminal
       )
+    },
+    onError: (error) => {
+      setStreamStatus("error")
+      setErrorMessage(formatTerminalError(error))
     },
   })
 
@@ -131,10 +140,18 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
         `/terminals/${target.id}/stream`,
         window.location.origin
       )
+      url.protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
       url.searchParams.set("session_id", sessionId)
       url.searchParams.set("browser_instance_id", browserInstanceId)
       url.searchParams.set("tab_id", tabId)
-      const ws = new WebSocket(url)
+      let ws: WebSocket
+      try {
+        ws = new WebSocket(url)
+      } catch (error) {
+        setStreamStatus("error")
+        setErrorMessage(formatTerminalError(error))
+        return
+      }
       socketRef.current = ws
       setStreamStatus((current) =>
         current === "live" ? "reconnecting" : "starting"
@@ -192,7 +209,7 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
         }
       }
     },
-    [browserInstanceId, sessionId, streamStatus, tabId]
+    [browserInstanceId, sessionId, tabId]
   )
 
   const setTerminalHandle = useCallback((handle: TerminalHandle | null) => {
@@ -289,4 +306,11 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
       terminateTerminal,
     ]
   )
+}
+
+function formatTerminalError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+  return "Terminal could not be started."
 }

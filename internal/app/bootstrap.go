@@ -14,6 +14,7 @@ import (
 	rpcserver "github.com/sorcererxw/hopter/internal/rpc"
 	"github.com/sorcererxw/hopter/internal/terminal"
 	"github.com/sorcererxw/hopter/internal/update"
+	"github.com/sorcererxw/hopter/internal/userconfig"
 )
 
 type Runtime struct {
@@ -26,19 +27,24 @@ type Runtime struct {
 func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
+	configService, err := userconfig.NewService("", eventHub)
+	if err != nil {
+		return nil, err
+	}
 	updateService := update.NewService(cfg.Version, cfg.InstallSource)
 	codexManager := codex.NewManager(workspace, eventHub)
-	terminalManager := terminal.NewManager(workspace)
 	agentManager := agents.NewManager(workspace, map[string]agents.Runtime{
 		agents.DefaultBackendKey: codex.NewRuntime(codexManager),
 		"copilot":                copilotagent.NewManager(workspace),
 	})
+	terminalManager := terminal.NewManagerWithResolver(workspace, agentManager)
 	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, agentManager)
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
 		Version:                cfg.Version,
 		UI:                     serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
 		EventHub:               eventHub,
+		ConfigServiceHandler:   rpcserver.NewConfigService(configService),
 		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService),
 		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, agentManager),
 		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager, sessionReadModel),

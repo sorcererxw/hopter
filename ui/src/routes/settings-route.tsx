@@ -102,7 +102,7 @@ export function SettingsRoute() {
         </div>
       </SidebarPane>
 
-      <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 text-foreground md:px-12 md:py-8">
+      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 text-foreground md:px-12 md:py-8">
         <div className="max-w-2xl">
           <Outlet />
         </div>

@@ -1,5 +1,6 @@
 export const queryKeys = {
   authStatus: () => ["auth-status"] as const,
+  config: () => ["config"] as const,
   host: () => ["host"] as const,
   hostUpdates: () => ["host", "updates"] as const,
   hostBackends: () => ["host", "backends"] as const,

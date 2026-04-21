@@ -42,24 +42,42 @@ export function useTerminalUIState(sessionId: string) {
     [sessionId]
   )
 
-  return {
-    header: state.header,
-    height: state.height,
-    open: state.open,
-    setHeader(header: SessionDrawerState["header"]) {
+  const setHeader = useCallback(
+    (header: SessionDrawerState["header"]) => {
       update((current) => {
         current.header = header
       })
     },
-    setHeight(height: number) {
+    [update]
+  )
+
+  const setHeight = useCallback(
+    (height: number) => {
       update((current) => {
         current.height = Math.max(220, height)
       })
     },
-    setOpen(open: boolean) {
+    [update]
+  )
+
+  const setOpen = useCallback(
+    (open: boolean) => {
       update((current) => {
         current.open = open
       })
     },
-  }
+    [update]
+  )
+
+  return useMemo(
+    () => ({
+      header: state.header,
+      height: state.height,
+      open: state.open,
+      setHeader,
+      setHeight,
+      setOpen,
+    }),
+    [setHeader, setHeight, setOpen, state.header, state.height, state.open]
+  )
 }

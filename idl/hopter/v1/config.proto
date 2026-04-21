@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package hopter.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service ConfigService {
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
+}
+
+enum ConfigTheme {
+  CONFIG_THEME_UNSPECIFIED = 0;
+  CONFIG_THEME_SYSTEM = 1;
+  CONFIG_THEME_DARK = 2;
+  CONFIG_THEME_LIGHT = 3;
+}
+
+message AppearanceConfig {
+  ConfigTheme theme = 1;
+}
+
+message AgentConfig {
+  string default_backend = 1;
+  string default_model = 2;
+  string default_reasoning_effort = 3;
+}
+
+message UserConfig {
+  AppearanceConfig appearance = 1;
+  AgentConfig agent = 2;
+  uint64 revision = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message GetConfigRequest {}
+
+message GetConfigResponse {
+  UserConfig config = 1;
+}
+
+message UpdateConfigRequest {
+  AppearanceConfig appearance = 1;
+  AgentConfig agent = 2;
+  uint64 expected_revision = 3;
+}
+
+message UpdateConfigResponse {
+  UserConfig config = 1;
+}
