@@ -24,7 +24,7 @@ The repo already had the right architectural instinct:
 
 - `docs/specs/COMMUNICATION_AND_UX_SPEC.md` declares `codex app-server` as the main integration target
 - `docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md` already moves toward an app-server-first runtime
-- `internal/codex/client.go` already speaks to `codex app-server`
+- `internal/agents/codex/client.go` already speaks to `codex app-server`
 
 But one question remained open in practice:
 
@@ -256,8 +256,8 @@ For v1, the target is hard removal from the main implementation.
 
 This means:
 
-- `internal/codex/manager.go` no longer depends on `execTurns.Run(...)`
-- `internal/codex/sdk/*` is not used for the product runtime path
+- `internal/agents/codex/manager.go` no longer depends on `execTurns.Run(...)`
+- `internal/agents/codex/sdk/*` is not used for the product runtime path
 - `transcript_sdk.go` is removed or isolated behind a dead migration gate and then deleted
 - validation and live-stack checks should exercise the same app-server session path as the product
 
@@ -270,14 +270,14 @@ The final state is still removal. This guardrail only prevents deleting the floo
 
 ## File-by-file migration checklist
 
-### 1. `internal/codex/client.go`
+### 1. `internal/agents/codex/client.go`
 
 - complete request and notification typing for the minimum event set
 - add structured input builders for text and `localImage`
 - add explicit approval request dispatch and response helpers
 - expose a stable callback surface for notification fan-out
 
-### 2. `internal/codex/manager.go`
+### 2. `internal/agents/codex/manager.go`
 
 - add an app-server live turn runner
 - keep per-session live draft state in memory
@@ -285,7 +285,7 @@ The final state is still removal. This guardrail only prevents deleting the floo
 - trigger reconciliation on `turn/completed`
 - remove primary turn execution dependency on `exec`
 
-### 3. `internal/codex/transcript.go`
+### 3. `internal/agents/codex/transcript.go`
 
 - make `thread/read` the only durable transcript source
 - merge in-memory live draft into the selected-session read model only while a turn is active

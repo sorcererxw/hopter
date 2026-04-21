@@ -113,7 +113,7 @@ In Go this should be `context.Context`.
 
 ## Product fit inside `hopter`
 
-`hopter` currently has a low-level Go-side Codex bridge under `internal/codex/` built around `codex app-server`.
+`hopter` currently has a low-level Go-side Codex bridge under `internal/agents/codex/` built around `codex app-server`.
 
 That low-level bridge is still useful for current control-plane behavior:
 
@@ -241,7 +241,7 @@ The Go item model must represent all item kinds currently modeled by the TypeScr
 Create a dedicated high-level package:
 
 ```text
-/internal/codex/sdk
+/internal/agents/codex/sdk
   client.go
   thread.go
   exec.go
@@ -256,7 +256,7 @@ Create a dedicated high-level package:
 Keep the current `app-server` wrapper in place, but gradually rename it for clarity in a follow-up if needed:
 
 ```text
-/internal/codex
+/internal/agents/codex
   client.go
   manager.go
 ```
@@ -677,7 +677,7 @@ And one repo-tracked note linking the artifact path from the validation plan or 
 
 ## Recommendation
 
-Implement this as a new high-level Go package under `internal/codex/sdk`.
+Implement this as a new high-level Go package under `internal/agents/codex/sdk`.
 
 Do not try to mutate the current `app-server` client into the TypeScript SDK shape.
 

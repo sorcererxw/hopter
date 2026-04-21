@@ -33,14 +33,14 @@ Practical interpretation for `hopter`:
 
 The current Go implementation is split across two runtime surfaces:
 
-1. `internal/codex/client.go`
+1. `internal/agents/codex/client.go`
    - starts `codex app-server`
    - speaks JSON-RPC-like requests over stdio
    - supports `initialize`, `thread/start`, `thread/list`, `thread/resume`, `thread/read`, `turn/start`, and `turn/steer`
-2. `internal/codex/sdk/*`
+2. `internal/agents/codex/sdk/*`
    - wraps `codex exec --experimental-json`
    - provides streamed turn execution and typed event decoding
-3. `internal/codex/manager.go`
+3. `internal/agents/codex/manager.go`
    - still executes turns through `execTurns.Run(...)`
    - uses the app-server client mainly for listing, reading, and resuming threads
 
@@ -56,9 +56,9 @@ That split is serviceable as a transition, but it creates structural problems:
 
 ### Repository evidence
 
-- `internal/codex/client.go` already contains the low-level app-server client.
-- `internal/codex/manager.go` still routes turn execution through the Go SDK `exec` wrapper.
-- `internal/codex/transcript.go` and `internal/codex/transcript_sdk.go` already normalize two different item/event shapes.
+- `internal/agents/codex/client.go` already contains the low-level app-server client.
+- `internal/agents/codex/manager.go` still routes turn execution through the Go SDK `exec` wrapper.
+- `internal/agents/codex/transcript.go` and `internal/agents/codex/transcript_sdk.go` already normalize two different item/event shapes.
 - `docs/specs/COMMUNICATION_AND_UX_SPEC.md` declares `codex app-server` the primary integration target.
 - `docs/planning/SESSION_DETAIL_CHAT_MODE_PLAN.md` already assumes `model/list`, `turn/start`, `turn/steer`, structured input, and live notifications on the app-server path.
 
@@ -164,7 +164,7 @@ All server-initiated approval and user-input requests must stay on the app-serve
 
 The server should map protocol requests into gateway approval state, but reply to the exact protocol request identity when the user acts.
 
-The current auto-accept behavior in `internal/codex/client.go` is acceptable for probes and temporary internal development, but not for the final control-plane product.
+The current auto-accept behavior in `internal/agents/codex/client.go` is acceptable for probes and temporary internal development, but not for the final control-plane product.
 
 ## Migration plan
 
@@ -187,8 +187,8 @@ Acceptance criteria:
 
 Primary files:
 
-- `internal/codex/client.go`
-- new focused tests under `internal/codex/`
+- `internal/agents/codex/client.go`
+- new focused tests under `internal/agents/codex/`
 
 Work:
 
@@ -222,8 +222,8 @@ Acceptance criteria:
 
 Primary files:
 
-- `internal/codex/manager.go`
-- new helper file under `internal/codex/`
+- `internal/agents/codex/manager.go`
+- new helper file under `internal/agents/codex/`
 
 Work:
 
@@ -250,9 +250,9 @@ Acceptance criteria:
 
 Primary files:
 
-- `internal/codex/transcript.go`
-- `internal/codex/transcript_sdk.go`
-- `internal/codex/session_read_model.go`
+- `internal/agents/codex/transcript.go`
+- `internal/agents/codex/transcript_sdk.go`
+- `internal/agents/codex/session_read_model.go`
 
 Work:
 
@@ -303,8 +303,8 @@ Acceptance criteria:
 
 Primary files:
 
-- `internal/codex/client.go`
-- `internal/codex/manager.go`
+- `internal/agents/codex/client.go`
+- `internal/agents/codex/manager.go`
 - `internal/rpc/session_service.go`
 - related model helpers
 
@@ -324,8 +324,8 @@ Acceptance criteria:
 
 Primary files:
 
-- `internal/codex/manager.go`
-- `internal/codex/sdk/*`
+- `internal/agents/codex/manager.go`
+- `internal/agents/codex/sdk/*`
 - validation scripts
 
 Work:

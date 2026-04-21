@@ -41,8 +41,8 @@ Relevant files today:
 - `ui/src/components/app/session-composer.tsx`
 - `ui/src/features/sessions/use-sessions.ts`
 - `idl/hopter/v1/session.proto`
-- `internal/codex/client.go`
-- `internal/codex/manager.go`
+- `internal/agents/codex/client.go`
+- `internal/agents/codex/manager.go`
 - `internal/rpc/session_service.go`
 - `internal/core/models.go`
 
@@ -145,7 +145,7 @@ For new sessions, the same control surface should be reusable so the first turn 
 ### Backend
 
 - `codex app-server` is already the only backend integration path.
-- `internal/codex/client.go` already starts threads, starts turns, steers turns, and reads threads.
+- `internal/agents/codex/client.go` already starts threads, starts turns, steers turns, and reads threads.
 - Local probe verified that `thread/start` accepts explicit model and reasoning effort.
 - Local probe verified that `model/list` returns supported reasoning efforts and input modalities.
 - Generated app-server schema shows `turn/start` and `turn/steer` accept:
@@ -269,8 +269,8 @@ Persistence rule:
 
 Primary files:
 
-- `internal/codex/client.go`
-- `internal/codex/manager.go`
+- `internal/agents/codex/client.go`
+- `internal/agents/codex/manager.go`
 
 ### Client additions
 
@@ -497,8 +497,8 @@ Files:
 - `idl/hopter/v1/session.proto`
 - generated Go/TS outputs
 - `internal/core/models.go`
-- `internal/codex/client.go`
-- `internal/codex/manager.go`
+- `internal/agents/codex/client.go`
+- `internal/agents/codex/manager.go`
 - `internal/rpc/helpers.go`
 - `internal/rpc/session_service.go`
 

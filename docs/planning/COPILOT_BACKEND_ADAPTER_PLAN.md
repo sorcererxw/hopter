@@ -134,15 +134,15 @@ This split is correct because the user's current need is real usage, not perfect
 Create a new package family:
 
 ```text
-/internal/backend
+/internal/agents
   runtime.go
   registry.go
   types.go
-/internal/backend/codex
-/internal/backend/copilot
+/internal/agents/codex
+/internal/agents/copilot
 ```
 
-Do not let `internal/codex` become the global backend abstraction. It is already both an implementation and an accidental architecture center. That gets messy fast.
+Do not let `internal/agents/codex` become the global backend abstraction. It is already both an implementation and an accidental architecture center. That gets messy fast.
 
 ### Runtime interface
 
@@ -312,7 +312,7 @@ Validation:
 
 Deliver:
 
-- `internal/backend/copilot`
+- `internal/agents/copilot`
 - create session
 - resume session
 - list sessions
@@ -366,7 +366,7 @@ The SDK is in preview. Breaking changes are likely.
 
 Mitigation:
 
-- isolate Copilot behind `internal/backend/copilot`
+- isolate Copilot behind `internal/agents/copilot`
 - do not leak SDK types across package boundaries
 
 ### 2. Approval bridge complexity
@@ -431,6 +431,6 @@ That gets the product moving without lying to yourself about the hard part.
 
 ## Immediate next step
 
-Create `internal/backend` and move the current Codex session runtime behind it before writing any Copilot integration code.
+Create `internal/agents` and move the current Codex session runtime behind it before writing any Copilot integration code.
 
 If you skip that and wire Copilot straight into today's Codex-centered manager, you will get a demo fast and a mess right after.
