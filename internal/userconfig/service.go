@@ -17,6 +17,9 @@ const (
 	ThemeSystem Theme = "system"
 	ThemeDark   Theme = "dark"
 	ThemeLight  Theme = "light"
+
+	schemaFileName  = "config.schema.json"
+	schemaReference = "./" + schemaFileName
 )
 
 var ErrRevisionConflict = errors.New("config revision conflict")
@@ -34,6 +37,7 @@ type AgentConfig struct {
 }
 
 type Config struct {
+	Schema     string           `json:"$schema,omitempty"`
 	Appearance AppearanceConfig `json:"appearance"`
 	Agent      AgentConfig      `json:"agent"`
 	Revision   uint64           `json:"-"`
@@ -72,6 +76,12 @@ func NewService(path string, eventSink core.EventSink) (*Service, error) {
 
 	cfg, err := load(path)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureConfigDir(path); err != nil {
+		return nil, err
+	}
+	if err := writeSchemaAtomic(filepath.Join(filepath.Dir(path), schemaFileName)); err != nil {
 		return nil, err
 	}
 
@@ -161,6 +171,7 @@ func load(path string) (Config, error) {
 
 func defaultConfig() Config {
 	return Config{
+		Schema:     schemaReference,
 		Appearance: AppearanceConfig{Theme: ThemeSystem},
 		Agent:      AgentConfig{DefaultBackend: "codex"},
 		Revision:   1,
@@ -169,6 +180,7 @@ func defaultConfig() Config {
 }
 
 func normalize(cfg Config) Config {
+	cfg.Schema = schemaReference
 	cfg.Appearance.Theme = Theme(strings.TrimSpace(string(cfg.Appearance.Theme)))
 	if cfg.Appearance.Theme == "" {
 		cfg.Appearance.Theme = ThemeSystem
@@ -191,9 +203,19 @@ func validate(cfg Config) error {
 	return nil
 }
 
-func writeAtomic(path string, cfg Config) error {
+func ensureConfigDir(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
+	}
+	return nil
+}
+
+func writeAtomic(path string, cfg Config) error {
+	if err := ensureConfigDir(path); err != nil {
+		return err
+	}
+	if err := writeSchemaAtomic(filepath.Join(filepath.Dir(path), schemaFileName)); err != nil {
+		return err
 	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
@@ -225,3 +247,74 @@ func writeAtomic(path string, cfg Config) error {
 	}
 	return nil
 }
+
+func writeSchemaAtomic(path string) error {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".config-schema-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temp config schema: %w", err)
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+
+	if _, err := tmp.WriteString(configSchemaJSON); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write temp config schema: %w", err)
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("chmod temp config schema: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("close temp config schema: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("replace config schema: %w", err)
+	}
+	return nil
+}
+
+const configSchemaJSON = `{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hopter.dev/schemas/config.schema.json",
+  "title": "hopter config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON schema reference for editor validation."
+    },
+    "appearance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["system", "dark", "light"],
+          "default": "system"
+        }
+      },
+      "required": ["theme"]
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "defaultBackend": {
+          "type": "string",
+          "default": "codex",
+          "minLength": 1
+        },
+        "defaultModel": {
+          "type": "string"
+        },
+        "defaultReasoningEffort": {
+          "type": "string"
+        }
+      },
+      "required": ["defaultBackend"]
+    }
+  },
+  "required": ["appearance", "agent"]
+}
+`

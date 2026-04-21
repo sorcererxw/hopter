@@ -195,6 +195,16 @@ User-configurable settings are owned by the Go server and persisted in:
 
 The browser must not read or write this file directly.
 
+The persisted `config.json` includes a local schema reference:
+
+```json
+{
+  "$schema": "./config.schema.json"
+}
+```
+
+The Go server writes `~/.hopter/config.schema.json` next to the config file on startup and whenever settings are saved, so local editors can validate user edits without depending on network access and the schema automatically follows hopter upgrades.
+
 Settings updates flow through Connect:
 
 ```text

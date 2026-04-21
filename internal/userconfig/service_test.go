@@ -18,7 +18,8 @@ func (s *captureSink) Publish(event core.Event) {
 }
 
 func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
-	service, err := NewService(filepath.Join(t.TempDir(), "config.json"), nil)
+	path := filepath.Join(t.TempDir(), "config.json")
+	service, err := NewService(path, nil)
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)
 	}
@@ -32,6 +33,46 @@ func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
 	}
 	if cfg.Revision == 0 {
 		t.Fatal("revision should be initialized")
+	}
+
+	schemaData, err := os.ReadFile(filepath.Join(filepath.Dir(path), schemaFileName))
+	if err != nil {
+		t.Fatalf("ReadFile(config schema) error = %v", err)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(schemaData, &schema); err != nil {
+		t.Fatalf("stored schema is not JSON: %v", err)
+	}
+	if schema["title"] != "hopter config" {
+		t.Fatalf("schema title = %v, want hopter config", schema["title"])
+	}
+}
+
+func TestServiceStartupRefreshesExistingSchema(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	schemaPath := filepath.Join(dir, schemaFileName)
+	if err := os.WriteFile(path, []byte(`{"appearance":{"theme":"light"},"agent":{"defaultBackend":"codex"}}`), 0o600); err != nil {
+		t.Fatalf("WriteFile(config) error = %v", err)
+	}
+	if err := os.WriteFile(schemaPath, []byte(`{"title":"stale schema"}`), 0o644); err != nil {
+		t.Fatalf("WriteFile(schema) error = %v", err)
+	}
+
+	if _, err := NewService(path, nil); err != nil {
+		t.Fatalf("NewService() error = %v", err)
+	}
+
+	data, err := os.ReadFile(schemaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(config schema) error = %v", err)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("stored schema is not JSON: %v", err)
+	}
+	if schema["title"] != "hopter config" {
+		t.Fatalf("schema title = %v, want refreshed hopter config", schema["title"])
 	}
 }
 
@@ -68,9 +109,24 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	if _, ok := stored["revision"]; ok {
 		t.Fatal("revision should not be persisted in user-editable config")
 	}
+	if stored["$schema"] != schemaReference {
+		t.Fatalf("$schema = %v, want %q", stored["$schema"], schemaReference)
+	}
 	appearance := stored["appearance"].(map[string]any)
 	if appearance["theme"] != string(ThemeDark) {
 		t.Fatalf("stored theme = %v, want %q", appearance["theme"], ThemeDark)
+	}
+
+	schemaData, err := os.ReadFile(filepath.Join(filepath.Dir(path), schemaFileName))
+	if err != nil {
+		t.Fatalf("ReadFile(config schema) error = %v", err)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(schemaData, &schema); err != nil {
+		t.Fatalf("stored schema is not JSON: %v", err)
+	}
+	if schema["title"] != "hopter config" {
+		t.Fatalf("schema title = %v, want hopter config", schema["title"])
 	}
 }
 
