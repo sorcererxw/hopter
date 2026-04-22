@@ -40,7 +40,9 @@ import {
   useHostUpdates,
 } from "@/features/host/use-host-updates"
 import { useSessions } from "@/features/sessions/use-sessions"
-import { formatSessionStatus, timestampToDate } from "@/lib/format/proto"
+import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
+import { timestampToDate } from "@/lib/format/proto"
+import { useUnreadSessionIds } from "@/lib/session-unread"
 import { cn } from "@/lib/utils"
 import { useAutoHideScrollbar } from "@/components/app/use-auto-hide-scrollbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
@@ -78,17 +80,16 @@ function sessionWeight(updatedAt?: Date) {
   return updatedAt.getTime()
 }
 
-function sessionDot(status: string) {
-  switch (status.toLowerCase()) {
-    case "running":
-      return "bg-emerald-400/75"
-    case "completed":
-      return "bg-sky-400/75"
-    case "waiting":
-      return "bg-amber-300/70"
-    default:
-      return "bg-primary-muted/70"
-  }
+function isSessionRunning(status: SessionStatus) {
+  return status === SessionStatus.RUNNING || status === SessionStatus.PENDING
+}
+
+function shouldShowSessionUnreadDot(status: SessionStatus, unread: boolean) {
+  return (
+    unread ||
+    status === SessionStatus.WAITING_APPROVAL ||
+    status === SessionStatus.WAITING_INPUT
+  )
 }
 
 function RailBrand({ right }: { right?: ReactNode }) {
@@ -212,6 +213,7 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
 export function SessionRail({ onNavigate }: SessionRailProps) {
   const { eventStreamState, posture } = useWorkspaceShell()
   const navigate = useNavigate()
+  const unreadSessionIds = useUnreadSessionIds()
   const railScrollRef = useRef<HTMLDivElement | null>(null)
   const railListRef = useRef<HTMLUListElement | null>(null)
   const {
@@ -543,24 +545,23 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                         ? null
                         : visibleSessions.map((session) => {
                             const updatedAt = timestampToDate(session.updatedAt)
-                            const status = formatSessionStatus(
+                            const sessionRunning = isSessionRunning(
                               session.status
-                            ).toLowerCase()
+                            )
+                            const showUnreadDot = shouldShowSessionUnreadDot(
+                              session.status,
+                              unreadSessionIds.has(session.id)
+                            )
 
                             return (
                               <li key={session.id}>
                                 <RailRow
                                   icon={
-                                    status === "running" ? (
+                                    sessionRunning ? (
                                       <LoaderCircle className="size-3.5 animate-spin text-muted-foreground" />
-                                    ) : (
-                                      <span
-                                        className={cn(
-                                          "size-1.5 rounded-full",
-                                          sessionDot(status)
-                                        )}
-                                      />
-                                    )
+                                    ) : showUnreadDot ? (
+                                      <span className="size-1.5 rounded-full bg-sky-400/75" />
+                                    ) : null
                                   }
                                   label={session.title || "Untitled thread"}
                                   onClick={onNavigate}

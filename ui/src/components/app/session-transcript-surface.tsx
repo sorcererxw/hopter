@@ -92,7 +92,6 @@ export function SessionTranscriptSurface({
             }
             isLoadingInitialTranscript={isLoadingInitialTranscript}
             onSelectPath={ignoreLocalPathClick}
-            scrollElementRef={transcriptScrollRef}
           />
           <SessionArtifactWorkspace
             artifacts={session.artifacts}

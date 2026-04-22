@@ -70,7 +70,8 @@ export function shouldPollSessionState(status: Session["status"]) {
   return (
     normalized === "pending" ||
     normalized === "running" ||
-    normalized === "waiting approval"
+    normalized === "waiting for approval" ||
+    normalized === "waiting for input"
   )
 }
 

@@ -88,8 +88,12 @@ func (f *fakeCodexClient) ResumeThread(threadID, cwd string, options core.Sessio
 	return out, nil
 }
 
-func (f *fakeCodexClient) RespondToApproval(rawID json.RawMessage, decision string) error {
-	f.respondApprovalCalls = append(f.respondApprovalCalls, string(rawID)+":"+decision)
+func (f *fakeCodexClient) RespondToApproval(rawID json.RawMessage, result any) error {
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	f.respondApprovalCalls = append(f.respondApprovalCalls, string(rawID)+":"+string(encoded))
 	return nil
 }
 
@@ -1072,7 +1076,7 @@ func TestRespondToSessionApprovalUsesOriginalRequestIdentity(t *testing.T) {
 	if len(client.respondApprovalCalls) != 1 {
 		t.Fatalf("respond approval calls = %d, want 1", len(client.respondApprovalCalls))
 	}
-	if client.respondApprovalCalls[0] != `12:approve` {
+	if client.respondApprovalCalls[0] != `12:{"decision":"accept"}` {
 		t.Fatalf("respond approval call = %q", client.respondApprovalCalls[0])
 	}
 	if updated.PendingApprovalID != "" {
@@ -1080,6 +1084,91 @@ func TestRespondToSessionApprovalUsesOriginalRequestIdentity(t *testing.T) {
 	}
 	if updated.Status != core.SessionStateRunning {
 		t.Fatalf("status = %q, want %q", updated.Status, core.SessionStateRunning)
+	}
+}
+
+func TestRespondToSessionApprovalRejectsWithDecline(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  "thread-1",
+		active:  "turn-1",
+		pendingApproval: &pendingApproval{
+			ID:      "13",
+			RawID:   json.RawMessage(`13`),
+			Method:  "item/fileChange/requestApproval",
+			Message: "Codex needs approval to change files.",
+		},
+	}
+
+	_, err = manager.RespondToSessionApproval(session.ID, "13", core.ApprovalDecisionReject)
+	if err != nil {
+		t.Fatalf("RespondToSessionApproval: %v", err)
+	}
+	if len(client.respondApprovalCalls) != 1 {
+		t.Fatalf("respond approval calls = %d, want 1", len(client.respondApprovalCalls))
+	}
+	if client.respondApprovalCalls[0] != `13:{"decision":"decline"}` {
+		t.Fatalf("respond approval call = %q", client.respondApprovalCalls[0])
+	}
+}
+
+func TestRespondToSessionApprovalGrantsRequestedPermissions(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  "thread-1",
+		active:  "turn-1",
+		pendingApproval: &pendingApproval{
+			ID:     "14",
+			RawID:  json.RawMessage(`14`),
+			Method: "item/permissions/requestApproval",
+			Params: json.RawMessage(`{
+				"permissions": {
+					"fileSystem": { "write": ["/tmp/hopter-permission-probe"] },
+					"network": { "enabled": true }
+				}
+			}`),
+			Message: "Codex needs approval for additional permissions.",
+		},
+	}
+
+	_, err = manager.RespondToSessionApproval(session.ID, "14", core.ApprovalDecisionApprove)
+	if err != nil {
+		t.Fatalf("RespondToSessionApproval: %v", err)
+	}
+	if len(client.respondApprovalCalls) != 1 {
+		t.Fatalf("respond approval calls = %d, want 1", len(client.respondApprovalCalls))
+	}
+	want := `14:{"permissions":{"fileSystem":{"write":["/tmp/hopter-permission-probe"]},"network":{"enabled":true}},"scope":"turn"}`
+	if client.respondApprovalCalls[0] != want {
+		t.Fatalf("respond approval call = %q, want %q", client.respondApprovalCalls[0], want)
 	}
 }
 
@@ -1182,6 +1271,74 @@ func TestListSessionsCachesThreadListCalls(t *testing.T) {
 	}
 	if client.listThreadsCalls != 1 {
 		t.Fatalf("ListThreads calls = %d, want 1", client.listThreadsCalls)
+	}
+}
+
+func TestListSessionsMapsActiveFlagsToWaitingStates(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        "thread-running",
+					Cwd:       project.RootPath,
+					Preview:   "running",
+					UpdatedAt: time.Now().UTC().Unix(),
+					Status:    ThreadStatus{Type: "active"},
+				},
+				{
+					ID:        "thread-approval",
+					Cwd:       project.RootPath,
+					Preview:   "approval",
+					UpdatedAt: time.Now().UTC().Add(-time.Second).Unix(),
+					Status: ThreadStatus{
+						Type:        "active",
+						ActiveFlags: []string{"waitingOnApproval"},
+					},
+				},
+				{
+					ID:        "thread-input",
+					Cwd:       project.RootPath,
+					Preview:   "input",
+					UpdatedAt: time.Now().UTC().Add(-2 * time.Second).Unix(),
+					Status: ThreadStatus{
+						Type:        "active",
+						ActiveFlags: []string{"waitingOnUserInput"},
+					},
+				},
+			},
+		},
+	}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	sessions, err := manager.ListSessions(project.ID, 10)
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+
+	got := make(map[string]core.SessionState)
+	for _, resolved := range sessions {
+		got[resolved.Session.BackendThreadID] = resolved.Session.Status
+	}
+	if got["thread-running"] != core.SessionStateRunning {
+		t.Fatalf("running status = %q, want %q", got["thread-running"], core.SessionStateRunning)
+	}
+	if got["thread-approval"] != core.SessionStateWaitingApproval {
+		t.Fatalf("approval status = %q, want %q", got["thread-approval"], core.SessionStateWaitingApproval)
+	}
+	if got["thread-input"] != core.SessionStateWaitingInput {
+		t.Fatalf("input status = %q, want %q", got["thread-input"], core.SessionStateWaitingInput)
 	}
 }
 

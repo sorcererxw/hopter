@@ -18,6 +18,10 @@ export type ActivityItem =
       kind: "pending-input"
       text: string
     }
+  | {
+      key: string
+      kind: "thinking"
+    }
 
 export function activityItemSignature(item: ActivityItem | undefined) {
   if (!item) {
@@ -35,6 +39,8 @@ export function activityItemSignature(item: ActivityItem | undefined) {
       ].join(":")
     case "pending-input":
       return `${item.key}:${item.text.length}:${item.text.slice(-160)}`
+    case "thinking":
+      return item.key
     case "round-status":
       return `${item.key}:${item.state}:${item.summary.length}:${item.summary.slice(-160)}`
   }

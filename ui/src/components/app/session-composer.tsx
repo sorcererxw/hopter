@@ -6,7 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
 } from "react"
-import { ArrowUp, ChevronDown, LoaderCircle, Plus, Square } from "lucide-react"
+import { ArrowUp, ChevronDown, LoaderCircle, Pause, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button"
@@ -404,7 +404,7 @@ export function SessionComposer({
                     {busy ? (
                       <LoaderCircle className="size-4 animate-spin" />
                     ) : interruptMode ? (
-                      <Square className="size-4 fill-current" />
+                      <Pause className="size-4" />
                     ) : (
                       <ArrowUp className="size-4" />
                     )}

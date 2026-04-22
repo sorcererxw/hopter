@@ -1,11 +1,4 @@
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react"
-import { useVirtualizer } from "@tanstack/react-virtual"
+import { useState, type ReactNode } from "react"
 import {
   ChevronRight,
   FileImage,
@@ -53,6 +46,15 @@ type TimelineItem =
       text: string
     }
   | {
+      key: string
+      kind: "thinking"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "command-group"
+    }
+  | {
       items: SessionTranscriptItem[]
       key: string
       kind: "thought-group"
@@ -69,56 +71,13 @@ export function TranscriptTimeline({
   isFetchingPreviousPage,
   isLoadingInitialTranscript,
   onSelectPath,
-  scrollElementRef,
 }: {
   items: ActivityItem[]
   isFetchingPreviousPage: boolean
   isLoadingInitialTranscript: boolean
   onSelectPath: (path: string) => void
-  scrollElementRef: RefObject<HTMLDivElement | null>
 }) {
   const timelineItems = groupTimelineItems(items)
-  const timelineRef = useRef<HTMLDivElement | null>(null)
-  const [scrollMargin, setScrollMargin] = useState(0)
-  const virtualizer = useVirtualizer({
-    count: timelineItems.length,
-    estimateSize: () => 96,
-    getItemKey: (index) => timelineItems[index]?.key ?? index,
-    getScrollElement: () => scrollElementRef.current,
-    measureElement: (element) => element.getBoundingClientRect().height,
-    overscan: 8,
-    scrollMargin,
-  })
-
-  useLayoutEffect(() => {
-    const scrollElement = scrollElementRef.current
-    const timelineElement = timelineRef.current
-    if (!scrollElement || !timelineElement) {
-      return
-    }
-
-    function updateScrollMargin() {
-      const scrollRect = scrollElement!.getBoundingClientRect()
-      const timelineRect = timelineElement!.getBoundingClientRect()
-      setScrollMargin(
-        timelineRect.top - scrollRect.top + scrollElement!.scrollTop
-      )
-    }
-
-    updateScrollMargin()
-
-    if (typeof ResizeObserver === "undefined") {
-      return
-    }
-
-    const observer = new ResizeObserver(updateScrollMargin)
-    if (timelineElement.parentElement) {
-      observer.observe(timelineElement.parentElement)
-    }
-    observer.observe(scrollElement)
-
-    return () => observer.disconnect()
-  }, [scrollElementRef, timelineItems.length])
 
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return (
@@ -134,36 +93,15 @@ export function TranscriptTimeline({
 
   return (
     <div
-      ref={timelineRef}
-      className="relative"
+      className="relative flex flex-col gap-2"
       data-testid="session-transcript"
     >
       {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
-      <div
-        className="relative w-full"
-        style={{ height: virtualizer.getTotalSize() }}
-      >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
-          const item = timelineItems[virtualItem.index]
-          if (!item) {
-            return null
-          }
-
-          return (
-            <div
-              key={virtualItem.key}
-              ref={virtualizer.measureElement}
-              data-index={virtualItem.index}
-              className="absolute top-0 left-0 w-full pb-2"
-              style={{
-                transform: `translateY(${virtualItem.start - scrollMargin}px)`,
-              }}
-            >
-              {renderTimelineItem(item, { onSelectPath })}
-            </div>
-          )
-        })}
-      </div>
+      {timelineItems.map((item, index) => (
+        <div key={item.key} data-index={index} className="min-w-0">
+          {renderTimelineItem(item, { onSelectPath })}
+        </div>
+      ))}
     </div>
   )
 }
@@ -191,6 +129,10 @@ function renderTimelineItem(
           text={item.text}
         />
       )
+    case "thinking":
+      return <ThinkingEntry />
+    case "command-group":
+      return <CommandExecutionGroupEntry items={item.items} />
     case "thought-group":
       return (
         <ThoughtProcessGroupEntry
@@ -240,6 +182,33 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   while (cursor < items.length) {
     const current = items[cursor]
 
+    if (
+      isTranscriptActivityItem(current) &&
+      shouldFoldCommandExecution(current.item)
+    ) {
+      const commandItems: SessionTranscriptItem[] = []
+
+      while (cursor < items.length) {
+        const next = items[cursor]
+        if (
+          !isTranscriptActivityItem(next) ||
+          !shouldFoldCommandExecution(next.item)
+        ) {
+          break
+        }
+
+        commandItems.push(next.item)
+        cursor += 1
+      }
+
+      timelineItems.push({
+        items: commandItems,
+        key: commandExecutionGroupKey(commandItems),
+        kind: "command-group",
+      })
+      continue
+    }
+
     if (!isTranscriptActivityItem(current)) {
       timelineItems.push(current)
       cursor += 1
@@ -269,6 +238,17 @@ function PendingInputEntry({
           markdown={false}
           onLocalPathClick={onSelectPath}
         />
+      </div>
+    </div>
+  )
+}
+
+function ThinkingEntry() {
+  return (
+    <div className="min-w-0" data-testid="session-transcript-thinking">
+      <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+        <LoaderCircle className="size-3.5 animate-spin" />
+        <span>Thinking...</span>
       </div>
     </div>
   )
@@ -681,6 +661,30 @@ function ThoughtProcessGroupEntry({
   )
 }
 
+function CommandExecutionGroupEntry({
+  items,
+}: {
+  items: SessionTranscriptItem[]
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const label = `Executed ${items.length} command${items.length === 1 ? "" : "s"}`
+
+  return (
+    <TranscriptBatchEntry
+      expanded={expanded}
+      label={label}
+      onToggle={() => setExpanded((prev) => !prev)}
+      testId="session-transcript-command-group"
+    >
+      <div className="flex flex-col gap-2 border-l border-border pl-4">
+        {items.map((item) => (
+          <CommandEntry key={item.id} item={item} />
+        ))}
+      </div>
+    </TranscriptBatchEntry>
+  )
+}
+
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const [expanded, setExpanded] = useState(false)
   const detail = parseCommandExecutionDetail(item.body)
@@ -729,6 +733,38 @@ function CommandExecutionDetail({
       ) : null}
     </CodeContainer>
   )
+}
+
+function shouldFoldCommandExecution(item: SessionTranscriptItem) {
+  if (item.kind !== SessionTranscriptItemKind.COMMAND_EXECUTION) {
+    return false
+  }
+
+  const status = commandExecutionStatus(item)
+  return !isActiveCommandExecutionStatus(status)
+}
+
+function commandExecutionStatus(item: SessionTranscriptItem) {
+  return (
+    item.status.trim() || parseCommandExecutionDetail(item.body).status
+  ).toLowerCase()
+}
+
+function isActiveCommandExecutionStatus(status: string) {
+  const normalized = status.replace(/[\s_-]+/g, "")
+  return (
+    normalized === "inprogress" ||
+    normalized === "running" ||
+    normalized === "pending" ||
+    normalized === "queued" ||
+    normalized === "starting"
+  )
+}
+
+function commandExecutionGroupKey(items: SessionTranscriptItem[]) {
+  const first = items[0]?.id ?? "start"
+  const last = items.at(-1)?.id ?? "end"
+  return `command-group:${first}:${last}:${items.length}`
 }
 
 function FileChangeGroupEntry({ items }: { items: SessionTranscriptItem[] }) {

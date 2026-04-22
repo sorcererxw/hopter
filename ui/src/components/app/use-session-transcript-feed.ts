@@ -13,6 +13,7 @@ import type {
 import {
   buildSessionDetail,
   shouldPollSessionState,
+  shouldShowThinkingState,
   type SessionEventStreamState,
 } from "./session-detail-model"
 import {
@@ -169,6 +170,13 @@ export function useSessionTranscriptFeed({
         kind: "pending-input" as const,
         key: "pending-input",
         text: session.lastInputHint,
+      })
+    }
+
+    if (session && shouldShowThinkingState(session.status)) {
+      items.push({
+        kind: "thinking" as const,
+        key: "thinking",
       })
     }
 

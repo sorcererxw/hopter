@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
+	"github.com/pmenglund/codex-sdk-go/protocol"
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
@@ -36,6 +37,7 @@ type pendingApproval struct {
 	ID      string
 	RawID   json.RawMessage
 	Method  string
+	Params  json.RawMessage
 	Message string
 }
 
@@ -69,7 +71,7 @@ type codexClient interface {
 	ReadThread(threadID string) (*ReadThreadResult, error)
 	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
 	ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error)
-	RespondToApproval(rawID json.RawMessage, decision string) error
+	RespondToApproval(rawID json.RawMessage, result any) error
 	StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error)
 	StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error)
 	SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error)
@@ -477,12 +479,8 @@ func latestLocalSummary(workspace core.WorkspaceService, sessionID string) strin
 func (m *Manager) handleNotification(sessionID string, notification Notification) {
 	switch notification.Method {
 	case "turn/started":
-		var payload struct {
-			Turn struct {
-				ID string `json:"id"`
-			} `json:"turn"`
-		}
-		if json.Unmarshal(notification.Params, &payload) == nil && payload.Turn.ID != "" {
+		var payload protocol.TurnStartedNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil && payload.Turn != nil && payload.Turn.ID != "" {
 			active := payload.Turn.ID
 			approvalID := ""
 			running := core.SessionStateRunning
@@ -518,11 +516,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			}
 		}
 	case "turn/completed":
-		var payload struct {
-			Turn struct {
-				Status string `json:"status"`
-			} `json:"turn"`
-		}
+		var payload protocol.TurnCompletedNotification
 		_ = json.Unmarshal(notification.Params, &payload)
 		m.mu.Lock()
 		live := m.live[sessionID]
@@ -537,9 +531,13 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 
 		active := ""
 		approvalID := ""
-		status := finalSessionState(payload.Turn.Status, core.SessionStateCompleted)
+		turnStatus := ""
+		if payload.Turn != nil {
+			turnStatus = payload.Turn.Status
+		}
+		status := finalSessionState(turnStatus, core.SessionStateCompleted)
 		summary := "Codex completed the turn."
-		if payload.Turn.Status == "interrupted" {
+		if turnStatus == "interrupted" {
 			summary = "Codex stopped before completing the turn."
 		}
 
@@ -574,12 +572,8 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 	case "error":
 		m.failSession(sessionID, errors.New("codex emitted an error notification"))
 	case "item/agentMessage/delta":
-		var payload struct {
-			TurnID string `json:"turnId"`
-			ItemID string `json:"itemId"`
-			Delta  string `json:"delta"`
-		}
-		if json.Unmarshal(notification.Params, &payload) == nil && strings.TrimSpace(payload.Delta) != "" {
+		var payload protocol.AgentMessageDeltaNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil && strings.TrimSpace(payload.Delta) != "" {
 			var (
 				projectID string
 				delta     = payload.Delta
@@ -605,18 +599,19 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			}
 		}
 	case "item/completed":
-		var payload struct {
-			Item struct {
+		var payload protocol.ItemCompletedNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil {
+			var item struct {
 				ID    string `json:"id"`
 				Type  string `json:"type"`
 				Text  string `json:"text"`
 				Phase string `json:"phase"`
-			} `json:"item"`
-		}
-		if json.Unmarshal(notification.Params, &payload) == nil {
-			text := strings.TrimSpace(payload.Item.Text)
-			if payload.Item.Type == "agentMessage" && text != "" {
-				if strings.EqualFold(strings.TrimSpace(payload.Item.Phase), "commentary") {
+			}
+			_ = json.Unmarshal(payload.Item, &item)
+			text := strings.TrimSpace(item.Text)
+			if item.Type == "agentMessage" && text != "" {
+				phase := item.Phase
+				if strings.EqualFold(strings.TrimSpace(phase), "commentary") {
 					var projectID string
 					m.mu.Lock()
 					if live := m.live[sessionID]; live != nil {
@@ -629,10 +624,10 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 						m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
 							Kind: core.SessionLivePatchKindMessageFinalized,
 							FinalItem: &core.SessionTranscriptItem{
-								ID:     strings.TrimSpace(payload.Item.ID),
+								ID:     strings.TrimSpace(item.ID),
 								Kind:   core.SessionTranscriptItemKindAgentMessage,
 								Title:  "Codex",
-								Status: strings.TrimSpace(payload.Item.Phase),
+								Status: strings.TrimSpace(phase),
 							},
 							Status: core.SessionStateRunning,
 						})
@@ -655,16 +650,16 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 					m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
 						Kind: core.SessionLivePatchKindMessageFinalized,
 						FinalItem: &core.SessionTranscriptItem{
-							ID: strings.TrimSpace(payload.Item.ID),
+							ID: strings.TrimSpace(item.ID),
 							OrderKey: fmt.Sprintf(
 								"live:%020d:%s",
 								time.Now().UTC().UnixNano(),
-								strings.TrimSpace(payload.Item.ID),
+								strings.TrimSpace(item.ID),
 							),
 							Kind:   core.SessionTranscriptItemKindAgentMessage,
 							Title:  "Codex",
 							Body:   text,
-							Status: strings.TrimSpace(payload.Item.Phase),
+							Status: strings.TrimSpace(phase),
 						},
 						Status:  core.SessionStateRunning,
 						Summary: text,
@@ -693,6 +688,7 @@ func (m *Manager) handleServerRequest(sessionID string, req ServerRequest) {
 			ID:      approvalID,
 			RawID:   append(json.RawMessage(nil), req.ID...),
 			Method:  req.Method,
+			Params:  append(json.RawMessage(nil), req.Params...),
 			Message: message,
 		}
 		projectID = live.project.ID
@@ -942,11 +938,16 @@ func (m *Manager) RespondToSessionApproval(
 	projectID := live.project.ID
 	m.mu.Unlock()
 
-	protocolDecision := "reject"
-	if decision == core.ApprovalDecisionApprove {
-		protocolDecision = "approve"
+	response, err := approvalResponseForRequest(pending, decision)
+	if err != nil {
+		m.mu.Lock()
+		if current := m.live[sessionID]; current != nil && current.pendingApproval == nil {
+			current.pendingApproval = pending
+		}
+		m.mu.Unlock()
+		return core.Session{}, err
 	}
-	if err := live.client.RespondToApproval(pending.RawID, protocolDecision); err != nil {
+	if err := live.client.RespondToApproval(pending.RawID, response); err != nil {
 		m.mu.Lock()
 		if current := m.live[sessionID]; current != nil && current.pendingApproval == nil {
 			current.pendingApproval = pending
@@ -980,6 +981,70 @@ func (m *Manager) RespondToSessionApproval(
 		return core.Session{}, fmt.Errorf("session %q not found", sessionID)
 	}
 	return session, nil
+}
+
+func approvalResponseForRequest(pending *pendingApproval, decision core.ApprovalDecision) (any, error) {
+	if pending == nil {
+		return nil, errors.New("approval request is missing")
+	}
+
+	switch pending.Method {
+	case "item/commandExecution/requestApproval":
+		protocolDecision := "decline"
+		if decision == core.ApprovalDecisionApprove {
+			protocolDecision = "accept"
+		}
+		return protocol.CommandExecutionRequestApprovalResponse{Decision: protocolDecision}, nil
+	case "item/fileChange/requestApproval":
+		protocolDecision := "decline"
+		if decision == core.ApprovalDecisionApprove {
+			protocolDecision = "accept"
+		}
+		return protocol.FileChangeRequestApprovalResponse{Decision: protocolDecision}, nil
+	case "execCommandApproval":
+		protocolDecision := "denied"
+		if decision == core.ApprovalDecisionApprove {
+			protocolDecision = "approved"
+		}
+		return protocol.ExecCommandApprovalResponse{Decision: protocolDecision}, nil
+	case "applyPatchApproval":
+		protocolDecision := "denied"
+		if decision == core.ApprovalDecisionApprove {
+			protocolDecision = "approved"
+		}
+		return protocol.ApplyPatchApprovalResponse{Decision: protocolDecision}, nil
+	case "item/permissions/requestApproval":
+		if decision != core.ApprovalDecisionApprove {
+			return protocol.PermissionsRequestApprovalResponse{
+				Permissions: map[string]any{},
+				Scope:       "turn",
+			}, nil
+		}
+		permissions, err := requestedPermissions(pending.Params)
+		if err != nil {
+			return nil, err
+		}
+		return protocol.PermissionsRequestApprovalResponse{
+			Permissions: permissions,
+			Scope:       "turn",
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported approval method %q", pending.Method)
+	}
+}
+
+func requestedPermissions(raw json.RawMessage) (any, error) {
+	if len(raw) == 0 {
+		return map[string]any{}, nil
+	}
+	var payload protocol.PermissionsRequestApprovalParams
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, fmt.Errorf("decode permissions approval params: %w", err)
+	}
+	if payload.Permissions == nil {
+		return map[string]any{}, nil
+	}
+	return payload.Permissions, nil
 }
 
 func ptrSessionState(value core.SessionState) *core.SessionState {
@@ -1334,6 +1399,12 @@ func fallbackThreadPreview(thread ThreadRecord, local core.Session, hasLocal boo
 func mapThreadStatus(status ThreadStatus) core.SessionState {
 	switch status.Type {
 	case "active":
+		if threadStatusHasActiveFlag(status, "waitingOnApproval") {
+			return core.SessionStateWaitingApproval
+		}
+		if threadStatusHasActiveFlag(status, "waitingOnUserInput") {
+			return core.SessionStateWaitingInput
+		}
 		return core.SessionStateRunning
 	case "systemError":
 		return core.SessionStateFailed
@@ -1342,6 +1413,15 @@ func mapThreadStatus(status ThreadStatus) core.SessionState {
 	default:
 		return core.SessionStatePending
 	}
+}
+
+func threadStatusHasActiveFlag(status ThreadStatus, flag string) bool {
+	for _, activeFlag := range status.ActiveFlags {
+		if activeFlag == flag {
+			return true
+		}
+	}
+	return false
 }
 
 func latestActiveTurnID(read *ReadThreadResult) string {

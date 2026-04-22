@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { classifyAppServerScope, isTruthyAck } from "../scripts/lib/app-server-docs-guard.ts";
 import { localHttpUrl, normalizeLocalhostHost } from "../scripts/lib/devloop.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary } from "../scripts/lib/rebuild-validation.ts";
 
@@ -41,5 +42,23 @@ describe("dev loop URL helpers", () => {
     expect(normalizeLocalhostHost("::")).toBe("[::1]");
     expect(localHttpUrl("0.0.0.0", 5173)).toBe("http://127.0.0.1:5173");
     expect(() => new URL(localHttpUrl("0.0.0.0", 5173))).not.toThrow();
+  });
+});
+
+describe("app-server docs guard helpers", () => {
+  test("classifies Codex app-server connection files as scoped", () => {
+    const match = classifyAppServerScope("internal/agents/codex/client.go", "");
+    expect(match.scoped).toBe(true);
+  });
+
+  test("classifies app-server protocol mentions as scoped", () => {
+    const match = classifyAppServerScope("docs/example.md", "The code calls turn/start through codex app-server.");
+    expect(match.scoped).toBe(true);
+  });
+
+  test("recognizes explicit docs acknowledgement values", () => {
+    expect(isTruthyAck("1")).toBe(true);
+    expect(isTruthyAck("reviewed")).toBe(true);
+    expect(isTruthyAck("")).toBe(false);
   });
 });

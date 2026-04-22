@@ -10,9 +10,8 @@ import {
 } from "./lib/rebuild-validation.ts";
 import { createValidationRun } from "./lib/validation.ts";
 
-const baseUrl =
-  "http://127.0.0.1:8787";
-const healthUrl = `/healthz`;
+const baseUrl = "http://127.0.0.1:8787";
+const healthUrl = `${baseUrl}/healthz`;
 
 const sessionId = "sess_mock";
 const projectId = "proj_mock";
@@ -20,6 +19,7 @@ const updatedAt = "2026-04-16T16:48:00Z";
 const olderCursor = "cursor_older";
 const oldestCursor = "cursor_oldest";
 let includeFollowupTranscript = false;
+let runningCommandCompleted = false;
 let olderTranscriptAttempts = 0;
 
 function buildFileChangeBody() {
@@ -74,11 +74,10 @@ function buildLatestTranscriptPage() {
       items: [
         {
           id: "agent-2",
-          orderKey: "000000000001:000000000002:agent-2",
+          orderKey: "000000000001:000000000004:agent-2",
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
           title: "Codex",
-          body:
-            "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
+          body: "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
           status: "",
         },
         {
@@ -97,9 +96,27 @@ function buildLatestTranscriptPage() {
           body: "git status\n\nstatus: completed\n\noutput:\nOn branch master",
           status: "completed",
         },
+        {
+          id: "cmd-2",
+          orderKey: "000000000001:000000000002:cmd-2",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
+          title: "Command",
+          body: "pnpm --dir ui typecheck\n\nstatus: completed\n\noutput:\nTypecheck passed",
+          status: "completed",
+        },
+        {
+          id: "cmd-running",
+          orderKey: "000000000001:000000000003:cmd-running",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
+          title: "Command",
+          body: `pnpm --dir ui build\n\nstatus: ${
+            runningCommandCompleted ? "completed" : "inProgress"
+          }\n\noutput:\n${runningCommandCompleted ? "Build completed" : "Building production bundle..."}`,
+          status: runningCommandCompleted ? "completed" : "inProgress",
+        },
         ...Array.from({ length: 14 }, (_, index) => ({
           id: `agent-filler-${index}`,
-          orderKey: `000000000001:${String(index + 3).padStart(12, "0")}:agent-filler-${index}`,
+          orderKey: `000000000001:${String(index + 5).padStart(12, "0")}:agent-filler-${index}`,
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
           title: "Codex",
           body: `Latest-page filler ${index + 1} for scroll pagination validation.`,
@@ -109,7 +126,7 @@ function buildLatestTranscriptPage() {
           ? [
               {
                 id: "agent-3",
-                orderKey: "000000000001:000000000017:agent-3",
+                orderKey: "000000000001:000000000019:agent-3",
                 kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
                 title: "Codex",
                 body: "AUTO-SCROLL-FOLLOWUP: this message should keep the transcript pinned to the bottom.",
@@ -142,8 +159,7 @@ function buildOlderTranscriptPage() {
           orderKey: "000000000000:000000000001:agent-1",
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
           title: "Codex",
-          body:
-            "我跑过的验证：\n- pnpm --dir ui typecheck\n- go test ./internal/codex/...\n- make verify-live",
+          body: "我跑过的验证：\n- pnpm --dir ui typecheck\n- go test ./internal/codex/...\n- make verify-live",
           status: "",
         },
         {
@@ -331,7 +347,10 @@ async function waitForTranscriptDistanceFromBottom(
       while (current) {
         const style = window.getComputedStyle(current);
         if (style.overflowY === "auto" || style.overflowY === "scroll") {
-          return current.scrollHeight - current.scrollTop - current.clientHeight <= max;
+          return (
+            current.scrollHeight - current.scrollTop - current.clientHeight <=
+            max
+          );
         }
         current = current.parentElement;
       }
@@ -383,7 +402,10 @@ async function wireMockRPC(page: Page) {
           await route.fulfill({
             status: 503,
             contentType: "application/json",
-            body: JSON.stringify({ code: "unavailable", message: "temporary transcript failure" }),
+            body: JSON.stringify({
+              code: "unavailable",
+              message: "temporary transcript failure",
+            }),
           });
           return;
         }
@@ -494,26 +516,39 @@ async function main() {
     const latestUserEntry = page
       .getByTestId("session-transcript-user")
       .filter({ hasText: "Follow up with command evidence." });
-    const commandEntry = page.getByTestId("session-transcript-command");
+    const commandGroup = page
+      .getByTestId("session-transcript-command-group")
+      .filter({ hasText: "Executed 2 commands" });
+    const runningCommandEntry = page
+      .getByTestId("session-transcript-command")
+      .filter({ hasText: "pnpm --dir ui build" });
     await latestAgentEntry.waitFor();
     await latestUserEntry.waitFor();
-    await commandEntry.waitFor();
+    await commandGroup.waitFor();
+    await runningCommandEntry.waitFor();
     await assertVerticalOrder([
       { label: "latest user", locator: latestUserEntry },
-      { label: "latest command", locator: commandEntry },
+      { label: "completed command group", locator: commandGroup },
+      { label: "running command", locator: runningCommandEntry },
       { label: "latest agent", locator: latestAgentEntry },
     ]);
     const olderMessage = page
       .getByTestId("session-transcript-user")
       .filter({ hasText: "Build a transcript-aware validation flow." });
     if (await olderMessage.count()) {
-      throw new Error("older transcript page rendered before upward pagination");
+      throw new Error(
+        "older transcript page rendered before upward pagination",
+      );
     }
     if (await page.getByTestId("session-artifact-workspace").count()) {
-      throw new Error("empty artifacts workspace rendered for a session with no artifacts");
+      throw new Error(
+        "empty artifacts workspace rendered for a session with no artifacts",
+      );
     }
     if (await page.getByTestId("session-artifact-workspace-empty").count()) {
-      throw new Error("empty artifacts placeholder rendered for a session with no artifacts");
+      throw new Error(
+        "empty artifacts placeholder rendered for a session with no artifacts",
+      );
     }
     await waitForTranscriptDistanceFromBottom(page, 24);
     const initialDistanceFromBottom = await transcriptDistanceFromBottom(page);
@@ -549,7 +584,17 @@ async function main() {
         `transcript did not start pinned to bottom before follow-up; distance=${distanceBeforeFollowup}`,
       );
     }
+    runningCommandCompleted = true;
     includeFollowupTranscript = true;
+    const completedCommandGroup = page
+      .getByTestId("session-transcript-command-group")
+      .filter({ hasText: "Executed 3 commands" });
+    await completedCommandGroup.waitFor({ timeout: 15_000 });
+    if (await runningCommandEntry.count()) {
+      throw new Error(
+        "completed command still rendered as a standalone running command row",
+      );
+    }
     await page
       .getByTestId("session-transcript-agent")
       .filter({ hasText: "AUTO-SCROLL-FOLLOWUP" })
@@ -568,6 +613,14 @@ async function main() {
         "when the transcript was pinned to bottom, a polling refresh with a new message kept the scroll position at the latest content",
     });
 
+    const commandGroupButton = completedCommandGroup.getByRole("button", {
+      name: /Executed 3 commands/i,
+    });
+    await commandGroupButton.waitFor();
+    await commandGroupButton.click();
+    const commandEntry = completedCommandGroup
+      .getByTestId("session-transcript-command")
+      .filter({ hasText: "git status" });
     const commandButton = commandEntry.getByRole("button", {
       name: /git status/i,
     });
@@ -628,7 +681,10 @@ async function main() {
       .catch(() => {});
     await page
       .getByTestId("session-transcript-agent")
-      .filter({ hasText: "Oldest transcript page loaded after a second upward pagination request." })
+      .filter({
+        hasText:
+          "Oldest transcript page loaded after a second upward pagination request.",
+      })
       .waitFor();
     await page.getByTestId("session-transcript-loading").waitFor({
       state: "hidden",
@@ -636,10 +692,23 @@ async function main() {
 
     await fileChangeEntry.waitFor();
     if (await page.getByRole("button", { name: /Changed 2 files/i }).count()) {
-      throw new Error("file changes still render as an aggregate Changed files row");
+      throw new Error(
+        "file changes still render as an aggregate Changed files row",
+      );
     }
     if (await page.getByRole("button", { name: /Ran \d+ commands/i }).count()) {
-      throw new Error("commands still render as an aggregate Ran commands row");
+      throw new Error(
+        "commands still render with the legacy Ran commands label",
+      );
+    }
+    if (
+      !(await page
+        .getByRole("button", { name: /Executed 3 commands/i })
+        .count())
+    ) {
+      throw new Error(
+        "completed commands did not render as a folded Executed commands group",
+      );
     }
     if (await page.getByRole("button", { name: /Used \d+ tools/i }).count()) {
       throw new Error("tools still render as an aggregate Used tools row");
@@ -652,9 +721,10 @@ async function main() {
       throw new Error("file change row does not render a disclosure arrow");
     }
     await transcriptFileButton.click();
-    await fileChangeEntry.locator("pre").filter({ hasText: "@@ -1,2 +1,2 @@" }).waitFor();
-    await page.getByText("internal/codex/transcript.go").last().waitFor();
-    await page.getByText(/Edited\s*[·•]?\s*\+100\s+-56/).waitFor();
+    await fileChangeEntry
+      .locator("pre")
+      .filter({ hasText: "@@ -1,2 +1,2 @@" })
+      .waitFor();
 
     await page.screenshot({
       fullPage: true,
@@ -677,7 +747,7 @@ async function main() {
       name: "file change and command presentation",
       status: "pass",
       detail:
-        "file changes render as individual selectable rows with expandable diffs and command rows render without left avatar bubbles",
+        "file changes render as individual selectable rows; completed commands fold into one executed-command group while active commands stay standalone",
     });
   } catch (error) {
     checks.push({

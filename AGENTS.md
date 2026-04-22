@@ -231,6 +231,16 @@ Do not:
 - reintroduce the old Bun-first runtime as an active architecture
 - claim milestone completion without validation evidence
 
+## Codex app-server development gate
+
+For any work that changes the `codex app-server` connection path, follow
+[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
+and run the local guard before claiming completion:
+
+```bash
+HOPTER_APP_SERVER_DOCS_REVIEWED=1 make validate-app-server-docs
+```
+
 ## One-sentence implementation brief
 
 Build `hopter` as a Go-first, Codex-first, thin remote control plane with a React/Vite workspace UI, Connect control-plane APIs, SSE status updates, and evidence-backed validation.

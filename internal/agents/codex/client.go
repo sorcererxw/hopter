@@ -1,15 +1,18 @@
 package codex
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	codexsdk "github.com/pmenglund/codex-sdk-go"
+	"github.com/pmenglund/codex-sdk-go/protocol"
+	"github.com/pmenglund/codex-sdk-go/rpc"
 
 	"github.com/sorcererxw/hopter/internal/core"
 )
@@ -25,30 +28,33 @@ type ServerRequest struct {
 	Params json.RawMessage `json:"params"`
 }
 
-type envelope struct {
-	ID     json.RawMessage `json:"id"`
-	Method string          `json:"method"`
-	Params json.RawMessage `json:"params"`
-	Result json.RawMessage `json:"result"`
-	Error  *struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
 type Client struct {
-	ctx    context.Context
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
-	mu     sync.Mutex
-	nextID int64
-	wait   map[int64]chan envelope
-	done   chan error
+	ctx context.Context
+	sdk *codexsdk.Codex
+	rpc *rpc.Client
+	sub *rpc.NotificationIterator
 
 	onNotification  func(Notification)
 	onServerRequest func(ServerRequest)
 	onTrace         func(TraceEntry)
 	onExit          func()
+
+	approvalMu sync.Mutex
+	nextID     int64
+	approvals  map[string]chan approvalResponse
+
+	wireMu       sync.Mutex
+	wireRequests map[string][]wireServerRequest
+}
+
+type approvalResponse struct {
+	result any
+	err    error
+}
+
+type wireServerRequest struct {
+	id     json.RawMessage
+	params json.RawMessage
 }
 
 type StartThreadResult struct {
@@ -60,7 +66,8 @@ type StartThreadResult struct {
 }
 
 type ThreadStatus struct {
-	Type string `json:"type"`
+	Type        string   `json:"type"`
+	ActiveFlags []string `json:"activeFlags"`
 }
 
 type ThreadRecord struct {
@@ -192,32 +199,14 @@ func Start(
 	onTrace func(TraceEntry),
 	onExit func(),
 ) (*Client, error) {
-	cmd := exec.CommandContext(ctx, "codex", "app-server")
-	cmd.Dir = cwd
-
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, fmt.Errorf("codex stdin pipe: %w", err)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("codex stdout pipe: %w", err)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("codex stderr pipe: %w", err)
-	}
-
 	client := &Client{
 		ctx:             ctx,
-		cmd:             cmd,
-		stdin:           stdin,
-		wait:            make(map[int64]chan envelope),
-		done:            make(chan error, 1),
 		onNotification:  onNotification,
 		onServerRequest: onServerRequest,
 		onTrace:         onTrace,
 		onExit:          onExit,
+		approvals:       make(map[string]chan approvalResponse),
+		wireRequests:    make(map[string][]wireServerRequest),
 	}
 
 	releaseStart, err := enterAppServerStartQueue(ctx)
@@ -226,185 +215,164 @@ func Start(
 	}
 	defer releaseStart()
 
-	if err := cmd.Start(); err != nil {
+	transport, err := rpc.SpawnStdio(context.WithoutCancel(ctx), "codex", []string{"app-server"}, io.Discard)
+	if err != nil {
 		return nil, fmt.Errorf("start codex app-server: %w", err)
 	}
 
-	go client.read(stdout)
-	go io.Copy(io.Discard, stderr)
-	go func() {
-		_ = cmd.Wait()
-		if client.onExit != nil {
-			client.onExit()
-		}
-	}()
-
-	if err := client.initialize(); err != nil {
-		_ = client.Close()
+	title := "Hopter"
+	sdk, err := codexsdk.New(ctx, codexsdk.Options{
+		Transport: &tracedTransport{
+			inner:           transport,
+			onTrace:         onTrace,
+			onServerRequest: client.recordWireServerRequest,
+		},
+		ClientInfo: protocol.ClientInfo{
+			Name:    "hopter-go",
+			Title:   &title,
+			Version: "0.1.0",
+		},
+		ApprovalHandler: client,
+	})
+	if err != nil {
+		_ = transport.Close()
 		return nil, err
 	}
+
+	client.sdk = sdk
+	client.rpc = sdk.Client()
+	client.sub = client.rpc.SubscribeNotifications(128)
+	go client.forwardNotifications()
 
 	return client, nil
 }
 
 func (c *Client) Close() error {
-	if c.cmd.Process != nil {
-		_ = c.cmd.Process.Kill()
+	if c.sub != nil {
+		c.sub.Close()
+	}
+	if c.sdk != nil {
+		return c.sdk.Close()
 	}
 	return nil
 }
 
-func (c *Client) initialize() error {
-	_, err := c.request("initialize", map[string]any{
-		"clientInfo": map[string]any{
-			"name":    "hopter-go",
-			"version": "0.1.0",
-		},
-		"capabilities": nil,
-	})
-	return err
-}
-
 func (c *Client) StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error) {
-	params := map[string]any{
-		"cwd":                    cwd,
-		"approvalPolicy":         "on-request",
-		"sandbox":                "danger-full-access",
-		"experimentalRawEvents":  false,
-		"persistExtendedHistory": false,
+	params := protocol.ThreadStartParams{
+		ApprovalPolicy: codexsdk.ApprovalPolicyOnRequest,
+		Cwd:            optionalString(cwd),
+		Sandbox:        codexsdk.SandboxModeDangerFullAccess,
 	}
 	if model := strings.TrimSpace(options.Model); model != "" {
-		params["model"] = model
+		params.Model = &model
 	}
-	raw, err := c.request("thread/start", params)
-	if err != nil {
-		return nil, err
-	}
+
 	var out StartThreadResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode thread/start: %w", err)
+	if err := c.call(protocolMethodThreadStart, params, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
 func (c *Client) ListThreads(cwd string, limit uint32) (*ThreadListResult, error) {
-	params := map[string]any{
-		"archived": false,
-		"sortKey":  "updated_at",
+	archived := false
+	sortKey := protocol.ThreadSortKeyUpdatedAt
+	params := protocol.ThreadListParams{
+		Archived: &archived,
+		SortKey:  sortKey,
+		SourceKinds: []protocol.ThreadSourceKind{
+			protocol.ThreadSourceKindCli,
+			protocol.ThreadSourceKindVscode,
+			protocol.ThreadSourceKindAppServer,
+		},
 	}
 	if strings.TrimSpace(cwd) != "" {
-		params["cwd"] = cwd
+		params.Cwd = optionalString(cwd)
 	}
 	if limit > 0 {
-		params["limit"] = limit
+		limitInt := int(limit)
+		params.Limit = &limitInt
 	}
 
-	raw, err := c.request("thread/list", params)
-	if err != nil {
-		return nil, err
-	}
 	var out ThreadListResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode thread/list: %w", err)
+	if err := c.call(protocolMethodThreadList, params, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
 func (c *Client) ListModels(includeHidden bool) (*ModelListResult, error) {
-	raw, err := c.request("model/list", map[string]any{
-		"includeHidden": includeHidden,
-	})
-	if err != nil {
-		return nil, err
-	}
 	var out ModelListResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode model/list: %w", err)
+	if err := c.call(protocolMethodModelList, protocol.ModelListParams{
+		IncludeHidden: &includeHidden,
+	}, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
 func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
-	params := map[string]any{
-		"threadId":               threadID,
-		"approvalPolicy":         "on-request",
-		"sandbox":                "danger-full-access",
-		"persistExtendedHistory": false,
+	params := protocol.ThreadResumeParams{
+		ThreadID:       threadID,
+		ApprovalPolicy: codexsdk.ApprovalPolicyOnRequest,
+		Sandbox:        codexsdk.SandboxModeDangerFullAccess,
 	}
 	if strings.TrimSpace(cwd) != "" {
-		params["cwd"] = cwd
+		params.Cwd = optionalString(cwd)
 	}
 	if model := strings.TrimSpace(options.Model); model != "" {
-		params["model"] = model
+		params.Model = &model
 	}
-	raw, err := c.request("thread/resume", params)
-	if err != nil {
-		return nil, err
-	}
+
 	var out ResumeThreadResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode thread/resume: %w", err)
+	if err := c.call(protocolMethodThreadResume, params, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
 func (c *Client) StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error) {
-	params := map[string]any{
-		"threadId":       threadID,
-		"approvalPolicy": "on-request",
-		"input": []map[string]any{{
-			"type":          "text",
-			"text":          text,
-			"text_elements": []any{},
-		}},
+	params := protocol.TurnStartParams{
+		ThreadID:       threadID,
+		ApprovalPolicy: codexsdk.ApprovalPolicyOnRequest,
+		Input:          []protocol.TurnStartParamsInputElem{codexsdk.TextInput(text)},
 	}
 	if model := strings.TrimSpace(options.Model); model != "" {
-		params["model"] = model
+		params.Model = &model
 	}
 	if effort := strings.TrimSpace(options.ReasoningEffort); effort != "" {
-		params["effort"] = effort
+		params.Effort = protocol.ReasoningEffort(effort)
 	}
-	raw, err := c.request("turn/start", params)
-	if err != nil {
-		return nil, err
-	}
+
 	var out StartTurnResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode turn/start: %w", err)
+	if err := c.call(protocolMethodTurnStart, params, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
 func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error) {
-	raw, err := c.request("turn/steer", map[string]any{
-		"threadId":       threadID,
-		"expectedTurnId": expectedTurnID,
-		"approvalPolicy": "on-request",
-		"input": []map[string]any{{
-			"type":          "text",
-			"text":          text,
-			"text_elements": []any{},
-		}},
-	})
-	if err != nil {
+	params := protocol.TurnSteerParams{
+		ThreadID:       threadID,
+		ExpectedTurnID: expectedTurnID,
+		Input:          []protocol.TurnSteerParamsInputElem{codexsdk.TextInput(text)},
+	}
+
+	var out StartTurnResult
+	if err := c.call(protocolMethodTurnSteer, params, &out); err != nil {
 		return nil, err
 	}
-	var out StartTurnResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode turn/steer: %w", err)
+	if out.Turn.ID == "" {
+		out.Turn.ID = expectedTurnID
 	}
 	return &out, nil
 }
 
 func (c *Client) InterruptTurn(threadID, turnID string) error {
-	_, err := c.request("turn/interrupt", map[string]any{
-		"threadId": threadID,
-		"turnId":   turnID,
-	})
-	if err != nil {
-		return fmt.Errorf("interrupt turn: %w", err)
-	}
-	return nil
+	return c.call(protocolMethodTurnInterrupt, protocol.TurnInterruptParams{
+		ThreadID: threadID,
+		TurnID:   turnID,
+	}, nil)
 }
 
 func (c *Client) ReadThread(threadID string) (*ReadThreadResult, error) {
@@ -415,194 +383,291 @@ func (c *Client) ReadThreadMeta(threadID string) (*ReadThreadResult, error) {
 	return c.readThread(threadID, false)
 }
 
-func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResult, error) {
-	raw, err := c.request("thread/read", map[string]any{
-		"threadId":     threadID,
-		"includeTurns": includeTurns,
-	})
-	if err != nil {
-		return nil, err
+func optionalString(value string) *string {
+	if value == "" {
+		return nil
 	}
+	return &value
+}
+
+func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResult, error) {
 	var out ReadThreadResult
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("decode thread/read: %w", err)
+	if err := c.call(protocolMethodThreadRead, protocol.ThreadReadParams{
+		ThreadID:     threadID,
+		IncludeTurns: includeTurns,
+	}, &out); err != nil {
+		return nil, err
 	}
 	return &out, nil
 }
 
-func (c *Client) request(method string, params any) (json.RawMessage, error) {
+func (c *Client) call(method string, params any, result any) error {
 	release, err := enterAppServerRequestQueue(c.ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	id := atomic.AddInt64(&c.nextID, 1)
-	waitCh := make(chan envelope, 1)
-
-	c.mu.Lock()
-	c.wait[id] = waitCh
-	c.mu.Unlock()
-
-	payload, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      id,
-		"method":  method,
-		"params":  params,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("marshal request %s: %w", method, err)
-	}
-	if _, err := c.stdin.Write(append(payload, '\n')); err != nil {
-		return nil, fmt.Errorf("write request %s: %w", method, err)
-	}
-	c.trace(TraceEntry{
-		Direction: "outgoing",
-		Kind:      "request",
-		Method:    method,
-		ID:        fmt.Sprintf("%d", id),
-		Payload:   append(json.RawMessage(nil), payload...),
-	})
-
-	var (
-		response envelope
-		ok       bool
-	)
-	select {
-	case response, ok = <-waitCh:
-		if !ok {
-			return nil, fmt.Errorf("%s: codex app-server closed the response channel", method)
-		}
-	case err := <-c.done:
-		if err == nil {
-			err = io.EOF
-		}
-		c.mu.Lock()
-		delete(c.wait, id)
-		c.mu.Unlock()
-		return nil, fmt.Errorf("%s: %w", method, err)
-	}
-	if response.Error != nil {
-		return nil, fmt.Errorf("%s: %s", method, response.Error.Message)
-	}
-	return response.Result, nil
-}
-
-func (c *Client) read(stdout io.Reader) {
-	scanner := bufio.NewScanner(stdout)
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 32*1024*1024)
-
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		var msg envelope
-		if err := json.Unmarshal(line, &msg); err != nil {
-			continue
-		}
-
-		if len(msg.Result) > 0 || msg.Error != nil {
-			var id int64
-			if err := json.Unmarshal(msg.ID, &id); err != nil {
-				continue
-			}
-			c.mu.Lock()
-			ch := c.wait[id]
-			delete(c.wait, id)
-			c.mu.Unlock()
-			if ch != nil {
-				ch <- msg
-			}
-			c.trace(TraceEntry{
-				Direction: "incoming",
-				Kind:      "response",
-				ID:        traceID(msg.ID),
-				Payload:   append(json.RawMessage(nil), line...),
-			})
-			continue
-		}
-
-		if msg.Method != "" && len(msg.ID) > 0 {
-			c.trace(TraceEntry{
-				Direction: "incoming",
-				Kind:      "server_request",
-				Method:    msg.Method,
-				ID:        traceID(msg.ID),
-				Payload:   append(json.RawMessage(nil), line...),
-			})
-			if c.onServerRequest != nil {
-				req := ServerRequest{
-					ID:     append(json.RawMessage(nil), msg.ID...),
-					Method: msg.Method,
-					Params: append(json.RawMessage(nil), msg.Params...),
-				}
-				go c.onServerRequest(req)
-			}
-			continue
-		}
-
-		if msg.Method != "" && c.onNotification != nil {
-			c.trace(TraceEntry{
-				Direction: "incoming",
-				Kind:      "notification",
-				Method:    msg.Method,
-				Payload:   append(json.RawMessage(nil), line...),
-			})
-			notification := Notification{Method: msg.Method, Params: append(json.RawMessage(nil), msg.Params...)}
-			go c.onNotification(notification)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		c.failPending(err)
-		return
-	}
-	c.failPending(io.EOF)
-}
-
-func (c *Client) failPending(err error) {
-	select {
-	case c.done <- err:
-	default:
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for id, ch := range c.wait {
-		delete(c.wait, id)
-		close(ch)
-	}
-}
-
-func (c *Client) respondToRequest(rawID json.RawMessage, result any) error {
-	payload, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      json.RawMessage(rawID),
-		"result":  result,
-	})
 	if err != nil {
 		return err
 	}
-	_, err = c.stdin.Write(append(payload, '\n'))
+	defer release()
+	if c.rpc == nil {
+		return errors.New("codex app-server client is not initialized")
+	}
+	return c.rpc.Call(c.ctx, method, params, result)
+}
+
+func (c *Client) forwardNotifications() {
+	if c.sub == nil {
+		return
+	}
+	defer func() {
+		if c.onExit != nil {
+			c.onExit()
+		}
+	}()
+
+	for {
+		note, err := c.sub.Next(c.ctx)
+		if err != nil {
+			return
+		}
+		if c.onNotification == nil {
+			continue
+		}
+		params := append(json.RawMessage(nil), note.Raw...)
+		if len(params) == 0 && note.Params != nil {
+			if encoded, err := json.Marshal(note.Params); err == nil {
+				params = encoded
+			}
+		}
+		go c.onNotification(Notification{Method: note.Method, Params: params})
+	}
+}
+
+func (c *Client) requestApproval(ctx context.Context, method string, params any) (any, error) {
+	if c.onServerRequest == nil {
+		return nil, fmt.Errorf("no handler configured for app-server request %q", method)
+	}
+
+	id := atomic.AddInt64(&c.nextID, 1)
+	rawID, err := json.Marshal(id)
+	if err != nil {
+		return nil, err
+	}
+	rawParams, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+	if wire, ok := c.takeWireServerRequest(method); ok {
+		rawID = wire.id
+		rawParams = wire.params
+	}
+
+	ch := make(chan approvalResponse, 1)
+	key := string(rawID)
+	c.approvalMu.Lock()
+	c.approvals[key] = ch
+	c.approvalMu.Unlock()
+	defer func() {
+		c.approvalMu.Lock()
+		delete(c.approvals, key)
+		c.approvalMu.Unlock()
+	}()
+
+	go c.onServerRequest(ServerRequest{
+		ID:     append(json.RawMessage(nil), rawID...),
+		Method: method,
+		Params: append(json.RawMessage(nil), rawParams...),
+	})
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case response := <-ch:
+		return response.result, response.err
+	}
+}
+
+func (c *Client) recordWireServerRequest(method string, id json.RawMessage, params json.RawMessage) {
+	c.wireMu.Lock()
+	defer c.wireMu.Unlock()
+	c.wireRequests[method] = append(c.wireRequests[method], wireServerRequest{
+		id:     append(json.RawMessage(nil), id...),
+		params: append(json.RawMessage(nil), params...),
+	})
+}
+
+func (c *Client) takeWireServerRequest(method string) (wireServerRequest, bool) {
+	c.wireMu.Lock()
+	defer c.wireMu.Unlock()
+	queue := c.wireRequests[method]
+	if len(queue) == 0 {
+		return wireServerRequest{}, false
+	}
+	item := queue[0]
+	if len(queue) == 1 {
+		delete(c.wireRequests, method)
+	} else {
+		c.wireRequests[method] = queue[1:]
+	}
+	return item, true
+}
+
+func (c *Client) RespondToApproval(rawID json.RawMessage, result any) error {
+	key := string(rawID)
+	c.approvalMu.Lock()
+	ch := c.approvals[key]
+	c.approvalMu.Unlock()
+	if ch == nil {
+		return fmt.Errorf("app-server approval request %s not found", key)
+	}
+	ch <- approvalResponse{result: result}
+	return nil
+}
+
+func (c *Client) AccountChatgptAuthTokensRefresh(context.Context, protocol.ChatgptAuthTokensRefreshParams) (*protocol.ChatgptAuthTokensRefreshResponse, error) {
+	return nil, errors.New("chatgpt auth token refresh is not supported")
+}
+
+func (c *Client) ApplyPatchApproval(ctx context.Context, params protocol.ApplyPatchApprovalParams) (*protocol.ApplyPatchApprovalResponse, error) {
+	return typedApprovalResponse[protocol.ApplyPatchApprovalResponse](c, ctx, protocolMethodApplyPatchApproval, params)
+}
+
+func (c *Client) ExecCommandApproval(ctx context.Context, params protocol.ExecCommandApprovalParams) (*protocol.ExecCommandApprovalResponse, error) {
+	return typedApprovalResponse[protocol.ExecCommandApprovalResponse](c, ctx, protocolMethodExecCommandApproval, params)
+}
+
+func (c *Client) ItemCommandExecutionRequestApproval(ctx context.Context, params protocol.CommandExecutionRequestApprovalParams) (*protocol.CommandExecutionRequestApprovalResponse, error) {
+	return typedApprovalResponse[protocol.CommandExecutionRequestApprovalResponse](c, ctx, protocolMethodItemCommandExecutionRequestApproval, params)
+}
+
+func (c *Client) ItemFileChangeRequestApproval(ctx context.Context, params protocol.FileChangeRequestApprovalParams) (*protocol.FileChangeRequestApprovalResponse, error) {
+	return typedApprovalResponse[protocol.FileChangeRequestApprovalResponse](c, ctx, protocolMethodItemFileChangeRequestApproval, params)
+}
+
+func (c *Client) ItemPermissionsRequestApproval(ctx context.Context, params protocol.PermissionsRequestApprovalParams) (*protocol.PermissionsRequestApprovalResponse, error) {
+	return typedApprovalResponse[protocol.PermissionsRequestApprovalResponse](c, ctx, protocolMethodItemPermissionsRequestApproval, params)
+}
+
+func (c *Client) ItemToolCall(context.Context, protocol.DynamicToolCallParams) (*protocol.DynamicToolCallResponse, error) {
+	return nil, errors.New("dynamic tool calls are not supported")
+}
+
+func (c *Client) ItemToolRequestUserInput(context.Context, protocol.ToolRequestUserInputParams) (*protocol.ToolRequestUserInputResponse, error) {
+	return nil, errors.New("tool user input requests are not supported")
+}
+
+func (c *Client) McpServerElicitationRequest(context.Context, protocol.McpServerElicitationRequestParams) (*protocol.McpServerElicitationRequestResponse, error) {
+	return nil, errors.New("mcp server elicitation requests are not supported")
+}
+
+func typedApprovalResponse[T any](c *Client, ctx context.Context, method string, params any) (*T, error) {
+	result, err := c.requestApproval(ctx, method, params)
+	if err != nil {
+		return nil, err
+	}
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+	var out T
+	if err := json.Unmarshal(encoded, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+type tracedTransport struct {
+	inner           rpc.Transport
+	onTrace         func(TraceEntry)
+	onServerRequest func(method string, id json.RawMessage, params json.RawMessage)
+}
+
+func (t *tracedTransport) ReadLine() (string, error) {
+	line, err := t.inner.ReadLine()
 	if err == nil {
-		c.trace(TraceEntry{
-			Direction: "outgoing",
-			Kind:      "response",
-			ID:        traceID(rawID),
-			Payload:   append(json.RawMessage(nil), payload...),
-		})
+		t.traceLine("incoming", line)
 	}
-	return err
+	return line, err
 }
 
-func (c *Client) RespondToApproval(rawID json.RawMessage, decision string) error {
-	result := map[string]any{
-		"decision": decision,
+func (t *tracedTransport) WriteLine(line string) error {
+	if err := t.inner.WriteLine(line); err != nil {
+		return err
 	}
-	return c.respondToRequest(rawID, result)
+	t.traceLine("outgoing", line)
+	return nil
 }
 
-func (c *Client) trace(entry TraceEntry) {
-	if c.onTrace != nil {
-		c.onTrace(entry)
+func (t *tracedTransport) Close() error {
+	return t.inner.Close()
+}
+
+func (t *tracedTransport) traceLine(direction string, line string) {
+	if t.onTrace == nil && t.onServerRequest == nil {
+		return
+	}
+	payload := json.RawMessage(strings.TrimSpace(line))
+	if len(payload) == 0 {
+		return
+	}
+
+	var envelope struct {
+		ID     json.RawMessage `json:"id"`
+		Method string          `json:"method"`
+		Result json.RawMessage `json:"result"`
+		Error  json.RawMessage `json:"error"`
+	}
+	if err := json.Unmarshal(payload, &envelope); err != nil {
+		return
+	}
+
+	entry := TraceEntry{
+		Direction: direction,
+		Payload:   append(json.RawMessage(nil), payload...),
+	}
+	switch {
+	case envelope.Method != "" && len(envelope.ID) > 0:
+		entry.Kind = "request"
+		if direction == "incoming" {
+			entry.Kind = "server_request"
+			if t.onServerRequest != nil {
+				var full struct {
+					Params json.RawMessage `json:"params"`
+				}
+				_ = json.Unmarshal(payload, &full)
+				t.onServerRequest(
+					envelope.Method,
+					append(json.RawMessage(nil), envelope.ID...),
+					append(json.RawMessage(nil), full.Params...),
+				)
+			}
+		}
+		entry.Method = envelope.Method
+		entry.ID = traceID(envelope.ID)
+	case envelope.Method != "":
+		entry.Kind = "notification"
+		entry.Method = envelope.Method
+	case len(envelope.Result) > 0 || len(envelope.Error) > 0:
+		entry.Kind = "response"
+		entry.ID = traceID(envelope.ID)
+	default:
+		return
+	}
+	if t.onTrace != nil {
+		t.onTrace(entry)
 	}
 }
+
+const (
+	protocolMethodApplyPatchApproval                  = "applyPatchApproval"
+	protocolMethodExecCommandApproval                 = "execCommandApproval"
+	protocolMethodItemCommandExecutionRequestApproval = "item/commandExecution/requestApproval"
+	protocolMethodItemFileChangeRequestApproval       = "item/fileChange/requestApproval"
+	protocolMethodItemPermissionsRequestApproval      = "item/permissions/requestApproval"
+	protocolMethodModelList                           = "model/list"
+	protocolMethodThreadList                          = "thread/list"
+	protocolMethodThreadRead                          = "thread/read"
+	protocolMethodThreadResume                        = "thread/resume"
+	protocolMethodThreadStart                         = "thread/start"
+	protocolMethodTurnInterrupt                       = "turn/interrupt"
+	protocolMethodTurnStart                           = "turn/start"
+	protocolMethodTurnSteer                           = "turn/steer"
+)

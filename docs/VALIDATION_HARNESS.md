@@ -57,10 +57,16 @@ Only drop into the scripts when you are changing how evidence is gathered.
 - `scripts/validate-m3.ts`
 - `scripts/validate-m4.ts`
 - `scripts/validate-m5.ts`
+- `scripts/validate-app-server-docs.ts`
 - `scripts/validate-template-snake.ts`
 - `scripts/validate-docs.ts`
 
 These scripts are the executable harness. They are responsible for producing reviewable artifacts, not just console output.
+
+`scripts/validate-app-server-docs.ts` is the local development guard for Codex
+app-server connection work. It scans local changed files, requires an explicit
+official-docs acknowledgement for app-server-scoped changes, and writes evidence
+under `storage/artifacts/validation/app_server_docs_<timestamp>/`.
 
 `scripts/validate-template-snake.ts` is the product-template smoke test for the primary UX promise: browser project creation, browser session launch, browser approval handling, and Codex producing a working browser Snake game from chat input alone.
 
@@ -77,6 +83,7 @@ storage/artifacts/validation/
   latest-m3.txt
   latest-m4.txt
   latest-m5.txt
+  latest-app-server-docs.txt
   latest-template-snake.txt
   <run-id>/
 ```

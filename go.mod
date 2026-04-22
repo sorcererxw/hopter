@@ -8,6 +8,7 @@ require (
 	github.com/dgraph-io/badger/v4 v4.9.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/pmenglund/codex-sdk-go v0.0.0-20260411043038-678f3b005f5d
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/sync v0.17.0
 	golang.org/x/sys v0.35.0

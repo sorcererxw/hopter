@@ -47,6 +47,7 @@ make validate-go-server
 make validate-go-ui
 make validate-go-terminal
 make validate-go-tetris
+make validate-app-server-docs
 make validate-all
 ```
 
@@ -68,8 +69,20 @@ bun scripts/validate-go-server.ts
 bun scripts/validate-go-ui.ts
 bun scripts/validate-go-terminal.ts
 bun scripts/validate-go-tetris.ts
+bun scripts/validate-app-server-docs.ts
 bun scripts/validate-live.ts
 ```
+
+For work that changes the `codex app-server` connection path, read
+https://developers.openai.com/codex/app-server before implementation and run:
+
+```bash
+HOPTER_APP_SERVER_DOCS_REVIEWED=1 make validate-app-server-docs
+```
+
+If the official docs leave any protocol or runtime detail unclear, inspect
+https://github.com/openai/codex/tree/main/codex-rs/app-server and also set
+`HOPTER_APP_SERVER_UPSTREAM_REVIEWED=1` for the guard run.
 
 ## Distribution build contract
 

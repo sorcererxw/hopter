@@ -19,6 +19,7 @@ import {
 import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
 import { GitCommitMode } from "@/gen/proto/hopter/v1/git_pb"
 import { useProjectGitStatus } from "@/features/git/use-project-git"
+import { useSessionReadTarget } from "@/lib/session-unread"
 
 import { shouldShowThinkingState } from "./session-detail-model"
 
@@ -42,6 +43,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     sessionId,
     sessionMeta: sessionMetaQuery.data,
   })
+  useSessionReadTarget(
+    sessionId,
+    transcriptFeed.transcriptVisible && !transcriptFeed.transcriptAwayFromBottom
+  )
   const { session } = transcriptFeed
   const projectId = sessionMetaQuery.data?.project?.id
   const projectGitStatusQuery = useProjectGitStatus(

@@ -158,6 +158,19 @@ Pass when the browser can drive Codex to completion and the generated Tetris app
 
 Prove the behavior of the live `codex app-server` runtime directly, separate from the broader Tetris proof.
 
+Before changing app-server connection behavior, run the documentation guard:
+
+- `HOPTER_APP_SERVER_DOCS_REVIEWED=1 make validate-app-server-docs`
+
+This guard requires the implementer to review the official app-server docs first:
+
+- https://developers.openai.com/codex/app-server
+
+If the docs do not answer the implementation question, inspect the upstream
+source before proceeding:
+
+- https://github.com/openai/codex/tree/main/codex-rs/app-server
+
 This lane exists because two claims have different evidence status:
 
 - streaming deltas and reconcile behavior are now runtime-proven

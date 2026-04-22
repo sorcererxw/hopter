@@ -32,6 +32,15 @@ const checks: Check[] = [
       "Go backend",
       "make ui-build",
       "make validate-go-tetris",
+      "make validate-app-server-docs",
+    ],
+  },
+  {
+    file: "docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md",
+    includes: [
+      "https://developers.openai.com/codex/app-server",
+      "https://github.com/openai/codex/tree/main/codex-rs/app-server",
+      "HOPTER_APP_SERVER_DOCS_REVIEWED",
     ],
   },
   {
@@ -63,6 +72,7 @@ const expectedPresentFiles = [
   "docs/planning/GO_REBUILD_VALIDATION_PLAN.md",
   "docs/product/UI_REBUILD_DESIGN_DOC.md",
   "docs/operations/CONTRIBUTING.md",
+  "docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md",
   "docs/operations/UI_SYSTEM_RULES.md",
   "docs/VALIDATION_HARNESS.md",
 ];
