@@ -121,14 +121,14 @@ export function WorkspaceTopbar({
   const leadingButton =
     leadingAction === "back" ? (
       <TopbarLeadingButton
-        icon={<ArrowLeft className="size-4.5" />}
+        icon={<ArrowLeft className="size-4" />}
         label="Back"
         onClick={onLeadingAction}
         testId="workspace-topbar-back"
       />
     ) : leadingAction === "toggle-rail" ? (
       <TopbarLeadingButton
-        icon={<PanelLeft className="size-4.5" />}
+        icon={<PanelLeft className="size-4" />}
         label="Toggle navigation"
         onClick={onLeadingAction}
         testId="workspace-topbar-rail-toggle"
@@ -137,7 +137,7 @@ export function WorkspaceTopbar({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-2.5 font-medium text-foreground"
+      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-1.5 font-medium text-foreground"
       data-testid="workspace-topbar"
       data-toolbar-mode={toolbarMode}
     >
@@ -416,7 +416,7 @@ function TopbarLeadingButton({
       data-testid={testId}
       onClick={onClick}
       variant="ghost"
-      size="icon-lg"
+      size="icon-sm"
       className="text-foreground"
     >
       {icon}
