@@ -23,17 +23,46 @@ type BadgerStore struct {
 	db *badger.DB
 }
 
+type StoreInUseError struct {
+	Path string
+	Err  error
+}
+
+func (e *StoreInUseError) Error() string {
+	if strings.TrimSpace(e.Path) == "" {
+		return "Hopter is already running. Only one Hopter process can run on this machine at a time. Stop the other Hopter process before starting this one."
+	}
+	return fmt.Sprintf("Hopter is already running. Only one Hopter process can use this machine at a time. Stop the other Hopter process before starting this one. Locked store: %s", e.Path)
+}
+
+func (e *StoreInUseError) Unwrap() error {
+	return e.Err
+}
+
 func NewBadgerStore(root string) (*BadgerStore, error) {
 	if strings.TrimSpace(root) == "" {
 		return nil, fmt.Errorf("task store path is required")
 	}
-	opts := badger.DefaultOptions(filepath.Clean(root))
+	cleanRoot := filepath.Clean(root)
+	opts := badger.DefaultOptions(cleanRoot)
 	opts.Logger = nil
 	db, err := badger.Open(opts)
 	if err != nil {
+		if isBadgerDirectoryLockError(err) {
+			return nil, &StoreInUseError{Path: cleanRoot, Err: err}
+		}
 		return nil, err
 	}
 	return &BadgerStore{db: db}, nil
+}
+
+func isBadgerDirectoryLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	return strings.Contains(message, "Cannot acquire directory lock") ||
+		strings.Contains(message, "resource temporarily unavailable")
 }
 
 func (s *BadgerStore) Close() error {

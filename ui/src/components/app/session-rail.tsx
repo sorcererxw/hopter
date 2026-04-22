@@ -719,13 +719,18 @@ function UpdateRailAction({
   }
 
   if (busy) {
-    return <Button disabled>Upgrading</Button>
+    return (
+      <Button disabled size="sm">
+        Upgrading
+      </Button>
+    )
   }
 
   if (status.updatePolicy === UpdatePolicy.SELF_MANAGED) {
     return (
       <Button
         type="button"
+        size="sm"
         onClick={(event) => {
           event.preventDefault()
           event.stopPropagation()
@@ -745,6 +750,7 @@ function UpdateRailAction({
   return (
     <Button
       type="button"
+      size="sm"
       onClick={(event) => {
         event.preventDefault()
         event.stopPropagation()

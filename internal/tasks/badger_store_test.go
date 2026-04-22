@@ -2,6 +2,8 @@ package tasks
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 )
 
@@ -98,5 +100,36 @@ func TestBadgerStoreCreateSubtask(t *testing.T) {
 	}
 	if updated.Subtasks[0].Title != "Add a follow-up" {
 		t.Fatalf("CreateSubtask() title = %q", updated.Subtasks[0].Title)
+	}
+}
+
+func TestBadgerStoreReportsFriendlyErrorWhenAlreadyOpen(t *testing.T) {
+	root := t.TempDir()
+	store, err := NewBadgerStore(root)
+	if err != nil {
+		t.Fatalf("NewBadgerStore() first open error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = store.Close()
+	})
+
+	_, err = NewBadgerStore(root)
+	if err == nil {
+		t.Fatal("NewBadgerStore() second open returned nil error")
+	}
+
+	var inUse *StoreInUseError
+	if !errors.As(err, &inUse) {
+		t.Fatalf("NewBadgerStore() error = %T %v, want StoreInUseError", err, err)
+	}
+	for _, want := range []string{
+		"Hopter is already running",
+		"Only one Hopter process",
+		"Stop the other Hopter process",
+		root,
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("NewBadgerStore() error missing %q: %v", want, err)
+		}
 	}
 }
