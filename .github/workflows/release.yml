@@ -226,10 +226,10 @@ jobs:
       - detect-release-scope
       - build-release-assets
       - publish-release
-    if: needs.detect-release-scope.outputs.release_needed == 'true'
+    if: needs.detect-release-scope.outputs.release_needed == 'true' && needs.publish-release.result == 'success'
     runs-on: ubuntu-latest
     env:
-      HOMEBREW_TAP_REPOSITORY: sorcererxw/homebrew-hopter
+      HOMEBREW_TAP_REPOSITORY: sorcererxw/homebrew-tap
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
       VERSION: ${{ needs.detect-release-scope.outputs.version }}
     steps:

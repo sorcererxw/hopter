@@ -12,7 +12,7 @@ const checks: Check[] = [
     file: "README.md",
     includes: [
       "Hopter lets you control local coding agents from a browser",
-      "brew install sorcererxw/hopter/hopter",
+      "brew install sorcererxw/tap/hopter",
       "Codex stays the source of truth",
       "docs/README.md",
     ],

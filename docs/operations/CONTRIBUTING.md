@@ -92,12 +92,12 @@ Dev builds default to `0.0.0.0:8787`, which keeps an installed release
 independent from `make dev`. `HOPTER_HOST` and `HOPTER_PORT` remain the
 runtime overrides for both paths.
 
-The release workflow can also publish a Homebrew tap formula. Create
-`sorcererxw/homebrew-hopter`, then configure a `HOMEBREW_TAP_TOKEN` repository
-secret on `sorcererxw/hopter` with push access to that tap. When present, the
-release workflow generates `Formula/hopter.rb` from the release `checksums.txt`
-and pushes it to the tap. Users can install without a separate tap step:
-`brew install sorcererxw/hopter/hopter`.
+The existing release workflow also publishes the Homebrew tap formula after the
+GitHub release job succeeds. Create or reuse `sorcererxw/homebrew-tap`, then
+configure a `HOMEBREW_TAP_TOKEN` repository secret on `sorcererxw/hopter` with
+push access to that tap. When present, the release workflow generates
+`Formula/hopter.rb` from the release `checksums.txt` and pushes it to the tap.
+Users can install without a separate tap step: `brew install sorcererxw/tap/hopter`.
 
 Current intended values:
 
