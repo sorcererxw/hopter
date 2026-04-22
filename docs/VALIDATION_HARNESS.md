@@ -5,115 +5,105 @@ This is the progressive-disclosure entry point for validation in `hopter`.
 Use it when you need to answer one of three questions:
 
 1. what counts as done here
-2. where the current evidence lives
-3. how to extend the harness without breaking the evidence chain
+2. which validation script covers a change
+3. where the current evidence lives
 
-## The harness in one screen
+## Current Harness Shape
 
-The validation path is:
+The active validation path is:
 
 ```text
-PRD intent
-  -> docs/validation/VALIDATION_PROGRAM_V1.md
-  -> docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md
+Go rebuild requirement
+  -> docs/planning/GO_REBUILD_TASK_LIST.md
+  -> docs/planning/GO_REBUILD_VALIDATION_PLAN.md
   -> scripts/validate-*.ts
   -> storage/artifacts/validation/<run-id>/
-  -> docs/operations/ALPHA_READINESS_SUMMARY.md
-  -> docs/operations/RELEASE_CHECKLIST.md
 ```
 
-That path is intentional:
+Execution lives in scripts. Evidence lives in structured bundles. A change is not
+complete until the relevant script has produced a reviewable evidence path.
 
-- policy lives in docs and specs
-- execution lives in scripts
-- evidence lives in structured bundles
-- ship/no-ship decisions live in summaries and checklists
+## Start With The Smallest Useful Document
 
-## Start with the smallest useful document
+- Need the active requirement map: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+- Need the validation strategy: [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
+- Need runtime artifact conventions: [`docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md)
+- Need local dev-loop verification: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+- Need old Bun-first validation history: [`docs/archive/bun-first-v1/validation/`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/archive/bun-first-v1/validation)
 
-- Need the rule for "done": [`docs/validation/VALIDATION_PROGRAM_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/VALIDATION_PROGRAM_V1.md)
-- Need the current pass/fail mapping: [`docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md)
-- Need the latest readiness snapshot: [`docs/operations/ALPHA_READINESS_SUMMARY.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/ALPHA_READINESS_SUMMARY.md)
-- Need the release gate: [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
-- Need the original feasibility constraints: [`docs/validation/M0_SPIKE_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/M0_SPIKE_SPEC.md), [`docs/validation/M0_SPIKE_FINDINGS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/M0_SPIKE_FINDINGS.md)
+## Active Validation Scripts
 
-Only drop into the scripts when you are changing how evidence is gathered.
+Use `make docs` for documentation-map checks.
 
-## Harness components
+Core rebuild validations:
 
-### 1. Policy
+- `make validate-go-idl`
+- `make validate-go-server`
+- `make validate-go-ui`
+- `make validate-go-tetris`
+- `make validate-all`
 
-- [`docs/validation/VALIDATION_PROGRAM_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/VALIDATION_PROGRAM_V1.md) defines the levels, release-gate logic, and truthfulness requirements.
+Focused runtime and UI validations:
 
-### 2. Requirement mapping
+- `make validate-app-server-docs`
+- `make validate-app-server-runtime`
+- `make validate-app-server-approvals`
+- `make validate-app-server-reasoning`
+- `make validate-git-actions`
+- `make validate-tasks-idl`
+- `make validate-tasks-store`
+- `make validate-interrupt-ui`
+- `make validate-update-ui`
+- `make validate-session-roundtrip`
+- `make validate-transcript-ui`
 
-- [`docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md) ties each requirement to a validation method and evidence path.
+The corresponding TypeScript scripts live under [`scripts/`](/Users/sorcererxw/repo/sorcererxw/codeshell/scripts).
 
-### 3. Execution
-
-- `scripts/validate-m0.ts`
-- `scripts/validate-m1.ts`
-- `scripts/validate-m2.ts`
-- `scripts/validate-m3.ts`
-- `scripts/validate-m4.ts`
-- `scripts/validate-m5.ts`
-- `scripts/validate-app-server-docs.ts`
-- `scripts/validate-template-snake.ts`
-- `scripts/validate-docs.ts`
-
-These scripts are the executable harness. They are responsible for producing reviewable artifacts, not just console output.
-
-`scripts/validate-app-server-docs.ts` is the local development guard for Codex
-app-server connection work. It scans local changed files, requires an explicit
-official-docs acknowledgement for app-server-scoped changes, and writes evidence
-under `storage/artifacts/validation/app_server_docs_<timestamp>/`.
-
-`scripts/validate-template-snake.ts` is the product-template smoke test for the primary UX promise: browser project creation, browser session launch, browser approval handling, and Codex producing a working browser Snake game from chat input alone.
-
-### 4. Evidence storage
+## Evidence Storage
 
 Current bundle root:
 
 ```text
 storage/artifacts/validation/
   latest-docs.txt
-  latest-m0.txt
-  latest-m1.txt
-  latest-m2.txt
-  latest-m3.txt
-  latest-m4.txt
-  latest-m5.txt
+  latest-go-idl.txt
+  latest-go-server.txt
+  latest-go-ui.txt
+  latest-go-tetris.txt
   latest-app-server-docs.txt
-  latest-template-snake.txt
   <run-id>/
 ```
 
-Each `<run-id>/` directory should contain machine-readable outputs plus a concise human-readable summary.
+Not every script writes a `latest-*` pointer with the same name. When in doubt,
+use the path printed by the script and record that path in your final handoff.
 
-### 5. Operational summaries
+Each `<run-id>/` directory should contain machine-readable outputs plus a concise
+human-readable summary where the script supports one.
 
-- [`docs/operations/ALPHA_READINESS_SUMMARY.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/ALPHA_READINESS_SUMMARY.md) is the shortest current-state read.
-- [`docs/operations/HANDOFF_2026-04-14.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/HANDOFF_2026-04-14.md) is the longer resumption snapshot.
+## App-server Gate
 
-## How to extend the harness
+For changes that affect the `codex app-server` connection path, follow
+[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
+and run:
 
-When changing behavior or adding a new feature:
+```bash
+HOPTER_APP_SERVER_DOCS_REVIEWED=1 make validate-app-server-docs
+```
 
-1. identify the affected requirement or add a new requirement row
-2. update the relevant acceptance mapping in [`docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/PRD_ACCEPTANCE_MATRIX_V1.md)
+## How To Extend The Harness
+
+When changing behavior or adding a feature:
+
+1. identify the affected task or acceptance rule in [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+2. update [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md) if the validation shape changes
 3. extend the smallest relevant validation script under `scripts/`
 4. make sure the script writes structured evidence under `storage/artifacts/validation/<run-id>/`
-5. update the operational summary docs if the release picture changed
+5. record the evidence path in the handoff or final response
 
-## Progressive disclosure rules
+## Historical Validation
 
-Do not force every reader to start from the deepest spec.
-
-Use this ladder instead:
-
-- quick orientation: [`docs/operations/ALPHA_READINESS_SUMMARY.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/ALPHA_READINESS_SUMMARY.md)
-- release decision: [`docs/operations/RELEASE_CHECKLIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RELEASE_CHECKLIST.md)
-- validation policy: [`docs/validation/VALIDATION_PROGRAM_V1.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/validation/VALIDATION_PROGRAM_V1.md)
-- evidence mechanics: `scripts/validate-*.ts`
-
-That keeps casual readers out of the weeds while still making the harness fully inspectable.
+The old Bun-first validation program, PRD acceptance matrix, M0 spike spec, and
+M0 findings are archived under
+[`docs/archive/bun-first-v1/validation/`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/archive/bun-first-v1/validation).
+They are useful historical evidence, but they are not active Go rebuild release
+gates.

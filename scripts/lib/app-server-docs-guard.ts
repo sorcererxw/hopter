@@ -26,9 +26,6 @@ const appServerPathPatterns = [
   /^docs\/planning\/.*APP_SERVER.*\.md$/,
   /^docs\/planning\/CODEX_GO_CLIENT_PARITY_PLAN\.md$/,
   /^docs\/planning\/SESSION_DETAIL_CHAT_MODE_PLAN\.md$/,
-  /^docs\/specs\/COMMUNICATION_AND_UX_SPEC\.md$/,
-  /^docs\/validation\/M0_SPIKE_/,
-  /^docs\/validation\/PRD_ACCEPTANCE_MATRIX_V1\.md$/,
 ];
 
 const appServerContentTokens = [

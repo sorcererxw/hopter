@@ -22,7 +22,9 @@ This is the v1 product decision even though OpenAI still documents `exec` / SDK 
 
 The repo already had the right architectural instinct:
 
-- `docs/specs/COMMUNICATION_AND_UX_SPEC.md` declares `codex app-server` as the main integration target
+- `AGENTS.md` and `docs/product/PRODUCT_MEMO.md` declare `codex app-server`
+  as the main integration target. The older Bun-first communication spec is
+  archived under `docs/archive/bun-first-v1/specs/`.
 - `docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md` already moves toward an app-server-first runtime
 - `internal/agents/codex/client.go` already speaks to `codex app-server`
 

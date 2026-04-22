@@ -1,60 +1,60 @@
 # Documentation Map
 
-This repo now uses the **Go rebuild** as the active execution path.
+This repo uses the **Go rebuild** as the active execution path. Start with the
+smallest document that answers your question, then drill down only when needed.
 
-Start with the thinnest document that answers your question, then drill down only when needed.
+## Active Fast Paths
 
-## Fast paths
-
-- what `hopter` is: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
-- rebuilt workspace UI direction: [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
-- workspace UI refinement rules for touch, typography, rail, topbar, and composer: [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md)
-- settings information architecture and routed surface plan: [`docs/planning/SETTINGS_SURFACE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/SETTINGS_SURFACE_PLAN.md)
-- active master plan: [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
-- detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
-- Codex TS-SDK parity design for Go client: [`docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_GO_CLIENT_PARITY_PLAN.md)
-- App Server-first convergence plan for the live Codex runtime: [`docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/CODEX_APP_SERVER_CONVERGENCE_PLAN.md)
-- accepted streaming runtime decision for app-server-only live sessions: [`docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/APP_SERVER_STREAMING_RUNTIME_DECISION.md)
-- single-binary self-update plan for direct installs and package-managed command hints: [`docs/planning/SINGLE_BINARY_SELF_UPDATE_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/SINGLE_BINARY_SELF_UPDATE_PLAN.md)
-- terminal capability plan: [`docs/planning/TERMINAL_CAPABILITY_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TERMINAL_CAPABILITY_PLAN.md)
-- terminal implementation task list: [`docs/planning/TERMINAL_IMPLEMENTATION_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TERMINAL_IMPLEMENTATION_TASK_LIST.md)
-- backend plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
-- frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
+- Product definition: [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
+- Workspace UI direction: [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
+- Workspace UI refinement rules: [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md)
+- Active master plan: [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
+- Detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+- Backend plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
+- Frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
 - IDL plan: [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
-- concrete first-pass protobuf surface: [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
-- validation guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+- Protobuf surface draft: [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
 - Go rebuild validation plan: [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
-- contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
-- local dev loop, watch behavior, and file-based logs: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+- Validation harness guide: [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
+
+## Runtime And Operations
+
+- Local dev loop and logs: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+- Contributor workflow: [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md)
 - Codex app-server development constraints: [`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
-- runtime artifact paths and validation contract: [`docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md)
+- Runtime artifact paths and validation contract: [`docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md)
 - UI system rules: [`docs/operations/UI_SYSTEM_RULES.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/UI_SYSTEM_RULES.md)
 
-## Physical layout
+## Feature Plans
+
+Feature plans under [`docs/planning/`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning) are scoped proposals unless the active Go rebuild task list says they are in the current milestone. Deferred plans, including terminal and relay-adjacent work, must not override the Go-first, Codex-first architecture in `AGENTS.md`.
+
+## Historical Archive
+
+Old Bun-first v1 planning, specs, validation matrices, and handoff notes are archived under [`docs/archive/bun-first-v1/`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/archive/bun-first-v1). They are historical evidence only and are not active implementation guidance.
+
+## Physical Layout
 
 ```text
 docs/
   README.md
   VALIDATION_HARNESS.md
+  archive/
   product/
   planning/
   operations/
-  validation/
 ```
 
-## Recommended reading order for active work
+## Recommended Reading Order For Active Work
 
 1. [`README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/README.md)
 2. [`AGENTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/AGENTS.md)
-3. [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
-4. [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
-5. [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
-6. [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
-7. [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
-8. [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
-9. [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
-10. [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
-
-## Historical note
-
-Older Bun-first planning/spec files may remain in the repo for historical context, but they are not the active implementation path unless a new document explicitly says otherwise.
+3. [`docs/product/PRODUCT_MEMO.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/PRODUCT_MEMO.md)
+4. [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
+5. [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
+6. [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
+7. [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
+8. [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
+9. [`docs/planning/IDL_SURFACE_V1_DRAFT.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
+10. [`docs/product/UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
+11. [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
