@@ -94,8 +94,7 @@ runtime overrides for both paths.
 
 The existing release workflow also publishes the Homebrew tap formula after the
 GitHub release job succeeds. Create or reuse `sorcererxw/homebrew-tap`, then
-configure a `HOMEBREW_TAP_TOKEN` repository secret on `sorcererxw/hopter` with
-push access to that tap. When present, the release workflow generates
+ensure `RELEASE_TOKEN` can push to that tap. The release workflow generates
 `Formula/hopter.rb` from the release `checksums.txt` and pushes it to the tap.
 Users can install without a separate tap step: `brew install sorcererxw/tap/hopter`.
 
