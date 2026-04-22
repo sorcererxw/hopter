@@ -5,14 +5,16 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 const (
-	defaultHTTPHost = "127.0.0.1"
-	defaultHTTPPort = 8787
-	defaultHostID   = "host_local"
+	defaultHTTPHost        = "0.0.0.0"
+	defaultDevHTTPPort     = 8787
+	defaultReleaseHTTPPort = 18787
+	defaultHostID          = "host_local"
 )
 
 type HTTPConfig struct {
@@ -35,27 +37,42 @@ func (c UIConfig) Mode() string {
 	return "dist"
 }
 
+type TaskConfig struct {
+	SchedulerMode string
+	StateHome     string
+}
+
+func (c TaskConfig) StorePath() string {
+	return filepath.Join(c.StateHome, "tasks", "badger")
+}
+
 type Config struct {
 	Version             string
 	InstallSource       string
 	HostID              string
 	HTTP                HTTPConfig
 	UI                  UIConfig
+	Tasks               TaskConfig
 	LocalhostOnlyNoAuth bool
 }
 
 func LoadConfig(version string, installSource string) (Config, error) {
+	resolvedVersion := firstNonEmpty(strings.TrimSpace(version), "dev")
 	cfg := Config{
-		Version:             firstNonEmpty(strings.TrimSpace(version), "dev"),
+		Version:             resolvedVersion,
 		InstallSource:       firstNonEmpty(strings.TrimSpace(installSource), "direct"),
 		HostID:              envOrDefault(defaultHostID, "HOPTER_HOST_ID"),
-		LocalhostOnlyNoAuth: envBool(true, "HOPTER_LOCALHOST_ONLY_NO_AUTH"),
+		LocalhostOnlyNoAuth: envBool(false, "HOPTER_LOCALHOST_ONLY_NO_AUTH"),
 		HTTP: HTTPConfig{
 			Host: envOrDefault(defaultHTTPHost, "HOPTER_HOST"),
-			Port: defaultHTTPPort,
+			Port: defaultHTTPPortForVersion(resolvedVersion),
 		},
 		UI: UIConfig{
 			DevProxyURL: envValue("HOPTER_UI_DEV_PROXY_URL"),
+		},
+		Tasks: TaskConfig{
+			SchedulerMode: envOrDefault("disabled", "HOPTER_TASK_SCHEDULER"),
+			StateHome:     envOrDefault(defaultStateHome(), "HOPTER_STATE_HOME"),
 		},
 	}
 
@@ -85,6 +102,26 @@ func LoadConfig(version string, installSource string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func defaultHTTPPortForVersion(version string) int {
+	if isDevBuild(version) {
+		return defaultDevHTTPPort
+	}
+	return defaultReleaseHTTPPort
+}
+
+func isDevBuild(version string) bool {
+	normalized := strings.TrimSpace(strings.ToLower(version))
+	return normalized == "" || normalized == "dev"
+}
+
+func defaultStateHome() string {
+	home, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(home) == "" {
+		return ".hopter"
+	}
+	return filepath.Join(home, ".hopter")
 }
 
 func parseProxyURL(raw string) (*url.URL, error) {

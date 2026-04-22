@@ -88,6 +88,7 @@ message SessionTranscriptItem {
   string status = 5;
   string display_body = 6;
   repeated SessionTranscriptAttachment attachments = 7;
+  string order_key = 8;
 }
 
 message SessionListItem {

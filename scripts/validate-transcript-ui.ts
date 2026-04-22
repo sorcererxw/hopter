@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { chromium, type Page, type Route } from "playwright";
+import { chromium, type Locator, type Page, type Route } from "playwright";
 
 import { readDevState, waitForHttpOk } from "./lib/devloop.ts";
 import {
@@ -19,6 +19,9 @@ const sessionId = "sess_mock";
 const projectId = "proj_mock";
 const updatedAt = "2026-04-16T16:48:00Z";
 const olderCursor = "cursor_older";
+const oldestCursor = "cursor_oldest";
+let includeFollowupTranscript = false;
+let olderTranscriptAttempts = 0;
 
 function buildFileChangeBody() {
   return JSON.stringify({
@@ -71,7 +74,17 @@ function buildLatestTranscriptPage() {
     page: {
       items: [
         {
+          id: "agent-2",
+          orderKey: "000000000001:000000000002:agent-2",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+          title: "Codex",
+          body:
+            "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
+          status: "",
+        },
+        {
           id: "user-2",
+          orderKey: "000000000001:000000000000:user-2",
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
           title: "You",
           body: "Follow up with command evidence.",
@@ -79,19 +92,32 @@ function buildLatestTranscriptPage() {
         },
         {
           id: "cmd-1",
+          orderKey: "000000000001:000000000001:cmd-1",
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_COMMAND_EXECUTION",
           title: "Command",
           body: "git status\n\nstatus: completed\n\noutput:\nOn branch master",
           status: "completed",
         },
-        {
-          id: "agent-2",
+        ...Array.from({ length: 14 }, (_, index) => ({
+          id: `agent-filler-${index}`,
+          orderKey: `000000000001:${String(index + 3).padStart(12, "0")}:agent-filler-${index}`,
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
           title: "Codex",
-          body:
-            "Captured command output and updated the session transcript.\n\n```text\nPlease make another follow-up pass on the workspace UI implementation in this repo root:\n.\n```\n",
+          body: `Latest-page filler ${index + 1} for scroll pagination validation.`,
           status: "",
-        },
+        })),
+        ...(includeFollowupTranscript
+          ? [
+              {
+                id: "agent-3",
+                orderKey: "000000000001:000000000017:agent-3",
+                kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+                title: "Codex",
+                body: "AUTO-SCROLL-FOLLOWUP: this message should keep the transcript pinned to the bottom.",
+                status: "",
+              },
+            ]
+          : []),
       ],
       nextBeforeCursor: olderCursor,
       hasMoreBefore: true,
@@ -105,14 +131,16 @@ function buildOlderTranscriptPage() {
     page: {
       items: [
         {
-          id: "user-1",
-          kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
-          title: "You",
-          body: "Build a transcript-aware validation flow.",
-          status: "",
+          id: "file-1",
+          orderKey: "000000000000:000000000002:file-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE",
+          title: "File change",
+          body: buildFileChangeBody(),
+          status: "completed",
         },
         {
           id: "agent-1",
+          orderKey: "000000000000:000000000001:agent-1",
           kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
           title: "Codex",
           body:
@@ -120,15 +148,78 @@ function buildOlderTranscriptPage() {
           status: "",
         },
         {
-          id: "file-1",
-          kind: "SESSION_TRANSCRIPT_ITEM_KIND_FILE_CHANGE",
-          title: "File change",
-          body: buildFileChangeBody(),
-          status: "completed",
+          id: "user-1",
+          orderKey: "000000000000:000000000000:user-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE",
+          title: "You",
+          body: "Build a transcript-aware validation flow.",
+          status: "",
+        },
+      ],
+      nextBeforeCursor: oldestCursor,
+      hasMoreBefore: true,
+      snapshotUpdatedAt: updatedAt,
+    },
+  };
+}
+
+function buildOldestTranscriptPage() {
+  return {
+    page: {
+      items: [
+        {
+          id: "agent-0",
+          orderKey: "000000000000:000000000000:agent-0",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_AGENT_MESSAGE",
+          title: "Codex",
+          body: "Oldest transcript page loaded after a second upward pagination request.",
+          status: "",
         },
       ],
       hasMoreBefore: false,
       snapshotUpdatedAt: updatedAt,
+    },
+  };
+}
+
+function buildSessionReviewResponse() {
+  return {
+    review: {
+      sessionId,
+      projectId,
+      available: true,
+      turnId: "turn-1",
+      reason: "",
+      fullPatch: [
+        "diff --git a/internal/codex/transcript.go b/internal/codex/transcript.go",
+        "@@ -1,2 +1,2 @@",
+        "-old",
+        "+new",
+        "diff --git a/ui/src/components/app/session-detail-pane.tsx b/ui/src/components/app/session-detail-pane.tsx",
+        "@@ -10,2 +10,2 @@",
+        "-old",
+        "+new",
+      ].join("\n"),
+      files: [
+        {
+          path: "internal/codex/transcript.go",
+          kind: "Edited",
+          additions: 100,
+          deletions: 56,
+          diff: "@@ -1,2 +1,2 @@\n-old\n+new\n",
+          displayLabel: "internal/codex/transcript.go",
+        },
+        {
+          path: "ui/src/components/app/session-detail-pane.tsx",
+          kind: "Edited",
+          additions: 42,
+          deletions: 10,
+          diff: "@@ -10,2 +10,2 @@\n-old\n+new\n",
+          displayLabel: "ui/src/components/app/session-detail-pane.tsx",
+        },
+      ],
+      generatedAt: updatedAt,
+      pendingTurnInProgress: false,
     },
   };
 }
@@ -175,6 +266,83 @@ async function fulfillJSON(route: Route, body: unknown) {
   });
 }
 
+async function assertVerticalOrder(
+  entries: Array<{ label: string; locator: Locator }>,
+) {
+  const boxes = [];
+  for (const entry of entries) {
+    const box = await entry.locator.boundingBox();
+    if (!box) {
+      throw new Error(`could not measure transcript row ${entry.label}`);
+    }
+    boxes.push({ ...entry, y: box.y });
+  }
+
+  for (let index = 1; index < boxes.length; index++) {
+    if (boxes[index - 1].y > boxes[index].y) {
+      throw new Error(
+        `transcript order mismatch: ${boxes[index - 1].label} rendered after ${boxes[index].label}`,
+      );
+    }
+  }
+}
+
+async function setTranscriptScrollPosition(
+  page: Page,
+  position: "top" | "bottom",
+) {
+  await page.getByTestId("session-transcript").evaluate((node, target) => {
+    let current = node.parentElement as HTMLElement | null;
+    while (current) {
+      const style = window.getComputedStyle(current);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        current.scrollTop = target === "top" ? 0 : current.scrollHeight;
+        current.dispatchEvent(new Event("scroll", { bubbles: true }));
+        return;
+      }
+      current = current.parentElement;
+    }
+    throw new Error("could not find transcript scroll container");
+  }, position);
+}
+
+async function transcriptDistanceFromBottom(page: Page) {
+  return page.getByTestId("session-transcript").evaluate((node) => {
+    let current = node.parentElement as HTMLElement | null;
+    while (current) {
+      const style = window.getComputedStyle(current);
+      if (style.overflowY === "auto" || style.overflowY === "scroll") {
+        return current.scrollHeight - current.scrollTop - current.clientHeight;
+      }
+      current = current.parentElement;
+    }
+    throw new Error("could not find transcript scroll container");
+  });
+}
+
+async function waitForTranscriptDistanceFromBottom(
+  page: Page,
+  maxDistance: number,
+  timeoutMs = 2_000,
+) {
+  await page.waitForFunction(
+    ([testId, max]) => {
+      const node = document.querySelector(`[data-testid="${testId}"]`);
+      let current = node?.parentElement as HTMLElement | null;
+      while (current) {
+        const style = window.getComputedStyle(current);
+        if (style.overflowY === "auto" || style.overflowY === "scroll") {
+          return current.scrollHeight - current.scrollTop - current.clientHeight <= max;
+        }
+        current = current.parentElement;
+      }
+      return false;
+    },
+    ["session-transcript", maxDistance],
+    { timeout: timeoutMs },
+  );
+}
+
 async function wireMockRPC(page: Page) {
   await page.route(
     "**/rpc/hopter.v1.ProjectService/ListProjects",
@@ -198,14 +366,35 @@ async function wireMockRPC(page: Page) {
   );
 
   await page.route(
+    "**/rpc/hopter.v1.SessionService/GetSessionReview",
+    async (route) => {
+      await fulfillJSON(route, buildSessionReviewResponse());
+    },
+  );
+
+  await page.route(
     "**/rpc/hopter.v1.SessionService/ListSessionTranscript",
     async (route) => {
       const payload = route.request().postDataJSON() as
         | { beforeCursor?: string }
         | undefined;
       if (payload?.beforeCursor === olderCursor) {
+        olderTranscriptAttempts += 1;
+        if (olderTranscriptAttempts === 1) {
+          await route.fulfill({
+            status: 503,
+            contentType: "application/json",
+            body: JSON.stringify({ code: "unavailable", message: "temporary transcript failure" }),
+          });
+          return;
+        }
         await page.waitForTimeout(350);
         await fulfillJSON(route, buildOlderTranscriptPage());
+        return;
+      }
+      if (payload?.beforeCursor === oldestCursor) {
+        await page.waitForTimeout(150);
+        await fulfillJSON(route, buildOldestTranscriptPage());
         return;
       }
       await page.waitForTimeout(250);
@@ -274,8 +463,9 @@ async function main() {
   }
 
   const browser = await chromium.launch({ headless: true });
+  let page: Page | undefined;
   try {
-    const page = await browser.newPage({
+    page = await browser.newPage({
       baseURL: baseUrl,
       viewport: { width: 1280, height: 720 },
     });
@@ -284,7 +474,10 @@ async function main() {
     await page.goto(`/sessions/${sessionId}`, {
       waitUntil: "domcontentloaded",
     });
-    await page.getByTestId("session-transcript-loading-initial").waitFor();
+    await page
+      .getByTestId("session-transcript-loading-initial")
+      .waitFor({ timeout: 2_000 })
+      .catch(() => {});
     await page
       .waitForLoadState("networkidle", { timeout: 15_000 })
       .catch(() => {});
@@ -294,34 +487,94 @@ async function main() {
     });
 
     await page.getByTestId("session-transcript").waitFor();
-    await page
+    const latestAgentEntry = page
       .getByTestId("session-transcript-agent")
       .filter({
         hasText: "Captured command output and updated the session transcript.",
-      })
-      .waitFor();
-    await page
+      });
+    const latestUserEntry = page
       .getByTestId("session-transcript-user")
-      .filter({ hasText: "Follow up with command evidence." })
-      .waitFor();
+      .filter({ hasText: "Follow up with command evidence." });
+    const commandEntry = page.getByTestId("session-transcript-command");
+    await latestAgentEntry.waitFor();
+    await latestUserEntry.waitFor();
+    await commandEntry.waitFor();
+    await assertVerticalOrder([
+      { label: "latest user", locator: latestUserEntry },
+      { label: "latest command", locator: commandEntry },
+      { label: "latest agent", locator: latestAgentEntry },
+    ]);
     const olderMessage = page
       .getByTestId("session-transcript-user")
       .filter({ hasText: "Build a transcript-aware validation flow." });
     if (await olderMessage.count()) {
       throw new Error("older transcript page rendered before upward pagination");
     }
+    if (await page.getByTestId("session-artifact-workspace").count()) {
+      throw new Error("empty artifacts workspace rendered for a session with no artifacts");
+    }
+    if (await page.getByTestId("session-artifact-workspace-empty").count()) {
+      throw new Error("empty artifacts placeholder rendered for a session with no artifacts");
+    }
+    await waitForTranscriptDistanceFromBottom(page, 24);
+    const initialDistanceFromBottom = await transcriptDistanceFromBottom(page);
+    if (initialDistanceFromBottom > 24) {
+      throw new Error(
+        `initial transcript view did not land at bottom; distance=${initialDistanceFromBottom}`,
+      );
+    }
 
     checks.push({
       name: "initial latest-page render",
       status: "pass",
       detail:
-        "session route rendered only the latest transcript page on first load",
+        "session route rendered only the latest transcript page on first load and sorted intentionally shuffled items by orderKey",
+    });
+    checks.push({
+      name: "initial bottom positioning",
+      status: "pass",
+      detail:
+        "refreshing directly into a session positions the transcript at the latest content",
+    });
+    checks.push({
+      name: "empty artifacts hidden",
+      status: "pass",
+      detail:
+        "session route kept artifact refresh in the background and rendered no artifacts block when the session had no artifacts",
     });
 
-    const commandEntry = page.getByTestId("session-transcript-command");
-    await commandEntry.waitFor();
-    await page.getByRole("button", { name: /Command/i }).click();
-    await commandEntry.getByText("git status").waitFor();
+    await setTranscriptScrollPosition(page, "bottom");
+    const distanceBeforeFollowup = await transcriptDistanceFromBottom(page);
+    if (distanceBeforeFollowup > 8) {
+      throw new Error(
+        `transcript did not start pinned to bottom before follow-up; distance=${distanceBeforeFollowup}`,
+      );
+    }
+    includeFollowupTranscript = true;
+    await page
+      .getByTestId("session-transcript-agent")
+      .filter({ hasText: "AUTO-SCROLL-FOLLOWUP" })
+      .waitFor({ timeout: 15_000 });
+    await page.waitForTimeout(150);
+    const distanceAfterFollowup = await transcriptDistanceFromBottom(page);
+    if (distanceAfterFollowup > 96) {
+      throw new Error(
+        `transcript did not stay pinned after follow-up; distance=${distanceAfterFollowup}`,
+      );
+    }
+    checks.push({
+      name: "bottom auto-scroll on new message",
+      status: "pass",
+      detail:
+        "when the transcript was pinned to bottom, a polling refresh with a new message kept the scroll position at the latest content",
+    });
+
+    const commandButton = commandEntry.getByRole("button", {
+      name: /git status/i,
+    });
+    await commandButton.waitFor();
+    await commandButton.click();
+    await commandEntry.locator("pre").getByText("git status").waitFor();
     if ((await commandEntry.locator(".rounded-full").count()) > 0) {
       throw new Error(
         "command transcript row still renders a left-side avatar bubble",
@@ -344,20 +597,14 @@ async function main() {
       .waitFor();
     await page.getByTestId("session-code-copy").waitFor();
 
-    await page.getByTestId("session-transcript").evaluate((node) => {
-      let current = node.parentElement as HTMLElement | null;
-      while (current) {
-        const style = window.getComputedStyle(current);
-        if (style.overflowY === "auto" || style.overflowY === "scroll") {
-          current.scrollTop = 0;
-          current.dispatchEvent(new Event("scroll", { bubbles: true }));
-          return;
-        }
-        current = current.parentElement;
-      }
-      throw new Error("could not find transcript scroll container");
-    });
-    await page.getByTestId("session-transcript-loading").waitFor();
+    await page.setViewportSize({ width: 1280, height: 360 });
+    await setTranscriptScrollPosition(page, "bottom");
+    await page.waitForTimeout(50);
+    await setTranscriptScrollPosition(page, "top");
+    await page
+      .getByTestId("session-transcript-loading")
+      .waitFor({ timeout: 1_000 })
+      .catch(() => {});
     await olderMessage.waitFor();
     await page
       .getByTestId("session-transcript-agent")
@@ -375,18 +622,40 @@ async function main() {
     await page.getByTestId("session-transcript-loading").waitFor({
       state: "hidden",
     });
+    await setTranscriptScrollPosition(page, "top");
+    await page
+      .getByTestId("session-transcript-loading")
+      .waitFor({ timeout: 1_000 })
+      .catch(() => {});
+    await page
+      .getByTestId("session-transcript-agent")
+      .filter({ hasText: "Oldest transcript page loaded after a second upward pagination request." })
+      .waitFor();
+    await page.getByTestId("session-transcript-loading").waitFor({
+      state: "hidden",
+    });
 
     await fileChangeEntry.waitFor();
-    await fileChangeEntry
-      .getByRole("button", { name: /Changed 2 files/i })
-      .click();
+    if (await page.getByRole("button", { name: /Changed 2 files/i }).count()) {
+      throw new Error("file changes still render as an aggregate Changed files row");
+    }
+    if (await page.getByRole("button", { name: /Ran \d+ commands/i }).count()) {
+      throw new Error("commands still render as an aggregate Ran commands row");
+    }
+    if (await page.getByRole("button", { name: /Used \d+ tools/i }).count()) {
+      throw new Error("tools still render as an aggregate Used tools row");
+    }
     const transcriptFileButton = fileChangeEntry.getByRole("button", {
-      name: /Edited.*internal\/codex\/transcript\.go/i,
+      name: /Edited.*transcript\.go/i,
     });
     await transcriptFileButton.waitFor();
+    if ((await transcriptFileButton.locator("svg").count()) === 0) {
+      throw new Error("file change row does not render a disclosure arrow");
+    }
     await transcriptFileButton.click();
+    await fileChangeEntry.locator("pre").filter({ hasText: "@@ -1,2 +1,2 @@" }).waitFor();
     await page.getByText("internal/codex/transcript.go").last().waitFor();
-    await page.getByText("Edited  +100 -56").waitFor();
+    await page.getByText(/Edited\s*[·•]?\s*\+100\s+-56/).waitFor();
 
     await page.screenshot({
       fullPage: true,
@@ -397,7 +666,7 @@ async function main() {
       name: "upward pagination render",
       status: "pass",
       detail:
-        "scrolling upward fetched the older transcript page with a visible loading row",
+        "scrolling upward fetched the older transcript page with a visible loading row while preserving orderKey order",
     });
     checks.push({
       name: "fenced code block render",
@@ -409,7 +678,7 @@ async function main() {
       name: "file change and command presentation",
       status: "pass",
       detail:
-        "file changes render as a changed-files summary with selectable entries and command rows render without left avatar bubbles",
+        "file changes render as individual selectable rows with expandable diffs and command rows render without left avatar bubbles",
     });
   } catch (error) {
     checks.push({
@@ -418,6 +687,7 @@ async function main() {
       detail: error instanceof Error ? error.message : String(error),
     });
   } finally {
+    await page?.unrouteAll({ behavior: "ignoreErrors" }).catch(() => {});
     await browser.close();
   }
 

@@ -22,7 +22,9 @@ type fakeCodexClient struct {
 	steerTurnCalls     int
 	interruptTurnCalls []string
 
+	listResult           *ThreadListResult
 	readResult           *ReadThreadResult
+	readResults          []*ReadThreadResult
 	resumeResult         *ResumeThreadResult
 	readErr              error
 	respondApprovalCalls []string
@@ -42,6 +44,9 @@ func (f *fakeCodexClient) Close() error { return nil }
 
 func (f *fakeCodexClient) ListThreads(_ string, _ uint32) (*ThreadListResult, error) {
 	f.listThreadsCalls++
+	if f.listResult != nil {
+		return f.listResult, nil
+	}
 	return &ThreadListResult{}, nil
 }
 
@@ -49,6 +54,13 @@ func (f *fakeCodexClient) ReadThread(_ string) (*ReadThreadResult, error) {
 	f.readCalls++
 	if f.readErr != nil {
 		return nil, f.readErr
+	}
+	if len(f.readResults) > 0 {
+		index := f.readCalls - 1
+		if index >= len(f.readResults) {
+			index = len(f.readResults) - 1
+		}
+		return f.readResults[index], nil
 	}
 	if f.readResult == nil {
 		return &ReadThreadResult{}, nil
@@ -541,6 +553,39 @@ func TestLatestDerivedValuesUseMostRecentChronologicalTurn(t *testing.T) {
 	}
 }
 
+func TestLatestAgentSummaryIgnoresCommentary(t *testing.T) {
+	read := readThreadResultWithTurns(
+		ReadThreadTurn{
+			ID:     "turn-1",
+			Status: "completed",
+			Items: []ReadThreadItem{
+				{
+					Type:  "agentMessage",
+					ID:    "agent-final",
+					Text:  "Implemented the change.",
+					Phase: "final_answer",
+				},
+			},
+		},
+		ReadThreadTurn{
+			ID:     "turn-2",
+			Status: "inProgress",
+			Items: []ReadThreadItem{
+				{
+					Type:  "agentMessage",
+					ID:    "agent-progress",
+					Text:  "I will make this implementation change next.",
+					Phase: "commentary",
+				},
+			},
+		},
+	)
+
+	if got := latestAgentSummary(read); got != "Implemented the change." {
+		t.Fatalf("latestAgentSummary = %q, want %q", got, "Implemented the change.")
+	}
+}
+
 func TestFinalSessionStateTreatsInterruptedAsWaitingInput(t *testing.T) {
 	if got := finalSessionState("interrupted", core.SessionStateCompleted); got != core.SessionStateWaitingInput {
 		t.Fatalf("finalSessionState(interrupted) = %q, want %q", got, core.SessionStateWaitingInput)
@@ -679,6 +724,75 @@ func TestHandleNotificationPublishesDraftDeltaPatch(t *testing.T) {
 	}
 }
 
+func TestHandleNotificationDoesNotFinalizeCommentaryIntoTranscript(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "continue",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	summary := "Stable summary"
+	session, err = workspace.UpdateSession(session.ID, core.SessionPatch{
+		Summary: &summary,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	sink := &fakeEventSink{}
+	manager := NewManager(workspace, sink)
+	manager.live[session.ID] = &liveSession{
+		project:     project,
+		thread:      "thread-1",
+		active:      "turn-1",
+		draftItemID: "msg-commentary",
+		draftText:   "I will make this implementation change next.",
+	}
+
+	manager.handleNotification(session.ID, Notification{
+		Method: "item/completed",
+		Params: json.RawMessage(`{"item":{"id":"msg-commentary","type":"agentMessage","text":"I will make this implementation change next.","phase":"commentary"}}`),
+	})
+
+	current, ok := workspace.GetSession(session.ID)
+	if !ok {
+		t.Fatalf("session %q not found", session.ID)
+	}
+	if current.Summary != "Stable summary" {
+		t.Fatalf("summary = %q, want stable summary", current.Summary)
+	}
+	live := manager.live[session.ID]
+	if live.draftText != "" {
+		t.Fatalf("live draft text = %q, want empty", live.draftText)
+	}
+	if live.draftItemID != "" {
+		t.Fatalf("live draft item id = %q, want empty", live.draftItemID)
+	}
+	if len(sink.events) != 1 {
+		t.Fatalf("published events = %d, want 1", len(sink.events))
+	}
+	patch := sink.events[0].LivePatch
+	if patch == nil {
+		t.Fatalf("live patch = nil")
+	}
+	if patch.Kind != core.SessionLivePatchKindMessageFinalized {
+		t.Fatalf("patch kind = %q", patch.Kind)
+	}
+	if patch.FinalItem == nil {
+		t.Fatalf("final item = nil")
+	}
+	if patch.FinalItem.ID != "msg-commentary" {
+		t.Fatalf("final item id = %q", patch.FinalItem.ID)
+	}
+	if patch.FinalItem.Body != "" {
+		t.Fatalf("final item body = %q, want empty", patch.FinalItem.Body)
+	}
+}
+
 func TestSessionFromLiveRawAppendsDraftTranscriptItem(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
@@ -703,6 +817,84 @@ func TestSessionFromLiveRawAppendsDraftTranscriptItem(t *testing.T) {
 	}
 	if session.TranscriptItems[0].Status != "streaming" {
 		t.Fatalf("draft status = %q", session.TranscriptItems[0].Status)
+	}
+}
+
+func TestWatchTurnPollsAtIntervalUntilCompletion(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	threadID := "thread-1"
+	turnID := "turn-1"
+	client := &fakeCodexClient{
+		readResults: []*ReadThreadResult{
+			readThreadResultWithTurns(ReadThreadTurn{ID: turnID, Status: "inProgress"}),
+			readThreadResultWithTurns(ReadThreadTurn{ID: turnID, Status: "inProgress"}),
+			readThreadResultWithTurns(ReadThreadTurn{ID: turnID, Status: "inProgress"}),
+			readThreadResultWithTurns(ReadThreadTurn{
+				ID:     turnID,
+				Status: "completed",
+				Items: []ReadThreadItem{
+					{
+						Type:    "userMessage",
+						ID:      "user-1",
+						Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
+					},
+					{
+						Type:  "agentMessage",
+						ID:    "agent-1",
+						Text:  "done",
+						Phase: "final_answer",
+					},
+				},
+			}),
+		},
+	}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  threadID,
+		active:  turnID,
+	}
+
+	oldPollInterval := watchTurnPollInterval
+	watchTurnPollInterval = 20 * time.Millisecond
+	defer func() {
+		watchTurnPollInterval = oldPollInterval
+	}()
+
+	started := time.Now()
+	manager.watchTurn(session.ID, threadID, turnID)
+	elapsed := time.Since(started)
+
+	if client.readCalls != 4 {
+		t.Fatalf("ReadThread calls = %d, want 4", client.readCalls)
+	}
+	if elapsed < 3*watchTurnPollInterval {
+		t.Fatalf("watchTurn elapsed = %s, want at least %s", elapsed, 3*watchTurnPollInterval)
+	}
+
+	updated, ok := workspace.GetSession(session.ID)
+	if !ok {
+		t.Fatalf("session %q not found", session.ID)
+	}
+	if updated.Status != core.SessionStateCompleted {
+		t.Fatalf("session status = %q, want %q", updated.Status, core.SessionStateCompleted)
+	}
+	if updated.Summary != "done" {
+		t.Fatalf("summary = %q, want done", updated.Summary)
+	}
+	if len(updated.TranscriptItems) != 2 {
+		t.Fatalf("transcript items = %d, want 2", len(updated.TranscriptItems))
 	}
 }
 
@@ -816,6 +1008,56 @@ func TestInterruptSessionUsesActiveTurnAndClearsState(t *testing.T) {
 	}
 	if updated.ActiveTurnID != "" {
 		t.Fatalf("active turn id = %q, want empty", updated.ActiveTurnID)
+	}
+}
+
+func TestListSessionsCachesThreadListCalls(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        "thread-1",
+					Cwd:       project.RootPath,
+					Preview:   "cached list",
+					UpdatedAt: time.Now().UTC().Unix(),
+					Status:    ThreadStatus{Type: "idle"},
+				},
+			},
+		},
+	}
+	manager := NewManager(workspace)
+	startCalls := 0
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		startCalls++
+		return client, nil
+	}
+
+	first, err := manager.ListSessions("", 10)
+	if err != nil {
+		t.Fatalf("ListSessions first: %v", err)
+	}
+	second, err := manager.ListSessions("", 10)
+	if err != nil {
+		t.Fatalf("ListSessions second: %v", err)
+	}
+
+	if len(first) != 1 || len(second) != 1 {
+		t.Fatalf("session counts = %d, %d; want 1, 1", len(first), len(second))
+	}
+	if startCalls != 1 {
+		t.Fatalf("start calls = %d, want 1", startCalls)
+	}
+	if client.listThreadsCalls != 1 {
+		t.Fatalf("ListThreads calls = %d, want 1", client.listThreadsCalls)
 	}
 }
 

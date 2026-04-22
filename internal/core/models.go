@@ -108,6 +108,7 @@ type SessionTranscriptAttachment struct {
 
 type SessionTranscriptItem struct {
 	ID          string
+	OrderKey    string
 	Kind        SessionTranscriptItemKind
 	Title       string
 	Body        string
@@ -316,6 +317,10 @@ const (
 	EventSessionsChanged         EventKind = "sessions.changed"
 	EventSessionChanged          EventKind = "session.changed"
 	EventSessionArtifactsChanged EventKind = "session.artifacts.changed"
+	EventGitChanged              EventKind = "git.changed"
+	EventTasksChanged            EventKind = "tasks.changed"
+	EventTaskChanged             EventKind = "task.changed"
+	EventTaskAttentionRequired   EventKind = "task.attention.required"
 )
 
 type SessionLivePatchKind string
@@ -343,6 +348,7 @@ type Event struct {
 	Kind      EventKind
 	ProjectID string
 	SessionID string
+	TaskID    string
 	Summary   string
 	LivePatch *SessionLivePatch
 }

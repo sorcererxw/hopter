@@ -20,10 +20,11 @@ import {
   Wrench,
   X,
 } from "lucide-react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 
 import { SessionArtifactWorkspace } from "@/components/app/session-artifact-workspace"
 import { SessionComposer } from "@/components/app/session-composer"
+import { ProjectGitActionDialog } from "@/components/app/project-git-action-dialog"
 import {
   Dialog,
   DialogClose,
@@ -42,8 +43,8 @@ import { CodeContainer } from "@/components/app/code-container"
 import { SessionRichText } from "@/components/app/session-rich-text"
 import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
 import { useAutoHideScrollbar } from "@/components/app/use-auto-hide-scrollbar"
+import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
-import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
 import { SessionTerminalDrawer } from "@/features/terminal/terminal-drawer"
 import { useTerminalSession } from "@/features/terminal/use-terminal-session"
 import { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
@@ -62,6 +63,7 @@ import {
   ArtifactKind,
   SessionStatus,
 } from "@/gen/proto/hopter/v1/common_pb"
+import { GitCommitMode } from "@/gen/proto/hopter/v1/git_pb"
 import {
   SessionTranscriptAttachmentKind,
   SessionTranscriptItemKind,
@@ -71,6 +73,7 @@ import {
   type SessionTranscriptPage,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
+import { useProjectGitStatus } from "@/features/git/use-project-git"
 import {
   formatBackendKey,
   formatSessionStatus,
@@ -90,10 +93,8 @@ const maxSessionSidebarWidth = 920
 const defaultSessionSidebarWidth = 640
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
-  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { eventStreamState, posture, toggleRail, toolbarMode } =
-    useWorkspaceShell()
+  const { eventStreamState, posture } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
   const panelState = useMemo(
     () => readSessionPanelState(searchParams),
@@ -125,6 +126,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const respondToApproval = useRespondToSessionApproval()
   const [prompt, setPrompt] = useState("")
   const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
+  const [gitDialogOpen, setGitDialogOpen] = useState(false)
+  const [gitDialogMode, setGitDialogMode] = useState(GitCommitMode.COMMIT_ONLY)
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === "undefined") {
       return defaultSessionSidebarWidth
@@ -150,13 +153,24 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const transcriptContentRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
   const lastScrollHeightRef = useRef(0)
-  const lastSessionIdRef = useRef(sessionId)
+  const lastSessionIdRef = useRef("")
   const loadedTranscriptSessionRef = useRef(sessionId)
+  const latestTranscriptSnapshotRef = useRef("")
   const lastActivityCountRef = useRef(0)
+  const lastActivitySignatureRef = useRef("")
+  const lastTranscriptScrollTopRef = useRef(0)
+  const pendingStickFrameRef = useRef<number[]>([])
+  const pendingStickTimerRef = useRef<number | null>(null)
+  const stickAnimationFrameRef = useRef<number | null>(null)
+  const suppressHistoryFetchRef = useRef(false)
+  const historyFetchEnabledRef = useRef(false)
   const historyBackfillRunningRef = useRef(false)
+  const historyRetryTimerRef = useRef<number | null>(null)
+  const historyRetryAttemptRef = useRef(0)
   const prependSnapshotRef = useRef<{
     scrollHeight: number
   } | null>(null)
+  const [historyFetchRequested, setHistoryFetchRequested] = useState(false)
   const [transcriptPages, setTranscriptPages] = useState<
     SessionTranscriptPage[]
   >([])
@@ -178,6 +192,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const session = useMemo(
     () => buildSessionDetail(sessionMetaQuery.data, transcriptPages),
     [sessionMetaQuery.data, transcriptPages]
+  )
+  const projectId = sessionMetaQuery.data?.project?.id
+  const projectGitStatusQuery = useProjectGitStatus(
+    projectId,
+    Boolean(projectId)
   )
   const reviewQuery = useSessionReview(
     sessionId,
@@ -290,6 +309,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   ])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
+  const lastActivitySignature = activityItemSignature(activityItems.at(-1))
   const hasUnloadedTranscriptHistory =
     transcriptPages[0]?.hasMoreBefore ??
     sessionMetaQuery.data?.hasMoreBefore ??
@@ -307,6 +327,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       return
     }
     const latestSnapshotKey = transcriptPageSnapshotKey(latestPage)
+    if (latestTranscriptSnapshotRef.current !== latestSnapshotKey) {
+      latestTranscriptSnapshotRef.current = latestSnapshotKey
+      setHistoryFetchRequested(false)
+    }
     setTranscriptPages((current) => {
       const sessionChanged = loadedTranscriptSessionRef.current !== sessionId
       loadedTranscriptSessionRef.current = sessionId
@@ -330,8 +354,16 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     setOptimisticPendingInput("")
     setTranscriptAwayFromBottom(false)
+    setHistoryFetchRequested(false)
+    latestTranscriptSnapshotRef.current = ""
+    historyFetchEnabledRef.current = false
     loadedTranscriptSessionRef.current = sessionId
     historyBackfillRunningRef.current = false
+    historyRetryAttemptRef.current = 0
+    if (historyRetryTimerRef.current !== null) {
+      window.clearTimeout(historyRetryTimerRef.current)
+      historyRetryTimerRef.current = null
+    }
     prependSnapshotRef.current = null
   }, [sessionId])
 
@@ -410,6 +442,27 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     return () => window.cancelAnimationFrame(frame)
   }, [activityItems.length, isLoadingInitialTranscript, sessionId])
 
+  useLayoutEffect(() => {
+    const container = transcriptScrollRef.current
+    if (!container || !transcriptVisible || activityItems.length === 0) {
+      return
+    }
+    if (lastSessionIdRef.current === sessionId) {
+      return
+    }
+
+    historyFetchEnabledRef.current = false
+    scheduleTranscriptStickToBottom("instant", true)
+    lastSessionIdRef.current = sessionId
+    lastActivityCountRef.current = activityItems.length
+    lastActivitySignatureRef.current = lastActivitySignature
+  }, [
+    activityItems.length,
+    lastActivitySignature,
+    sessionId,
+    transcriptVisible,
+  ])
+
   useEffect(() => {
     const container = transcriptScrollRef.current
     if (!container) {
@@ -418,17 +471,28 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
     const nextCount = activityItems.length
     const sessionChanged = lastSessionIdRef.current !== sessionId
-    const countChanged = nextCount !== lastActivityCountRef.current
-    const lastKeyChanged =
-      !sessionChanged && countChanged && lastActivityKey !== ""
+    const activityChanged =
+      lastActivitySignature !== "" &&
+      lastActivitySignature !== lastActivitySignatureRef.current
 
-    if (sessionChanged || (lastKeyChanged && shouldStickToBottomRef.current)) {
-      stickTranscriptToBottom(container)
+    if (sessionChanged) {
+      historyFetchEnabledRef.current = false
+      scheduleTranscriptStickToBottom("instant", true)
+      lastSessionIdRef.current = sessionId
+      lastActivityCountRef.current = nextCount
+      lastActivitySignatureRef.current = lastActivitySignature
+      return
+    } else if (activityChanged && shouldStickToBottomRef.current) {
+      scheduleTranscriptStickToBottom(
+        historyFetchEnabledRef.current ? "animated" : "instant",
+        !historyFetchEnabledRef.current
+      )
     }
 
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = nextCount
-  }, [activityItems.length, lastActivityKey, sessionId])
+    lastActivitySignatureRef.current = lastActivitySignature
+  }, [activityItems.length, lastActivityKey, lastActivitySignature, sessionId])
 
   useEffect(() => {
     const container = transcriptScrollRef.current
@@ -449,22 +513,24 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         previousDistanceFromBottom < 120 || shouldStickToBottomRef.current
       lastScrollHeightRef.current = nextScrollHeight
 
-      if (
-        !grew ||
-        prependSnapshotRef.current ||
-        !wasPinnedBeforeGrowth
-      ) {
+      if (!grew || prependSnapshotRef.current || !wasPinnedBeforeGrowth) {
         updateTranscriptBottomState(container)
         return
       }
 
-      stickTranscriptToBottom(container)
+      scheduleTranscriptStickToBottom("animated")
     })
 
     observer.observe(content)
 
     return () => observer.disconnect()
   }, [sessionId])
+
+  useEffect(() => {
+    return () => {
+      cancelScheduledTranscriptStick()
+    }
+  }, [])
 
   useEffect(() => {
     syncScrollbar()
@@ -482,20 +548,30 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
     const delta = container.scrollHeight - snapshot.scrollHeight
     container.scrollTop += delta
+    lastTranscriptScrollTopRef.current = container.scrollTop
     lastScrollHeightRef.current = container.scrollHeight
     updateTranscriptBottomState(container)
     prependSnapshotRef.current = null
-  }, [transcriptPageCount])
+    if (
+      transcriptPages[0]?.hasMoreBefore &&
+      transcriptPages[0]?.nextBeforeCursor &&
+      container.scrollTop < historyFetchThreshold(container)
+    ) {
+      setHistoryFetchRequested(true)
+    }
+  }, [transcriptPageCount, transcriptPages])
 
   useEffect(() => {
     const firstPage = transcriptPages[0]
     if (
+      !historyFetchRequested ||
       !firstPage?.hasMoreBefore ||
       !firstPage.nextBeforeCursor ||
       historyBackfillRunningRef.current
     ) {
-      historyBackfillRunningRef.current = false
-      setIsFetchingPreviousPage(false)
+      if (!historyBackfillRunningRef.current) {
+        setIsFetchingPreviousPage(false)
+      }
       return
     }
 
@@ -504,66 +580,70 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     setIsFetchingPreviousPage(true)
 
     async function loadHistory() {
-      let cursor = firstPage!.nextBeforeCursor
-      const seenCursors = new Set<string>()
-
       try {
-        while (!cancelled && cursor) {
-          if (seenCursors.has(cursor)) {
-            break
-          }
-          seenCursors.add(cursor)
+        const page = await fetchSessionTranscriptPage(
+          sessionId,
+          firstPage!.nextBeforeCursor
+        )
+        if (cancelled || !page) {
+          return
+        }
+        if (!sameTranscriptSnapshot(firstPage!, page)) {
+          return
+        }
 
-          const page = await fetchSessionTranscriptPage(sessionId, cursor)
-          if (cancelled || !page) {
-            break
+        const container = transcriptScrollRef.current
+        if (container) {
+          prependSnapshotRef.current = {
+            scrollHeight: container.scrollHeight,
           }
-          if (!sameTranscriptSnapshot(firstPage!, page)) {
-            break
-          }
+        }
 
-          const container = transcriptScrollRef.current
-          if (container) {
-            prependSnapshotRef.current = {
-              scrollHeight: container.scrollHeight,
-            }
-          }
-
-          setTranscriptPages((current) => {
-            const currentIds = new Set(
-              current.flatMap((existing) =>
-                (existing.items ?? []).map((item) => item.id)
-              )
+        setTranscriptPages((current) => {
+          const currentIds = new Set(
+            current.flatMap((existing) =>
+              (existing.items ?? []).map((item) => item.id)
             )
-            const nextItems = (page.items ?? []).filter(
-              (item) => !currentIds.has(item.id)
-            )
+          )
+          const nextItems = (page.items ?? []).filter(
+            (item) => !currentIds.has(item.id)
+          )
 
-            if (nextItems.length === 0) {
-              return current
-            }
-
-            return [
-              {
-                ...page,
-                items: nextItems,
-              } as SessionTranscriptPage,
-              ...current,
-            ]
-          })
-
-          await nextAnimationFrame()
-
-          if (!page.hasMoreBefore || !page.nextBeforeCursor) {
-            break
+          if (nextItems.length === 0) {
+            return current
           }
 
-          cursor = page.nextBeforeCursor
+          return [
+            {
+              ...page,
+              items: nextItems,
+            } as SessionTranscriptPage,
+            ...current,
+          ]
+        })
+        historyRetryAttemptRef.current = 0
+      } catch {
+        if (!cancelled && shouldRetryHistoryFetch()) {
+          const retryDelayMs = Math.min(
+            2_000,
+            350 * 2 ** Math.min(historyRetryAttemptRef.current, 3)
+          )
+          historyRetryAttemptRef.current += 1
+          setHistoryFetchRequested(false)
+          historyRetryTimerRef.current = window.setTimeout(() => {
+            historyRetryTimerRef.current = null
+            if (shouldRetryHistoryFetch()) {
+              setHistoryFetchRequested(true)
+            }
+          }, retryDelayMs)
         }
       } finally {
         historyBackfillRunningRef.current = false
         if (!cancelled) {
           setIsFetchingPreviousPage(false)
+          if (historyRetryTimerRef.current === null) {
+            setHistoryFetchRequested(false)
+          }
         }
       }
     }
@@ -574,6 +654,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       cancelled = true
     }
   }, [
+    historyFetchRequested,
     sessionId,
     transcriptPages[0]?.hasMoreBefore,
     transcriptPages[0]?.nextBeforeCursor,
@@ -590,6 +671,16 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       container.scrollHeight - container.scrollTop - container.clientHeight
     shouldStickToBottomRef.current = distanceFromBottom < 120
     setTranscriptAwayFromBottom(distanceFromBottom > 160)
+    if (
+      !suppressHistoryFetchRef.current &&
+      historyFetchEnabledRef.current &&
+      container.scrollHeight > container.clientHeight + 120 &&
+      container.scrollTop < historyFetchThreshold(container) &&
+      hasUnloadedTranscriptHistory
+    ) {
+      setHistoryFetchRequested(true)
+    }
+    lastTranscriptScrollTopRef.current = container.scrollTop
   }
 
   function scrollTranscriptToBottom() {
@@ -601,9 +692,87 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     shouldStickToBottomRef.current = true
     setTranscriptAwayFromBottom(false)
     container.scrollTo({
-      top: container.scrollHeight,
+      top: transcriptBottomScrollTop(container),
       behavior: "smooth",
     })
+  }
+
+  function cancelScheduledTranscriptStick() {
+    for (const frame of pendingStickFrameRef.current) {
+      window.cancelAnimationFrame(frame)
+    }
+    pendingStickFrameRef.current = []
+    if (stickAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(stickAnimationFrameRef.current)
+      stickAnimationFrameRef.current = null
+    }
+    if (pendingStickTimerRef.current !== null) {
+      window.clearTimeout(pendingStickTimerRef.current)
+      pendingStickTimerRef.current = null
+    }
+    if (historyRetryTimerRef.current !== null) {
+      window.clearTimeout(historyRetryTimerRef.current)
+      historyRetryTimerRef.current = null
+    }
+    suppressHistoryFetchRef.current = false
+  }
+
+  function scheduleTranscriptStickToBottom(
+    mode: "instant" | "animated",
+    force = false
+  ) {
+    cancelScheduledTranscriptStick()
+
+    if (mode === "instant") {
+      let remainingTicks = 14
+      const step = () => {
+        const container = transcriptScrollRef.current
+        if (!container || (!force && !shouldStickToBottomRef.current)) {
+          pendingStickFrameRef.current = []
+          pendingStickTimerRef.current = null
+          suppressHistoryFetchRef.current = false
+          return
+        }
+
+        stickTranscriptToBottom(container, "instant")
+        remainingTicks -= 1
+
+        if (remainingTicks > 0) {
+          pendingStickTimerRef.current = window.setTimeout(step, 40)
+          return
+        }
+
+        suppressHistoryFetchRef.current = false
+        historyFetchEnabledRef.current = true
+        pendingStickFrameRef.current = []
+        pendingStickTimerRef.current = null
+      }
+
+      const frame = window.requestAnimationFrame(step)
+      pendingStickFrameRef.current = [frame]
+      return
+    }
+
+    const firstFrame = window.requestAnimationFrame(() => {
+      const container = transcriptScrollRef.current
+      if (!container || (!force && !shouldStickToBottomRef.current)) {
+        pendingStickFrameRef.current = []
+        return
+      }
+
+      stickTranscriptToBottom(container, mode)
+
+      const secondFrame = window.requestAnimationFrame(() => {
+        const nextContainer = transcriptScrollRef.current
+        if (nextContainer && (force || shouldStickToBottomRef.current)) {
+          stickTranscriptToBottom(nextContainer, mode)
+        }
+        pendingStickFrameRef.current = []
+      })
+      pendingStickFrameRef.current = [secondFrame]
+    })
+
+    pendingStickFrameRef.current = [firstFrame]
   }
 
   function updateTranscriptBottomState(container: HTMLDivElement) {
@@ -614,16 +783,89 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     setTranscriptAwayFromBottom(distanceFromBottom > 160)
   }
 
-  function stickTranscriptToBottom(container: HTMLDivElement) {
+  function stickTranscriptToBottom(
+    container: HTMLDivElement,
+    mode: "instant" | "animated" = "instant"
+  ) {
     shouldStickToBottomRef.current = true
-    container.scrollTop = container.scrollHeight
+    suppressHistoryFetchRef.current = true
+    const target = transcriptBottomScrollTop(container)
+    if (
+      mode === "animated" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      animateTranscriptScrollTo(container, target)
+    } else {
+      if (stickAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(stickAnimationFrameRef.current)
+        stickAnimationFrameRef.current = null
+      }
+      container.scrollTop = target
+      lastTranscriptScrollTopRef.current = container.scrollTop
+    }
     setTranscriptAwayFromBottom(false)
   }
 
-  function nextAnimationFrame() {
-    return new Promise<void>((resolve) => {
-      window.requestAnimationFrame(() => resolve())
-    })
+  function animateTranscriptScrollTo(
+    container: HTMLDivElement,
+    target: number
+  ) {
+    if (stickAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(stickAnimationFrameRef.current)
+      stickAnimationFrameRef.current = null
+    }
+
+    const start = container.scrollTop
+    const delta = target - start
+    if (Math.abs(delta) < 2) {
+      container.scrollTop = target
+      return
+    }
+
+    const startedAt = performance.now()
+    const duration = 140
+
+    function step(now: number) {
+      const progress = Math.min(1, (now - startedAt) / duration)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      container.scrollTop = start + delta * eased
+      lastTranscriptScrollTopRef.current = container.scrollTop
+
+      if (progress < 1 && shouldStickToBottomRef.current) {
+        stickAnimationFrameRef.current = window.requestAnimationFrame(step)
+        return
+      }
+
+      if (shouldStickToBottomRef.current) {
+        container.scrollTop = transcriptBottomScrollTop(container)
+        lastTranscriptScrollTopRef.current = container.scrollTop
+      }
+      suppressHistoryFetchRef.current = false
+      historyFetchEnabledRef.current = true
+      stickAnimationFrameRef.current = null
+    }
+
+    stickAnimationFrameRef.current = window.requestAnimationFrame(step)
+  }
+
+  function transcriptBottomScrollTop(container: HTMLDivElement) {
+    return Math.max(0, container.scrollHeight - container.clientHeight)
+  }
+
+  function historyFetchThreshold(container: HTMLDivElement) {
+    return Math.max(240, Math.min(900, container.clientHeight * 1.5))
+  }
+
+  function shouldRetryHistoryFetch() {
+    const container = transcriptScrollRef.current
+    if (!container) {
+      return false
+    }
+    return (
+      historyFetchEnabledRef.current &&
+      container.scrollHeight > container.clientHeight + 120 &&
+      container.scrollTop < historyFetchThreshold(container)
+    )
   }
 
   function sameTranscriptSnapshot(
@@ -685,37 +927,27 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <WorkspaceTopbar
-        leadingAction={
-          panelAsPage || posture === "phone" ? "back" : "toggle-rail"
-        }
-        onLeadingAction={() => {
-          if (panelAsPage) {
-            closePanel()
-            return
-          }
-
-          if (posture === "phone") {
-            navigate("/")
-            return
-          }
-
-          toggleRail()
-        }}
+      <ProjectGitActionDialog
+        initialMode={gitDialogMode}
+        onOpenChange={setGitDialogOpen}
+        open={gitDialogOpen}
+        projectId={projectId}
+      />
+      <WorkspacePageToolbar
+        forceBack={panelAsPage}
+        onForceBack={closePanel}
         title={panelAsPage ? mobilePanelTitle : session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
         resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
         inspectorOpen={panelVisible}
         onCommit={() => {
-          // TODO: wire commit action
+          setGitDialogMode(GitCommitMode.COMMIT_ONLY)
+          setGitDialogOpen(true)
         }}
-        onCommitAndReview={() => {
-          openReviewPanel({
-            reviewFile:
-              panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
-            reviewView: panelState.reviewView,
-          })
+        onCommitAndPush={() => {
+          setGitDialogMode(GitCommitMode.COMMIT_AND_PUSH)
+          setGitDialogOpen(true)
         }}
         onOpenReview={() => {
           openReviewPanel({
@@ -732,13 +964,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         }}
         onToggleInspector={posture === "wide" ? togglePanel : undefined}
         showInspectorToggle={posture === "wide"}
+        showCommit={Boolean(projectGitStatusQuery.data?.isGitRepository)}
         showReview
         showTerminal={terminalEnabled}
         terminalButtonTestId="workspace-topbar-terminal"
         terminalActive={Boolean(
           terminalState.terminal && !terminalUIState.open
         )}
-        toolbarMode={toolbarMode}
       />
 
       {sessionMetaQuery.isLoading ? (
@@ -814,10 +1046,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                     transcriptVisible ? "opacity-100" : "opacity-0"
                   )}
                 >
-                  <SessionStatusHeader session={session} />
                   <SessionConnectionBlock state={eventStreamState} />
-                  <SessionSummaryBlock session={session} />
-                  <SessionCompletedResultBlock session={session} />
 
                   <SessionAttentionBlock
                     onApprove={() => {
@@ -1047,7 +1276,9 @@ function buildSessionDetail(
     return undefined
   }
 
-  const transcriptItems = (pages ?? []).flatMap((page) => page?.items ?? [])
+  const transcriptItems = orderTranscriptItems(
+    (pages ?? []).flatMap((page) => page?.items ?? [])
+  )
 
   return {
     id: meta.id,
@@ -1066,6 +1297,25 @@ function buildSessionDetail(
   } as Session
 }
 
+function orderTranscriptItems(items: SessionTranscriptItem[]) {
+  return [...items].sort((left, right) => {
+    const leftOrder = transcriptSortKey(left)
+    const rightOrder = transcriptSortKey(right)
+
+    if (leftOrder < rightOrder) {
+      return -1
+    }
+    if (leftOrder > rightOrder) {
+      return 1
+    }
+    return 0
+  })
+}
+
+function transcriptSortKey(item: SessionTranscriptItem) {
+  return item.orderKey || `zzzz:${item.id}`
+}
+
 function SessionStatusHeader({ session }: { session: Session }) {
   const status = getSessionStatusDisplay(session)
   const backend = formatBackendKey(session.backendKey)
@@ -1082,10 +1332,7 @@ function SessionStatusHeader({ session }: { session: Session }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={cn(
-                "size-2 rounded-full",
-                status.dotClassName
-              )}
+              className={cn("size-2 rounded-full", status.dotClassName)}
               aria-hidden="true"
             />
             <span
@@ -1129,10 +1376,7 @@ function SessionSummaryBlock({ session }: { session: Session }) {
     >
       <div className="text-sm font-medium text-foreground">Summary</div>
       {summary ? (
-        <SessionRichText
-          text={summary}
-          className="mt-2 text-base leading-6"
-        />
+        <SessionRichText text={summary} className="mt-2 text-base leading-6" />
       ) : (
         <div className="mt-2 text-base leading-6 text-muted-foreground">
           <p>
@@ -1164,17 +1408,19 @@ function SessionConnectionBlock({
 
   return (
     <section
-      className={cn(
-        "rounded-lg border px-4 py-3",
-        display.containerClassName
-      )}
+      className={cn("rounded-lg border px-4 py-3", display.containerClassName)}
       data-testid="session-connection-block"
       aria-label={display.title}
     >
       <div className={cn("text-sm font-medium", display.titleClassName)}>
         {display.title}
       </div>
-      <p className={cn("mt-1 text-base leading-6 font-medium", display.bodyClassName)}>
+      <p
+        className={cn(
+          "mt-1 text-base leading-6 font-medium",
+          display.bodyClassName
+        )}
+      >
         {display.body}
       </p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -1319,7 +1565,12 @@ function SessionAttentionBlock({
       <div className={cn("mb-1 text-sm font-medium", attention.titleClassName)}>
         {attention.title}
       </div>
-      <p className={cn("text-base leading-7 font-medium", attention.bodyClassName)}>
+      <p
+        className={cn(
+          "text-base leading-7 font-medium",
+          attention.bodyClassName
+        )}
+      >
         {attention.body}
       </p>
       {attention.detail ? (
@@ -1355,7 +1606,10 @@ function getSessionAttentionDisplay(session: Session) {
   const reason = session.attentionReason.trim()
   const summary = session.summary.trim()
 
-  if (session.pendingApprovalId || session.status === SessionStatus.WAITING_APPROVAL) {
+  if (
+    session.pendingApprovalId ||
+    session.status === SessionStatus.WAITING_APPROVAL
+  ) {
     return {
       body: reason || "Codex needs approval before it can continue.",
       bodyClassName: "text-amber-900 dark:text-amber-50",
@@ -1371,7 +1625,8 @@ function getSessionAttentionDisplay(session: Session) {
       body: reason || summary || "This thread failed before it could complete.",
       bodyClassName: "text-destructive",
       containerClassName: "border-destructive/20 bg-destructive/10",
-      detail: "You can send a follow-up with more context or retry from the composer.",
+      detail:
+        "You can send a follow-up with more context or retry from the composer.",
       title: "Turn failed",
       titleClassName: "text-destructive",
     }
@@ -1424,8 +1679,7 @@ function getSessionStatusDisplay(session: Session) {
   switch (session.status) {
     case SessionStatus.PENDING:
       return {
-        badgeClassName:
-          "bg-secondary text-secondary-foreground",
+        badgeClassName: "bg-secondary text-secondary-foreground",
         description:
           session.lastInputHint.trim() ||
           "This thread is queued and waiting for Codex to start.",
@@ -1463,7 +1717,8 @@ function getSessionStatusDisplay(session: Session) {
         badgeClassName:
           "bg-emerald-400/10 text-emerald-700 dark:text-emerald-200",
         description:
-          session.summary.trim() || "This thread has completed its latest turn.",
+          session.summary.trim() ||
+          "This thread has completed its latest turn.",
         dotClassName: "bg-emerald-500",
         label: title,
       }
@@ -1490,10 +1745,10 @@ function getSessionStatusDisplay(session: Session) {
     case SessionStatus.UNSPECIFIED:
     default:
       return {
-        badgeClassName:
-          "bg-secondary text-secondary-foreground",
+        badgeClassName: "bg-secondary text-secondary-foreground",
         description:
-          session.summary.trim() || "The current thread state is not specified.",
+          session.summary.trim() ||
+          "The current thread state is not specified.",
         dotClassName: "bg-muted-foreground",
         label: title,
       }
@@ -1555,21 +1810,6 @@ type TimelineItem =
   | {
       items: SessionTranscriptItem[]
       key: string
-      kind: "command-group"
-    }
-  | {
-      items: SessionTranscriptItem[]
-      key: string
-      kind: "file-change-group"
-    }
-  | {
-      items: SessionTranscriptItem[]
-      key: string
-      kind: "tool-group"
-    }
-  | {
-      items: SessionTranscriptItem[]
-      key: string
       kind: "thought-group"
     }
 
@@ -1577,6 +1817,29 @@ function isTranscriptActivityItem(
   item: ActivityItem
 ): item is Extract<ActivityItem, { kind: "transcript" }> {
   return item.kind === "transcript"
+}
+
+function activityItemSignature(item: ActivityItem | undefined) {
+  if (!item) {
+    return ""
+  }
+
+  switch (item.kind) {
+    case "transcript":
+      return [
+        item.key,
+        item.item.orderKey,
+        item.item.status,
+        item.item.body.length,
+        item.item.body.slice(-160),
+      ].join(":")
+    case "pending-input":
+      return `${item.key}:${item.text.length}:${item.text.slice(-160)}`
+    case "thinking":
+      return `${item.key}:${item.summary.length}:${item.summary.slice(-160)}`
+    case "round-status":
+      return `${item.key}:${item.state}:${item.summary.length}:${item.summary.slice(-160)}`
+  }
 }
 
 function TranscriptTimeline({
@@ -1617,7 +1880,9 @@ function TranscriptTimeline({
     function updateScrollMargin() {
       const scrollRect = scrollElement!.getBoundingClientRect()
       const timelineRect = timelineElement!.getBoundingClientRect()
-      setScrollMargin(timelineRect.top - scrollRect.top + scrollElement!.scrollTop)
+      setScrollMargin(
+        timelineRect.top - scrollRect.top + scrollElement!.scrollTop
+      )
     }
 
     updateScrollMargin()
@@ -1669,7 +1934,7 @@ function TranscriptTimeline({
               key={virtualItem.key}
               ref={virtualizer.measureElement}
               data-index={virtualItem.index}
-              className="absolute left-0 top-0 w-full pb-2"
+              className="absolute top-0 left-0 w-full pb-2"
               style={{
                 transform: `translateY(${virtualItem.start - scrollMargin}px)`,
               }}
@@ -1710,17 +1975,6 @@ function renderTimelineItem(
           text={item.text}
         />
       )
-    case "command-group":
-      return <CommandGroupEntry items={item.items} />
-    case "file-change-group":
-      return (
-        <FileChangeGroupEntry
-          items={item.items}
-          onSelectDiff={handlers.onSelectDiff}
-        />
-      )
-    case "tool-group":
-      return <ToolGroupEntry items={item.items} />
     case "thought-group":
       return (
         <ThoughtProcessGroupEntry
@@ -1774,75 +2028,6 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
     if (!isTranscriptActivityItem(current)) {
       timelineItems.push(current)
       cursor += 1
-      continue
-    }
-
-    if (current.item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
-      const groupedItems: SessionTranscriptItem[] = [current.item]
-      let next = cursor + 1
-      while (next < items.length) {
-        const candidate = items[next]
-        if (
-          !isTranscriptActivityItem(candidate) ||
-          candidate.item.kind !== SessionTranscriptItemKind.COMMAND_EXECUTION
-        ) {
-          break
-        }
-        groupedItems.push(candidate.item)
-        next += 1
-      }
-      timelineItems.push({
-        items: groupedItems,
-        key: groupedItems.map((item) => item.id).join(":"),
-        kind: "command-group",
-      })
-      cursor = next
-      continue
-    }
-
-    if (current.item.kind === SessionTranscriptItemKind.FILE_CHANGE) {
-      const groupedItems: SessionTranscriptItem[] = [current.item]
-      let next = cursor + 1
-      while (next < items.length) {
-        const candidate = items[next]
-        if (
-          !isTranscriptActivityItem(candidate) ||
-          candidate.item.kind !== SessionTranscriptItemKind.FILE_CHANGE
-        ) {
-          break
-        }
-        groupedItems.push(candidate.item)
-        next += 1
-      }
-      timelineItems.push({
-        items: groupedItems,
-        key: groupedItems.map((item) => item.id).join(":"),
-        kind: "file-change-group",
-      })
-      cursor = next
-      continue
-    }
-
-    if (current.item.kind === SessionTranscriptItemKind.TOOL_CALL) {
-      const groupedItems: SessionTranscriptItem[] = [current.item]
-      let next = cursor + 1
-      while (next < items.length) {
-        const candidate = items[next]
-        if (
-          !isTranscriptActivityItem(candidate) ||
-          candidate.item.kind !== SessionTranscriptItemKind.TOOL_CALL
-        ) {
-          break
-        }
-        groupedItems.push(candidate.item)
-        next += 1
-      }
-      timelineItems.push({
-        items: groupedItems,
-        key: groupedItems.map((item) => item.id).join(":"),
-        kind: "tool-group",
-      })
-      cursor = next
       continue
     }
 
@@ -2038,7 +2223,10 @@ function TranscriptAttachmentPill({
     )
   }
 
-  if (attachment.path && attachment.kind === SessionTranscriptAttachmentKind.FILE) {
+  if (
+    attachment.path &&
+    attachment.kind === SessionTranscriptAttachmentKind.FILE
+  ) {
     return (
       <button
         type="button"
@@ -2142,7 +2330,7 @@ function ImagePreviewDialog({
       >
         <DialogTitle className="sr-only">{label}</DialogTitle>
         {fullscreen ? (
-          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-black/70 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-black/70 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
             <div className="min-w-0 truncate text-sm font-medium text-white">
               {label}
             </div>
@@ -2162,7 +2350,7 @@ function ImagePreviewDialog({
           alt={label}
           className={cn(
             fullscreen
-              ? "h-full w-full object-contain px-2 pb-[env(safe-area-inset-bottom)] pt-[calc(env(safe-area-inset-top)+4rem)]"
+              ? "h-full w-full object-contain px-2 pt-[calc(env(safe-area-inset-top)+4rem)] pb-[env(safe-area-inset-bottom)]"
               : "max-h-[calc(80vh-2rem)] max-w-full rounded-lg object-contain"
           )}
           loading="eager"
@@ -2260,32 +2448,6 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
   )
 }
 
-function ToolGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
-  const [expanded, setExpanded] = useState(false)
-  const count = items.length
-
-  return (
-    <TranscriptBatchEntry
-      expanded={expanded}
-      label={`Used ${count} tools`}
-      onToggle={() => setExpanded((prev) => !prev)}
-      testId="session-transcript-tool"
-    >
-      <div>
-        {items.map((item) => (
-          <CodeContainer
-            key={item.id}
-            as="pre"
-            className="break-words whitespace-pre-wrap text-foreground/70"
-          >
-            {item.body}
-          </CodeContainer>
-        ))}
-      </div>
-    </TranscriptBatchEntry>
-  )
-}
-
 function ThoughtProcessGroupEntry({
   items,
   onSelectDiff,
@@ -2321,7 +2483,8 @@ function ThoughtProcessGroupEntry({
 
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const [expanded, setExpanded] = useState(false)
-  const label = item.title || "Command"
+  const detail = parseCommandExecutionDetail(item.body)
+  const label = detail.command || item.title || "Command"
 
   return (
     <div className="min-w-0" data-testid="session-transcript-command">
@@ -2332,59 +2495,14 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
           iconClassName="ml-auto size-3"
           className="w-full gap-1.5 text-muted-foreground hover:text-foreground"
         >
-          <span>{label}</span>
+          <span className="min-w-0 truncate font-mono text-foreground">
+            {label}
+          </span>
         </TranscriptDisclosureButton>
         {expanded ? (
           <CommandExecutionDetail className="mt-1" body={item.body} />
         ) : null}
       </div>
-    </div>
-  )
-}
-
-function CommandGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
-  const [expanded, setExpanded] = useState(false)
-  const count = items.length
-
-  return (
-    <TranscriptBatchEntry
-      expanded={expanded}
-      label={`Ran ${count} commands`}
-      onToggle={() => setExpanded((prev) => !prev)}
-      testId="session-transcript-command"
-    >
-      <TranscriptBatchList>
-        {items.map((item) => (
-          <CommandSummaryEntry key={item.id} item={item} />
-        ))}
-      </TranscriptBatchList>
-    </TranscriptBatchEntry>
-  )
-}
-
-function CommandSummaryEntry({ item }: { item: SessionTranscriptItem }) {
-  const [expanded, setExpanded] = useState(false)
-  const label = summarizeCommandExecution(item.body)
-
-  return (
-    <div className="min-w-0">
-      <TranscriptBatchRowButton
-        onClick={() => setExpanded((prev) => !prev)}
-        className="gap-1.5"
-      >
-        <span className="truncate">Ran {label}</span>
-        <ChevronRight
-          className={cn(
-            "size-3 shrink-0 transition",
-            expanded
-              ? "rotate-90 opacity-100"
-              : "opacity-60 group-hover:opacity-100"
-          )}
-        />
-      </TranscriptBatchRowButton>
-      {expanded ? (
-        <CommandExecutionDetail className="mt-2" body={item.body} />
-      ) : null}
     </div>
   )
 }
@@ -2420,40 +2538,66 @@ function FileChangeGroupEntry({
   items: SessionTranscriptItem[]
   onSelectDiff: (diff: ParsedFileChange) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
   const changes = items.flatMap((item) => parseFileChangeBody(item.body))
-  const count = changes.length
 
   return (
-    <TranscriptBatchEntry
-      expanded={expanded}
-      label={`Changed ${count} files`}
-      onToggle={() => setExpanded((prev) => !prev)}
-      testId="session-transcript-file-change"
-    >
-      <TranscriptBatchList>
+    <div className="min-w-0" data-testid="session-transcript-file-change">
+      <div className="space-y-1">
         {changes.map((change) => (
-          <TranscriptBatchRowButton
+          <FileChangeRow
+            change={change}
             key={`${change.path}-${change.kindLabel}`}
-            onClick={() => onSelectDiff(change)}
-            title={change.path}
-          >
-            <span className="shrink-0 text-muted-foreground">
-              {change.kindLabel}
-            </span>
-            <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
-              {formatFileChangePath(change.path)}
-            </span>
-            {change.additions || change.deletions ? (
-              <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
-                <span className="text-emerald-600">+{change.additions}</span>
-                <span className="text-destructive">-{change.deletions}</span>
-              </span>
-            ) : null}
-          </TranscriptBatchRowButton>
+            onSelectDiff={onSelectDiff}
+          />
         ))}
-      </TranscriptBatchList>
-    </TranscriptBatchEntry>
+      </div>
+    </div>
+  )
+}
+
+function FileChangeRow({
+  change,
+  onSelectDiff,
+}: {
+  change: ParsedFileChange
+  onSelectDiff: (diff: ParsedFileChange) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="min-w-0">
+      <TranscriptDisclosureButton
+        expanded={expanded}
+        iconClassName="ml-auto size-3"
+        className="w-full gap-2 py-0.5 text-base text-muted-foreground hover:text-foreground"
+        onClick={() => {
+          setExpanded((prev) => !prev)
+          onSelectDiff(change)
+        }}
+        title={change.path}
+      >
+        <span className="shrink-0 text-muted-foreground">
+          {change.kindLabel}
+        </span>
+        <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
+          {formatFileChangePath(change.path)}
+        </span>
+        {change.additions || change.deletions ? (
+          <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
+            <span className="text-emerald-600">+{change.additions}</span>
+            <span className="text-destructive">-{change.deletions}</span>
+          </span>
+        ) : null}
+      </TranscriptDisclosureButton>
+      {expanded ? (
+        <CodeContainer
+          as="pre"
+          className="mt-1 max-h-96 break-words whitespace-pre-wrap"
+        >
+          {change.diff?.trim() || "No diff content available."}
+        </CodeContainer>
+      ) : null}
+    </div>
   )
 }
 

@@ -186,6 +186,7 @@ function normalizeSessionTranscriptPage(
       status: item.status,
       displayBody: item.displayBody,
       attachments: item.attachments,
+      orderKey: item.orderKey,
     })),
     nextBeforeCursor: page.nextBeforeCursor,
     hasMoreBefore: page.hasMoreBefore,

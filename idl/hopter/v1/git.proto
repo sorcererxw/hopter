@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package hopter.v1;
+
+// TODO: set go_package once the Go module path is finalized.
+
+service GitService {
+  rpc GetProjectGitStatus(GetProjectGitStatusRequest) returns (GetProjectGitStatusResponse);
+  rpc CommitProjectChanges(CommitProjectChangesRequest) returns (CommitProjectChangesResponse);
+  rpc PushProjectBranch(PushProjectBranchRequest) returns (PushProjectBranchResponse);
+}
+
+enum GitFileStatus {
+  GIT_FILE_STATUS_UNSPECIFIED = 0;
+  GIT_FILE_STATUS_ADDED = 1;
+  GIT_FILE_STATUS_MODIFIED = 2;
+  GIT_FILE_STATUS_DELETED = 3;
+  GIT_FILE_STATUS_RENAMED = 4;
+  GIT_FILE_STATUS_UNTRACKED = 5;
+  GIT_FILE_STATUS_CONFLICTED = 6;
+}
+
+enum GitActionOutcome {
+  GIT_ACTION_OUTCOME_UNSPECIFIED = 0;
+  GIT_ACTION_OUTCOME_COMMITTED = 1;
+  GIT_ACTION_OUTCOME_COMMITTED_AND_PUSHED = 2;
+  GIT_ACTION_OUTCOME_COMMITTED_PUSH_FAILED = 3;
+  GIT_ACTION_OUTCOME_PUSHED = 4;
+  GIT_ACTION_OUTCOME_NO_CHANGES = 5;
+  GIT_ACTION_OUTCOME_REJECTED_STALE = 6;
+  GIT_ACTION_OUTCOME_REJECTED_BLOCKED = 7;
+  GIT_ACTION_OUTCOME_FAILED = 8;
+}
+
+enum GitCommitMode {
+  GIT_COMMIT_MODE_UNSPECIFIED = 0;
+  GIT_COMMIT_MODE_COMMIT_ONLY = 1;
+  GIT_COMMIT_MODE_COMMIT_AND_PUSH = 2;
+}
+
+message GitDiagnostic {
+  string code = 1;
+  string step = 2;
+  string message = 3;
+  string stderr_excerpt = 4;
+  int32 exit_code = 5;
+}
+
+message GitFileChange {
+  string path = 1;
+  GitFileStatus status = 2;
+  string index_status = 3;
+  string worktree_status = 4;
+  string old_path = 5;
+  bool partially_staged = 6;
+  uint32 additions = 7;
+  uint32 deletions = 8;
+}
+
+message ProjectGitStatus {
+  string project_id = 1;
+  string root_path = 2;
+  string branch = 3;
+  string head_sha = 4;
+  string head_short_sha = 5;
+  string upstream = 6;
+  string push_remote = 7;
+  string push_branch = 8;
+  int32 ahead = 9;
+  int32 behind = 10;
+  bool dirty = 11;
+  bool has_conflicts = 12;
+  bool project_has_active_writer = 13;
+  bool can_commit = 14;
+  bool can_push = 15;
+  bool is_git_repository = 16;
+  bool detached_head = 17;
+  bool unborn_branch = 18;
+  string status_token = 19;
+  string default_commit_message = 20;
+  repeated GitFileChange files = 21;
+  repeated GitDiagnostic blockers = 22;
+  repeated GitDiagnostic warnings = 23;
+}
+
+message GetProjectGitStatusRequest {
+  string project_id = 1;
+}
+
+message GetProjectGitStatusResponse {
+  ProjectGitStatus status = 1;
+}
+
+message CommitProjectChangesRequest {
+  string project_id = 1;
+  GitCommitMode mode = 2;
+  string message = 3;
+  string expected_status_token = 4;
+}
+
+message CommitProjectChangesResponse {
+  GitActionOutcome outcome = 1;
+  string commit_sha = 2;
+  string commit_short_sha = 3;
+  string branch = 4;
+  string upstream = 5;
+  string summary = 6;
+  repeated string committed_paths = 7;
+  repeated GitDiagnostic diagnostics = 8;
+  ProjectGitStatus status_after = 9;
+}
+
+message PushProjectBranchRequest {
+  string project_id = 1;
+  string expected_head_sha = 2;
+  string expected_status_token = 3;
+}
+
+message PushProjectBranchResponse {
+  GitActionOutcome outcome = 1;
+  string branch = 2;
+  string upstream = 3;
+  repeated GitDiagnostic diagnostics = 4;
+  ProjectGitStatus status_after = 5;
+}

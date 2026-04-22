@@ -2,10 +2,18 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 
 const DEFAULT_HIDE_DELAY_MS = 900
 const MIN_THUMB_HEIGHT_PX = 24
+const METRIC_EPSILON = 0.5
 
 type UseAutoHideScrollbarOptions = {
   contentRef?: RefObject<HTMLElement | null>
   hideDelayMs?: number
+}
+
+type ScrollbarMetrics = {
+  scrollable: boolean
+  thumbHeight: number
+  thumbOffset: number
+  visible: boolean
 }
 
 export function useAutoHideScrollbar(
@@ -13,13 +21,16 @@ export function useAutoHideScrollbar(
   options: UseAutoHideScrollbarOptions = {}
 ) {
   const { contentRef, hideDelayMs = DEFAULT_HIDE_DELAY_MS } = options
-  const [scrollbarVisible, setScrollbarVisible] = useState(false)
-  const [scrollbarScrollable, setScrollbarScrollable] = useState(false)
-  const [thumbHeight, setThumbHeight] = useState(0)
-  const [thumbOffset, setThumbOffset] = useState(0)
+  const [metrics, setMetrics] = useState<ScrollbarMetrics>({
+    scrollable: false,
+    thumbHeight: 0,
+    thumbOffset: 0,
+    visible: false,
+  })
   const hideTimerRef = useRef<number | null>(null)
+  const syncFrameRef = useRef<number | null>(null)
 
-  const syncScrollbar = useCallback(() => {
+  const syncScrollbarNow = useCallback(() => {
     const container = containerRef.current
     if (!container) {
       return
@@ -28,12 +39,22 @@ export function useAutoHideScrollbar(
     const { clientHeight, scrollHeight, scrollTop } = container
     const isScrollable = scrollHeight - clientHeight > 1
 
-    setScrollbarScrollable(isScrollable)
-
     if (!isScrollable || clientHeight <= 0) {
-      setScrollbarVisible(false)
-      setThumbHeight(0)
-      setThumbOffset(0)
+      setMetrics((current) =>
+        sameMetrics(current, {
+          scrollable: false,
+          thumbHeight: 0,
+          thumbOffset: 0,
+          visible: false,
+        })
+          ? current
+          : {
+              scrollable: false,
+              thumbHeight: 0,
+              thumbOffset: 0,
+              visible: false,
+            }
+      )
       return
     }
 
@@ -47,9 +68,27 @@ export function useAutoHideScrollbar(
         ? 0
         : scrollTop / (scrollHeight - clientHeight)
 
-    setThumbHeight(nextThumbHeight)
-    setThumbOffset(progress * maxOffset)
+    setMetrics((current) => {
+      const next = {
+        ...current,
+        scrollable: true,
+        thumbHeight: nextThumbHeight,
+        thumbOffset: progress * maxOffset,
+      }
+      return sameMetrics(current, next) ? current : next
+    })
   }, [containerRef])
+
+  const syncScrollbar = useCallback(() => {
+    if (syncFrameRef.current !== null) {
+      return
+    }
+
+    syncFrameRef.current = window.requestAnimationFrame(() => {
+      syncFrameRef.current = null
+      syncScrollbarNow()
+    })
+  }, [syncScrollbarNow])
 
   const revealScrollbar = useCallback(() => {
     syncScrollbar()
@@ -58,14 +97,18 @@ export function useAutoHideScrollbar(
       return
     }
 
-    setScrollbarVisible(true)
+    setMetrics((current) =>
+      current.visible ? current : { ...current, visible: true }
+    )
 
     if (hideTimerRef.current !== null) {
       window.clearTimeout(hideTimerRef.current)
     }
 
     hideTimerRef.current = window.setTimeout(() => {
-      setScrollbarVisible(false)
+      setMetrics((current) =>
+        current.visible ? { ...current, visible: false } : current
+      )
       hideTimerRef.current = null
     }, hideDelayMs)
   }, [containerRef, hideDelayMs, syncScrollbar])
@@ -75,7 +118,7 @@ export function useAutoHideScrollbar(
   }, [revealScrollbar])
 
   useEffect(() => {
-    syncScrollbar()
+    syncScrollbarNow()
 
     if (typeof ResizeObserver === "undefined") {
       return
@@ -94,28 +137,40 @@ export function useAutoHideScrollbar(
     }
 
     return () => observer.disconnect()
-  }, [containerRef, contentRef, syncScrollbar])
+  }, [containerRef, contentRef, syncScrollbar, syncScrollbarNow])
 
   useEffect(() => {
-    const handleResize = () => syncScrollbar()
+    const handleResize = () => syncScrollbarNow()
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [syncScrollbar])
+  }, [syncScrollbarNow])
 
   useEffect(() => {
     return () => {
       if (hideTimerRef.current !== null) {
         window.clearTimeout(hideTimerRef.current)
       }
+      if (syncFrameRef.current !== null) {
+        window.cancelAnimationFrame(syncFrameRef.current)
+      }
     }
   }, [])
 
   return {
     handleScroll,
-    scrollbarScrollable,
-    scrollbarVisible,
+    scrollbarScrollable: metrics.scrollable,
+    scrollbarVisible: metrics.visible,
     syncScrollbar,
-    thumbHeight,
-    thumbOffset,
+    thumbHeight: metrics.thumbHeight,
+    thumbOffset: metrics.thumbOffset,
   }
+}
+
+function sameMetrics(left: ScrollbarMetrics, right: ScrollbarMetrics) {
+  return (
+    left.scrollable === right.scrollable &&
+    left.visible === right.visible &&
+    Math.abs(left.thumbHeight - right.thumbHeight) < METRIC_EPSILON &&
+    Math.abs(left.thumbOffset - right.thumbOffset) < METRIC_EPSILON
+  )
 }

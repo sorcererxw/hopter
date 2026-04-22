@@ -14,11 +14,11 @@ import { Button } from "@/components/ui/button"
 import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
 import { cn } from "@/lib/utils"
 
-type WorkspaceTopbarProps = {
+export type WorkspaceTopbarProps = {
   leadingAction?: "back" | "toggle-rail"
   inspectorOpen?: boolean
   onCommit?: () => void
-  onCommitAndReview?: () => void
+  onCommitAndPush?: () => void
   onLeadingAction?: () => void
   onOpenReview?: () => void
   onOpenTerminal?: () => void
@@ -27,7 +27,9 @@ type WorkspaceTopbarProps = {
   resumeCommand?: string
   sessionId?: string
   showInspectorToggle?: boolean
+  showCommit?: boolean
   showReview?: boolean
+  showOverflowMenu?: boolean
   showTerminal?: boolean
   terminalButtonTestId?: string
   terminalActive?: boolean
@@ -39,7 +41,7 @@ export function WorkspaceTopbar({
   leadingAction,
   inspectorOpen = false,
   onCommit,
-  onCommitAndReview,
+  onCommitAndPush,
   onLeadingAction,
   onOpenReview,
   onOpenTerminal,
@@ -48,6 +50,8 @@ export function WorkspaceTopbar({
   resumeCommand,
   sessionId,
   showInspectorToggle = false,
+  showCommit = false,
+  showOverflowMenu = true,
   showReview = false,
   showTerminal = false,
   terminalButtonTestId,
@@ -149,98 +153,104 @@ export function WorkspaceTopbar({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOverflowOpen((prev) => !prev)}
-                className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
-              >
-                <MoreHorizontal className="size-4.5" />
-              </button>
-              {overflowOpen ? (
-                <>
-                  <div
-                    aria-hidden="true"
-                    className="fixed inset-0 z-40"
-                    onClick={() => setOverflowOpen(false)}
-                  />
-                  <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                    {showReview ? (
-                      <>
-                        <OverflowMenuItem
-                          onClick={() => {
-                            setOverflowOpen(false)
-                            onCommit?.()
-                          }}
-                        >
-                          Commit
-                        </OverflowMenuItem>
-                        <OverflowMenuItem
-                          onClick={() => {
-                            setOverflowOpen(false)
-                            onOpenReview?.()
-                          }}
-                        >
-                          Review
-                        </OverflowMenuItem>
-                        <OverflowMenuItem
-                          onClick={() => {
-                            setOverflowOpen(false)
-                            onCommitAndReview?.()
-                          }}
-                        >
-                          Commit &amp; Review
-                        </OverflowMenuItem>
-                        {showTerminal ? (
+            {showOverflowMenu ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOverflowOpen((prev) => !prev)}
+                  className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+                >
+                  <MoreHorizontal className="size-4.5" />
+                </button>
+                {overflowOpen ? (
+                  <>
+                    <div
+                      aria-hidden="true"
+                      className="fixed inset-0 z-40"
+                      onClick={() => setOverflowOpen(false)}
+                    />
+                    <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                      {showCommit || showReview ? (
+                        <>
+                          {showCommit ? (
+                            <OverflowMenuItem
+                              onClick={() => {
+                                setOverflowOpen(false)
+                                onCommit?.()
+                              }}
+                            >
+                              Commit All
+                            </OverflowMenuItem>
+                          ) : null}
                           <OverflowMenuItem
-                            icon={<Terminal className="size-3.5" />}
                             onClick={() => {
                               setOverflowOpen(false)
-                              onOpenTerminal?.()
+                              onOpenReview?.()
                             }}
                           >
-                            Terminal
+                            Review
                           </OverflowMenuItem>
-                        ) : null}
-                      </>
-                    ) : null}
-                    {showInspectorToggle ? (
-                      <OverflowMenuItem
-                        icon={<PanelRight className="size-3.5" />}
-                        onClick={() => {
-                          setOverflowOpen(false)
-                          onToggleInspector?.()
-                        }}
-                      >
-                        {inspectorOpen ? "Close sidebar" : "Open sidebar"}
-                      </OverflowMenuItem>
-                    ) : null}
-                    {resumeCommand ? (
-                      <OverflowMenuItem
-                        icon={<Terminal className="size-3.5" />}
-                        onClick={() =>
-                          handleCopy(resumeCommand, "resume-command")
-                        }
-                      >
-                        {copiedItem === "resume-command"
-                          ? "Codex command copied"
-                          : "Resume in Codex"}
-                      </OverflowMenuItem>
-                    ) : null}
-                    {sessionId ? (
-                      <OverflowMenuItem
-                        icon={<Copy className="size-3.5" />}
-                        onClick={() => handleCopy(sessionId, "session-id")}
-                      >
-                        {copiedItem === "session-id"
-                          ? "Copied!"
-                          : "Copy session ID"}
-                      </OverflowMenuItem>
-                    ) : null}
-                  </div>
-                </>
-              ) : null}
-            </div>
+                          {showCommit ? (
+                            <OverflowMenuItem
+                              onClick={() => {
+                                setOverflowOpen(false)
+                                onCommitAndPush?.()
+                              }}
+                            >
+                              Commit All &amp; Push
+                            </OverflowMenuItem>
+                          ) : null}
+                          {showTerminal ? (
+                            <OverflowMenuItem
+                              icon={<Terminal className="size-3.5" />}
+                              onClick={() => {
+                                setOverflowOpen(false)
+                                onOpenTerminal?.()
+                              }}
+                            >
+                              Terminal
+                            </OverflowMenuItem>
+                          ) : null}
+                        </>
+                      ) : null}
+                      {showInspectorToggle ? (
+                        <OverflowMenuItem
+                          icon={<PanelRight className="size-3.5" />}
+                          onClick={() => {
+                            setOverflowOpen(false)
+                            onToggleInspector?.()
+                          }}
+                        >
+                          {inspectorOpen ? "Close sidebar" : "Open sidebar"}
+                        </OverflowMenuItem>
+                      ) : null}
+                      {resumeCommand ? (
+                        <OverflowMenuItem
+                          icon={<Terminal className="size-3.5" />}
+                          onClick={() =>
+                            handleCopy(resumeCommand, "resume-command")
+                          }
+                        >
+                          {copiedItem === "resume-command"
+                            ? "Codex command copied"
+                            : "Resume in Codex"}
+                        </OverflowMenuItem>
+                      ) : null}
+                      {sessionId ? (
+                        <OverflowMenuItem
+                          icon={<Copy className="size-3.5" />}
+                          onClick={() => handleCopy(sessionId, "session-id")}
+                        >
+                          {copiedItem === "session-id"
+                            ? "Copied!"
+                            : "Copy session ID"}
+                        </OverflowMenuItem>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </>
       ) : (
@@ -253,52 +263,54 @@ export function WorkspaceTopbar({
                 {projectName}
               </span>
             ) : null}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOverflowOpen((prev) => !prev)}
-                className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
-              >
-                <MoreHorizontal className="size-4" />
-              </button>
-              {overflowOpen ? (
-                <>
-                  <div
-                    aria-hidden="true"
-                    className="fixed inset-0 z-40"
-                    onClick={() => setOverflowOpen(false)}
-                  />
-                  <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
-                    {resumeCommand ? (
-                      <OverflowMenuItem
-                        icon={<Terminal className="size-3.5" />}
-                        onClick={() =>
-                          handleCopy(resumeCommand, "resume-command")
-                        }
-                      >
-                        {copiedItem === "resume-command"
-                          ? "Codex command copied"
-                          : "Resume in Codex"}
-                      </OverflowMenuItem>
-                    ) : null}
-                    {sessionId ? (
-                      <OverflowMenuItem
-                        icon={<Copy className="size-3.5" />}
-                        onClick={() => handleCopy(sessionId, "session-id")}
-                      >
-                        {copiedItem === "session-id"
-                          ? "Copied!"
-                          : "Copy session ID"}
-                      </OverflowMenuItem>
-                    ) : null}
-                  </div>
-                </>
-              ) : null}
-            </div>
+            {showOverflowMenu ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOverflowOpen((prev) => !prev)}
+                  className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                >
+                  <MoreHorizontal className="size-4" />
+                </button>
+                {overflowOpen ? (
+                  <>
+                    <div
+                      aria-hidden="true"
+                      className="fixed inset-0 z-40"
+                      onClick={() => setOverflowOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                      {resumeCommand ? (
+                        <OverflowMenuItem
+                          icon={<Terminal className="size-3.5" />}
+                          onClick={() =>
+                            handleCopy(resumeCommand, "resume-command")
+                          }
+                        >
+                          {copiedItem === "resume-command"
+                            ? "Codex command copied"
+                            : "Resume in Codex"}
+                        </OverflowMenuItem>
+                      ) : null}
+                      {sessionId ? (
+                        <OverflowMenuItem
+                          icon={<Copy className="size-3.5" />}
+                          onClick={() => handleCopy(sessionId, "session-id")}
+                        >
+                          {copiedItem === "session-id"
+                            ? "Copied!"
+                            : "Copy session ID"}
+                        </OverflowMenuItem>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-1.5">
-            {showReview ? (
+            {showCommit ? (
               <div className="relative">
                 <Button
                   type="button"
@@ -323,28 +335,33 @@ export function WorkspaceTopbar({
                           onCommit?.()
                         }}
                       >
-                        Commit
+                        Commit All
                       </CommitMenuItem>
                       <CommitMenuItem
                         onClick={() => {
                           setCommitOpen(false)
-                          onOpenReview?.()
+                          onCommitAndPush?.()
                         }}
                       >
-                        Review
-                      </CommitMenuItem>
-                      <CommitMenuItem
-                        onClick={() => {
-                          setCommitOpen(false)
-                          onCommitAndReview?.()
-                        }}
-                      >
-                        Commit &amp; Review
+                        Commit All &amp; Push
                       </CommitMenuItem>
                     </div>
                   </>
                 ) : null}
               </div>
+            ) : null}
+
+            {showReview ? (
+              <Button
+                type="button"
+                variant={showCommit ? "ghost" : "secondary"}
+                onClick={onOpenReview}
+                className={cn(
+                  showCommit ? "text-muted-foreground" : "text-foreground"
+                )}
+              >
+                Review
+              </Button>
             ) : null}
 
             {showTerminal ? (

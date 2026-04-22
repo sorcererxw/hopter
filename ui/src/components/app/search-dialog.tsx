@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { FolderGit2, Search, Settings, SquarePen } from "lucide-react"
+import { FolderGit2, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
@@ -96,6 +96,12 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 label="Settings"
                 detail="Open workspace settings"
                 onClick={() => closeAndNavigate("/settings")}
+              />
+              <ActionRow
+                icon={Grid2x2}
+                label="Skills & Apps"
+                detail="Open plugins"
+                onClick={() => closeAndNavigate("/plugins")}
               />
             </div>
           ) : null}

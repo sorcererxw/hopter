@@ -5,6 +5,7 @@ import {
   WorkspaceEventType,
 } from "@/gen/proto/hopter/v1/events_pb"
 import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
+import type { SessionMeta } from "@/gen/proto/hopter/v1/session_pb"
 import { queryKeys } from "@/lib/query/keys"
 
 export type WorkspaceEventEnvelope = {
@@ -18,6 +19,8 @@ export type WorkspaceEventEnvelope = {
   session_id?: string
   projectId?: string
   project_id?: string
+  taskId?: string
+  task_id?: string
 }
 
 type SessionLivePatchEnvelope = {
@@ -39,12 +42,32 @@ type SessionLivePatchEnvelope = {
 type SessionTranscriptItemEnvelope = {
   attachments?: unknown[]
   id?: string
+  orderKey?: string
+  order_key?: string
   kind?: string | number
   title?: string
   body?: string
   displayBody?: string
   display_body?: string
   status?: string
+}
+
+type CachedTranscriptItem = {
+  attachments: unknown[]
+  id: string
+  orderKey: string
+  kind: number
+  title: string
+  body: string
+  displayBody: string
+  status: string
+}
+
+type CachedTranscriptPage = {
+  items: CachedTranscriptItem[]
+  nextBeforeCursor: string
+  hasMoreBefore: boolean
+  snapshotUpdatedAt?: unknown
 }
 
 export function applyWorkspaceEventInvalidation(
@@ -75,6 +98,29 @@ export function applyWorkspaceEventInvalidation(
     case WorkspaceEventType.PROJECTS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.projects() })
       return
+    case WorkspaceEventType.GIT_CHANGED: {
+      const projectId = event.projectId || event.project_id
+      if (projectId) {
+        client.invalidateQueries({
+          queryKey: queryKeys.projectGitStatus(projectId),
+        })
+      } else {
+        client.invalidateQueries({ queryKey: ["project-git-status"] })
+      }
+      return
+    }
+    case WorkspaceEventType.TASKS_CHANGED:
+      client.invalidateQueries({ queryKey: queryKeys.tasks() })
+      return
+    case WorkspaceEventType.TASK_CHANGED:
+    case WorkspaceEventType.TASK_ATTENTION_REQUIRED: {
+      const taskId = event.taskId || event.task_id
+      client.invalidateQueries({ queryKey: queryKeys.tasks() })
+      if (taskId) {
+        client.invalidateQueries({ queryKey: queryKeys.task(taskId) })
+      }
+      return
+    }
     case WorkspaceEventType.SESSIONS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       return
@@ -123,7 +169,7 @@ function applySessionLivePatch(
   ) {
     client.setQueriesData(
       { queryKey: queryKeys.sessionMeta(sessionId) },
-      (current: any) => {
+      (current: SessionMeta | undefined) => {
         if (!current) {
           return current
         }
@@ -144,7 +190,7 @@ function applySessionLivePatch(
     }
     client.setQueriesData(
       { queryKey: queryKeys.sessionTranscript(sessionId) },
-      (current: any) => {
+      (current: CachedTranscriptPage | undefined) => {
         const page = ensureTranscriptPage(current)
         const items = [...page.items]
         const index = items.findIndex((item) => item.id === draftItemId)
@@ -153,11 +199,15 @@ function applySessionLivePatch(
             ...items[index],
             body: `${items[index].body || ""}${delta}`,
             displayBody: `${items[index].displayBody || items[index].body || ""}${delta}`,
+            orderKey:
+              items[index].orderKey ||
+              `live:${String(Date.now()).padStart(20, "0")}:${draftItemId}`,
             status: "streaming",
           }
         } else {
           items.push({
             id: draftItemId,
+            orderKey: `live:${String(Date.now()).padStart(20, "0")}:${draftItemId}`,
             kind: 2,
             title: "Codex",
             body: delta,
@@ -178,11 +228,15 @@ function applySessionLivePatch(
   if (patchKind === SessionLivePatchKind.MESSAGE_FINALIZED && finalItem?.id) {
     client.setQueriesData(
       { queryKey: queryKeys.sessionTranscript(sessionId) },
-      (current: any) => {
+      (current: CachedTranscriptPage | undefined) => {
         const page = ensureTranscriptPage(current)
         const items = [...page.items]
         const normalizedItem = {
-          id: finalItem.id,
+          id: finalItem.id || "",
+          orderKey:
+            finalItem.orderKey ||
+            finalItem.order_key ||
+            `live:${String(Date.now()).padStart(20, "0")}:${finalItem.id}`,
           kind: normalizeTranscriptItemKind(finalItem.kind),
           title: finalItem.title || "Codex",
           body: finalItem.body || "",
@@ -241,6 +295,18 @@ function normalizeWorkspaceEventType(value: string | number | undefined) {
     case WorkspaceEventType.CONFIG_CHANGED:
     case "WORKSPACE_EVENT_TYPE_CONFIG_CHANGED":
       return WorkspaceEventType.CONFIG_CHANGED
+    case WorkspaceEventType.GIT_CHANGED:
+    case "WORKSPACE_EVENT_TYPE_GIT_CHANGED":
+      return WorkspaceEventType.GIT_CHANGED
+    case WorkspaceEventType.TASKS_CHANGED:
+    case "WORKSPACE_EVENT_TYPE_TASKS_CHANGED":
+      return WorkspaceEventType.TASKS_CHANGED
+    case WorkspaceEventType.TASK_CHANGED:
+    case "WORKSPACE_EVENT_TYPE_TASK_CHANGED":
+      return WorkspaceEventType.TASK_CHANGED
+    case WorkspaceEventType.TASK_ATTENTION_REQUIRED:
+    case "WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED":
+      return WorkspaceEventType.TASK_ATTENTION_REQUIRED
     default:
       return WorkspaceEventType.UNSPECIFIED
   }
@@ -315,7 +381,9 @@ function normalizeTranscriptItemKind(value: string | number | undefined) {
   }
 }
 
-function ensureTranscriptPage(current: any) {
+function ensureTranscriptPage(
+  current: CachedTranscriptPage | undefined
+): CachedTranscriptPage {
   if (current && Array.isArray(current.items)) {
     return current
   }

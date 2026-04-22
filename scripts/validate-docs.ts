@@ -11,9 +11,10 @@ const checks: Check[] = [
   {
     file: "README.md",
     includes: [
-      "Go-native remote control plane",
-      "docs/planning/GO_REBUILD_MASTER_PLAN.md",
-      "make validate-go-tetris",
+      "Hopter lets you control local coding agents from a browser",
+      "brew install sorcererxw/hopter/hopter",
+      "Codex stays the source of truth",
+      "docs/README.md",
     ],
   },
   {

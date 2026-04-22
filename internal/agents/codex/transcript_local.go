@@ -10,8 +10,11 @@ import (
 
 func userTranscriptItem(input string) core.SessionTranscriptItem {
 	body := strings.TrimSpace(input)
+	now := time.Now().UTC().UnixNano()
+	id := fmt.Sprintf("local-user-%d", now)
 	return core.SessionTranscriptItem{
-		ID:          fmt.Sprintf("local-user-%d", time.Now().UTC().UnixNano()),
+		ID:          id,
+		OrderKey:    fmt.Sprintf("local:%020d:%s", now, id),
 		Kind:        core.SessionTranscriptItemKindUserMessage,
 		Title:       "You",
 		Body:        body,

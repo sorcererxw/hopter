@@ -258,6 +258,9 @@ const (
 	RefreshHint_REFRESH_HINT_REFETCH_SESSION   RefreshHint = 4
 	RefreshHint_REFRESH_HINT_REFETCH_ARTIFACTS RefreshHint = 5
 	RefreshHint_REFRESH_HINT_REFETCH_CONFIG    RefreshHint = 6
+	RefreshHint_REFRESH_HINT_REFETCH_GIT       RefreshHint = 7
+	RefreshHint_REFRESH_HINT_REFETCH_TASKS     RefreshHint = 8
+	RefreshHint_REFRESH_HINT_REFETCH_TASK      RefreshHint = 9
 )
 
 // Enum value maps for RefreshHint.
@@ -270,6 +273,9 @@ var (
 		4: "REFRESH_HINT_REFETCH_SESSION",
 		5: "REFRESH_HINT_REFETCH_ARTIFACTS",
 		6: "REFRESH_HINT_REFETCH_CONFIG",
+		7: "REFRESH_HINT_REFETCH_GIT",
+		8: "REFRESH_HINT_REFETCH_TASKS",
+		9: "REFRESH_HINT_REFETCH_TASK",
 	}
 	RefreshHint_value = map[string]int32{
 		"REFRESH_HINT_UNSPECIFIED":       0,
@@ -279,6 +285,9 @@ var (
 		"REFRESH_HINT_REFETCH_SESSION":   4,
 		"REFRESH_HINT_REFETCH_ARTIFACTS": 5,
 		"REFRESH_HINT_REFETCH_CONFIG":    6,
+		"REFRESH_HINT_REFETCH_GIT":       7,
+		"REFRESH_HINT_REFETCH_TASKS":     8,
+		"REFRESH_HINT_REFETCH_TASK":      9,
 	}
 )
 
@@ -626,7 +635,7 @@ const file_hopter_v1_common_proto_rawDesc = "" +
 	"\x10ApprovalDecision\x12!\n" +
 	"\x1dAPPROVAL_DECISION_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19APPROVAL_DECISION_APPROVE\x10\x01\x12\x1c\n" +
-	"\x18APPROVAL_DECISION_REJECT\x10\x02*\xf7\x01\n" +
+	"\x18APPROVAL_DECISION_REJECT\x10\x02*\xd4\x02\n" +
 	"\vRefreshHint\x12\x1c\n" +
 	"\x18REFRESH_HINT_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19REFRESH_HINT_REFETCH_HOST\x10\x01\x12!\n" +
@@ -634,7 +643,10 @@ const file_hopter_v1_common_proto_rawDesc = "" +
 	"\x1dREFRESH_HINT_REFETCH_SESSIONS\x10\x03\x12 \n" +
 	"\x1cREFRESH_HINT_REFETCH_SESSION\x10\x04\x12\"\n" +
 	"\x1eREFRESH_HINT_REFETCH_ARTIFACTS\x10\x05\x12\x1f\n" +
-	"\x1bREFRESH_HINT_REFETCH_CONFIG\x10\x06B\xa5\x01\n" +
+	"\x1bREFRESH_HINT_REFETCH_CONFIG\x10\x06\x12\x1c\n" +
+	"\x18REFRESH_HINT_REFETCH_GIT\x10\a\x12\x1e\n" +
+	"\x1aREFRESH_HINT_REFETCH_TASKS\x10\b\x12\x1d\n" +
+	"\x19REFRESH_HINT_REFETCH_TASK\x10\tB\xa5\x01\n" +
 	"\rcom.hopter.v1B\vCommonProtoP\x01ZBgithub.com/sorcererxw/hopter/internal/gen/proto/hopter/v1;hopterv1\xa2\x02\x03HXX\xaa\x02\tHopter.V1\xca\x02\tHopter\\V1\xe2\x02\x15Hopter\\V1\\GPBMetadata\xea\x02\n" +
 	"Hopter::V1b\x06proto3"
 

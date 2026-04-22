@@ -110,7 +110,7 @@ export function SessionRichText({
   return (
     <div
       className={cn(
-        "min-w-0 text-base leading-6 font-medium break-words text-foreground",
+        "min-w-0 text-base leading-6 font-medium break-words whitespace-normal text-foreground",
         isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
@@ -212,12 +212,12 @@ function PlainRichText({
   return (
     <div
       className={cn(
-        "min-w-0 text-base leading-6 font-medium break-words text-foreground",
+        "min-w-0 text-base leading-6 font-medium break-words whitespace-normal text-foreground",
         isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
     >
-      <div className="whitespace-pre-wrap">{text}</div>
+      <div className="whitespace-pre-wrap break-words">{text}</div>
     </div>
   )
 }

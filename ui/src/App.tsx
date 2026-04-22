@@ -32,29 +32,19 @@ const SessionRoute = lazy(() =>
     default: module.SessionRoute,
   }))
 )
+const TasksRoute = lazy(() =>
+  import("@/routes/tasks-route").then((module) => ({
+    default: module.TasksRoute,
+  }))
+)
+const PluginsRoute = lazy(() =>
+  import("@/routes/plugins-route").then((module) => ({
+    default: module.PluginsRoute,
+  }))
+)
 const SettingsRoute = lazy(() =>
   import("@/routes/settings-route").then((module) => ({
     default: module.SettingsRoute,
-  }))
-)
-const SettingsGeneralPage = lazy(() =>
-  import("@/routes/settings/settings-general-page").then((module) => ({
-    default: module.SettingsGeneralPage,
-  }))
-)
-const SettingsAppearancePage = lazy(() =>
-  import("@/routes/settings/settings-appearance-page").then((module) => ({
-    default: module.SettingsAppearancePage,
-  }))
-)
-const SettingsPluginsPage = lazy(() =>
-  import("@/routes/settings/settings-plugins-page").then((module) => ({
-    default: module.SettingsPluginsPage,
-  }))
-)
-const SettingsAgentsPage = lazy(() =>
-  import("@/routes/settings/settings-agents-page").then((module) => ({
-    default: module.SettingsAgentsPage,
   }))
 )
 const WorkspaceRouteFrame = lazy(() =>
@@ -85,6 +75,18 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   return <>{children}</>
+}
+
+function LegacyHashRedirect({
+  fallbackHash = "",
+  to,
+}: {
+  fallbackHash?: string
+  to: string
+}) {
+  const location = useLocation()
+
+  return <Navigate to={`${to}${location.hash || fallbackHash}`} replace />
 }
 
 function ConfigBackedThemeProvider({ children }: { children: ReactNode }) {
@@ -136,28 +138,6 @@ export default function App() {
           <Routes>
             <Route path="login" element={renderLazyRoute(<LoginRoute />)} />
             <Route
-              path="settings"
-              element={renderLazyRoute(
-                <ProtectedRoute>
-                  <SettingsRoute />
-                </ProtectedRoute>
-              )}
-            >
-              <Route index element={renderLazyRoute(<SettingsGeneralPage />)} />
-              <Route
-                path="appearance"
-                element={renderLazyRoute(<SettingsAppearancePage />)}
-              />
-              <Route
-                path="plugins"
-                element={renderLazyRoute(<SettingsPluginsPage />)}
-              />
-              <Route
-                path="agents"
-                element={renderLazyRoute(<SettingsAgentsPage />)}
-              />
-            </Route>
-            <Route
               element={
                 <ProtectedRoute>
                   <WorkspaceRouteFrame />
@@ -172,6 +152,34 @@ export default function App() {
               <Route
                 path="sessions/:sessionId"
                 element={renderLazyRoute(<SessionRoute />)}
+              />
+              <Route path="tasks" element={renderLazyRoute(<TasksRoute />)} />
+              <Route
+                path="plugins"
+                element={renderLazyRoute(<PluginsRoute />)}
+              />
+              <Route
+                path="settings"
+                element={renderLazyRoute(<SettingsRoute />)}
+              />
+              <Route
+                path="settings/appearance"
+                element={
+                  <LegacyHashRedirect
+                    to="/settings"
+                    fallbackHash="#appearance"
+                  />
+                }
+              />
+              <Route
+                path="settings/plugins"
+                element={<Navigate to="/plugins" replace />}
+              />
+              <Route
+                path="settings/agents"
+                element={
+                  <LegacyHashRedirect to="/settings" fallbackHash="#agents" />
+                }
               />
             </Route>
           </Routes>

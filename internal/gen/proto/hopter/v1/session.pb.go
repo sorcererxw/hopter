@@ -521,6 +521,7 @@ type SessionTranscriptItem struct {
 	Status        string                         `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	DisplayBody   string                         `protobuf:"bytes,6,opt,name=display_body,json=displayBody,proto3" json:"display_body,omitempty"`
 	Attachments   []*SessionTranscriptAttachment `protobuf:"bytes,7,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	OrderKey      string                         `protobuf:"bytes,8,opt,name=order_key,json=orderKey,proto3" json:"order_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -602,6 +603,13 @@ func (x *SessionTranscriptItem) GetAttachments() []*SessionTranscriptAttachment 
 		return x.Attachments
 	}
 	return nil
+}
+
+func (x *SessionTranscriptItem) GetOrderKey() string {
+	if x != nil {
+		return x.OrderKey
+	}
+	return ""
 }
 
 type SessionListItem struct {
@@ -2273,7 +2281,7 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\x05label\x18\x03 \x01(\tR\x05label\x12\x12\n" +
 	"\x04path\x18\x04 \x01(\tR\x04path\x12\x10\n" +
 	"\x03url\x18\x05 \x01(\tR\x03url\x12!\n" +
-	"\fcontent_type\x18\x06 \x01(\tR\vcontentType\"\x90\x02\n" +
+	"\fcontent_type\x18\x06 \x01(\tR\vcontentType\"\xad\x02\n" +
 	"\x15SessionTranscriptItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x128\n" +
 	"\x04kind\x18\x02 \x01(\x0e2$.hopter.v1.SessionTranscriptItemKindR\x04kind\x12\x14\n" +
@@ -2281,7 +2289,8 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\x04body\x18\x04 \x01(\tR\x04body\x12\x16\n" +
 	"\x06status\x18\x05 \x01(\tR\x06status\x12!\n" +
 	"\fdisplay_body\x18\x06 \x01(\tR\vdisplayBody\x12H\n" +
-	"\vattachments\x18\a \x03(\v2&.hopter.v1.SessionTranscriptAttachmentR\vattachments\"\xa5\x02\n" +
+	"\vattachments\x18\a \x03(\v2&.hopter.v1.SessionTranscriptAttachmentR\vattachments\x12\x1b\n" +
+	"\torder_key\x18\b \x01(\tR\borderKey\"\xa5\x02\n" +
 	"\x0fSessionListItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12/\n" +

@@ -164,21 +164,9 @@ func (m *SessionReadModel) loadLatestTranscriptPage(meta core.SessionMeta, limit
 	if err != nil {
 		return core.SessionTranscriptPage{}, err
 	}
-	items, hasMoreBefore := normalizeLatestReadThreadItemsForPage(read, int(limit))
-	page := core.SessionTranscriptPage{
-		SessionID:         meta.Session.ID,
-		ProjectID:         meta.Project.ID,
-		Items:             items,
-		HasMoreBefore:     hasMoreBefore,
-		SnapshotUpdatedAt: meta.Session.UpdatedAt,
-	}
-	if hasMoreBefore {
-		page.NextBeforeCursor = encodeLazyTranscriptCursor(transcriptCursor{
-			SnapshotUnixMilli: snapshotUnixMilli(meta.Session.UpdatedAt),
-			BeforeIndex:       -1,
-		})
-	}
-	return page, nil
+	items := normalizeReadThreadItemsForPage(read)
+	pages := m.cacheTranscriptPages(meta, items, limit)
+	return pages[""], nil
 }
 
 func (m *SessionReadModel) loadAndCacheTranscriptPages(meta core.SessionMeta, limit uint32) (map[string]core.SessionTranscriptPage, error) {
@@ -249,7 +237,12 @@ func (m *SessionReadModel) readCodexMeta(
 	}
 
 	if live := m.manager.liveSession(sessionID); live != nil && live.thread == threadID {
-		read, err := live.client.ReadThreadMeta(threadID)
+		read, err := m.readThreadWithSingleflight(
+			"thread-meta-live:"+sessionID+":"+threadID,
+			func() (*ReadThreadResult, error) {
+				return live.client.ReadThreadMeta(threadID)
+			},
+		)
 		if err != nil {
 			return core.Session{}, core.Project{}, err
 		}
@@ -279,13 +272,18 @@ func (m *SessionReadModel) readCodexMeta(
 		}
 	}
 
-	client, err := m.manager.start(context.Background(), cwd, nil, nil, nil, nil)
-	if err != nil {
-		return core.Session{}, core.Project{}, err
-	}
-	defer client.Close()
+	read, err := m.readThreadWithSingleflight(
+		"thread-meta:"+cwd+":"+threadID,
+		func() (*ReadThreadResult, error) {
+			client, err := m.manager.start(context.Background(), cwd, nil, nil, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			defer client.Close()
 
-	read, err := client.ReadThreadMeta(threadID)
+			return client.ReadThreadMeta(threadID)
+		},
+	)
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -313,24 +311,47 @@ func (m *SessionReadModel) readCodexTranscript(sessionID string, project core.Pr
 	}
 
 	if live := m.manager.liveSession(sessionID); live != nil && live.thread == threadID {
-		read, err := live.client.ReadThread(threadID)
-		if err != nil {
-			return nil, err
-		}
-		return read, nil
+		return m.readThreadWithSingleflight(
+			"thread-read-live:"+sessionID+":"+threadID,
+			func() (*ReadThreadResult, error) {
+				return live.client.ReadThread(threadID)
+			},
+		)
 	}
 
-	client, err := m.manager.start(context.Background(), project.RootPath, nil, nil, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer client.Close()
+	read, err := m.readThreadWithSingleflight(
+		"thread-read:"+project.RootPath+":"+threadID,
+		func() (*ReadThreadResult, error) {
+			client, err := m.manager.start(context.Background(), project.RootPath, nil, nil, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			defer client.Close()
 
-	read, err := client.ReadThread(threadID)
+			return client.ReadThread(threadID)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
 	return read, nil
+}
+
+func (m *SessionReadModel) readThreadWithSingleflight(
+	key string,
+	read func() (*ReadThreadResult, error),
+) (*ReadThreadResult, error) {
+	value, err, _ := m.group.Do(key, func() (any, error) {
+		return read()
+	})
+	if err != nil {
+		return nil, err
+	}
+	result, ok := value.(*ReadThreadResult)
+	if !ok {
+		return nil, fmt.Errorf("thread read singleflight returned %T", value)
+	}
+	return result, nil
 }
 
 func (m *SessionReadModel) getCachedPage(sessionID string, updatedAt time.Time, beforeCursor string, limit uint32) (core.SessionTranscriptPage, bool) {

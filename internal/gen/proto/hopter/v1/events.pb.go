@@ -32,18 +32,26 @@ const (
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_CHANGED           WorkspaceEventType = 4
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED WorkspaceEventType = 5
 	WorkspaceEventType_WORKSPACE_EVENT_TYPE_CONFIG_CHANGED            WorkspaceEventType = 6
+	WorkspaceEventType_WORKSPACE_EVENT_TYPE_GIT_CHANGED               WorkspaceEventType = 7
+	WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASKS_CHANGED             WorkspaceEventType = 8
+	WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASK_CHANGED              WorkspaceEventType = 9
+	WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED   WorkspaceEventType = 10
 )
 
 // Enum value maps for WorkspaceEventType.
 var (
 	WorkspaceEventType_name = map[int32]string{
-		0: "WORKSPACE_EVENT_TYPE_UNSPECIFIED",
-		1: "WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED",
-		2: "WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED",
-		3: "WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED",
-		4: "WORKSPACE_EVENT_TYPE_SESSION_CHANGED",
-		5: "WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED",
-		6: "WORKSPACE_EVENT_TYPE_CONFIG_CHANGED",
+		0:  "WORKSPACE_EVENT_TYPE_UNSPECIFIED",
+		1:  "WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED",
+		2:  "WORKSPACE_EVENT_TYPE_PROJECTS_CHANGED",
+		3:  "WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED",
+		4:  "WORKSPACE_EVENT_TYPE_SESSION_CHANGED",
+		5:  "WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED",
+		6:  "WORKSPACE_EVENT_TYPE_CONFIG_CHANGED",
+		7:  "WORKSPACE_EVENT_TYPE_GIT_CHANGED",
+		8:  "WORKSPACE_EVENT_TYPE_TASKS_CHANGED",
+		9:  "WORKSPACE_EVENT_TYPE_TASK_CHANGED",
+		10: "WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED",
 	}
 	WorkspaceEventType_value = map[string]int32{
 		"WORKSPACE_EVENT_TYPE_UNSPECIFIED":               0,
@@ -53,6 +61,10 @@ var (
 		"WORKSPACE_EVENT_TYPE_SESSION_CHANGED":           4,
 		"WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED": 5,
 		"WORKSPACE_EVENT_TYPE_CONFIG_CHANGED":            6,
+		"WORKSPACE_EVENT_TYPE_GIT_CHANGED":               7,
+		"WORKSPACE_EVENT_TYPE_TASKS_CHANGED":             8,
+		"WORKSPACE_EVENT_TYPE_TASK_CHANGED":              9,
+		"WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED":   10,
 	}
 )
 
@@ -306,6 +318,7 @@ type WorkspaceEvent struct {
 	ProjectId     *string                `protobuf:"bytes,4,opt,name=project_id,json=projectId,proto3,oneof" json:"project_id,omitempty"`
 	SessionId     *string                `protobuf:"bytes,5,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`
 	Payload       *WorkspaceEventPayload `protobuf:"bytes,6,opt,name=payload,proto3" json:"payload,omitempty"`
+	TaskId        *string                `protobuf:"bytes,7,opt,name=task_id,json=taskId,proto3,oneof" json:"task_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -382,6 +395,13 @@ func (x *WorkspaceEvent) GetPayload() *WorkspaceEventPayload {
 	return nil
 }
 
+func (x *WorkspaceEvent) GetTaskId() string {
+	if x != nil && x.TaskId != nil {
+		return *x.TaskId
+	}
+	return ""
+}
+
 var File_hopter_v1_events_proto protoreflect.FileDescriptor
 
 const file_hopter_v1_events_proto_rawDesc = "" +
@@ -401,7 +421,7 @@ const file_hopter_v1_events_proto_rawDesc = "" +
 	"\x15WorkspaceEventPayload\x129\n" +
 	"\frefresh_hint\x18\x01 \x01(\x0e2\x16.hopter.v1.RefreshHintR\vrefreshHint\x12\x18\n" +
 	"\asummary\x18\x02 \x01(\tR\asummary\x12I\n" +
-	"\x12session_live_patch\x18\x03 \x01(\v2\x1b.hopter.v1.SessionLivePatchR\x10sessionLivePatch\"\xb2\x02\n" +
+	"\x12session_live_patch\x18\x03 \x01(\v2\x1b.hopter.v1.SessionLivePatchR\x10sessionLivePatch\"\xdc\x02\n" +
 	"\x0eWorkspaceEvent\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x121\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1d.hopter.v1.WorkspaceEventTypeR\x04type\x12;\n" +
@@ -411,9 +431,12 @@ const file_hopter_v1_events_proto_rawDesc = "" +
 	"project_id\x18\x04 \x01(\tH\x00R\tprojectId\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"session_id\x18\x05 \x01(\tH\x01R\tsessionId\x88\x01\x01\x12:\n" +
-	"\apayload\x18\x06 \x01(\v2 .hopter.v1.WorkspaceEventPayloadR\apayloadB\r\n" +
+	"\apayload\x18\x06 \x01(\v2 .hopter.v1.WorkspaceEventPayloadR\apayload\x12\x1c\n" +
+	"\atask_id\x18\a \x01(\tH\x02R\x06taskId\x88\x01\x01B\r\n" +
 	"\v_project_idB\r\n" +
-	"\v_session_id*\xc5\x02\n" +
+	"\v_session_idB\n" +
+	"\n" +
+	"\b_task_id*\xec\x03\n" +
 	"\x12WorkspaceEventType\x12$\n" +
 	" WORKSPACE_EVENT_TYPE_UNSPECIFIED\x10\x00\x12,\n" +
 	"(WORKSPACE_EVENT_TYPE_HOST_STATUS_CHANGED\x10\x01\x12)\n" +
@@ -421,7 +444,12 @@ const file_hopter_v1_events_proto_rawDesc = "" +
 	"%WORKSPACE_EVENT_TYPE_SESSIONS_CHANGED\x10\x03\x12(\n" +
 	"$WORKSPACE_EVENT_TYPE_SESSION_CHANGED\x10\x04\x122\n" +
 	".WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED\x10\x05\x12'\n" +
-	"#WORKSPACE_EVENT_TYPE_CONFIG_CHANGED\x10\x06*\xeb\x01\n" +
+	"#WORKSPACE_EVENT_TYPE_CONFIG_CHANGED\x10\x06\x12$\n" +
+	" WORKSPACE_EVENT_TYPE_GIT_CHANGED\x10\a\x12&\n" +
+	"\"WORKSPACE_EVENT_TYPE_TASKS_CHANGED\x10\b\x12%\n" +
+	"!WORKSPACE_EVENT_TYPE_TASK_CHANGED\x10\t\x120\n" +
+	",WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED\x10\n" +
+	"*\xeb\x01\n" +
 	"\x14SessionLivePatchKind\x12'\n" +
 	"#SESSION_LIVE_PATCH_KIND_UNSPECIFIED\x10\x00\x12\"\n" +
 	"\x1eSESSION_LIVE_PATCH_KIND_STATUS\x10\x01\x12'\n" +

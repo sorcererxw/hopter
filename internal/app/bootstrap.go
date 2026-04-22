@@ -10,8 +10,10 @@ import (
 	copilotagent "github.com/sorcererxw/hopter/internal/agents/copilot"
 	"github.com/sorcererxw/hopter/internal/core"
 	"github.com/sorcererxw/hopter/internal/events"
+	"github.com/sorcererxw/hopter/internal/gitops"
 	serverhttp "github.com/sorcererxw/hopter/internal/http"
 	rpcserver "github.com/sorcererxw/hopter/internal/rpc"
+	"github.com/sorcererxw/hopter/internal/tasks"
 	"github.com/sorcererxw/hopter/internal/terminal"
 	"github.com/sorcererxw/hopter/internal/update"
 	"github.com/sorcererxw/hopter/internal/userconfig"
@@ -32,6 +34,11 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		return nil, err
 	}
 	updateService := update.NewService(cfg.Version, cfg.InstallSource)
+	gitService := gitops.NewService(workspace, eventHub)
+	taskStore, err := tasks.NewBadgerStore(cfg.Tasks.StorePath())
+	if err != nil {
+		return nil, err
+	}
 	codexManager := codex.NewManager(workspace, eventHub)
 	agentManager := agents.NewManager(workspace, map[string]agents.Runtime{
 		agents.DefaultBackendKey: codex.NewRuntime(codexManager),
@@ -45,14 +52,17 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		UI:                     serverhttp.UIHandlerOptions{DevProxyURL: cfg.UI.DevProxyURL},
 		EventHub:               eventHub,
 		ConfigServiceHandler:   rpcserver.NewConfigService(configService),
+		GitServiceHandler:      rpcserver.NewGitService(gitService),
 		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService),
 		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, agentManager),
 		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager, sessionReadModel),
+		TaskServiceHandler:     rpcserver.NewTaskService(taskStore, workspace, eventHub, tasks.SchedulerMode(cfg.Tasks.SchedulerMode)),
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
 		TerminalStreamHandler:  terminalManager,
 		Workspace:              workspace,
 	})
 	if err != nil {
+		_ = taskStore.Close()
 		return nil, err
 	}
 
@@ -61,6 +71,9 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	server.RegisterOnShutdown(func() {
+		_ = taskStore.Close()
+	})
 
 	go sessionReadModel.PrewarmRecent(context.Background(), 10, 50)
 

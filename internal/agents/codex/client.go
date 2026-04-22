@@ -35,6 +35,7 @@ type envelope struct {
 }
 
 type Client struct {
+	ctx    context.Context
 	cmd    *exec.Cmd
 	stdin  io.WriteCloser
 	mu     sync.Mutex
@@ -184,6 +185,7 @@ func Start(
 	}
 
 	client := &Client{
+		ctx:             ctx,
 		cmd:             cmd,
 		stdin:           stdin,
 		wait:            make(map[int64]chan envelope),
@@ -193,6 +195,12 @@ func Start(
 		onTrace:         onTrace,
 		onExit:          onExit,
 	}
+
+	releaseStart, err := enterAppServerStartQueue(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer releaseStart()
 
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start codex app-server: %w", err)
@@ -371,6 +379,12 @@ func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResu
 }
 
 func (c *Client) request(method string, params any) (json.RawMessage, error) {
+	release, err := enterAppServerRequestQueue(c.ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
 	id := atomic.AddInt64(&c.nextID, 1)
 	waitCh := make(chan envelope, 1)
 

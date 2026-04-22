@@ -11,15 +11,25 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type Manager struct {
-	mu        sync.Mutex
-	workspace core.WorkspaceService
-	eventSink core.EventSink
-	live      map[string]*liveSession
-	start     clientStarter
+	mu              sync.Mutex
+	workspace       core.WorkspaceService
+	eventSink       core.EventSink
+	live            map[string]*liveSession
+	start           clientStarter
+	threadListMu    sync.Mutex
+	threadListCache map[string]threadListCacheEntry
+	threadListGroup singleflight.Group
+}
+
+type threadListCacheEntry struct {
+	expiresAt time.Time
+	list      *ThreadListResult
 }
 
 type pendingApproval struct {
@@ -43,6 +53,13 @@ type liveSession struct {
 	draftText           string
 	pendingApproval     *pendingApproval
 }
+
+const watchTurnPollAttempts = 180
+
+var (
+	watchTurnPollInterval = 2 * time.Second
+	threadListCacheTTL    = 750 * time.Millisecond
+)
 
 type codexClient interface {
 	Close() error
@@ -77,9 +94,10 @@ func NewManager(workspace core.WorkspaceService, eventSink ...core.EventSink) *M
 		sink = eventSink[0]
 	}
 	return &Manager{
-		workspace: workspace,
-		eventSink: sink,
-		live:      make(map[string]*liveSession),
+		workspace:       workspace,
+		eventSink:       sink,
+		live:            make(map[string]*liveSession),
+		threadListCache: make(map[string]threadListCacheEntry),
 		start: func(
 			ctx context.Context,
 			cwd string,
@@ -96,13 +114,7 @@ func NewManager(workspace core.WorkspaceService, eventSink ...core.EventSink) *M
 func (m *Manager) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
 	projects := m.workspace.ListProjects()
 
-	client, _, err := m.startEphemeralClient()
-	if err != nil {
-		return nil, err
-	}
-	defer client.Close()
-
-	list, err := client.ListThreads("", max(limit, 100))
+	list, err := m.listThreadsCached(max(limit, 100))
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +138,65 @@ func (m *Manager) ListSessions(projectID string, limit uint32) ([]ResolvedSessio
 	}
 
 	return result, nil
+}
+
+func (m *Manager) listThreadsCached(limit uint32) (*ThreadListResult, error) {
+	key := fmt.Sprintf("thread-list:%d", limit)
+	if list, ok := m.getCachedThreadList(key); ok {
+		return cloneThreadListResult(list), nil
+	}
+
+	value, err, _ := m.threadListGroup.Do(key, func() (any, error) {
+		if list, ok := m.getCachedThreadList(key); ok {
+			return cloneThreadListResult(list), nil
+		}
+
+		client, _, err := m.startEphemeralClient()
+		if err != nil {
+			return nil, err
+		}
+		defer client.Close()
+
+		list, err := client.ListThreads("", limit)
+		if err != nil {
+			return nil, err
+		}
+		m.setCachedThreadList(key, list)
+		return cloneThreadListResult(list), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	list, ok := value.(*ThreadListResult)
+	if !ok {
+		return nil, fmt.Errorf("thread list cache returned %T", value)
+	}
+	return cloneThreadListResult(list), nil
+}
+
+func (m *Manager) getCachedThreadList(key string) (*ThreadListResult, bool) {
+	m.threadListMu.Lock()
+	defer m.threadListMu.Unlock()
+
+	entry, ok := m.threadListCache[key]
+	if !ok || time.Now().After(entry.expiresAt) {
+		if ok {
+			delete(m.threadListCache, key)
+		}
+		return nil, false
+	}
+	return entry.list, true
+}
+
+func (m *Manager) setCachedThreadList(key string, list *ThreadListResult) {
+	m.threadListMu.Lock()
+	defer m.threadListMu.Unlock()
+
+	m.threadListCache[key] = threadListCacheEntry{
+		expiresAt: time.Now().Add(threadListCacheTTL),
+		list:      cloneThreadListResult(list),
+	}
 }
 
 func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, error) {
@@ -493,6 +564,29 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		if json.Unmarshal(notification.Params, &payload) == nil {
 			text := strings.TrimSpace(payload.Item.Text)
 			if payload.Item.Type == "agentMessage" && text != "" {
+				if strings.EqualFold(strings.TrimSpace(payload.Item.Phase), "commentary") {
+					var projectID string
+					m.mu.Lock()
+					if live := m.live[sessionID]; live != nil {
+						live.draftItemID = ""
+						live.draftText = ""
+						projectID = live.project.ID
+					}
+					m.mu.Unlock()
+					if projectID != "" {
+						m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+							Kind: core.SessionLivePatchKindMessageFinalized,
+							FinalItem: &core.SessionTranscriptItem{
+								ID:     strings.TrimSpace(payload.Item.ID),
+								Kind:   core.SessionTranscriptItemKindAgentMessage,
+								Title:  "Codex",
+								Status: strings.TrimSpace(payload.Item.Phase),
+							},
+							Status: core.SessionStateRunning,
+						})
+					}
+					return
+				}
 				summary := text
 				m.updateWorkspaceSession(sessionID, core.SessionPatch{
 					Summary: &summary,
@@ -509,7 +603,12 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 					m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
 						Kind: core.SessionLivePatchKindMessageFinalized,
 						FinalItem: &core.SessionTranscriptItem{
-							ID:     strings.TrimSpace(payload.Item.ID),
+							ID: strings.TrimSpace(payload.Item.ID),
+							OrderKey: fmt.Sprintf(
+								"live:%020d:%s",
+								time.Now().UTC().UnixNano(),
+								strings.TrimSpace(payload.Item.ID),
+							),
 							Kind:   core.SessionTranscriptItemKindAgentMessage,
 							Title:  "Codex",
 							Body:   text,
@@ -600,7 +699,9 @@ func latestAgentSummary(read *ReadThreadResult) string {
 		turn := read.Thread.Turns[i]
 		for j := len(turn.Items) - 1; j >= 0; j-- {
 			item := turn.Items[j]
-			if item.Type == "agentMessage" && strings.TrimSpace(item.Text) != "" {
+			if item.Type == "agentMessage" &&
+				!isCommentaryAgentMessage(item) &&
+				strings.TrimSpace(item.Text) != "" {
 				return strings.TrimSpace(item.Text)
 			}
 		}
@@ -622,7 +723,7 @@ func latestTurnStatus(read *ReadThreadResult, turnID string) string {
 }
 
 func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
-	for range 180 {
+	for attempt := range watchTurnPollAttempts {
 		m.mu.Lock()
 		live := m.live[sessionID]
 		m.mu.Unlock()
@@ -631,52 +732,52 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 		}
 
 		read, err := live.client.ReadThread(threadID)
-		if err != nil {
-			continue
-		}
-		statusText := latestTurnStatus(read, turnID)
-		if statusText == "" || statusText == "inProgress" {
-			continue
-		}
-
-		active := ""
-		status := finalSessionState(statusText, core.SessionStateCompleted)
-		summary := latestAgentSummary(read)
-		transcriptItems := normalizeTranscriptItems(read)
-		if summary == "" {
-			if statusText == "interrupted" {
-				summary = "Codex stopped before completing the turn."
-			} else {
-				summary = "Codex completed the turn."
+		if err == nil {
+			statusText := latestTurnStatus(read, turnID)
+			if statusText != "" && statusText != "inProgress" {
+				active := ""
+				status := finalSessionState(statusText, core.SessionStateCompleted)
+				summary := latestAgentSummary(read)
+				transcriptItems := normalizeTranscriptItems(read)
+				if summary == "" {
+					if statusText == "interrupted" {
+						summary = "Codex stopped before completing the turn."
+					} else {
+						summary = "Codex completed the turn."
+					}
+				}
+				patch := core.SessionPatch{
+					ActiveTurnID: &active,
+					Status:       &status,
+					Summary:      &summary,
+				}
+				if len(transcriptItems) > 0 {
+					patch.TranscriptItems = &transcriptItems
+				}
+				m.updateWorkspaceSession(sessionID, patch)
+				m.publishLivePatch(sessionID, live.project.ID, core.SessionLivePatch{
+					Kind:            core.SessionLivePatchKindReconcileRequired,
+					Status:          status,
+					Summary:         summary,
+					RequiresRefetch: true,
+				})
+				m.mu.Lock()
+				if current := m.live[sessionID]; current != nil {
+					current.active = ""
+					current.optimisticSummary = ""
+					current.optimisticStatus = ""
+					current.draftItemID = ""
+					current.draftText = ""
+				}
+				m.mu.Unlock()
+				return
 			}
-		}
-		patch := core.SessionPatch{
-			ActiveTurnID: &active,
-			Status:       &status,
-			Summary:      &summary,
-		}
-		if len(transcriptItems) > 0 {
-			patch.TranscriptItems = &transcriptItems
-		}
-		m.updateWorkspaceSession(sessionID, patch)
-		m.publishLivePatch(sessionID, live.project.ID, core.SessionLivePatch{
-			Kind:            core.SessionLivePatchKindReconcileRequired,
-			Status:          status,
-			Summary:         summary,
-			RequiresRefetch: true,
-		})
-		m.mu.Lock()
-		if current := m.live[sessionID]; current != nil {
-			current.active = ""
-			current.optimisticSummary = ""
-			current.optimisticStatus = ""
-			current.draftItemID = ""
-			current.draftText = ""
-		}
-		m.mu.Unlock()
-		return
 
-		time.Sleep(2 * time.Second)
+		}
+
+		if attempt < watchTurnPollAttempts-1 {
+			time.Sleep(watchTurnPollInterval)
+		}
 	}
 
 	active := ""
@@ -1067,11 +1168,12 @@ func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *R
 			draftID = "live-draft"
 		}
 		session.TranscriptItems = append(session.TranscriptItems, core.SessionTranscriptItem{
-			ID:     draftID,
-			Kind:   core.SessionTranscriptItemKindAgentMessage,
-			Title:  "Codex",
-			Body:   live.draftText,
-			Status: "streaming",
+			ID:       draftID,
+			OrderKey: draftTranscriptOrderKey(read, draftID),
+			Kind:     core.SessionTranscriptItemKindAgentMessage,
+			Title:    "Codex",
+			Body:     live.draftText,
+			Status:   "streaming",
 		})
 	}
 
@@ -1091,6 +1193,16 @@ func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *R
 	}
 
 	return session
+}
+
+func draftTranscriptOrderKey(read *ReadThreadResult, itemID string) string {
+	turnIndex := 0
+	itemIndex := 0
+	if read != nil && len(read.Thread.Turns) > 0 {
+		turnIndex = len(read.Thread.Turns) - 1
+		itemIndex = len(read.Thread.Turns[turnIndex].Items)
+	}
+	return transcriptOrderKey(turnIndex, itemIndex, itemID)
 }
 
 func hydrateSessionFromRead(session *core.Session, read *ReadThreadResult) {
@@ -1271,6 +1383,40 @@ func projectForThreadOrSynthetic(projects []core.Project, thread ThreadRecord) c
 		CreatedAt:      createdAt,
 		UpdatedAt:      updatedAt,
 	}
+}
+
+func cloneThreadListResult(list *ThreadListResult) *ThreadListResult {
+	if list == nil {
+		return &ThreadListResult{}
+	}
+	cloned := &ThreadListResult{
+		Data: make([]ThreadRecord, 0, len(list.Data)),
+	}
+	if list.NextCursor != nil {
+		cloned.NextCursor = ptrString(*list.NextCursor)
+	}
+	for _, thread := range list.Data {
+		cloned.Data = append(cloned.Data, cloneThreadRecord(thread))
+	}
+	return cloned
+}
+
+func cloneThreadRecord(thread ThreadRecord) ThreadRecord {
+	thread.ForkedFromID = cloneOptionalString(thread.ForkedFromID)
+	thread.Path = cloneOptionalString(thread.Path)
+	thread.Name = cloneOptionalString(thread.Name)
+	return thread
+}
+
+func cloneOptionalString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	return ptrString(*value)
+}
+
+func ptrString(value string) *string {
+	return &value
 }
 
 func (t ThreadRecord) NameValue() string {

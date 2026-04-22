@@ -16,9 +16,11 @@ type RouterOptions struct {
 	UI                     UIHandlerOptions
 	EventHub               *events.Hub
 	ConfigServiceHandler   hopterv1connect.ConfigServiceHandler
+	GitServiceHandler      hopterv1connect.GitServiceHandler
 	HostServiceHandler     hopterv1connect.HostServiceHandler
 	ProjectServiceHandler  hopterv1connect.ProjectServiceHandler
 	SessionServiceHandler  hopterv1connect.SessionServiceHandler
+	TaskServiceHandler     hopterv1connect.TaskServiceHandler
 	TerminalServiceHandler hopterv1connect.TerminalServiceHandler
 	TerminalStreamHandler  TerminalStreamHandler
 	Workspace              core.WorkspaceService
@@ -44,12 +46,18 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 		func() (string, http.Handler) {
 			return hopterv1connect.NewConfigServiceHandler(opts.ConfigServiceHandler)
 		},
+		func() (string, http.Handler) {
+			return hopterv1connect.NewGitServiceHandler(opts.GitServiceHandler)
+		},
 		func() (string, http.Handler) { return hopterv1connect.NewHostServiceHandler(opts.HostServiceHandler) },
 		func() (string, http.Handler) {
 			return hopterv1connect.NewProjectServiceHandler(opts.ProjectServiceHandler)
 		},
 		func() (string, http.Handler) {
 			return hopterv1connect.NewSessionServiceHandler(opts.SessionServiceHandler)
+		},
+		func() (string, http.Handler) {
+			return hopterv1connect.NewTaskServiceHandler(opts.TaskServiceHandler)
 		},
 		func() (string, http.Handler) {
 			return hopterv1connect.NewTerminalServiceHandler(opts.TerminalServiceHandler)
@@ -106,6 +114,10 @@ func isUIPath(path string) bool {
 	case path == "/login":
 		return true
 	case path == "/projects/new":
+		return true
+	case path == "/tasks":
+		return true
+	case strings.HasPrefix(path, "/tasks/"):
 		return true
 	case path == "/settings":
 		return true

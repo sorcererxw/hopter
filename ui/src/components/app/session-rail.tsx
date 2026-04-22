@@ -13,6 +13,7 @@ import {
   FolderOpen,
   FolderPlus,
   Grid2x2,
+  ListChecks,
   LoaderCircle,
   Search,
   Settings,
@@ -384,15 +385,31 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
       },
     },
     {
+      key: "tasks",
+      kind: "row",
+      props: {
+        icon: <ListChecks className="size-3.5" />,
+        label: "Tasks",
+        onClick: onNavigate,
+        to: "/tasks",
+        className:
+          "text-muted-foreground hover:bg-accent hover:text-foreground",
+        activeClassName: "bg-accent text-foreground",
+        nav: true,
+      },
+    },
+    {
       key: "skills-apps",
       kind: "row",
       props: {
         icon: <Grid2x2 className="size-3.5" />,
         label: "Skills & Apps",
         onClick: onNavigate,
-        to: "/settings/plugins#skills",
+        to: "/plugins",
         className:
           "text-muted-foreground hover:bg-accent hover:text-foreground",
+        activeClassName: "bg-accent text-foreground",
+        nav: true,
       },
     },
     {
@@ -419,6 +436,8 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
         to: "/settings",
         className:
           "text-muted-foreground hover:bg-accent hover:text-foreground",
+        activeClassName: "bg-accent text-foreground",
+        nav: true,
       },
     },
     {

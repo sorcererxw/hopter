@@ -1,4 +1,4 @@
-.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-runtime validate-app-server-approvals validate-interrupt-ui validate-update-ui validate-all
+.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-runtime validate-app-server-approvals validate-git-actions validate-tasks-idl validate-tasks-store validate-interrupt-ui validate-update-ui validate-all
 
 help:
 	@echo "Targets:"
@@ -26,6 +26,9 @@ help:
 	@echo "  validate-session-roundtrip Run fresh-session + 4 follow-up Codex roundtrip validation"
 	@echo "  validate-app-server-runtime Run SSE + reconcile + approval runtime validation"
 	@echo "  validate-app-server-approvals Run approval probes by request type"
+	@echo "  validate-git-actions Run project-level commit/push validation"
+	@echo "  validate-tasks-idl Run Tasks proto/generated output validation"
+	@echo "  validate-tasks-store Run Badger-backed task store validation"
 	@echo "  validate-interrupt-ui Run interrupt-button browser validation"
 	@echo "  validate-update-ui Run update-entry browser validation"
 	@echo "  validate-all       Run all current validations"
@@ -100,6 +103,15 @@ validate-app-server-runtime:
 
 validate-app-server-approvals:
 	bun scripts/validate-app-server-approvals.ts
+
+validate-git-actions:
+	bun scripts/validate-git-actions.ts
+
+validate-tasks-idl:
+	bun scripts/validate-tasks-idl.ts
+
+validate-tasks-store:
+	bun scripts/validate-tasks-store.ts
 
 validate-interrupt-ui:
 	bun scripts/validate-interrupt-ui.ts

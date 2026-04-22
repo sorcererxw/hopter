@@ -51,12 +51,8 @@ export function SessionArtifactWorkspace({
     setSelectedArtifactId(artifactList[0]?.id ?? "")
   }, [artifactList, selectedArtifactId])
 
-  if (artifactsQuery.isLoading && artifactList.length === 0) {
-    return <ArtifactWorkspaceLoading />
-  }
-
   if (artifactList.length === 0) {
-    return <ArtifactWorkspaceEmpty />
+    return null
   }
 
   const selectedArtifact =
@@ -77,12 +73,6 @@ export function SessionArtifactWorkspace({
             leaving the thread.
           </div>
         </div>
-        {artifactsQuery.isFetching ? (
-          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <LoaderCircle className="size-4 animate-spin" />
-            Refreshing
-          </div>
-        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -322,39 +312,6 @@ function renderTextArtifactPreview(
         </CodeContainer>
       )
   }
-}
-
-function ArtifactWorkspaceLoading() {
-  return (
-    <div
-      className="rounded-lg border border-border bg-card px-4 py-6"
-      data-testid="session-artifact-workspace-loading"
-    >
-      <ArtifactPreviewLoading label="Loading artifacts..." />
-    </div>
-  )
-}
-
-function ArtifactWorkspaceEmpty() {
-  return (
-    <section
-      className="space-y-3"
-      data-testid="session-artifact-workspace-empty"
-      aria-label="Session artifacts"
-    >
-      <div>
-        <div className="text-sm font-medium text-foreground">Artifacts</div>
-        <div className="text-sm text-muted-foreground">
-          Review summaries, screenshots, logs, tests, and changed files without
-          leaving the thread.
-        </div>
-      </div>
-      <div className="rounded-lg border border-border bg-card px-4 py-6 text-sm text-muted-foreground">
-        No artifacts yet. When Codex produces summaries, screenshots, test
-        results, logs, or changed-file evidence, they will appear here.
-      </div>
-    </section>
-  )
 }
 
 function ArtifactPreviewLoading({ label }: { label: string }) {

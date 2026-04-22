@@ -87,6 +87,18 @@ go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/hop
 go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/hopter
 ```
 
+Release builds with a non-`dev` `main.version` default to `0.0.0.0:18787`.
+Dev builds default to `0.0.0.0:8787`, which keeps an installed release
+independent from `make dev`. `HOPTER_HOST` and `HOPTER_PORT` remain the
+runtime overrides for both paths.
+
+The release workflow can also publish a Homebrew tap formula. Create
+`sorcererxw/homebrew-hopter`, then configure a `HOMEBREW_TAP_TOKEN` repository
+secret on `sorcererxw/hopter` with push access to that tap. When present, the
+release workflow generates `Formula/hopter.rb` from the release `checksums.txt`
+and pushes it to the tap. Users can install without a separate tap step:
+`brew install sorcererxw/hopter/hopter`.
+
 Current intended values:
 
 - `direct`

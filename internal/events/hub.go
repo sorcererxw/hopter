@@ -86,6 +86,18 @@ func (h *Hub) toProto(event core.Event) *hopterv1.WorkspaceEvent {
 	case core.EventSessionArtifactsChanged:
 		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_SESSION_ARTIFACTS_CHANGED
 		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_ARTIFACTS
+	case core.EventGitChanged:
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_GIT_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_GIT
+	case core.EventTasksChanged:
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASKS_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_TASKS
+	case core.EventTaskChanged:
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASK_CHANGED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_TASK
+	case core.EventTaskAttentionRequired:
+		eventType = hopterv1.WorkspaceEventType_WORKSPACE_EVENT_TYPE_TASK_ATTENTION_REQUIRED
+		refreshHint = hopterv1.RefreshHint_REFRESH_HINT_REFETCH_TASK
 	default:
 		return nil
 	}
@@ -106,6 +118,9 @@ func (h *Hub) toProto(event core.Event) *hopterv1.WorkspaceEvent {
 	}
 	if event.SessionID != "" {
 		evt.SessionId = &event.SessionID
+	}
+	if event.TaskID != "" {
+		evt.TaskId = &event.TaskID
 	}
 	return evt
 }
@@ -151,6 +166,7 @@ func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.Ses
 		Status:      item.Status,
 		DisplayBody: item.DisplayBody,
 		Attachments: attachments,
+		OrderKey:    item.OrderKey,
 	}
 }
 

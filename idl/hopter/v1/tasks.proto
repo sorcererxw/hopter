@@ -1,0 +1,299 @@
+syntax = "proto3";
+
+package hopter.v1;
+
+import "google/protobuf/timestamp.proto";
+import "hopter/v1/common.proto";
+
+// TODO: set go_package once the Go module path is finalized.
+
+service TaskService {
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc CreateSubtask(CreateSubtaskRequest) returns (CreateSubtaskResponse);
+  rpc ApproveTaskGate(ApproveTaskGateRequest) returns (ApproveTaskGateResponse);
+  rpc RequestTaskRevision(RequestTaskRevisionRequest) returns (RequestTaskRevisionResponse);
+  rpc RetryTaskStage(RetryTaskStageRequest) returns (RetryTaskStageResponse);
+  rpc PauseTask(PauseTaskRequest) returns (PauseTaskResponse);
+  rpc ResumeTask(ResumeTaskRequest) returns (ResumeTaskResponse);
+  rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse);
+}
+
+enum TaskLifecycleStatus {
+  TASK_LIFECYCLE_STATUS_UNSPECIFIED = 0;
+  TASK_LIFECYCLE_STATUS_ACTIVE = 1;
+  TASK_LIFECYCLE_STATUS_WAITING = 2;
+  TASK_LIFECYCLE_STATUS_PAUSED = 3;
+  TASK_LIFECYCLE_STATUS_BLOCKED = 4;
+  TASK_LIFECYCLE_STATUS_FAILED = 5;
+  TASK_LIFECYCLE_STATUS_CANCELED = 6;
+  TASK_LIFECYCLE_STATUS_DONE = 7;
+}
+
+enum TaskStage {
+  TASK_STAGE_UNSPECIFIED = 0;
+  TASK_STAGE_PLAN = 1;
+  TASK_STAGE_CODE = 2;
+  TASK_STAGE_REVIEW = 3;
+  TASK_STAGE_COMMIT = 4;
+  TASK_STAGE_SUBTASK = 5;
+}
+
+enum StageRunStatus {
+  STAGE_RUN_STATUS_UNSPECIFIED = 0;
+  STAGE_RUN_STATUS_PENDING = 1;
+  STAGE_RUN_STATUS_RUNNING = 2;
+  STAGE_RUN_STATUS_WAITING_FOR_GATE = 3;
+  STAGE_RUN_STATUS_BLOCKED = 4;
+  STAGE_RUN_STATUS_FAILED = 5;
+  STAGE_RUN_STATUS_COMPLETED = 6;
+}
+
+enum GateStatus {
+  GATE_STATUS_UNSPECIFIED = 0;
+  GATE_STATUS_OPEN = 1;
+  GATE_STATUS_APPROVED = 2;
+  GATE_STATUS_REVISION_REQUESTED = 3;
+  GATE_STATUS_CANCELED = 4;
+  GATE_STATUS_STALE = 5;
+}
+
+enum CommitStatus {
+  COMMIT_STATUS_UNSPECIFIED = 0;
+  COMMIT_STATUS_NOT_READY = 1;
+  COMMIT_STATUS_READY_TO_COMMIT = 2;
+  COMMIT_STATUS_BLOCKED = 3;
+  COMMIT_STATUS_COMMITTED = 4;
+}
+
+enum AttentionKind {
+  ATTENTION_KIND_UNSPECIFIED = 0;
+  ATTENTION_KIND_PLAN_APPROVAL = 1;
+  ATTENTION_KIND_DEVELOPMENT_APPROVAL = 2;
+  ATTENTION_KIND_BLOCKED = 3;
+  ATTENTION_KIND_COMMIT_BLOCKED = 4;
+  ATTENTION_KIND_STALE_GATE = 5;
+}
+
+enum SubtaskStatus {
+  SUBTASK_STATUS_UNSPECIFIED = 0;
+  SUBTASK_STATUS_OPEN = 1;
+  SUBTASK_STATUS_RUNNING = 2;
+  SUBTASK_STATUS_DONE = 3;
+  SUBTASK_STATUS_BLOCKED = 4;
+  SUBTASK_STATUS_CANCELED = 5;
+}
+
+message TaskDiagnostic {
+  string code = 1;
+  string severity = 2;
+  string source = 3;
+  string message = 4;
+  string cause = 5;
+  string user_action = 6;
+  bool retriable = 7;
+  string evidence_path = 8;
+  string session_id = 9;
+  string stage_run_id = 10;
+  string docs_url = 11;
+}
+
+message Task {
+  string id = 1;
+  ProjectRef project = 2;
+  string title = 3;
+  string prompt = 4;
+  string session_id = 5;
+  TaskLifecycleStatus lifecycle_status = 6;
+  TaskStage current_stage = 7;
+  AttentionKind attention_kind = 8;
+  CommitStatus commit_status = 9;
+  uint32 subtask_count = 10;
+  uint32 completed_subtask_count = 11;
+  repeated TaskDiagnostic diagnostics = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  optional google.protobuf.Timestamp completed_at = 15;
+}
+
+message Subtask {
+  string id = 1;
+  string task_id = 2;
+  uint32 sequence = 3;
+  string title = 4;
+  string prompt = 5;
+  SubtaskStatus status = 6;
+  string session_turn_id = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  optional google.protobuf.Timestamp completed_at = 10;
+}
+
+message TaskStageRun {
+  string id = 1;
+  string task_id = 2;
+  optional string subtask_id = 3;
+  TaskStage stage = 4;
+  StageRunStatus status = 5;
+  string session_id = 6;
+  string session_turn_id = 7;
+  string backend_thread_id = 8;
+  string nonce = 9;
+  uint64 gate_revision = 10;
+  string base_head_sha = 11;
+  string base_status_token = 12;
+  string expected_diff_fingerprint = 13;
+  string summary = 14;
+  string evidence_path = 15;
+  google.protobuf.Timestamp started_at = 16;
+  optional google.protobuf.Timestamp completed_at = 17;
+}
+
+message TaskHumanGate {
+  string id = 1;
+  string task_id = 2;
+  string stage_run_id = 3;
+  TaskStage stage = 4;
+  GateStatus status = 5;
+  uint64 revision = 6;
+  string question = 7;
+  string recommended_decision = 8;
+  string decision = 9;
+  string comment = 10;
+  google.protobuf.Timestamp created_at = 11;
+  optional google.protobuf.Timestamp decided_at = 12;
+}
+
+message ListTasksRequest {
+  optional string project_id = 1;
+  optional AttentionKind attention_kind = 2;
+  optional TaskLifecycleStatus lifecycle_status = 3;
+  optional uint32 limit = 4;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message GetTaskRequest {
+  string task_id = 1;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+  repeated Subtask subtasks = 2;
+  TaskHumanGate current_gate = 3;
+}
+
+message CreateTaskRequest {
+  string project_id = 1;
+  string title = 2;
+  string prompt = 3;
+  optional uint32 priority = 4;
+  repeated string initial_subtasks = 5;
+  string idempotency_key = 6;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message CreateSubtaskRequest {
+  string task_id = 1;
+  string title = 2;
+  string prompt = 3;
+  string idempotency_key = 4;
+}
+
+message CreateSubtaskResponse {
+  Task task = 1;
+  Subtask subtask = 2;
+  TaskHumanGate current_gate = 3;
+  bool accepted = 4;
+  repeated TaskDiagnostic diagnostics = 5;
+}
+
+message ApproveTaskGateRequest {
+  string task_id = 1;
+  string gate_id = 2;
+  uint64 observed_gate_revision = 3;
+  string stage_run_id = 4;
+  string idempotency_key = 5;
+  string comment = 6;
+}
+
+message ApproveTaskGateResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message RequestTaskRevisionRequest {
+  string task_id = 1;
+  string gate_id = 2;
+  uint64 observed_gate_revision = 3;
+  string stage_run_id = 4;
+  string idempotency_key = 5;
+  string instructions = 6;
+}
+
+message RequestTaskRevisionResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message RetryTaskStageRequest {
+  string task_id = 1;
+  string stage_run_id = 2;
+  string idempotency_key = 3;
+}
+
+message RetryTaskStageResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message PauseTaskRequest {
+  string task_id = 1;
+  string idempotency_key = 2;
+}
+
+message PauseTaskResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message ResumeTaskRequest {
+  string task_id = 1;
+  string idempotency_key = 2;
+}
+
+message ResumeTaskResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}
+
+message CancelTaskRequest {
+  string task_id = 1;
+  string idempotency_key = 2;
+}
+
+message CancelTaskResponse {
+  Task task = 1;
+  TaskHumanGate current_gate = 2;
+  bool accepted = 3;
+  repeated TaskDiagnostic diagnostics = 4;
+}

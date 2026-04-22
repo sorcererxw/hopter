@@ -58,7 +58,8 @@ func normalizeLatestReadThreadItemsForPage(
 	for turnIndex := len(read.Thread.Turns) - 1; turnIndex >= 0; turnIndex-- {
 		turn := read.Thread.Turns[turnIndex]
 		for itemIndex := len(turn.Items) - 1; itemIndex >= 0; itemIndex-- {
-			normalized, ok := normalizeThreadItemWithOptions(turn.Items[itemIndex], opts)
+			rawItem := turn.Items[itemIndex]
+			normalized, ok := normalizeThreadItemWithOptions(rawItem, opts)
 			if !ok {
 				continue
 			}
@@ -66,6 +67,7 @@ func normalizeLatestReadThreadItemsForPage(
 				hasMoreBefore = true
 				break
 			}
+			applyTranscriptIdentity(&normalized, turnIndex, itemIndex, rawItem.ID)
 			items = append(items, normalized)
 		}
 		if hasMoreBefore {
@@ -79,7 +81,7 @@ func normalizeLatestReadThreadItemsForPage(
 
 func normalizeTranscriptItemsForPage(items []core.SessionTranscriptItem) []core.SessionTranscriptItem {
 	result := make([]core.SessionTranscriptItem, 0, len(items))
-	for _, item := range items {
+	for index, item := range items {
 		item.Body = truncateTranscriptBody(item.Kind, item.Body, transcriptNormalizeOptions{
 			reasoningLimit:     600,
 			commandOutputLimit: 900,
@@ -87,6 +89,12 @@ func normalizeTranscriptItemsForPage(items []core.SessionTranscriptItem) []core.
 		})
 		if strings.TrimSpace(item.Body) == "" {
 			continue
+		}
+		if strings.TrimSpace(item.ID) == "" {
+			item.ID = fmt.Sprintf("local-item-%012d", index)
+		}
+		if strings.TrimSpace(item.OrderKey) == "" {
+			item.OrderKey = localTranscriptOrderKey(index, item.ID)
 		}
 		result = append(result, item)
 	}
@@ -99,12 +107,13 @@ func normalizeTranscriptItemsWithOptions(read *ReadThreadResult, opts transcript
 	}
 
 	items := make([]core.SessionTranscriptItem, 0)
-	for _, turn := range read.Thread.Turns {
-		for _, item := range turn.Items {
+	for turnIndex, turn := range read.Thread.Turns {
+		for itemIndex, item := range turn.Items {
 			normalized, ok := normalizeThreadItemWithOptions(item, opts)
 			if !ok {
 				continue
 			}
+			applyTranscriptIdentity(&normalized, turnIndex, itemIndex, item.ID)
 			items = append(items, normalized)
 		}
 	}
@@ -113,6 +122,25 @@ func normalizeTranscriptItemsWithOptions(read *ReadThreadResult, opts transcript
 		items = items[len(items)-opts.itemLimit:]
 	}
 	return items
+}
+
+func applyTranscriptIdentity(item *core.SessionTranscriptItem, turnIndex int, itemIndex int, rawID string) {
+	if item == nil {
+		return
+	}
+	orderKey := transcriptOrderKey(turnIndex, itemIndex, rawID)
+	if strings.TrimSpace(item.ID) == "" {
+		item.ID = "generated:" + orderKey
+	}
+	item.OrderKey = orderKey
+}
+
+func transcriptOrderKey(turnIndex int, itemIndex int, itemID string) string {
+	return fmt.Sprintf("%012d:%012d:%s", turnIndex, itemIndex, strings.TrimSpace(itemID))
+}
+
+func localTranscriptOrderKey(index int, itemID string) string {
+	return fmt.Sprintf("local:%012d:%s", index, strings.TrimSpace(itemID))
 }
 
 func normalizeThreadItem(item ReadThreadItem) (core.SessionTranscriptItem, bool) {
@@ -141,6 +169,9 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 	case "agentMessage":
 		body := strings.TrimSpace(item.Text)
 		if body == "" {
+			return core.SessionTranscriptItem{}, false
+		}
+		if isCommentaryAgentMessage(item) {
 			return core.SessionTranscriptItem{}, false
 		}
 		return core.SessionTranscriptItem{
@@ -209,6 +240,10 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 	default:
 		return core.SessionTranscriptItem{}, false
 	}
+}
+
+func isCommentaryAgentMessage(item ReadThreadItem) bool {
+	return strings.EqualFold(strings.TrimSpace(item.Phase), "commentary")
 }
 
 func formatUserContent(rawID string, raw json.RawMessage) (string, string, []core.SessionTranscriptAttachment) {

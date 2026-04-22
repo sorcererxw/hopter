@@ -11,6 +11,11 @@ export const queryKeys = {
   hostPathMetadata: (path: string) => ["host", "path-metadata", path] as const,
   hostRecentRepos: (limit: number) => ["host", "recent-repos", limit] as const,
   projects: () => ["projects"] as const,
+  projectGitStatus: (projectId: string) =>
+    ["project-git-status", projectId] as const,
+  tasks: (projectId?: string) =>
+    ["tasks", { projectId: projectId ?? null }] as const,
+  task: (taskId: string) => ["task", taskId] as const,
   sessions: (projectId?: string) =>
     ["sessions", { projectId: projectId ?? null }] as const,
   sessionMeta: (sessionId: string) => ["session-meta", sessionId] as const,

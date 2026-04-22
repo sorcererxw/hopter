@@ -18,6 +18,7 @@ import { SessionRail } from "@/components/app/session-rail"
 import { SidebarPane } from "@/components/app/sidebar-pane"
 import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
+import { cn } from "@/lib/utils"
 
 const ProjectPickerDialog = lazy(() =>
   import("@/components/app/project-picker-dialog").then((module) => ({
@@ -59,11 +60,24 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
     location.pathname === "/" &&
     new URLSearchParams(location.search).get("compose") === "1"
   const isProjectPickerRoute = location.pathname === "/projects/new"
+  const isTasksRoute =
+    location.pathname === "/tasks" || location.pathname.startsWith("/tasks/")
+  const isPluginsRoute =
+    location.pathname === "/plugins" ||
+    location.pathname.startsWith("/plugins/")
+  const isSettingsRoute =
+    location.pathname === "/settings" ||
+    location.pathname.startsWith("/settings/")
   const showPhoneDetail =
     posture === "phone" &&
-    (isSessionRoute || isComposeRoute || isProjectPickerRoute)
+    (isSessionRoute ||
+      isComposeRoute ||
+      isProjectPickerRoute ||
+      isTasksRoute ||
+      isPluginsRoute ||
+      isSettingsRoute)
   const showPhoneList = posture === "phone" && !showPhoneDetail
-  const showInlineRail = posture !== "phone" && railVisible
+  const showRailSlot = posture !== "phone"
   const toolbarMode = getToolbarMode(posture, railVisible)
 
   useEffect(() => {
@@ -175,13 +189,19 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
         {showPhoneList ? null : (
           <>
             <div className="flex h-full min-h-0 min-w-0">
-              {showInlineRail ? (
-                <SidebarPane
-                  className="h-full min-h-0"
+              {showRailSlot ? (
+                <div
+                  aria-hidden={!railVisible}
+                  className={cn(
+                    "h-full min-h-0 shrink-0 overflow-hidden transition-all duration-200 ease-out",
+                    railVisible
+                      ? "w-[248px] translate-x-0 opacity-100"
+                      : "pointer-events-none w-0 -translate-x-2 opacity-0"
+                  )}
                   data-testid="workspace-rail-pane"
                 >
-                  {rail}
-                </SidebarPane>
+                  <SidebarPane className="h-full min-h-0">{rail}</SidebarPane>
+                </div>
               ) : null}
 
               <main

@@ -102,6 +102,13 @@ func timestamp(t time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(t)
 }
 
+func optionalTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamp(*t)
+}
+
 func projectToProto(project core.Project) *hopterv1.Project {
 	return &hopterv1.Project{
 		Id:             project.ID,
@@ -327,6 +334,7 @@ func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.Ses
 		Status:      validUTF8(item.Status),
 		DisplayBody: validUTF8(item.DisplayBody),
 		Attachments: attachments,
+		OrderKey:    validUTF8(item.OrderKey),
 	}
 }
 

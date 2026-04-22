@@ -3,8 +3,8 @@ import { ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/session-composer"
+import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
-import { WorkspaceTopbar } from "@/components/app/workspace-topbar"
 import { useProjects } from "@/features/projects/use-projects"
 import { useCreateSession, useSessions } from "@/features/sessions/use-sessions"
 
@@ -15,8 +15,7 @@ function deriveTitle(prompt: string) {
 
 export function HomeWorkspacePane() {
   const navigate = useNavigate()
-  const { eventStreamState, posture, toggleRail, toolbarMode } =
-    useWorkspaceShell()
+  const { eventStreamState, posture } = useWorkspaceShell()
   const [searchParams, setSearchParams] = useSearchParams()
   const createSession = useCreateSession()
   const { data: projects, isLoading: projectsLoading } = useProjects()
@@ -71,18 +70,7 @@ export function HomeWorkspacePane() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <WorkspaceTopbar
-        leadingAction={isPhoneCompose ? "back" : "toggle-rail"}
-        onLeadingAction={() => {
-          if (isPhoneCompose) {
-            navigate("/")
-            return
-          }
-          toggleRail()
-        }}
-        title="New Session"
-        toolbarMode={toolbarMode}
-      />
+      <WorkspacePageToolbar forceBack={isPhoneCompose} title="New Session" />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-[720px]">
