@@ -60,7 +60,6 @@ import {
 } from "@/features/sessions/use-sessions"
 import {
   ApprovalDecision,
-  ArtifactKind,
   SessionStatus,
 } from "@/gen/proto/hopter/v1/common_pb"
 import { GitCommitMode } from "@/gen/proto/hopter/v1/git_pb"
@@ -75,9 +74,7 @@ import {
 } from "@/gen/proto/hopter/v1/session_pb"
 import { useProjectGitStatus } from "@/features/git/use-project-git"
 import {
-  formatBackendKey,
   formatSessionStatus,
-  formatUpdatedAt,
 } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
@@ -1316,85 +1313,6 @@ function transcriptSortKey(item: SessionTranscriptItem) {
   return item.orderKey || `zzzz:${item.id}`
 }
 
-function SessionStatusHeader({ session }: { session: Session }) {
-  const status = getSessionStatusDisplay(session)
-  const backend = formatBackendKey(session.backendKey)
-  const updatedAt = formatUpdatedAt(session.updatedAt)
-  const projectName = session.project?.name || "Local"
-
-  return (
-    <section
-      className="rounded-lg border border-border bg-card px-4 py-3"
-      data-testid="session-status-header"
-      aria-label="Session status"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn("size-2 rounded-full", status.dotClassName)}
-              aria-hidden="true"
-            />
-            <span
-              className={cn(
-                "rounded-md px-2 py-1 text-sm font-medium",
-                status.badgeClassName
-              )}
-            >
-              {status.label}
-            </span>
-            {session.pendingApprovalId ? (
-              <span className="rounded-md bg-amber-400/10 px-2 py-1 text-sm font-medium text-amber-700 dark:text-amber-200">
-                Approval pending
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-2 text-base leading-6 font-medium text-foreground">
-            {status.description}
-          </p>
-        </div>
-
-        <div className="min-w-40 text-right text-sm text-muted-foreground">
-          <div className="truncate">{projectName}</div>
-          <div className="mt-1 truncate">{backend}</div>
-          <div className="mt-1 truncate">{updatedAt}</div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function SessionSummaryBlock({ session }: { session: Session }) {
-  const summary = session.summary.trim()
-  const lastInputHint = session.lastInputHint.trim()
-
-  return (
-    <section
-      className="rounded-lg border border-border bg-card px-4 py-3"
-      data-testid="session-summary-block"
-      aria-label="Session summary"
-    >
-      <div className="text-sm font-medium text-foreground">Summary</div>
-      {summary ? (
-        <SessionRichText text={summary} className="mt-2 text-base leading-6" />
-      ) : (
-        <div className="mt-2 text-base leading-6 text-muted-foreground">
-          <p>
-            No summary yet. Useful progress will appear here when this thread
-            has a meaningful state to report.
-          </p>
-          {lastInputHint ? (
-            <p className="mt-2">
-              Latest input:{" "}
-              <span className="text-foreground">{lastInputHint}</span>
-            </p>
-          ) : null}
-        </div>
-      )}
-    </section>
-  )
-}
-
 function SessionConnectionBlock({
   state,
 }: {
@@ -1475,65 +1393,6 @@ function getConnectionDisplay(
         titleClassName: "",
       }
   }
-}
-
-function SessionCompletedResultBlock({ session }: { session: Session }) {
-  if (session.status !== SessionStatus.COMPLETED) {
-    return null
-  }
-
-  const artifactSummary = summarizeArtifacts(session)
-
-  return (
-    <section
-      className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-4 py-3"
-      data-testid="session-completed-result"
-      aria-label="Completed result"
-    >
-      <div className="text-sm font-medium text-emerald-700 dark:text-emerald-100">
-        Completed result
-      </div>
-      <p className="mt-1 text-base leading-6 font-medium text-emerald-800 dark:text-emerald-50">
-        {session.summary.trim() || "The latest turn completed."}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2 text-sm">
-        <span className="rounded-md bg-background px-2 py-1 text-muted-foreground">
-          {session.artifacts.length} artifact
-          {session.artifacts.length === 1 ? "" : "s"}
-        </span>
-        {artifactSummary.map((item) => (
-          <span
-            key={item.label}
-            className="rounded-md bg-background px-2 py-1 text-muted-foreground"
-          >
-            {item.count} {item.label}
-          </span>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function summarizeArtifacts(session: Session) {
-  const counts = new Map<ArtifactKind, number>()
-
-  for (const artifact of session.artifacts) {
-    counts.set(artifact.kind, (counts.get(artifact.kind) ?? 0) + 1)
-  }
-
-  return [
-    { kind: ArtifactKind.SUMMARY, label: "summary" },
-    { kind: ArtifactKind.CHANGED_FILES, label: "changed files" },
-    { kind: ArtifactKind.TEST_RESULT, label: "test result" },
-    { kind: ArtifactKind.SCREENSHOT, label: "screenshot" },
-    { kind: ArtifactKind.LOG, label: "log" },
-    { kind: ArtifactKind.OTHER, label: "other" },
-  ]
-    .map((item) => ({
-      count: counts.get(item.kind) ?? 0,
-      label: item.label,
-    }))
-    .filter((item) => item.count > 0)
 }
 
 function SessionAttentionBlock({
@@ -1670,96 +1529,6 @@ function getSessionAttentionDisplay(session: Session) {
   }
 
   return null
-}
-
-function getSessionStatusDisplay(session: Session) {
-  const formattedStatus = formatSessionStatus(session.status)
-  const title = titleCaseStatus(formattedStatus)
-
-  switch (session.status) {
-    case SessionStatus.PENDING:
-      return {
-        badgeClassName: "bg-secondary text-secondary-foreground",
-        description:
-          session.lastInputHint.trim() ||
-          "This thread is queued and waiting for Codex to start.",
-        dotClassName: "bg-muted-foreground",
-        label: title,
-      }
-    case SessionStatus.RUNNING:
-      return {
-        badgeClassName: "bg-sky-400/10 text-sky-700 dark:text-sky-200",
-        description:
-          session.summary.trim() || "Codex is actively working on this thread.",
-        dotClassName: "bg-sky-400",
-        label: title,
-      }
-    case SessionStatus.WAITING_INPUT:
-      return {
-        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
-        description:
-          session.attentionReason.trim() ||
-          "Codex is waiting for your next instruction.",
-        dotClassName: "bg-amber-400",
-        label: title,
-      }
-    case SessionStatus.WAITING_APPROVAL:
-      return {
-        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
-        description:
-          session.attentionReason.trim() ||
-          "Codex needs approval before it can continue.",
-        dotClassName: "bg-amber-400",
-        label: title,
-      }
-    case SessionStatus.COMPLETED:
-      return {
-        badgeClassName:
-          "bg-emerald-400/10 text-emerald-700 dark:text-emerald-200",
-        description:
-          session.summary.trim() ||
-          "This thread has completed its latest turn.",
-        dotClassName: "bg-emerald-500",
-        label: title,
-      }
-    case SessionStatus.FAILED:
-      return {
-        badgeClassName: "bg-destructive/10 text-destructive",
-        description:
-          session.attentionReason.trim() ||
-          session.summary.trim() ||
-          "This thread failed before it could complete.",
-        dotClassName: "bg-destructive",
-        label: title,
-      }
-    case SessionStatus.DEGRADED:
-      return {
-        badgeClassName: "bg-amber-400/10 text-amber-700 dark:text-amber-200",
-        description:
-          session.attentionReason.trim() ||
-          session.summary.trim() ||
-          "This thread is available, but live state may be incomplete.",
-        dotClassName: "bg-amber-400",
-        label: title,
-      }
-    case SessionStatus.UNSPECIFIED:
-    default:
-      return {
-        badgeClassName: "bg-secondary text-secondary-foreground",
-        description:
-          session.summary.trim() ||
-          "The current thread state is not specified.",
-        dotClassName: "bg-muted-foreground",
-        label: title,
-      }
-  }
-}
-
-function titleCaseStatus(value: string) {
-  return value
-    .split(" ")
-    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
-    .join(" ")
 }
 
 type ActivityItem =
@@ -2635,29 +2404,6 @@ function TranscriptBatchEntry({
   )
 }
 
-function TranscriptBatchList({ children }: { children: React.ReactNode }) {
-  return <div className="space-y-0.5">{children}</div>
-}
-
-function TranscriptBatchRowButton({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"button">) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "group flex w-full items-center gap-2 py-0.5 text-left text-base text-muted-foreground transition hover:text-foreground",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  )
-}
-
 function TranscriptDisclosureButton({
   children,
   className,
@@ -2881,27 +2627,6 @@ function cleanUserMessageFragment(value: string) {
     .replace(/\n\s*The next image shows the browser page[\s\S]*$/m, "")
     .replace(/\n\s*\[image\]\s*$/g, "")
     .trim()
-}
-
-function summarizeCommandExecution(body: string) {
-  const firstLine = body
-    .split("\n")
-    .map((line) => line.trim())
-    .find((line) => line.length > 0)
-
-  if (!firstLine) {
-    return "command"
-  }
-
-  const strippedPrefix = firstLine.replace(/^Command output:\s*/, "")
-  const shellWrapped = strippedPrefix.match(
-    /^[^\s]+(?:\s+-lc)?\s+["'](.+)["']$/
-  )
-  if (shellWrapped?.[1]) {
-    return shellWrapped[1]
-  }
-
-  return strippedPrefix.replace(/^\$\s*/, "")
 }
 
 function parseCommandExecutionDetail(body: string) {
