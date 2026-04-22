@@ -59,7 +59,7 @@ pnpm --dir ui typecheck
 pnpm --dir ui build
 pnpm --dir ui lint
 pnpm --dir ui dev
-HOPTER_UI_DEV_PROXY_URL=http://127.0.0.1:5173 go run ./cmd/hopter
+go run ./cmd/hopter --dev-proxy-url http://127.0.0.1:5173
 cd idl && buf lint
 cd idl && buf generate
 bun scripts/validate-docs.ts
@@ -89,14 +89,15 @@ go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula"
 
 Release builds with a non-`dev` `main.version` default to `0.0.0.0:18787`.
 Dev builds default to `0.0.0.0:8787`, which keeps an installed release
-independent from `make dev`. `HOPTER_HOST` and `HOPTER_PORT` remain the
-runtime overrides for both paths.
+independent from `make dev`. Use `--host` and `--port` for direct server
+debugging.
 
 The existing release workflow also publishes the Homebrew tap formula after the
-GitHub release job succeeds. Create or reuse `sorcererxw/homebrew-tap`, then
-ensure `RELEASE_TOKEN` can push to that tap. The release workflow generates
-`Formula/hopter.rb` from the release `checksums.txt` and pushes it to the tap.
-Users can install without a separate tap step: `brew install sorcererxw/tap/hopter`.
+GitHub release job succeeds. Create or reuse `sorcererxw/tap`, then ensure
+`RELEASE_TOKEN` can push to that repository. The release workflow generates
+`Formula/hopter.rb` from the release `checksums.txt` and pushes it to that tap.
+Because this tap repo intentionally is not named `homebrew-tap`, users install
+it with an explicit remote: `brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap`.
 
 Current intended values:
 
@@ -114,10 +115,12 @@ Current intended values:
 Rules:
 
 1. Treat build-time `installSource` as the primary product signal.
-2. Use `HOPTER_INSTALL_SOURCE` only for debugging, validation, and local overrides.
-3. Do not rely on runtime path guessing for the normal ownership decision.
+2. Do not rely on runtime path guessing for the normal ownership decision.
 
-Unless a signed update manifest or explicit update env override is configured, `hopter` now checks the latest GitHub release on `sorcererxw/hopter`. Direct-install self-update expects the release to publish raw per-platform binaries named `hopter-<os>-<arch>` alongside `checksums.txt`.
+Unless a signed update manifest is configured in code, `hopter` now checks the
+latest GitHub release on `sorcererxw/hopter`. Direct-install self-update expects
+the release to publish raw per-platform binaries named `hopter-<os>-<arch>`
+alongside `checksums.txt`.
 
 In dev, the browser should still enter through the Go origin.
 
@@ -154,7 +157,7 @@ Persistent log files:
 
 If you need the deeper explanation for the local loop, including what is watched automatically and how `make verify-live` fits into the fast path, read [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md).
 
-`make dev` binds the dev surfaces to `0.0.0.0` by default.
+`make dev` binds the dev surfaces to `0.0.0.0`.
 
 Examples:
 
@@ -162,9 +165,7 @@ Examples:
 make dev
 ```
 
-The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the default local loop. Set `HOPTER_AIR_BIN=/path/to/air` if you want to use a preinstalled `air`; otherwise the supervisor falls back to `go run github.com/air-verse/air@latest`.
-
-If you need a different bind host for debugging, you can still override `HOPTER_UI_DEV_HOST` and/or `HOPTER_HOST`.
+The dev launcher keeps the Go server aligned with the UI bind host, so both Vite and Go listen on `0.0.0.0` in the local loop.
 
 ## UI system workflow
 

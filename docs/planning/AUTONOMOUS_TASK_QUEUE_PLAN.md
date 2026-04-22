@@ -699,12 +699,11 @@ Slice validation commands:
 - `make validate-tasks-scheduler-fake`
 - `make validate-tasks-ui`
 
-Scheduler modes:
+Scheduler behavior:
 
 ```text
-HOPTER_TASK_SCHEDULER=disabled  # create/list/get only, no Codex dispatch
-HOPTER_TASK_SCHEDULER=manual    # dev/test harness drives one scheduler tick
-HOPTER_TASK_SCHEDULER=auto      # normal runtime scheduler
+Task creation defaults to execution. There is no environment-variable mode switch
+for disabling task scheduling in normal runtime.
 ```
 
 Mutation response rule:
@@ -746,7 +745,7 @@ tool events.
 Storage location:
 
 ```text
-${HOPTER_STATE_HOME:-~/.hopter}/tasks/badger/
+~/.hopter/tasks/badger/
 ```
 
 The database lives outside the repo, under the user's local hopter state root.
@@ -1027,7 +1026,8 @@ Required evidence files:
 - Add task, subtask, and stage domain models.
 - Add gate revision, stage run nonce, expected turn id, and idempotency fields.
 - Add durable Badger-backed task metadata store behind `internal/tasks.Store`,
-  persisted under `${HOPTER_STATE_HOME:-~/.hopter}/tasks/badger/`.
+  persisted under `~/.hopter/tasks/badger/` for normal runtime and under
+  Hopter's hardcoded dev-state root for the local dev loop.
 - Add task events to `events.proto`.
 
 ### Slice 2: backend service and scheduler skeleton
@@ -2441,7 +2441,7 @@ a usable engineering handoff.
 - [ ] `tasks.proto` defines split state enums and diagnostics.
 - [ ] every mutation returns task, current gate, accepted, diagnostics.
 - [ ] repeatable mutations accept idempotency keys.
-- [ ] `HOPTER_TASK_SCHEDULER=disabled|manual|auto` exists.
+- [ ] task creation defaults to execution without an environment-variable mode switch.
 - [ ] fake Codex runtime fixtures cover marker parsing.
 - [ ] `make validate-tasks-idl` exists.
 - [ ] `make validate-tasks-store` exists.

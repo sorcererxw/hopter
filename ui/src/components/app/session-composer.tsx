@@ -6,36 +6,30 @@ import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
 } from "react"
-import {
-  ArrowUp,
-  ChevronDown,
-  LoaderCircle,
-  Mic,
-  Plus,
-  Square,
-} from "lucide-react"
+import { ArrowUp, ChevronDown, LoaderCircle, Plus, Square } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button"
+import { useCodexModels } from "@/features/host/use-host-models"
 import { useHostSkills } from "@/features/host/use-host-skills"
-import type { SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
+import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
 const MAX_SKILL_SUGGESTIONS = 8
 
-const MODEL_OPTIONS = [
-  { label: "GPT-5.4", value: "gpt-5.4" },
-  { label: "o3", value: "o3" },
-  { label: "o4-mini", value: "o4-mini" },
-  { label: "GPT-4.1", value: "gpt-4.1" },
-]
+const REASONING_LABELS: Record<string, string> = {
+  none: "None",
+  minimal: "Minimal",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "XHigh",
+}
 
-const REASONING_OPTIONS = [
-  { label: "High", value: "high" },
-  { label: "Medium", value: "medium" },
-  { label: "Low", value: "low" },
-  { label: "Off", value: "off" },
-]
+type SessionComposerSubmitOptions = {
+  model: string
+  reasoningEffort: string
+}
 
 type SessionComposerProps = {
   busy?: boolean
@@ -48,10 +42,8 @@ type SessionComposerProps = {
   projectLabel?: string
   branchLabel?: string
   settingsLabel?: string
-  reasoningLabel?: string
-  modelLabel?: string
   onInterrupt?: () => Promise<void> | void
-  onSubmit: () => Promise<void> | void
+  onSubmit: (options: SessionComposerSubmitOptions) => Promise<void> | void
   onValueChange: (value: string) => void
   interruptTestId?: string
   submitTestId?: string
@@ -77,11 +69,6 @@ export function SessionComposer({
   placement = "sticky",
   composerTestId,
   inputTestId,
-  projectLabel: _projectLabel = "Local",
-  branchLabel: _branchLabel = "main",
-  settingsLabel: _settingsLabel = "Custom (config.toml)",
-  reasoningLabel = "High",
-  modelLabel = "GPT-5.4",
   onInterrupt,
   onSubmit,
   onValueChange,
@@ -95,25 +82,35 @@ export function SessionComposer({
       (interruptMode && value.trim().length === 0)) &&
     !busy &&
     !disabled
-  const [selectedModel, setSelectedModel] = useState(
-    MODEL_OPTIONS.find((opt) => opt.label === modelLabel)?.value ?? "gpt-5.4"
-  )
-  const [selectedReasoning, setSelectedReasoning] = useState(
-    REASONING_OPTIONS.find((opt) => opt.label === reasoningLabel)?.value ??
-      "high"
-  )
   const [caretPosition, setCaretPosition] = useState(value.length)
   const [skillSuggestionsDismissed, setSkillSuggestionsDismissed] =
     useState(false)
   const [highlightedSkillIndex, setHighlightedSkillIndex] = useState(0)
+  const [selectedModel, setSelectedModel] = useState("gpt-5.4")
+  const [selectedReasoningEffort, setSelectedReasoningEffort] =
+    useState("xhigh")
   const hostSkillsQuery = useHostSkills()
-
-  const currentModelLabel =
-    MODEL_OPTIONS.find((opt) => opt.value === selectedModel)?.label ??
-    modelLabel
-  const currentReasoningLabel =
-    REASONING_OPTIONS.find((opt) => opt.value === selectedReasoning)?.label ??
-    reasoningLabel
+  const codexModelsQuery = useCodexModels()
+  const modelOptions = codexModelsQuery.data ?? []
+  const selectedModelOption =
+    modelOptions.find((option) => modelValue(option) === selectedModel) ??
+    modelOptions.find((option) => option.isDefault) ??
+    modelOptions[0]
+  const supportedReasoningOptions =
+    selectedModelOption?.supportedReasoningEfforts.map((effort) => ({
+      label: REASONING_LABELS[effort.reasoningEffort] ?? effort.reasoningEffort,
+      value: effort.reasoningEffort,
+    })) ?? []
+  const effectiveReasoningEffort =
+    supportedReasoningOptions.find(
+      (option) => option.value === selectedReasoningEffort
+    )?.value ??
+    selectedModelOption?.defaultReasoningEffort ??
+    supportedReasoningOptions[0]?.value ??
+    ""
+  const effectiveModel = selectedModelOption
+    ? modelValue(selectedModelOption)
+    : ""
 
   const activeSkillMatch = useMemo(
     () => getActiveSkillMatch(value, caretPosition),
@@ -152,15 +149,21 @@ export function SessionComposer({
       Boolean(activeSkillMatch?.query))
 
   useEffect(() => {
-    setSkillSuggestionsDismissed(false)
-    setHighlightedSkillIndex(0)
+    const frame = window.requestAnimationFrame(() => {
+      setSkillSuggestionsDismissed(false)
+      setHighlightedSkillIndex(0)
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [activeSkillSignature])
 
   useEffect(() => {
     if (highlightedSkillIndex < skillSuggestions.length) {
       return
     }
-    setHighlightedSkillIndex(0)
+    const frame = window.requestAnimationFrame(() => {
+      setHighlightedSkillIndex(0)
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [highlightedSkillIndex, skillSuggestions.length])
 
   function syncCaretPosition() {
@@ -208,7 +211,26 @@ export function SessionComposer({
       return
     }
 
-    await onSubmit()
+    await onSubmit({
+      model: effectiveModel,
+      reasoningEffort: effectiveReasoningEffort,
+    })
+  }
+
+  function handleModelChange(model: string) {
+    const nextModel =
+      modelOptions.find((option) => modelValue(option) === model) ??
+      modelOptions[0]
+    if (!nextModel) {
+      return
+    }
+    setSelectedModel(modelValue(nextModel))
+    const nextReasoningEfforts = nextModel.supportedReasoningEfforts.map(
+      (effort) => effort.reasoningEffort
+    )
+    if (!nextReasoningEfforts.includes(selectedReasoningEffort)) {
+      setSelectedReasoningEffort(nextModel.defaultReasoningEffort)
+    }
   }
 
   function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -328,33 +350,39 @@ export function SessionComposer({
                   <GhostIconButton aria-label="Add context">
                     <Plus className="size-4" />
                   </GhostIconButton>
-
-                  <InlineSelect
-                    aria-label="Model"
-                    options={MODEL_OPTIONS}
-                    value={selectedModel}
-                    onValueChange={setSelectedModel}
-                  >
-                    {currentModelLabel}
-                  </InlineSelect>
-
-                  <InlineSelect
-                    aria-label="Reasoning"
-                    options={REASONING_OPTIONS}
-                    value={selectedReasoning}
-                    onValueChange={setSelectedReasoning}
-                  >
-                    {currentReasoningLabel}
-                  </InlineSelect>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <GhostIconButton
-                    aria-label="Voice input"
-                    className="hidden md:flex"
+                <div className="flex min-w-0 items-center justify-end gap-1">
+                  <InlineSelect
+                    aria-label="Model"
+                    disabled={
+                      codexModelsQuery.isLoading || modelOptions.length === 0
+                    }
+                    options={modelOptions.map((model) => ({
+                      label: model.displayName || modelValue(model),
+                      value: modelValue(model),
+                    }))}
+                    value={effectiveModel}
+                    onValueChange={handleModelChange}
                   >
-                    <Mic className="size-4" />
-                  </GhostIconButton>
+                    {selectedModelOption
+                      ? selectedModelOption.displayName ||
+                        modelValue(selectedModelOption)
+                      : codexModelsQuery.isLoading
+                        ? "Loading model"
+                        : "Default model"}
+                  </InlineSelect>
+
+                  <InlineSelect
+                    aria-label="Reasoning effort"
+                    disabled={supportedReasoningOptions.length === 0}
+                    options={supportedReasoningOptions}
+                    value={effectiveReasoningEffort}
+                    onValueChange={setSelectedReasoningEffort}
+                  >
+                    {REASONING_LABELS[effectiveReasoningEffort] ??
+                      effectiveReasoningEffort}
+                  </InlineSelect>
 
                   <Button
                     type="button"
@@ -496,14 +524,20 @@ function GhostIconButton({
   )
 }
 
+function modelValue(model: AgentModel) {
+  return model.model || model.id
+}
+
 function InlineSelect({
   children,
+  disabled = false,
   onValueChange,
   options,
   value,
   ...props
 }: {
   children: string
+  disabled?: boolean
   onValueChange: (value: string) => void
   options: readonly { label: string; value: string }[]
   value: string
@@ -512,21 +546,27 @@ function InlineSelect({
     <label
       className={cn(
         buttonVariants({ variant: "ghost", size: "default" }),
-        "relative gap-2 rounded-full pr-8 text-muted-foreground hover:text-foreground"
+        "relative gap-2 rounded-full pr-8 text-muted-foreground hover:text-foreground",
+        disabled && "pointer-events-none opacity-60"
       )}
     >
       <span aria-hidden="true">{children}</span>
       <select
+        disabled={disabled}
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
         className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
         {...props}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
+        {options.length === 0 ? (
+          <option value="">{children}</option>
+        ) : (
+          options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))
+        )}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 size-3" />
       <span className="sr-only">{children}</span>

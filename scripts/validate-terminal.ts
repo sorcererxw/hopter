@@ -11,11 +11,6 @@ import {
 } from "./lib/rebuild-validation.ts";
 
 async function findAvailablePort() {
-  const preferred = process.env.HOPTER_TERMINAL_PORT?.trim();
-  if (preferred) {
-    return Number.parseInt(preferred, 10);
-  }
-
   return await new Promise<number>((resolve, reject) => {
     const server = net.createServer();
     server.listen(0, "127.0.0.1", () => {
@@ -221,17 +216,11 @@ async function main() {
       );
     }
 
-    const server = Bun.spawn([binaryPath], {
+    const server = Bun.spawn([binaryPath, "--host", "127.0.0.1", "--port", String(port)], {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
-      env: {
-        ...process.env,
-        HOPTER_HOST: "127.0.0.1",
-        HOPTER_PORT: String(port),
-        HOPTER_TERMINAL_DETACH_TTL_MS: "2000",
-        HOPTER_TERMINAL_PROMPT_POLL_MS: "200",
-      },
+      env: process.env,
     });
 
     try {

@@ -8,7 +8,7 @@ import (
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
-const DefaultBackendKey = "codex"
+const DefaultBackendKey = core.BackendKeyCodex
 
 type ResolvedSession struct {
 	Project core.Project
@@ -19,7 +19,7 @@ type Runtime interface {
 	ListSessions(projectID string, limit uint32) ([]ResolvedSession, error)
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
-	SendSessionInput(sessionID, input string) (core.Session, error)
+	SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error)
 	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
@@ -108,7 +108,7 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 	return session, nil
 }
 
-func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error) {
+func (m *Manager) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
 	session, ok := m.workspace.GetSession(sessionID)
 	if !ok {
 		resolved, project, err := m.GetSession(sessionID)
@@ -129,7 +129,7 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	if !ok {
 		return core.Session{}, fmt.Errorf("backend runtime %q not registered", backendKey)
 	}
-	updated, err := runtime.SendSessionInput(sessionID, input)
+	updated, err := runtime.SendSessionInput(sessionID, input, options...)
 	if err != nil {
 		return core.Session{}, err
 	}

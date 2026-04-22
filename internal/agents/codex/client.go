@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 type Notification struct {
@@ -79,6 +81,28 @@ type ThreadRecord struct {
 type ThreadListResult struct {
 	Data       []ThreadRecord `json:"data"`
 	NextCursor *string        `json:"nextCursor"`
+}
+
+type ModelReasoningEffortRecord struct {
+	ReasoningEffort string `json:"reasoningEffort"`
+	Description     string `json:"description"`
+}
+
+type ModelRecord struct {
+	ID                        string                       `json:"id"`
+	Model                     string                       `json:"model"`
+	DisplayName               string                       `json:"displayName"`
+	Description               string                       `json:"description"`
+	Hidden                    bool                         `json:"hidden"`
+	IsDefault                 bool                         `json:"isDefault"`
+	DefaultReasoningEffort    string                       `json:"defaultReasoningEffort"`
+	SupportedReasoningEfforts []ModelReasoningEffortRecord `json:"supportedReasoningEfforts"`
+	InputModalities           []string                     `json:"inputModalities"`
+}
+
+type ModelListResult struct {
+	Data       []ModelRecord `json:"data"`
+	NextCursor *string       `json:"nextCursor"`
 }
 
 type StartTurnResult struct {
@@ -241,14 +265,18 @@ func (c *Client) initialize() error {
 	return err
 }
 
-func (c *Client) StartThread(cwd string) (*StartThreadResult, error) {
-	raw, err := c.request("thread/start", map[string]any{
+func (c *Client) StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error) {
+	params := map[string]any{
 		"cwd":                    cwd,
 		"approvalPolicy":         "on-request",
 		"sandbox":                "danger-full-access",
 		"experimentalRawEvents":  false,
 		"persistExtendedHistory": false,
-	})
+	}
+	if model := strings.TrimSpace(options.Model); model != "" {
+		params["model"] = model
+	}
+	raw, err := c.request("thread/start", params)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +310,21 @@ func (c *Client) ListThreads(cwd string, limit uint32) (*ThreadListResult, error
 	return &out, nil
 }
 
-func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error) {
+func (c *Client) ListModels(includeHidden bool) (*ModelListResult, error) {
+	raw, err := c.request("model/list", map[string]any{
+		"includeHidden": includeHidden,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var out ModelListResult
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, fmt.Errorf("decode model/list: %w", err)
+	}
+	return &out, nil
+}
+
+func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
 	params := map[string]any{
 		"threadId":               threadID,
 		"approvalPolicy":         "on-request",
@@ -291,6 +333,9 @@ func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
 	}
 	if strings.TrimSpace(cwd) != "" {
 		params["cwd"] = cwd
+	}
+	if model := strings.TrimSpace(options.Model); model != "" {
+		params["model"] = model
 	}
 	raw, err := c.request("thread/resume", params)
 	if err != nil {
@@ -303,8 +348,8 @@ func (c *Client) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
 	return &out, nil
 }
 
-func (c *Client) StartTurn(threadID string, text string) (*StartTurnResult, error) {
-	raw, err := c.request("turn/start", map[string]any{
+func (c *Client) StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error) {
+	params := map[string]any{
 		"threadId":       threadID,
 		"approvalPolicy": "on-request",
 		"input": []map[string]any{{
@@ -312,7 +357,14 @@ func (c *Client) StartTurn(threadID string, text string) (*StartTurnResult, erro
 			"text":          text,
 			"text_elements": []any{},
 		}},
-	})
+	}
+	if model := strings.TrimSpace(options.Model); model != "" {
+		params["model"] = model
+	}
+	if effort := strings.TrimSpace(options.ReasoningEffort); effort != "" {
+		params["effort"] = effort
+	}
+	raw, err := c.request("turn/start", params)
 	if err != nil {
 		return nil, err
 	}

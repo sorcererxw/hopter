@@ -7,14 +7,18 @@ import { queryKeys } from "@/lib/query/keys"
 
 type CreateSessionInput = {
   backendKey?: string
+  model?: string
   projectId: string
   prompt: string
+  reasoningEffort?: string
   title?: string
 }
 
 type SendSessionInput = {
-  sessionId: string
   input: string
+  model?: string
+  reasoningEffort?: string
+  sessionId: string
 }
 
 type GetSessionFileInput = {
@@ -200,14 +204,18 @@ export function useCreateSession() {
   return useMutation({
     mutationFn: async ({
       backendKey,
+      model,
       projectId,
       prompt,
+      reasoningEffort,
       title,
     }: CreateSessionInput) => {
       const response = await sessionClient.createSession({
         backendKey,
+        model,
         projectId,
         prompt,
+        reasoningEffort,
         title,
       })
       return response.session
@@ -232,8 +240,18 @@ export function useSendSessionInput() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ sessionId, input }: SendSessionInput) => {
-      return sessionClient.sendSessionInput({ sessionId, input })
+    mutationFn: async ({
+      input,
+      model,
+      reasoningEffort,
+      sessionId,
+    }: SendSessionInput) => {
+      return sessionClient.sendSessionInput({
+        input,
+        model,
+        reasoningEffort,
+        sessionId,
+      })
     },
     onSuccess: async (_response, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })

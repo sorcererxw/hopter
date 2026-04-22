@@ -179,6 +179,62 @@ func TestCreateProjectCanonicalizesAndDeduplicatesRootPath(t *testing.T) {
 	}
 }
 
+func TestListBackendsOnlyExposesCodex(t *testing.T) {
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	backends := workspace.ListBackends()
+
+	if len(backends) != 1 {
+		t.Fatalf("backend count = %d, want 1", len(backends))
+	}
+	if backends[0].Key != BackendKeyCodex {
+		t.Fatalf("backend key = %q, want %q", backends[0].Key, BackendKeyCodex)
+	}
+}
+
+func TestCreateProjectRejectsUnsupportedDefaultBackend(t *testing.T) {
+	root := t.TempDir()
+	repoDir := filepath.Join(root, "hopter")
+	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	if _, err := workspace.CreateProject(CreateProjectInput{
+		Name:           "hopter",
+		RootPath:       repoDir,
+		DefaultBackend: "unsupported",
+	}); err == nil {
+		t.Fatalf("expected unsupported default backend to be rejected")
+	}
+}
+
+func TestCreateSessionRejectsUnsupportedBackend(t *testing.T) {
+	root := t.TempDir()
+	repoDir := filepath.Join(root, "hopter")
+	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	project, err := workspace.CreateProject(CreateProjectInput{
+		Name:           "hopter",
+		RootPath:       repoDir,
+		DefaultBackend: BackendKeyCodex,
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	if _, err := workspace.CreateSession(CreateSessionInput{
+		ProjectID:  project.ID,
+		BackendKey: "unsupported",
+		Title:      "probe",
+		Prompt:     "first",
+	}); err == nil {
+		t.Fatalf("expected unsupported session backend to be rejected")
+	}
+}
+
 func TestUpdateSessionAppendsTranscriptItems(t *testing.T) {
 	root := t.TempDir()
 	repoDir := filepath.Join(root, "hopter")

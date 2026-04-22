@@ -1689,13 +1689,15 @@ func (x *ListSessionTranscriptResponse) GetPage() *SessionTranscriptPage {
 }
 
 type CreateSessionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
-	Prompt        string                 `protobuf:"bytes,3,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	BackendKey    *string                `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId       string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Title           *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Prompt          string                 `protobuf:"bytes,3,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	BackendKey      *string                `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
+	Model           *string                `protobuf:"bytes,5,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	ReasoningEffort *string                `protobuf:"bytes,6,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CreateSessionRequest) Reset() {
@@ -1756,6 +1758,20 @@ func (x *CreateSessionRequest) GetBackendKey() string {
 	return ""
 }
 
+func (x *CreateSessionRequest) GetModel() string {
+	if x != nil && x.Model != nil {
+		return *x.Model
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetReasoningEffort() string {
+	if x != nil && x.ReasoningEffort != nil {
+		return *x.ReasoningEffort
+	}
+	return ""
+}
+
 type CreateSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
@@ -1801,11 +1817,13 @@ func (x *CreateSessionResponse) GetSession() *Session {
 }
 
 type SendSessionInputRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Input         string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Input           string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
+	Model           *string                `protobuf:"bytes,3,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	ReasoningEffort *string                `protobuf:"bytes,4,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *SendSessionInputRequest) Reset() {
@@ -1848,6 +1866,20 @@ func (x *SendSessionInputRequest) GetSessionId() string {
 func (x *SendSessionInputRequest) GetInput() string {
 	if x != nil {
 		return x.Input
+	}
+	return ""
+}
+
+func (x *SendSessionInputRequest) GetModel() string {
+	if x != nil && x.Model != nil {
+		return *x.Model
+	}
+	return ""
+}
+
+func (x *SendSessionInputRequest) GetReasoningEffort() string {
+	if x != nil && x.ReasoningEffort != nil {
+		return *x.ReasoningEffort
 	}
 	return ""
 }
@@ -2389,22 +2421,30 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\x13snapshot_updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x11snapshotUpdatedAtB\x15\n" +
 	"\x13_next_before_cursor\"U\n" +
 	"\x1dListSessionTranscriptResponse\x124\n" +
-	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\xa8\x01\n" +
+	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\x92\x02\n" +
 	"\x14CreateSessionRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x19\n" +
 	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x16\n" +
 	"\x06prompt\x18\x03 \x01(\tR\x06prompt\x12$\n" +
 	"\vbackend_key\x18\x04 \x01(\tH\x01R\n" +
-	"backendKey\x88\x01\x01B\b\n" +
+	"backendKey\x88\x01\x01\x12\x19\n" +
+	"\x05model\x18\x05 \x01(\tH\x02R\x05model\x88\x01\x01\x12.\n" +
+	"\x10reasoning_effort\x18\x06 \x01(\tH\x03R\x0freasoningEffort\x88\x01\x01B\b\n" +
 	"\x06_titleB\x0e\n" +
-	"\f_backend_key\"E\n" +
+	"\f_backend_keyB\b\n" +
+	"\x06_modelB\x13\n" +
+	"\x11_reasoning_effort\"E\n" +
 	"\x15CreateSessionResponse\x12,\n" +
-	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"N\n" +
+	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"\xb8\x01\n" +
 	"\x17SendSessionInputRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
-	"\x05input\x18\x02 \x01(\tR\x05input\"\x90\x01\n" +
+	"\x05input\x18\x02 \x01(\tR\x05input\x12\x19\n" +
+	"\x05model\x18\x03 \x01(\tH\x00R\x05model\x88\x01\x01\x12.\n" +
+	"\x10reasoning_effort\x18\x04 \x01(\tH\x01R\x0freasoningEffort\x88\x01\x01B\b\n" +
+	"\x06_modelB\x13\n" +
+	"\x11_reasoning_effort\"\x90\x01\n" +
 	"\x18SendSessionInputResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x1d\n" +
 	"\n" +
@@ -2597,6 +2637,7 @@ func file_hopter_v1_session_proto_init() {
 	file_hopter_v1_session_proto_msgTypes[18].OneofWrappers = []any{}
 	file_hopter_v1_session_proto_msgTypes[19].OneofWrappers = []any{}
 	file_hopter_v1_session_proto_msgTypes[21].OneofWrappers = []any{}
+	file_hopter_v1_session_proto_msgTypes[23].OneofWrappers = []any{}
 	file_hopter_v1_session_proto_msgTypes[27].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

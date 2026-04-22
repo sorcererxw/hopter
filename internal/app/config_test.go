@@ -1,6 +1,9 @@
 package app
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
 func TestLoadConfigUsesDevDefaultPort(t *testing.T) {
 	clearConfigEnv(t)
@@ -41,21 +44,10 @@ func TestLoadConfigUsesReleaseDefaultPort(t *testing.T) {
 	}
 }
 
-func TestLoadConfigRejectsWildcardHostWhenLocalhostOnlyNoAuthIsExplicit(t *testing.T) {
-	clearConfigEnv(t)
-	t.Setenv("HOPTER_LOCALHOST_ONLY_NO_AUTH", "true")
-
-	_, err := LoadConfig("dev", "direct")
-	if err == nil {
-		t.Fatal("LoadConfig returned nil error, want localhost-only guard error")
-	}
-}
-
 func TestLoadConfigPortOverrideWinsForReleaseBuild(t *testing.T) {
 	clearConfigEnv(t)
-	t.Setenv("HOPTER_PORT", "20000")
 
-	cfg, err := LoadConfig("0.4.2", "direct")
+	cfg, err := LoadConfigWithOptions("0.4.2", "direct", LoadOptions{Port: 20000})
 	if err != nil {
 		t.Fatalf("LoadConfig returned error: %v", err)
 	}
@@ -65,10 +57,40 @@ func TestLoadConfigPortOverrideWinsForReleaseBuild(t *testing.T) {
 	}
 }
 
+func TestLoadConfigUsesDefaultTaskStateHomeOutsideDevProxy(t *testing.T) {
+	clearConfigEnv(t)
+
+	cfg, err := LoadConfig("dev", "direct")
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	if cfg.Tasks.StateHome != defaultStateHome() {
+		t.Fatalf("Tasks.StateHome = %q, want %q", cfg.Tasks.StateHome, defaultStateHome())
+	}
+}
+
+func TestLoadConfigUsesIsolatedTaskStateHomeForDevProxy(t *testing.T) {
+	clearConfigEnv(t)
+	t.Chdir(t.TempDir())
+
+	cfg, err := LoadConfigWithOptions("dev", "direct", LoadOptions{DevProxyURL: "http://127.0.0.1:5173"})
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	wantStateHome := defaultDevStateHome()
+	if cfg.Tasks.StateHome != wantStateHome {
+		t.Fatalf("Tasks.StateHome = %q, want %q", cfg.Tasks.StateHome, wantStateHome)
+	}
+	if cfg.Tasks.StateHome == defaultStateHome() {
+		t.Fatalf("Tasks.StateHome = %q, want dev-specific state home", cfg.Tasks.StateHome)
+	}
+	if got, want := cfg.Tasks.StorePath(), filepath.Join(wantStateHome, "tasks", "badger"); got != want {
+		t.Fatalf("Tasks.StorePath() = %q, want %q", got, want)
+	}
+}
+
 func clearConfigEnv(t *testing.T) {
 	t.Helper()
-	t.Setenv("HOPTER_HOST", "")
-	t.Setenv("HOPTER_PORT", "")
-	t.Setenv("HOPTER_UI_DEV_PROXY_URL", "")
-	t.Setenv("HOPTER_LOCALHOST_ONLY_NO_AUTH", "")
 }

@@ -20,7 +20,6 @@ func TestBadgerStoreCreateGetListTask(t *testing.T) {
 		ProjectID:       "proj_1",
 		Prompt:          "Build a task store",
 		InitialSubtasks: []string{"Add schema", "Write tests"},
-		SchedulerMode:   SchedulerDisabled,
 	})
 	if err != nil {
 		t.Fatalf("CreateTask() error = %v", err)
@@ -31,7 +30,7 @@ func TestBadgerStoreCreateGetListTask(t *testing.T) {
 	if created.Task.Title != "Build a task store" {
 		t.Fatalf("CreateTask() title = %q", created.Task.Title)
 	}
-	if created.Task.LifecycleStatus != LifecycleWaiting {
+	if created.Task.LifecycleStatus != LifecycleActive {
 		t.Fatalf("CreateTask() lifecycle = %q", created.Task.LifecycleStatus)
 	}
 	if created.Task.CurrentStage != StagePlan {
@@ -40,7 +39,7 @@ func TestBadgerStoreCreateGetListTask(t *testing.T) {
 	if created.Task.SubtaskCount != 2 {
 		t.Fatalf("CreateTask() subtask count = %d", created.Task.SubtaskCount)
 	}
-	if len(created.Task.Diagnostics) != 1 || created.Task.Diagnostics[0].Code != "scheduler_disabled" {
+	if len(created.Task.Diagnostics) != 0 {
 		t.Fatalf("CreateTask() diagnostics = %#v", created.Task.Diagnostics)
 	}
 
@@ -77,9 +76,8 @@ func TestBadgerStoreCreateSubtask(t *testing.T) {
 	})
 
 	created, err := store.CreateTask(context.Background(), CreateTaskInput{
-		ProjectID:     "proj_1",
-		Prompt:        "Build tasks",
-		SchedulerMode: SchedulerDisabled,
+		ProjectID: "proj_1",
+		Prompt:    "Build tasks",
 	})
 	if err != nil {
 		t.Fatalf("CreateTask() error = %v", err)

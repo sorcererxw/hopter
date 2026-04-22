@@ -25,9 +25,13 @@ type fakeCodexClient struct {
 	listResult           *ThreadListResult
 	readResult           *ReadThreadResult
 	readResults          []*ReadThreadResult
+	listModelsResult     *ModelListResult
 	resumeResult         *ResumeThreadResult
 	readErr              error
 	respondApprovalCalls []string
+	startThreadOptions   []core.SessionTurnOptions
+	startTurnOptions     []core.SessionTurnOptions
+	resumeOptions        []core.SessionTurnOptions
 }
 
 type fakeEventSink struct {
@@ -72,8 +76,9 @@ func (f *fakeCodexClient) ReadThreadMeta(_ string) (*ReadThreadResult, error) {
 	return f.ReadThread("")
 }
 
-func (f *fakeCodexClient) ResumeThread(threadID, cwd string) (*ResumeThreadResult, error) {
+func (f *fakeCodexClient) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
 	f.resumeCalls++
+	f.resumeOptions = append(f.resumeOptions, options)
 	if f.resumeResult != nil {
 		return f.resumeResult, nil
 	}
@@ -88,16 +93,18 @@ func (f *fakeCodexClient) RespondToApproval(rawID json.RawMessage, decision stri
 	return nil
 }
 
-func (f *fakeCodexClient) StartThread(cwd string) (*StartThreadResult, error) {
+func (f *fakeCodexClient) StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error) {
 	f.startThreadCalls++
+	f.startThreadOptions = append(f.startThreadOptions, options)
 	out := &StartThreadResult{}
 	out.Thread.ID = "thread-started"
 	out.Thread.Cwd = cwd
 	return out, nil
 }
 
-func (f *fakeCodexClient) StartTurn(_ string, _ string) (*StartTurnResult, error) {
+func (f *fakeCodexClient) StartTurn(_ string, _ string, options core.SessionTurnOptions) (*StartTurnResult, error) {
 	f.startTurnCalls++
+	f.startTurnOptions = append(f.startTurnOptions, options)
 	out := &StartTurnResult{}
 	out.Turn.ID = "turn-started"
 	return out, nil
@@ -113,6 +120,13 @@ func (f *fakeCodexClient) SteerTurn(_, _, _ string) (*StartTurnResult, error) {
 func (f *fakeCodexClient) InterruptTurn(threadID, turnID string) error {
 	f.interruptTurnCalls = append(f.interruptTurnCalls, threadID+":"+turnID)
 	return nil
+}
+
+func (f *fakeCodexClient) ListModels(bool) (*ModelListResult, error) {
+	if f.listModelsResult != nil {
+		return f.listModelsResult, nil
+	}
+	return &ModelListResult{}, nil
 }
 
 func (f *fakeEventSink) Publish(event core.Event) {
@@ -259,6 +273,116 @@ func TestCreateSessionRunsThroughAppServerAndUpdatesSession(t *testing.T) {
 	}
 	if client.startTurnCalls != 1 {
 		t.Fatalf("StartTurn calls = %d, want 1", client.startTurnCalls)
+	}
+}
+
+func TestListModelsReturnsAppServerModels(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	_ = mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		listModelsResult: &ModelListResult{
+			Data: []ModelRecord{
+				{
+					ID:                     "gpt-5.4",
+					Model:                  "gpt-5.4",
+					DisplayName:            "gpt-5.4",
+					Description:            "Latest frontier agentic coding model.",
+					IsDefault:              true,
+					DefaultReasoningEffort: "medium",
+					SupportedReasoningEfforts: []ModelReasoningEffortRecord{
+						{ReasoningEffort: "medium", Description: "Balanced"},
+						{ReasoningEffort: "xhigh", Description: "Extra high"},
+					},
+					InputModalities: []string{"text", "image"},
+				},
+			},
+		},
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	models, err := manager.ListModels(false)
+	if err != nil {
+		t.Fatalf("ListModels: %v", err)
+	}
+	if len(models) != 1 {
+		t.Fatalf("model count = %d, want 1", len(models))
+	}
+	if models[0].Model != "gpt-5.4" {
+		t.Fatalf("model = %q, want gpt-5.4", models[0].Model)
+	}
+	if models[0].DefaultReasoningEffort != "medium" {
+		t.Fatalf("default reasoning effort = %q, want medium", models[0].DefaultReasoningEffort)
+	}
+	if len(models[0].SupportedReasoningEfforts) != 2 {
+		t.Fatalf("reasoning effort count = %d, want 2", len(models[0].SupportedReasoningEfforts))
+	}
+	if models[0].SupportedReasoningEfforts[1].ReasoningEffort != "xhigh" {
+		t.Fatalf("second reasoning effort = %q, want xhigh", models[0].SupportedReasoningEfforts[1].ReasoningEffort)
+	}
+}
+
+func TestCreateSessionPassesModelAndReasoningToAppServer(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(ReadThreadTurn{
+			ID:     "turn-started",
+			Status: "completed",
+		}),
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	session, err := manager.CreateSession(core.CreateSessionInput{
+		ProjectID:       project.ID,
+		Title:           "probe",
+		Prompt:          "build something",
+		Model:           "gpt-5.4",
+		ReasoningEffort: "xhigh",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	waitFor(t, func() bool {
+		current, ok := workspace.GetSession(session.ID)
+		return ok && current.Status == core.SessionStateCompleted
+	})
+	if len(client.startThreadOptions) != 1 {
+		t.Fatalf("start thread options count = %d, want 1", len(client.startThreadOptions))
+	}
+	if client.startThreadOptions[0].Model != "gpt-5.4" {
+		t.Fatalf("start thread model = %q, want gpt-5.4", client.startThreadOptions[0].Model)
+	}
+	if len(client.startTurnOptions) != 1 {
+		t.Fatalf("start turn options count = %d, want 1", len(client.startTurnOptions))
+	}
+	if client.startTurnOptions[0].Model != "gpt-5.4" {
+		t.Fatalf("start turn model = %q, want gpt-5.4", client.startTurnOptions[0].Model)
+	}
+	if client.startTurnOptions[0].ReasoningEffort != "xhigh" {
+		t.Fatalf("start turn reasoning effort = %q, want xhigh", client.startTurnOptions[0].ReasoningEffort)
 	}
 }
 

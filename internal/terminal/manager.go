@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -48,8 +47,6 @@ func NewManager(workspace core.WorkspaceService) *Manager {
 }
 
 func NewManagerWithResolver(workspace core.WorkspaceService, resolver SessionResolver) *Manager {
-	cleanupDelay := durationFromEnv(5*time.Minute, "HOPTER_TERMINAL_DETACH_TTL_MS")
-	promptPollInterval := durationFromEnv(time.Second, "HOPTER_TERMINAL_PROMPT_POLL_MS")
 	return &Manager{
 		workspace:          workspace,
 		resolver:           resolver,
@@ -58,8 +55,8 @@ func NewManagerWithResolver(workspace core.WorkspaceService, resolver SessionRes
 		buffers:            make(map[string]*ReplayBuffer),
 		subs:               make(map[string]map[uint64]chan []byte),
 		timers:             make(map[string]*time.Timer),
-		cleanupDelay:       cleanupDelay,
-		promptPollInterval: promptPollInterval,
+		cleanupDelay:       5 * time.Minute,
+		promptPollInterval: time.Second,
 	}
 }
 
@@ -548,24 +545,4 @@ func looksLikePrompt(chunk []byte) bool {
 		strings.Contains(text, "\u001b]2;") ||
 		strings.Contains(text, "➜  ") ||
 		strings.Contains(text, "% ")
-}
-
-func durationFromEnv(fallback time.Duration, names ...string) time.Duration {
-	raw := ""
-	for _, name := range names {
-		raw = strings.TrimSpace(os.Getenv(name))
-		if raw != "" {
-			break
-		}
-	}
-	if raw == "" {
-		return fallback
-	}
-	if millis, err := strconv.Atoi(raw); err == nil && millis > 0 {
-		return time.Duration(millis) * time.Millisecond
-	}
-	if duration, err := time.ParseDuration(raw); err == nil && duration > 0 {
-		return duration
-	}
-	return fallback
 }

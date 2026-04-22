@@ -26,6 +26,11 @@ type fakeSessionRuntime struct {
 		decision   core.ApprovalDecision
 	}
 	interruptSessionID string
+	sendCall           struct {
+		sessionID string
+		input     string
+		options   []core.SessionTurnOptions
+	}
 }
 
 type fakeSessionDetailReader struct {
@@ -47,7 +52,10 @@ func (f *fakeSessionRuntime) CreateSession(input core.CreateSessionInput) (core.
 	return core.Session{}, nil
 }
 
-func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
+func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
+	f.sendCall.sessionID = sessionID
+	f.sendCall.input = input
+	f.sendCall.options = append([]core.SessionTurnOptions(nil), options...)
 	return core.Session{}, nil
 }
 
@@ -285,7 +293,7 @@ func TestGetSessionReviewAndFile(t *testing.T) {
 	}
 }
 
-func TestGetSessionMetaOmitsResumeCommandWithoutCodexThread(t *testing.T) {
+func TestGetSessionMetaOmitsResumeCommandWithoutBackendThread(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := core.Project{
 		ID:             "proj_1",
@@ -303,7 +311,7 @@ func TestGetSessionMetaOmitsResumeCommandWithoutCodexThread(t *testing.T) {
 			Status:     core.SessionStateCompleted,
 			Summary:    "done",
 			UpdatedAt:  time.Now().UTC(),
-			BackendKey: "copilot",
+			BackendKey: "codex",
 		},
 		Project: project,
 	}

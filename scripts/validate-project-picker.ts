@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const PORT = Number.parseInt(process.env.HOPTER_PROJECT_PICKER_PORT?.trim() || "8890", 10);
+const PORT = 8890;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 type Fixture = {
@@ -100,23 +100,19 @@ async function main(): Promise<void> {
   const fixture = createFixture();
   run.writeJson("fixture.json", fixture);
 
-  const serverEnv = {
-    ...process.env,
-    HOPTER_HOST: "127.0.0.1",
-    HOPTER_PORT: String(PORT),
-  };
+  const serverArgs = [binaryPath, "--host", "127.0.0.1", "--port", String(PORT)];
   const server =
     typeof Bun !== "undefined"
-      ? Bun.spawn([binaryPath], {
+      ? Bun.spawn(serverArgs, {
           cwd: process.cwd(),
           stdout: "pipe",
           stderr: "pipe",
-          env: serverEnv,
+          env: process.env,
         })
-      : spawn(binaryPath, {
+      : spawn(binaryPath, serverArgs.slice(1), {
           cwd: process.cwd(),
           stdio: ["ignore", "pipe", "pipe"],
-          env: serverEnv,
+          env: process.env,
         });
 
   try {

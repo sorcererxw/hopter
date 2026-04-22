@@ -48,6 +48,17 @@ func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
 	}
 }
 
+func TestServiceRejectsUnsupportedDefaultBackend(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"appearance":{"theme":"system"},"agent":{"defaultBackend":"unsupported"}}`), 0o600); err != nil {
+		t.Fatalf("WriteFile(config) error = %v", err)
+	}
+
+	if _, err := NewService(path, nil); err == nil {
+		t.Fatalf("expected unsupported default backend to be rejected")
+	}
+}
+
 func TestServiceStartupRefreshesExistingSchema(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")

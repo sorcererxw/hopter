@@ -18,6 +18,7 @@ type fakeRuntime struct {
 	lastCreate            core.CreateSessionInput
 	lastSendID            string
 	lastSendText          string
+	lastSendOptions       []core.SessionTurnOptions
 	lastInterruptID       string
 	lastApprovalID        string
 	lastApprovalSessionID string
@@ -37,9 +38,10 @@ func (f *fakeRuntime) CreateSession(input core.CreateSessionInput) (core.Session
 	return f.createResult, nil
 }
 
-func (f *fakeRuntime) SendSessionInput(sessionID, input string) (core.Session, error) {
+func (f *fakeRuntime) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
 	f.lastSendID = sessionID
 	f.lastSendText = input
+	f.lastSendOptions = append([]core.SessionTurnOptions(nil), options...)
 	return f.sendResult, nil
 }
 
@@ -57,7 +59,7 @@ func (f *fakeRuntime) RespondToSessionApproval(sessionID, approvalID string, dec
 
 func TestManagerCreateSessionRoutesByProjectDefaultBackend(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
-	project := mustCreateProject(t, workspace, "copilot")
+	project := mustCreateProject(t, workspace, "codex")
 	runtime := &fakeRuntime{
 		createResult: core.Session{
 			ID:        "sess_1",
@@ -68,7 +70,7 @@ func TestManagerCreateSessionRoutesByProjectDefaultBackend(t *testing.T) {
 		},
 	}
 	manager := NewManager(workspace, map[string]Runtime{
-		"copilot": runtime,
+		"codex": runtime,
 	})
 
 	session, err := manager.CreateSession(core.CreateSessionInput{
@@ -79,8 +81,8 @@ func TestManagerCreateSessionRoutesByProjectDefaultBackend(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
-	if session.BackendKey != "copilot" {
-		t.Fatalf("backend key = %q, want copilot", session.BackendKey)
+	if session.BackendKey != "codex" {
+		t.Fatalf("backend key = %q, want codex", session.BackendKey)
 	}
 }
 

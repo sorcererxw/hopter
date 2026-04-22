@@ -205,6 +205,8 @@ message CreateSessionRequest {
   optional string title = 2;
   string prompt = 3;
   optional string backend_key = 4;
+  optional string model = 5;
+  optional string reasoning_effort = 6;
 }
 
 message CreateSessionResponse {
@@ -214,6 +216,8 @@ message CreateSessionResponse {
 message SendSessionInputRequest {
   string session_id = 1;
   string input = 2;
+  optional string model = 3;
+  optional string reasoning_effort = 4;
 }
 
 message SendSessionInputResponse {

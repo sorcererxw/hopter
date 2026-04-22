@@ -229,7 +229,7 @@ jobs:
     if: needs.detect-release-scope.outputs.release_needed == 'true' && needs.publish-release.result == 'success'
     runs-on: ubuntu-latest
     env:
-      HOMEBREW_TAP_REPOSITORY: sorcererxw/homebrew-tap
+      HOMEBREW_TAP_REPOSITORY: sorcererxw/tap
       VERSION: ${{ needs.detect-release-scope.outputs.version }}
     steps:
       - name: Check out source repository
@@ -253,34 +253,29 @@ jobs:
             sha256sum hopter-* *.tar.gz > checksums.txt
           )
 
-      - name: Check out Homebrew tap
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HOMEBREW_TAP_REPOSITORY }}
-          token: ${{ secrets.RELEASE_TOKEN }}
-          path: tap
-
-      - name: Generate Homebrew formula
+      - name: Update Homebrew tap formulae
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git" tap
           bash source/scripts/generate-homebrew-formula.sh \
             --version "${VERSION}" \
             --repo "${RELEASE_REPOSITORY}" \
             --checksums source/release/checksums.txt \
             --output tap/Formula/hopter.rb
 
-      - name: Commit Homebrew formula
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd tap
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Formula/hopter.rb
-          if git diff --cached --quiet; then
-            echo "Homebrew formula already up to date."
-            exit 0
-          fi
-          git commit -m "Update hopter to ${VERSION}"
-          git push
+          (
+            cd tap
+            git add Formula/hopter.rb
+            if git diff --cached --quiet; then
+              echo "${HOMEBREW_TAP_REPOSITORY} formula already up to date."
+              exit 0
+            fi
+            git commit -m "Update hopter to ${VERSION}"
+            git push origin HEAD:main
+          )

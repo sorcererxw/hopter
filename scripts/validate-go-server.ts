@@ -3,8 +3,11 @@ import path from "node:path";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const HEALTH_URL = process.env.HOPTER_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz";
-const READY_URL = process.env.HOPTER_GO_READY_URL?.trim() || "http://127.0.0.1:8787/readyz";
+const serverHost = "127.0.0.1";
+const serverPort = "8787";
+const serverBaseUrl = `http://127.0.0.1:${serverPort}`;
+const HEALTH_URL = `${serverBaseUrl}/healthz`;
+const READY_URL = `${serverBaseUrl}/readyz`;
 
 async function waitForHttp(url: string, timeoutMs = 20_000, intervalMs = 500): Promise<{ ok: boolean; status?: number; body?: string; error?: string }> {
   const started = Date.now();
@@ -88,15 +91,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const server = Bun.spawn([binaryPath], {
+  const server = Bun.spawn([binaryPath, "--host", serverHost, "--port", serverPort], {
     cwd: process.cwd(),
     stdout: "pipe",
     stderr: "pipe",
-    env: {
-      ...process.env,
-      HOPTER_HOST: process.env.HOPTER_HOST || "127.0.0.1",
-      HOPTER_PORT: process.env.HOPTER_PORT || "8787",
-    },
+    env: process.env,
   });
 
   const health = await waitForHttp(HEALTH_URL);

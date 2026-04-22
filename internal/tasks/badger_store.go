@@ -95,22 +95,11 @@ func (s *BadgerStore) CreateTask(ctx context.Context, input CreateTaskInput) (Sn
 		Title:           title,
 		Prompt:          prompt,
 		Priority:        input.Priority,
-		LifecycleStatus: LifecycleWaiting,
+		LifecycleStatus: LifecycleActive,
 		CurrentStage:    StagePlan,
 		CommitStatus:    CommitNotReady,
 		CreatedAt:       now,
 		UpdatedAt:       now,
-	}
-	if input.SchedulerMode == SchedulerDisabled || input.SchedulerMode == SchedulerManual {
-		task.Diagnostics = append(task.Diagnostics, Diagnostic{
-			Code:       "scheduler_disabled",
-			Severity:   "info",
-			Source:     "tasks.scheduler",
-			Message:    "Task was captured but the scheduler is not running automatically.",
-			Cause:      "HOPTER_TASK_SCHEDULER is not set to auto.",
-			UserAction: "Run the task scheduler manually or enable automatic scheduling.",
-			Retriable:  true,
-		})
 	}
 
 	subtasks := make([]Subtask, 0, len(input.InitialSubtasks))

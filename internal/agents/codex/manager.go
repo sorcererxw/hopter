@@ -64,13 +64,14 @@ var (
 type codexClient interface {
 	Close() error
 	InterruptTurn(threadID, turnID string) error
+	ListModels(includeHidden bool) (*ModelListResult, error)
 	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
 	ReadThread(threadID string) (*ReadThreadResult, error)
 	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
-	ResumeThread(threadID, cwd string) (*ResumeThreadResult, error)
+	ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error)
 	RespondToApproval(rawID json.RawMessage, decision string) error
-	StartThread(cwd string) (*StartThreadResult, error)
-	StartTurn(threadID string, text string) (*StartTurnResult, error)
+	StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error)
+	StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error)
 	SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error)
 }
 
@@ -108,6 +109,46 @@ func NewManager(workspace core.WorkspaceService, eventSink ...core.EventSink) *M
 		) (codexClient, error) {
 			return Start(ctx, cwd, onNotification, onServerRequest, onTrace, onExit)
 		},
+	}
+}
+
+func (m *Manager) ListModels(includeHidden bool) ([]core.AgentModel, error) {
+	client, _, err := m.startEphemeralClient()
+	if err != nil {
+		return nil, err
+	}
+	defer client.Close()
+
+	result, err := client.ListModels(includeHidden)
+	if err != nil {
+		return nil, err
+	}
+
+	models := make([]core.AgentModel, 0, len(result.Data))
+	for _, item := range result.Data {
+		models = append(models, modelRecordToCore(item))
+	}
+	return models, nil
+}
+
+func modelRecordToCore(item ModelRecord) core.AgentModel {
+	efforts := make([]core.ModelReasoningEffort, 0, len(item.SupportedReasoningEfforts))
+	for _, effort := range item.SupportedReasoningEfforts {
+		efforts = append(efforts, core.ModelReasoningEffort{
+			ReasoningEffort: effort.ReasoningEffort,
+			Description:     effort.Description,
+		})
+	}
+
+	return core.AgentModel{
+		ID:                        item.ID,
+		Model:                     item.Model,
+		DisplayName:               item.DisplayName,
+		Description:               item.Description,
+		IsDefault:                 item.IsDefault,
+		DefaultReasoningEffort:    item.DefaultReasoningEffort,
+		SupportedReasoningEfforts: efforts,
+		InputModalities:           append([]string(nil), item.InputModalities...),
 	}
 }
 
@@ -234,11 +275,15 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 	if err != nil {
 		return core.Session{}, err
 	}
-	go m.runSession(project, session.ID, input.Prompt)
+	go m.runSession(project, session.ID, input.Prompt, core.SessionTurnOptions{
+		Model:           input.Model,
+		ReasoningEffort: input.ReasoningEffort,
+	})
 	return session, nil
 }
 
-func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error) {
+func (m *Manager) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
+	turnOptions := firstTurnOptions(options...)
 	if session, ok := m.workspace.GetSession(sessionID); ok {
 		updated, err := m.workspace.SendSessionInput(sessionID, input)
 		if err != nil {
@@ -248,7 +293,7 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 		if !ok {
 			return core.Session{}, fmt.Errorf("project %q not found", session.ProjectID)
 		}
-		go m.dispatchInput(project, sessionID, session.BackendThreadID, input)
+		go m.dispatchInput(project, sessionID, session.BackendThreadID, input, turnOptions)
 		return updated, nil
 	}
 
@@ -266,7 +311,7 @@ func (m *Manager) SendSessionInput(sessionID, input string) (core.Session, error
 	session.Status = core.SessionStateRunning
 	session.Summary = summary
 	session.UpdatedAt = time.Now().UTC()
-	go m.dispatchInput(project, sessionID, session.BackendThreadID, input)
+	go m.dispatchInput(project, sessionID, session.BackendThreadID, input, turnOptions)
 	return session, nil
 }
 
@@ -290,7 +335,7 @@ func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
 		return core.Session{}, fmt.Errorf("session %q has no active turn to interrupt", sessionID)
 	}
 
-	live, err := m.ensureLiveSession(sessionID, project, threadID)
+	live, err := m.ensureLiveSession(sessionID, project, threadID, core.SessionTurnOptions{})
 	if err != nil {
 		return core.Session{}, err
 	}
@@ -339,21 +384,28 @@ func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
 	return updated, nil
 }
 
-func (m *Manager) runSession(project core.Project, sessionID, prompt string) {
+func (m *Manager) runSession(project core.Project, sessionID, prompt string, options core.SessionTurnOptions) {
 	summary := "Codex thread started. Running the first turn…"
 	running := core.SessionStateRunning
 	_, _ = m.workspace.UpdateSession(sessionID, core.SessionPatch{
 		Status:  &running,
 		Summary: &summary,
 	})
-	m.executeTurn(project, sessionID, "", prompt, "Codex is working…")
+	m.executeTurn(project, sessionID, "", prompt, "Codex is working…", options)
 }
 
-func (m *Manager) dispatchInput(project core.Project, sessionID, threadID, input string) {
-	m.executeTurn(project, sessionID, threadID, input, "Codex is processing the latest input…")
+func (m *Manager) dispatchInput(project core.Project, sessionID, threadID, input string, options core.SessionTurnOptions) {
+	m.executeTurn(project, sessionID, threadID, input, "Codex is processing the latest input…", options)
 }
 
-func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string) {
+func firstTurnOptions(options ...core.SessionTurnOptions) core.SessionTurnOptions {
+	if len(options) == 0 {
+		return core.SessionTurnOptions{}
+	}
+	return options[0]
+}
+
+func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string, options core.SessionTurnOptions) {
 	userItem := userTranscriptItem(input)
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
 		AppendTranscriptItems: &[]core.SessionTranscriptItem{userItem},
@@ -364,9 +416,9 @@ func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, 
 		err  error
 	)
 	if strings.TrimSpace(threadID) == "" {
-		live, err = m.startLiveSession(sessionID, project)
+		live, err = m.startLiveSession(sessionID, project, options)
 	} else {
-		live, err = m.ensureLiveSession(sessionID, project, threadID)
+		live, err = m.ensureLiveSession(sessionID, project, threadID, options)
 	}
 	if err != nil {
 		m.failSession(sessionID, fmt.Errorf("execute codex turn: %w", err))
@@ -383,7 +435,7 @@ func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, 
 	var turn *StartTurnResult
 	expectedTurnID := strings.TrimSpace(live.active)
 	if expectedTurnID == "" {
-		turn, err = live.client.StartTurn(resolvedThreadID, input)
+		turn, err = live.client.StartTurn(resolvedThreadID, input, options)
 	} else {
 		turn, err = live.client.SteerTurn(resolvedThreadID, expectedTurnID, input)
 	}
@@ -804,7 +856,7 @@ func (m *Manager) publishLivePatch(sessionID, projectID string, patch core.Sessi
 	})
 }
 
-func (m *Manager) startLiveSession(sessionKey string, project core.Project) (*liveSession, error) {
+func (m *Manager) startLiveSession(sessionKey string, project core.Project, options core.SessionTurnOptions) (*liveSession, error) {
 	traceWriter := newAppServerTraceWriter(project.RootPath, sessionKey)
 	client, err := m.start(context.Background(), project.RootPath, func(n Notification) {
 		m.handleNotification(sessionKey, n)
@@ -831,7 +883,7 @@ func (m *Manager) startLiveSession(sessionKey string, project core.Project) (*li
 		return nil, err
 	}
 
-	started, err := client.StartThread(project.RootPath)
+	started, err := client.StartThread(project.RootPath, options)
 	if err != nil {
 		_ = client.Close()
 		return nil, err
@@ -1007,7 +1059,7 @@ func (m *Manager) fetchThreadSession(
 	}
 	defer client.Close()
 
-	resumed, err := client.ResumeThread(threadID, project.RootPath)
+	resumed, err := client.ResumeThread(threadID, project.RootPath, core.SessionTurnOptions{})
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -1049,7 +1101,7 @@ func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Pro
 	}
 	defer client.Close()
 
-	resumed, err := client.ResumeThread(threadID, "")
+	resumed, err := client.ResumeThread(threadID, "", core.SessionTurnOptions{})
 	if err != nil {
 		return core.Session{}, core.Project{}, err
 	}
@@ -1071,7 +1123,7 @@ func (m *Manager) fetchRawThreadSession(threadID string) (core.Session, core.Pro
 	return session, project, nil
 }
 
-func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, threadID string) (*liveSession, error) {
+func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, threadID string, options core.SessionTurnOptions) (*liveSession, error) {
 	live := m.liveSession(sessionKey)
 	if live != nil {
 		return live, nil
@@ -1103,7 +1155,7 @@ func (m *Manager) ensureLiveSession(sessionKey string, project core.Project, thr
 		return nil, err
 	}
 
-	resumed, err := client.ResumeThread(threadID, project.RootPath)
+	resumed, err := client.ResumeThread(threadID, project.RootPath, options)
 	if err != nil {
 		_ = client.Close()
 		return nil, err

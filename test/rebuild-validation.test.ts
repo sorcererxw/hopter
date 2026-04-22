@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { localHttpUrl, normalizeLocalhostHost } from "../scripts/lib/devloop.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary } from "../scripts/lib/rebuild-validation.ts";
 
 describe("rebuild validation helpers", () => {
@@ -31,5 +32,14 @@ describe("rebuild validation helpers", () => {
     expect(summary).toContain("Status: blocked");
     expect(summary).toContain("buf lint");
     expect(summary).toContain("notes stay visible");
+  });
+});
+
+describe("dev loop URL helpers", () => {
+  test("normalizes wildcard bind hosts into fetchable local URLs", () => {
+    expect(normalizeLocalhostHost("0.0.0.0")).toBe("127.0.0.1");
+    expect(normalizeLocalhostHost("::")).toBe("[::1]");
+    expect(localHttpUrl("0.0.0.0", 5173)).toBe("http://127.0.0.1:5173");
+    expect(() => new URL(localHttpUrl("0.0.0.0", 5173))).not.toThrow();
   });
 });

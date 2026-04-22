@@ -11,9 +11,8 @@ import {
 import { createValidationRun } from "./lib/validation.ts";
 
 const baseUrl =
-  process.env.HOPTER_LIVE_BASE_URL?.trim() || "http://127.0.0.1:8787";
-const healthUrl =
-  process.env.HOPTER_GO_HEALTH_URL?.trim() || `${baseUrl}/healthz`;
+  "http://127.0.0.1:8787";
+const healthUrl = `/healthz`;
 
 const sessionId = "sess_breakpoint_probe";
 const projectId = "proj_breakpoint_probe";

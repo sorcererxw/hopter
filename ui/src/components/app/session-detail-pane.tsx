@@ -1,13 +1,10 @@
 import {
-  Suspense,
-  lazy,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type RefObject,
-  type MouseEvent as ReactMouseEvent,
 } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
@@ -20,7 +17,6 @@ import {
   Wrench,
   X,
 } from "lucide-react"
-import { useSearchParams } from "react-router-dom"
 
 import { SessionArtifactWorkspace } from "@/components/app/session-artifact-workspace"
 import { SessionComposer } from "@/components/app/session-composer"
@@ -31,14 +27,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  buildClosedPanelParams,
-  buildFilePanelParams,
-  buildReviewPanelParams,
-  buildReviewSelectionParams,
-  parseSessionPathReference,
-  readSessionPanelState,
-} from "@/components/app/session-panel-state"
 import { CodeContainer } from "@/components/app/code-container"
 import { SessionRichText } from "@/components/app/session-rich-text"
 import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
@@ -53,9 +41,7 @@ import {
   useInterruptSession,
   useRespondToSessionApproval,
   useSendSessionInput,
-  useSessionFile,
   useSessionMeta,
-  useSessionReview,
   useSessionTranscript,
 } from "@/features/sessions/use-sessions"
 import {
@@ -73,30 +59,12 @@ import {
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
 import { useProjectGitStatus } from "@/features/git/use-project-git"
-import {
-  formatSessionStatus,
-} from "@/lib/format/proto"
+import { formatSessionStatus } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
-const SessionInspectorPane = lazy(() =>
-  import("@/components/app/session-inspector-pane").then((module) => ({
-    default: module.SessionInspectorPane,
-  }))
-)
-
-const sessionSidebarWidthStorageKey = "hopter.sessionSidebarWidth"
-const minSessionSidebarWidth = 440
-const maxSessionSidebarWidth = 920
-const defaultSessionSidebarWidth = 640
-
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
-  const [searchParams, setSearchParams] = useSearchParams()
   const { eventStreamState, posture } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
-  const panelState = useMemo(
-    () => readSessionPanelState(searchParams),
-    [searchParams]
-  )
   const transcriptPollInterval = useMemo(
     () =>
       eventStreamState === "connected"
@@ -125,24 +93,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
   const [gitDialogOpen, setGitDialogOpen] = useState(false)
   const [gitDialogMode, setGitDialogMode] = useState(GitCommitMode.COMMIT_ONLY)
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    if (typeof window === "undefined") {
-      return defaultSessionSidebarWidth
-    }
-
-    const stored = Number(
-      window.localStorage.getItem(sessionSidebarWidthStorageKey)
-    )
-    if (!Number.isFinite(stored)) {
-      return defaultSessionSidebarWidth
-    }
-
-    return Math.min(
-      Math.max(stored, minSessionSidebarWidth),
-      maxSessionSidebarWidth
-    )
-  })
-  const sidebarDraggingRef = useRef(false)
   const [transcriptVisible, setTranscriptVisible] = useState(false)
   const [transcriptAwayFromBottom, setTranscriptAwayFromBottom] =
     useState(false)
@@ -195,21 +145,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     projectId,
     Boolean(projectId)
   )
-  const reviewQuery = useSessionReview(
-    sessionId,
-    Boolean(sessionMetaQuery.data) && panelState.panel === "review"
-  )
-  const fileQuery = useSessionFile(
-    panelState.panel === "file" && panelState.path
-      ? {
-          sessionId,
-          path: panelState.path,
-          line: panelState.line,
-          column: panelState.column,
-        }
-      : undefined,
-    Boolean(sessionMetaQuery.data) && panelState.panel === "file"
-  )
   const transcriptItems = useMemo(() => {
     return (session?.transcriptItems ?? []).filter(
       (item) => item.body.trim().length > 0
@@ -231,11 +166,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         normalizeTranscriptText(item.body).startsWith(normalizedHint)
     )
   }, [session, transcriptItems])
-  const shouldShowWorkingStatus = Boolean(
-    optimisticPendingInput ||
-    sendInput.isPending ||
-    (session && shouldShowThinkingState(session.status))
-  )
   const shouldShowInterruptAction =
     Boolean(session) &&
     shouldShowThinkingState(session!.status) &&
@@ -283,27 +213,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       })
     }
 
-    if (session && shouldShowWorkingStatus) {
-      const localRoundInFlight =
-        sendInput.isPending || Boolean(optimisticPendingInput)
-      items.push({
-        kind: "thinking" as const,
-        key: "thinking",
-        summary: localRoundInFlight
-          ? "Codex is working on your latest message…"
-          : session.summary?.trim() || "Codex is thinking…",
-      })
-    }
-
     return items
-  }, [
-    optimisticPendingInput,
-    sendInput.isPending,
-    session,
-    shouldShowWorkingStatus,
-    showPendingInputHint,
-    transcriptItems,
-  ])
+  }, [optimisticPendingInput, session, showPendingInputHint, transcriptItems])
   const transcriptPageCount = transcriptPages.length
   const lastActivityKey = activityItems.at(-1)?.key ?? ""
   const lastActivitySignature = activityItemSignature(activityItems.at(-1))
@@ -313,9 +224,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     false
   const isLoadingInitialTranscript =
     latestTranscriptQuery.isLoading && activityItems.length === 0
-  const panelVisible =
-    panelState.panel === "file" || panelState.panel === "review"
-  const panelAsPage = posture !== "wide" && panelVisible
 
   useEffect(() => {
     const latestPage = latestTranscriptQuery.data
@@ -363,68 +271,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     }
     prependSnapshotRef.current = null
   }, [sessionId])
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
-    window.localStorage.setItem(
-      sessionSidebarWidthStorageKey,
-      String(sidebarWidth)
-    )
-  }, [sidebarWidth])
-
-  useEffect(() => {
-    if (panelState.panel !== "review") {
-      return
-    }
-    if (panelState.reviewFile || panelState.reviewView === "full") {
-      return
-    }
-    const firstFile = reviewQuery.data?.files[0]?.path
-    if (!firstFile) {
-      return
-    }
-    setSearchParams((current) =>
-      buildReviewSelectionParams(current, { reviewFile: firstFile })
-    )
-  }, [
-    panelState.panel,
-    panelState.reviewFile,
-    panelState.reviewView,
-    reviewQuery.data,
-    setSearchParams,
-  ])
-
-  useEffect(() => {
-    if (posture !== "wide") {
-      return
-    }
-
-    function handlePointerMove(event: MouseEvent) {
-      if (!sidebarDraggingRef.current) {
-        return
-      }
-      const nextWidth = window.innerWidth - event.clientX
-      setSidebarWidth(
-        Math.min(
-          Math.max(nextWidth, minSessionSidebarWidth),
-          maxSessionSidebarWidth
-        )
-      )
-    }
-
-    function handlePointerUp() {
-      sidebarDraggingRef.current = false
-    }
-
-    window.addEventListener("mousemove", handlePointerMove)
-    window.addEventListener("mouseup", handlePointerUp)
-    return () => {
-      window.removeEventListener("mousemove", handlePointerMove)
-      window.removeEventListener("mouseup", handlePointerUp)
-    }
-  }, [posture])
 
   useEffect(() => {
     if (isLoadingInitialTranscript) {
@@ -881,46 +727,9 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     return `${String(snapshot.seconds ?? "")}:${String(snapshot.nanos ?? "")}`
   }
 
-  function openFilePanel(rawPath: string) {
-    const reference = parseSessionPathReference(rawPath)
-    if (!reference.path) {
-      return
-    }
-    setSearchParams((current) => buildFilePanelParams(current, reference))
+  function ignoreLocalPathClick() {
+    // File preview sidebar support is intentionally disabled for now.
   }
-
-  function openReviewPanel(input?: {
-    reviewFile?: string | null
-    reviewView?: "file" | "full"
-  }) {
-    setSearchParams((current) => buildReviewPanelParams(current, input))
-  }
-
-  function closePanel() {
-    setSearchParams((current) => buildClosedPanelParams(current))
-  }
-
-  function togglePanel() {
-    if (panelVisible) {
-      closePanel()
-      return
-    }
-    openReviewPanel({
-      reviewFile:
-        panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
-      reviewView: panelState.reviewView,
-    })
-  }
-
-  function startSidebarResize(event: ReactMouseEvent<HTMLDivElement>) {
-    event.preventDefault()
-    sidebarDraggingRef.current = true
-  }
-
-  const mobilePanelTitle =
-    panelState.panel === "file"
-      ? fileQuery.data?.displayPath || fileQuery.data?.requestedPath || "File"
-      : "Review"
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -931,13 +740,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         projectId={projectId}
       />
       <WorkspacePageToolbar
-        forceBack={panelAsPage}
-        onForceBack={closePanel}
-        title={panelAsPage ? mobilePanelTitle : session?.title || "Thread"}
+        title={session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
         resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
-        inspectorOpen={panelVisible}
         onCommit={() => {
           setGitDialogMode(GitCommitMode.COMMIT_ONLY)
           setGitDialogOpen(true)
@@ -946,23 +752,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
           setGitDialogMode(GitCommitMode.COMMIT_AND_PUSH)
           setGitDialogOpen(true)
         }}
-        onOpenReview={() => {
-          openReviewPanel({
-            reviewFile:
-              panelState.reviewFile || reviewQuery.data?.files[0]?.path || null,
-            reviewView: panelState.reviewView,
-          })
-        }}
         onOpenTerminal={() => {
           if (!terminalEnabled) {
             return
           }
           terminalUIState.setOpen(!terminalUIState.open)
         }}
-        onToggleInspector={posture === "wide" ? togglePanel : undefined}
-        showInspectorToggle={posture === "wide"}
         showCommit={Boolean(projectGitStatusQuery.data?.isGitRepository)}
-        showReview
         showTerminal={terminalEnabled}
         terminalButtonTestId="workspace-topbar-terminal"
         terminalActive={Boolean(
@@ -978,55 +774,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             This thread is temporarily unavailable.
           </div>
         </div>
-      ) : panelAsPage ? (
-        <Suspense fallback={null}>
-          <SessionInspectorPane
-            file={fileQuery.data}
-            fileLoading={fileQuery.isLoading}
-            mobile
-            mode={panelState.panel === "file" ? "file" : "review"}
-            onClose={closePanel}
-            onModeChange={(nextMode) => {
-              if (nextMode === "file" && panelState.path) {
-                setSearchParams((current) =>
-                  buildFilePanelParams(current, {
-                    path: panelState.path!,
-                    line: panelState.line,
-                    column: panelState.column,
-                  })
-                )
-                return
-              }
-              openReviewPanel({
-                reviewFile:
-                  panelState.reviewFile ||
-                  reviewQuery.data?.files[0]?.path ||
-                  null,
-                reviewView: panelState.reviewView,
-              })
-            }}
-            onReviewFileSelect={(path) => {
-              setSearchParams((current) =>
-                buildReviewSelectionParams(current, {
-                  reviewFile: path,
-                  reviewView: "file",
-                })
-              )
-            }}
-            onReviewViewChange={(reviewView) => {
-              setSearchParams((current) =>
-                buildReviewSelectionParams(current, {
-                  reviewFile: panelState.reviewFile,
-                  reviewView,
-                })
-              )
-            }}
-            review={reviewQuery.data}
-            reviewFile={panelState.reviewFile}
-            reviewLoading={reviewQuery.isLoading}
-            reviewView={panelState.reviewView}
-          />
-        </Suspense>
       ) : (
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
@@ -1076,28 +823,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                       isFetchingPreviousPage && hasUnloadedTranscriptHistory
                     }
                     isLoadingInitialTranscript={isLoadingInitialTranscript}
-                    onSelectDiff={(diff) => {
-                      openReviewPanel({
-                        reviewFile: diff.path,
-                        reviewView: "file",
-                      })
-                    }}
-                    onSelectPath={(path) => {
-                      openFilePanel(path)
-                    }}
+                    onSelectPath={ignoreLocalPathClick}
                     scrollElementRef={transcriptScrollRef}
                   />
                   <SessionArtifactWorkspace
                     artifacts={session.artifacts}
-                    onOpenReview={() => {
-                      openReviewPanel({
-                        reviewFile:
-                          panelState.reviewFile ||
-                          reviewQuery.data?.files[0]?.path ||
-                          null,
-                        reviewView: panelState.reviewView,
-                      })
-                    }}
                     sessionId={sessionId}
                   />
                 </div>
@@ -1132,21 +862,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               </button>
             </div>
 
-            {session && shouldShowWorkingStatus ? (
-              <div className="border-t border-border bg-background/95 px-6 py-2 backdrop-blur">
-                <div className="mx-auto max-w-[720px] rounded-lg border border-border bg-card px-3 py-2">
-                  <TypingIndicator
-                    label={
-                      sendInput.isPending || Boolean(optimisticPendingInput)
-                        ? "Codex is starting this turn..."
-                        : session.summary?.trim() ||
-                          "Codex is still working on this turn..."
-                    }
-                  />
-                </div>
-              </div>
-            ) : null}
-
             <SessionComposer
               busy={sendInput.isPending || interruptSession.isPending}
               composerTestId="session-composer"
@@ -1156,12 +871,12 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               onInterrupt={async () => {
                 await interruptSession.mutateAsync({ sessionId })
               }}
-              placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
+              placeholder="Ask anything"
               projectLabel={session.project?.name || "Local"}
               branchLabel="main"
               settingsLabel="Custom (config.toml)"
               onValueChange={setPrompt}
-              onSubmit={async () => {
+              onSubmit={async ({ model, reasoningEffort }) => {
                 if (!prompt.trim()) {
                   return
                 }
@@ -1172,6 +887,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 try {
                   await sendInput.mutateAsync({
                     input: normalizedPrompt,
+                    model,
+                    reasoningEffort,
                     sessionId,
                   })
                 } catch (error) {
@@ -1190,68 +907,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               uiState={terminalUIState}
             />
           </div>
-
-          {posture === "wide" && panelVisible ? (
-            <div
-              className="relative flex h-full shrink-0 border-l border-border bg-card"
-              style={{ width: sidebarWidth }}
-            >
-              <div
-                role="presentation"
-                className="absolute inset-y-0 left-0 w-1 cursor-col-resize bg-transparent"
-                onMouseDown={startSidebarResize}
-              />
-              <div className="min-w-0 flex-1">
-                <Suspense fallback={null}>
-                  <SessionInspectorPane
-                    file={fileQuery.data}
-                    fileLoading={fileQuery.isLoading}
-                    mode={panelState.panel === "file" ? "file" : "review"}
-                    onClose={closePanel}
-                    onModeChange={(nextMode) => {
-                      if (nextMode === "file" && panelState.path) {
-                        setSearchParams((current) =>
-                          buildFilePanelParams(current, {
-                            path: panelState.path!,
-                            line: panelState.line,
-                            column: panelState.column,
-                          })
-                        )
-                        return
-                      }
-                      openReviewPanel({
-                        reviewFile:
-                          panelState.reviewFile ||
-                          reviewQuery.data?.files[0]?.path ||
-                          null,
-                        reviewView: panelState.reviewView,
-                      })
-                    }}
-                    onReviewFileSelect={(path) => {
-                      setSearchParams((current) =>
-                        buildReviewSelectionParams(current, {
-                          reviewFile: path,
-                          reviewView: "file",
-                        })
-                      )
-                    }}
-                    onReviewViewChange={(reviewView) => {
-                      setSearchParams((current) =>
-                        buildReviewSelectionParams(current, {
-                          reviewFile: panelState.reviewFile,
-                          reviewView,
-                        })
-                      )
-                    }}
-                    review={reviewQuery.data}
-                    reviewFile={panelState.reviewFile}
-                    reviewLoading={reviewQuery.isLoading}
-                    reviewView={panelState.reviewView}
-                  />
-                </Suspense>
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
     </div>
@@ -1539,11 +1194,6 @@ type ActivityItem =
     }
   | {
       key: string
-      kind: "thinking"
-      summary: string
-    }
-  | {
-      key: string
       kind: "round-status"
       state: "finished" | "attention"
       summary: string
@@ -1559,11 +1209,6 @@ type TimelineItem =
       item: SessionTranscriptItem
       kind: "transcript"
       key: string
-    }
-  | {
-      key: string
-      kind: "thinking"
-      summary: string
     }
   | {
       key: string
@@ -1604,8 +1249,6 @@ function activityItemSignature(item: ActivityItem | undefined) {
       ].join(":")
     case "pending-input":
       return `${item.key}:${item.text.length}:${item.text.slice(-160)}`
-    case "thinking":
-      return `${item.key}:${item.summary.length}:${item.summary.slice(-160)}`
     case "round-status":
       return `${item.key}:${item.state}:${item.summary.length}:${item.summary.slice(-160)}`
   }
@@ -1615,14 +1258,12 @@ function TranscriptTimeline({
   items,
   isFetchingPreviousPage,
   isLoadingInitialTranscript,
-  onSelectDiff,
   onSelectPath,
   scrollElementRef,
 }: {
   items: ActivityItem[]
   isFetchingPreviousPage: boolean
   isLoadingInitialTranscript: boolean
-  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
   scrollElementRef: RefObject<HTMLDivElement | null>
 }) {
@@ -1708,7 +1349,7 @@ function TranscriptTimeline({
                 transform: `translateY(${virtualItem.start - scrollMargin}px)`,
               }}
             >
-              {renderTimelineItem(item, { onSelectDiff, onSelectPath })}
+              {renderTimelineItem(item, { onSelectPath })}
             </div>
           )
         })}
@@ -1720,7 +1361,6 @@ function TranscriptTimeline({
 function renderTimelineItem(
   item: TimelineItem,
   handlers: {
-    onSelectDiff: (diff: ParsedFileChange) => void
     onSelectPath: (path: string) => void
   }
 ) {
@@ -1729,12 +1369,9 @@ function renderTimelineItem(
       return (
         <TranscriptEntry
           item={item.item}
-          onSelectDiff={handlers.onSelectDiff}
           onSelectPath={handlers.onSelectPath}
         />
       )
-    case "thinking":
-      return <ThinkingEntry summary={item.summary} />
     case "round-status":
       return <RoundStatusEntry state={item.state} summary={item.summary} />
     case "pending-input":
@@ -1748,7 +1385,6 @@ function renderTimelineItem(
       return (
         <ThoughtProcessGroupEntry
           items={item.items}
-          onSelectDiff={handlers.onSelectDiff}
           onSelectPath={handlers.onSelectPath}
         />
       )
@@ -1828,16 +1464,6 @@ function PendingInputEntry({
   )
 }
 
-function ThinkingEntry({ summary }: { summary: string }) {
-  return (
-    <div className="min-w-0" data-testid="session-transcript-thinking">
-      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3">
-        <TypingIndicator label={summary} />
-      </div>
-    </div>
-  )
-}
-
 function RoundStatusEntry({
   state,
   summary,
@@ -1864,11 +1490,9 @@ function RoundStatusEntry({
 
 function TranscriptEntry({
   item,
-  onSelectDiff,
   onSelectPath,
 }: {
   item: SessionTranscriptItem
-  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
 }) {
   switch (item.kind) {
@@ -1883,7 +1507,7 @@ function TranscriptEntry({
     case SessionTranscriptItemKind.COMMAND_EXECUTION:
       return <CommandEntry item={item} />
     case SessionTranscriptItemKind.FILE_CHANGE:
-      return <FileChangeGroupEntry items={[item]} onSelectDiff={onSelectDiff} />
+      return <FileChangeGroupEntry items={[item]} />
     default:
       return <AgentMessageEntry item={item} onSelectPath={onSelectPath} />
   }
@@ -2219,11 +1843,9 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
 
 function ThoughtProcessGroupEntry({
   items,
-  onSelectDiff,
   onSelectPath,
 }: {
   items: SessionTranscriptItem[]
-  onSelectDiff: (diff: ParsedFileChange) => void
   onSelectPath: (path: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -2241,7 +1863,6 @@ function ThoughtProcessGroupEntry({
           <TranscriptEntry
             key={item.id}
             item={item}
-            onSelectDiff={onSelectDiff}
             onSelectPath={onSelectPath}
           />
         ))}
@@ -2300,13 +1921,7 @@ function CommandExecutionDetail({
   )
 }
 
-function FileChangeGroupEntry({
-  items,
-  onSelectDiff,
-}: {
-  items: SessionTranscriptItem[]
-  onSelectDiff: (diff: ParsedFileChange) => void
-}) {
+function FileChangeGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
   const changes = items.flatMap((item) => parseFileChangeBody(item.body))
 
   return (
@@ -2316,7 +1931,6 @@ function FileChangeGroupEntry({
           <FileChangeRow
             change={change}
             key={`${change.path}-${change.kindLabel}`}
-            onSelectDiff={onSelectDiff}
           />
         ))}
       </div>
@@ -2324,13 +1938,7 @@ function FileChangeGroupEntry({
   )
 }
 
-function FileChangeRow({
-  change,
-  onSelectDiff,
-}: {
-  change: ParsedFileChange
-  onSelectDiff: (diff: ParsedFileChange) => void
-}) {
+function FileChangeRow({ change }: { change: ParsedFileChange }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -2341,7 +1949,6 @@ function FileChangeRow({
         className="w-full gap-2 py-0.5 text-base text-muted-foreground hover:text-foreground"
         onClick={() => {
           setExpanded((prev) => !prev)
-          onSelectDiff(change)
         }}
         title={change.path}
       >
@@ -2727,19 +2334,6 @@ function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
   }
 
   return `Thought process: ${parts.join(", ")}`
-}
-
-function TypingIndicator({ label = "Thinking..." }: { label?: string }) {
-  return (
-    <div className="flex items-center gap-2 text-muted-foreground">
-      <div className="flex items-center gap-1">
-        <span className="bg-primary-muted size-1.5 animate-pulse rounded-full" />
-        <span className="bg-primary-muted size-1.5 animate-pulse rounded-full [animation-delay:140ms]" />
-        <span className="bg-primary-muted size-1.5 animate-pulse rounded-full [animation-delay:280ms]" />
-      </div>
-      <span>{label}</span>
-    </div>
-  )
 }
 
 function shouldPollSessionState(status: Session["status"]) {

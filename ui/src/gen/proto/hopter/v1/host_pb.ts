@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hopter/v1/host.proto.
  */
 export const file_hopter_v1_host: GenFile = /*@__PURE__*/
-  fileDesc("ChRob3B0ZXIvdjEvaG9zdC5wcm90bxIJaG9wdGVyLnYxIlgKDUJhY2tlbmRTdGF0dXMSEwoLYmFja2VuZF9rZXkYASABKAkSEQoJYXZhaWxhYmxlGAIgASgIEg8KB3ZlcnNpb24YAyABKAkSDgoGcmVhc29uGAQgASgJItIBCgpIb3N0U3RhdHVzEg8KB2hvc3RfaWQYASABKAkSKQoGc3RhdHVzGAIgASgOMhkuaG9wdGVyLnYxLkhvc3RTdGF0dXNLaW5kEioKCGJhY2tlbmRzGAMgAygLMhguaG9wdGVyLnYxLkJhY2tlbmRTdGF0dXMSFQoNcHJvamVjdF9jb3VudBgEIAEoDRIVCg1zZXNzaW9uX2NvdW50GAUgASgNEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhYKFEdldEhvc3RTdGF0dXNSZXF1ZXN0IkMKFUdldEhvc3RTdGF0dXNSZXNwb25zZRIqCgtob3N0X3N0YXR1cxgBIAEoCzIVLmhvcHRlci52MS5Ib3N0U3RhdHVzImcKD0F2YWlsYWJsZVVwZGF0ZRIPCgd2ZXJzaW9uGAEgASgJEhEKCW5vdGVzX3VybBgCIAEoCRIwCgxwdWJsaXNoZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIqwDCgxVcGRhdGVTdGF0dXMSFwoPY3VycmVudF92ZXJzaW9uGAEgASgJEhYKDmN1cnJlbnRfY29tbWl0GAIgASgJEg8KB2NoYW5uZWwYAyABKAkSMAoOaW5zdGFsbF9zb3VyY2UYBCABKA4yGC5ob3B0ZXIudjEuSW5zdGFsbFNvdXJjZRIuCg11cGRhdGVfcG9saWN5GAUgASgOMhcuaG9wdGVyLnYxLlVwZGF0ZVBvbGljeRIlCgVzdGF0ZRgGIAEoDjIWLmhvcHRlci52MS5VcGRhdGVTdGF0ZRIYChB1cGRhdGVfYXZhaWxhYmxlGAcgASgIEjQKEGF2YWlsYWJsZV91cGRhdGUYCCABKAsyGi5ob3B0ZXIudjEuQXZhaWxhYmxlVXBkYXRlEhYKDnRhcmdldF92ZXJzaW9uGAkgASgJEhwKFHVwZ3JhZGVfY29tbWFuZF9oaW50GAogASgJEhYKDmZhaWx1cmVfcmVhc29uGAsgASgJEjMKD2xhc3RfY2hlY2tlZF9hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiGAoWR2V0VXBkYXRlU3RhdHVzUmVxdWVzdCJJChdHZXRVcGRhdGVTdGF0dXNSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyImChVDaGVja0ZvclVwZGF0ZVJlcXVlc3QSDQoFZm9yY2UYASABKAgiSAoWQ2hlY2tGb3JVcGRhdGVSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyIUChJBcHBseVVwZGF0ZVJlcXVlc3QiRQoTQXBwbHlVcGRhdGVSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkIKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEioKCGJhY2tlbmRzGAEgAygLMhguaG9wdGVyLnYxLkJhY2tlbmRTdGF0dXMiVAoMU2tpbGxTdW1tYXJ5EgwKBG5hbWUYASABKAkSEQoJcmVmZXJlbmNlGAIgASgJEhMKC2Rlc2NyaXB0aW9uGAMgASgJEg4KBnNvdXJjZRgEIAEoCSITChFMaXN0U2tpbGxzUmVxdWVzdCI9ChJMaXN0U2tpbGxzUmVzcG9uc2USJwoGc2tpbGxzGAEgAygLMhcuaG9wdGVyLnYxLlNraWxsU3VtbWFyeSJOChBNQ1BTZXJ2ZXJTdW1tYXJ5EgwKBG5hbWUYASABKAkSDgoGc291cmNlGAIgASgJEhwKFGNvbmZpZ3VyYXRpb25fc3RhdHVzGAMgASgJIhcKFUxpc3RNQ1BTZXJ2ZXJzUmVxdWVzdCJGChZMaXN0TUNQU2VydmVyc1Jlc3BvbnNlEiwKB3NlcnZlcnMYASADKAsyGy5ob3B0ZXIudjEuTUNQU2VydmVyU3VtbWFyeSI6Cg1EaXJlY3RvcnlSb290Eg0KBWxhYmVsGAEgASgJEgwKBHBhdGgYAiABKAkSDAoEa2luZBgDIAEoCSJ9Cg5EaXJlY3RvcnlFbnRyeRIMCgRuYW1lGAEgASgJEgwKBHBhdGgYAiABKAkSFAoMaXNfZGlyZWN0b3J5GAMgASgIEg8KB2lzX3JlcG8YBCABKAgSFAoMaGFzX2NoaWxkcmVuGAUgASgIEhIKCmlzX2FsbG93ZWQYBiABKAgiaQoQRGlyZWN0b3J5TGlzdGluZxIUCgxjdXJyZW50X3BhdGgYASABKAkSEwoLcGFyZW50X3BhdGgYAiABKAkSKgoHZW50cmllcxgDIAMoCzIZLmhvcHRlci52MS5EaXJlY3RvcnlFbnRyeSLrAQoMUGF0aE1ldGFkYXRhEgwKBHBhdGgYASABKAkSFgoOY2Fub25pY2FsX3BhdGgYAiABKAkSEAoIYmFzZW5hbWUYAyABKAkSFAoMaXNfZGlyZWN0b3J5GAQgASgIEg8KB2lzX3JlcG8YBSABKAgSEgoKaXNfYWxsb3dlZBgGIAEoCBIdChVjaGlsZF9kaXJlY3RvcnlfY291bnQYByABKA0SGAoQY2hpbGRfZmlsZV9jb3VudBgIIAEoDRIvCgttb2RpZmllZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiGwoZTGlzdERpcmVjdG9yeVJvb3RzUmVxdWVzdCJFChpMaXN0RGlyZWN0b3J5Um9vdHNSZXNwb25zZRInCgVyb290cxgBIAMoCzIYLmhvcHRlci52MS5EaXJlY3RvcnlSb290IiQKFExpc3REaXJlY3RvcnlSZXF1ZXN0EgwKBHBhdGgYASABKAkiRQoVTGlzdERpcmVjdG9yeVJlc3BvbnNlEiwKB2xpc3RpbmcYASABKAsyGy5ob3B0ZXIudjEuRGlyZWN0b3J5TGlzdGluZyImChZHZXRQYXRoTWV0YWRhdGFSZXF1ZXN0EgwKBHBhdGgYASABKAkiRAoXR2V0UGF0aE1ldGFkYXRhUmVzcG9uc2USKQoIbWV0YWRhdGEYASABKAsyFy5ob3B0ZXIudjEuUGF0aE1ldGFkYXRhIicKFkxpc3RSZWNlbnRSZXBvc1JlcXVlc3QSDQoFbGltaXQYASABKA0iQQoXTGlzdFJlY2VudFJlcG9zUmVzcG9uc2USJgoFcmVwb3MYASADKAsyFy5ob3B0ZXIudjEuUGF0aE1ldGFkYXRhKuICCg1JbnN0YWxsU291cmNlEh4KGklOU1RBTExfU09VUkNFX1VOU1BFQ0lGSUVEEAASGQoVSU5TVEFMTF9TT1VSQ0VfRElSRUNUEAESGgoWSU5TVEFMTF9TT1VSQ0VfVU5LTk9XThACEiMKH0lOU1RBTExfU09VUkNFX0hPTUVCUkVXX0ZPUk1VTEEQAxIgChxJTlNUQUxMX1NPVVJDRV9IT01FQlJFV19DQVNLEAQSFgoSSU5TVEFMTF9TT1VSQ0VfQVBUEAUSFgoSSU5TVEFMTF9TT1VSQ0VfRE5GEAYSGQoVSU5TVEFMTF9TT1VSQ0VfV0lOR0VUEAcSFgoSSU5TVEFMTF9TT1VSQ0VfTklYEAgSGwoXSU5TVEFMTF9TT1VSQ0VfTUFDUE9SVFMQCRIXChNJTlNUQUxMX1NPVVJDRV9TTkFQEAoSGgoWSU5TVEFMTF9TT1VSQ0VfRkxBVFBBSxALKpEBCgxVcGRhdGVQb2xpY3kSHQoZVVBEQVRFX1BPTElDWV9VTlNQRUNJRklFRBAAEh4KGlVQREFURV9QT0xJQ1lfU0VMRl9NQU5BR0VEEAESIQodVVBEQVRFX1BPTElDWV9QQUNLQUdFX01BTkFHRUQQAhIfChtVUERBVEVfUE9MSUNZX1NUT1JFX01BTkFHRUQQAyrhAgoLVXBkYXRlU3RhdGUSHAoYVVBEQVRFX1NUQVRFX1VOU1BFQ0lGSUVEEAASFQoRVVBEQVRFX1NUQVRFX0lETEUQARIZChVVUERBVEVfU1RBVEVfQ0hFQ0tJTkcQAhIaChZVUERBVEVfU1RBVEVfQVZBSUxBQkxFEAMSHAoYVVBEQVRFX1NUQVRFX0RPV05MT0FESU5HEAQSGgoWVVBEQVRFX1NUQVRFX1ZFUklGWUlORxAFEiIKHlVQREFURV9TVEFURV9QUkVGTElHSFRfUlVOTklORxAGEh8KG1VQREFURV9TVEFURV9SRUFEWV9UT19BUFBMWRAHEhoKFlVQREFURV9TVEFURV9SRUVYRUNJTkcQCBIgChxVUERBVEVfU1RBVEVfRkFJTEVEX1BSRV9FWEVDEAkSKQolVVBEQVRFX1NUQVRFX0ZBSUxFRF9QT1NUX0VYRUNfVU5LTk9XThAKMr4HCgtIb3N0U2VydmljZRJSCg1HZXRIb3N0U3RhdHVzEh8uaG9wdGVyLnYxLkdldEhvc3RTdGF0dXNSZXF1ZXN0GiAuaG9wdGVyLnYxLkdldEhvc3RTdGF0dXNSZXNwb25zZRJPCgxMaXN0QmFja2VuZHMSHi5ob3B0ZXIudjEuTGlzdEJhY2tlbmRzUmVxdWVzdBofLmhvcHRlci52MS5MaXN0QmFja2VuZHNSZXNwb25zZRJJCgpMaXN0U2tpbGxzEhwuaG9wdGVyLnYxLkxpc3RTa2lsbHNSZXF1ZXN0Gh0uaG9wdGVyLnYxLkxpc3RTa2lsbHNSZXNwb25zZRJVCg5MaXN0TUNQU2VydmVycxIgLmhvcHRlci52MS5MaXN0TUNQU2VydmVyc1JlcXVlc3QaIS5ob3B0ZXIudjEuTGlzdE1DUFNlcnZlcnNSZXNwb25zZRJhChJMaXN0RGlyZWN0b3J5Um9vdHMSJC5ob3B0ZXIudjEuTGlzdERpcmVjdG9yeVJvb3RzUmVxdWVzdBolLmhvcHRlci52MS5MaXN0RGlyZWN0b3J5Um9vdHNSZXNwb25zZRJSCg1MaXN0RGlyZWN0b3J5Eh8uaG9wdGVyLnYxLkxpc3REaXJlY3RvcnlSZXF1ZXN0GiAuaG9wdGVyLnYxLkxpc3REaXJlY3RvcnlSZXNwb25zZRJYCg9HZXRQYXRoTWV0YWRhdGESIS5ob3B0ZXIudjEuR2V0UGF0aE1ldGFkYXRhUmVxdWVzdBoiLmhvcHRlci52MS5HZXRQYXRoTWV0YWRhdGFSZXNwb25zZRJYCg9MaXN0UmVjZW50UmVwb3MSIS5ob3B0ZXIudjEuTGlzdFJlY2VudFJlcG9zUmVxdWVzdBoiLmhvcHRlci52MS5MaXN0UmVjZW50UmVwb3NSZXNwb25zZRJYCg9HZXRVcGRhdGVTdGF0dXMSIS5ob3B0ZXIudjEuR2V0VXBkYXRlU3RhdHVzUmVxdWVzdBoiLmhvcHRlci52MS5HZXRVcGRhdGVTdGF0dXNSZXNwb25zZRJVCg5DaGVja0ZvclVwZGF0ZRIgLmhvcHRlci52MS5DaGVja0ZvclVwZGF0ZVJlcXVlc3QaIS5ob3B0ZXIudjEuQ2hlY2tGb3JVcGRhdGVSZXNwb25zZRJMCgtBcHBseVVwZGF0ZRIdLmhvcHRlci52MS5BcHBseVVwZGF0ZVJlcXVlc3QaHi5ob3B0ZXIudjEuQXBwbHlVcGRhdGVSZXNwb25zZUKjAQoNY29tLmhvcHRlci52MUIJSG9zdFByb3RvUAFaQmdpdGh1Yi5jb20vc29yY2VyZXJ4dy9ob3B0ZXIvaW50ZXJuYWwvZ2VuL3Byb3RvL2hvcHRlci92MTtob3B0ZXJ2MaICA0hYWKoCCUhvcHRlci5WMcoCCUhvcHRlclxWMeICFUhvcHRlclxWMVxHUEJNZXRhZGF0YeoCCkhvcHRlcjo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_hopter_v1_common]);
+  fileDesc("ChRob3B0ZXIvdjEvaG9zdC5wcm90bxIJaG9wdGVyLnYxIlgKDUJhY2tlbmRTdGF0dXMSEwoLYmFja2VuZF9rZXkYASABKAkSEQoJYXZhaWxhYmxlGAIgASgIEg8KB3ZlcnNpb24YAyABKAkSDgoGcmVhc29uGAQgASgJItIBCgpIb3N0U3RhdHVzEg8KB2hvc3RfaWQYASABKAkSKQoGc3RhdHVzGAIgASgOMhkuaG9wdGVyLnYxLkhvc3RTdGF0dXNLaW5kEioKCGJhY2tlbmRzGAMgAygLMhguaG9wdGVyLnYxLkJhY2tlbmRTdGF0dXMSFQoNcHJvamVjdF9jb3VudBgEIAEoDRIVCg1zZXNzaW9uX2NvdW50GAUgASgNEi4KCnVwZGF0ZWRfYXQYBiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhYKFEdldEhvc3RTdGF0dXNSZXF1ZXN0IkMKFUdldEhvc3RTdGF0dXNSZXNwb25zZRIqCgtob3N0X3N0YXR1cxgBIAEoCzIVLmhvcHRlci52MS5Ib3N0U3RhdHVzImcKD0F2YWlsYWJsZVVwZGF0ZRIPCgd2ZXJzaW9uGAEgASgJEhEKCW5vdGVzX3VybBgCIAEoCRIwCgxwdWJsaXNoZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIqwDCgxVcGRhdGVTdGF0dXMSFwoPY3VycmVudF92ZXJzaW9uGAEgASgJEhYKDmN1cnJlbnRfY29tbWl0GAIgASgJEg8KB2NoYW5uZWwYAyABKAkSMAoOaW5zdGFsbF9zb3VyY2UYBCABKA4yGC5ob3B0ZXIudjEuSW5zdGFsbFNvdXJjZRIuCg11cGRhdGVfcG9saWN5GAUgASgOMhcuaG9wdGVyLnYxLlVwZGF0ZVBvbGljeRIlCgVzdGF0ZRgGIAEoDjIWLmhvcHRlci52MS5VcGRhdGVTdGF0ZRIYChB1cGRhdGVfYXZhaWxhYmxlGAcgASgIEjQKEGF2YWlsYWJsZV91cGRhdGUYCCABKAsyGi5ob3B0ZXIudjEuQXZhaWxhYmxlVXBkYXRlEhYKDnRhcmdldF92ZXJzaW9uGAkgASgJEhwKFHVwZ3JhZGVfY29tbWFuZF9oaW50GAogASgJEhYKDmZhaWx1cmVfcmVhc29uGAsgASgJEjMKD2xhc3RfY2hlY2tlZF9hdBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiGAoWR2V0VXBkYXRlU3RhdHVzUmVxdWVzdCJJChdHZXRVcGRhdGVTdGF0dXNSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyImChVDaGVja0ZvclVwZGF0ZVJlcXVlc3QSDQoFZm9yY2UYASABKAgiSAoWQ2hlY2tGb3JVcGRhdGVSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyIUChJBcHBseVVwZGF0ZVJlcXVlc3QiRQoTQXBwbHlVcGRhdGVSZXNwb25zZRIuCg11cGRhdGVfc3RhdHVzGAEgASgLMhcuaG9wdGVyLnYxLlVwZGF0ZVN0YXR1cyIVChNMaXN0QmFja2VuZHNSZXF1ZXN0IkIKFExpc3RCYWNrZW5kc1Jlc3BvbnNlEioKCGJhY2tlbmRzGAEgAygLMhguaG9wdGVyLnYxLkJhY2tlbmRTdGF0dXMiRQoUTW9kZWxSZWFzb25pbmdFZmZvcnQSGAoQcmVhc29uaW5nX2VmZm9ydBgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCSLoAQoKQWdlbnRNb2RlbBIKCgJpZBgBIAEoCRINCgVtb2RlbBgCIAEoCRIUCgxkaXNwbGF5X25hbWUYAyABKAkSEwoLZGVzY3JpcHRpb24YBCABKAkSEgoKaXNfZGVmYXVsdBgFIAEoCBIgChhkZWZhdWx0X3JlYXNvbmluZ19lZmZvcnQYBiABKAkSRAobc3VwcG9ydGVkX3JlYXNvbmluZ19lZmZvcnRzGAcgAygLMh8uaG9wdGVyLnYxLk1vZGVsUmVhc29uaW5nRWZmb3J0EhgKEGlucHV0X21vZGFsaXRpZXMYCCADKAkiVQoRTGlzdE1vZGVsc1JlcXVlc3QSGAoLYmFja2VuZF9rZXkYASABKAlIAIgBARIWCg5pbmNsdWRlX2hpZGRlbhgCIAEoCEIOCgxfYmFja2VuZF9rZXkiOwoSTGlzdE1vZGVsc1Jlc3BvbnNlEiUKBm1vZGVscxgBIAMoCzIVLmhvcHRlci52MS5BZ2VudE1vZGVsIlQKDFNraWxsU3VtbWFyeRIMCgRuYW1lGAEgASgJEhEKCXJlZmVyZW5jZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRIOCgZzb3VyY2UYBCABKAkiEwoRTGlzdFNraWxsc1JlcXVlc3QiPQoSTGlzdFNraWxsc1Jlc3BvbnNlEicKBnNraWxscxgBIAMoCzIXLmhvcHRlci52MS5Ta2lsbFN1bW1hcnkiTgoQTUNQU2VydmVyU3VtbWFyeRIMCgRuYW1lGAEgASgJEg4KBnNvdXJjZRgCIAEoCRIcChRjb25maWd1cmF0aW9uX3N0YXR1cxgDIAEoCSIXChVMaXN0TUNQU2VydmVyc1JlcXVlc3QiRgoWTGlzdE1DUFNlcnZlcnNSZXNwb25zZRIsCgdzZXJ2ZXJzGAEgAygLMhsuaG9wdGVyLnYxLk1DUFNlcnZlclN1bW1hcnkiOgoNRGlyZWN0b3J5Um9vdBINCgVsYWJlbBgBIAEoCRIMCgRwYXRoGAIgASgJEgwKBGtpbmQYAyABKAkifQoORGlyZWN0b3J5RW50cnkSDAoEbmFtZRgBIAEoCRIMCgRwYXRoGAIgASgJEhQKDGlzX2RpcmVjdG9yeRgDIAEoCBIPCgdpc19yZXBvGAQgASgIEhQKDGhhc19jaGlsZHJlbhgFIAEoCBISCgppc19hbGxvd2VkGAYgASgIImkKEERpcmVjdG9yeUxpc3RpbmcSFAoMY3VycmVudF9wYXRoGAEgASgJEhMKC3BhcmVudF9wYXRoGAIgASgJEioKB2VudHJpZXMYAyADKAsyGS5ob3B0ZXIudjEuRGlyZWN0b3J5RW50cnki6wEKDFBhdGhNZXRhZGF0YRIMCgRwYXRoGAEgASgJEhYKDmNhbm9uaWNhbF9wYXRoGAIgASgJEhAKCGJhc2VuYW1lGAMgASgJEhQKDGlzX2RpcmVjdG9yeRgEIAEoCBIPCgdpc19yZXBvGAUgASgIEhIKCmlzX2FsbG93ZWQYBiABKAgSHQoVY2hpbGRfZGlyZWN0b3J5X2NvdW50GAcgASgNEhgKEGNoaWxkX2ZpbGVfY291bnQYCCABKA0SLwoLbW9kaWZpZWRfYXQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhsKGUxpc3REaXJlY3RvcnlSb290c1JlcXVlc3QiRQoaTGlzdERpcmVjdG9yeVJvb3RzUmVzcG9uc2USJwoFcm9vdHMYASADKAsyGC5ob3B0ZXIudjEuRGlyZWN0b3J5Um9vdCIkChRMaXN0RGlyZWN0b3J5UmVxdWVzdBIMCgRwYXRoGAEgASgJIkUKFUxpc3REaXJlY3RvcnlSZXNwb25zZRIsCgdsaXN0aW5nGAEgASgLMhsuaG9wdGVyLnYxLkRpcmVjdG9yeUxpc3RpbmciJgoWR2V0UGF0aE1ldGFkYXRhUmVxdWVzdBIMCgRwYXRoGAEgASgJIkQKF0dldFBhdGhNZXRhZGF0YVJlc3BvbnNlEikKCG1ldGFkYXRhGAEgASgLMhcuaG9wdGVyLnYxLlBhdGhNZXRhZGF0YSInChZMaXN0UmVjZW50UmVwb3NSZXF1ZXN0Eg0KBWxpbWl0GAEgASgNIkEKF0xpc3RSZWNlbnRSZXBvc1Jlc3BvbnNlEiYKBXJlcG9zGAEgAygLMhcuaG9wdGVyLnYxLlBhdGhNZXRhZGF0YSriAgoNSW5zdGFsbFNvdXJjZRIeChpJTlNUQUxMX1NPVVJDRV9VTlNQRUNJRklFRBAAEhkKFUlOU1RBTExfU09VUkNFX0RJUkVDVBABEhoKFklOU1RBTExfU09VUkNFX1VOS05PV04QAhIjCh9JTlNUQUxMX1NPVVJDRV9IT01FQlJFV19GT1JNVUxBEAMSIAocSU5TVEFMTF9TT1VSQ0VfSE9NRUJSRVdfQ0FTSxAEEhYKEklOU1RBTExfU09VUkNFX0FQVBAFEhYKEklOU1RBTExfU09VUkNFX0RORhAGEhkKFUlOU1RBTExfU09VUkNFX1dJTkdFVBAHEhYKEklOU1RBTExfU09VUkNFX05JWBAIEhsKF0lOU1RBTExfU09VUkNFX01BQ1BPUlRTEAkSFwoTSU5TVEFMTF9TT1VSQ0VfU05BUBAKEhoKFklOU1RBTExfU09VUkNFX0ZMQVRQQUsQCyqRAQoMVXBkYXRlUG9saWN5Eh0KGVVQREFURV9QT0xJQ1lfVU5TUEVDSUZJRUQQABIeChpVUERBVEVfUE9MSUNZX1NFTEZfTUFOQUdFRBABEiEKHVVQREFURV9QT0xJQ1lfUEFDS0FHRV9NQU5BR0VEEAISHwobVVBEQVRFX1BPTElDWV9TVE9SRV9NQU5BR0VEEAMq4QIKC1VwZGF0ZVN0YXRlEhwKGFVQREFURV9TVEFURV9VTlNQRUNJRklFRBAAEhUKEVVQREFURV9TVEFURV9JRExFEAESGQoVVVBEQVRFX1NUQVRFX0NIRUNLSU5HEAISGgoWVVBEQVRFX1NUQVRFX0FWQUlMQUJMRRADEhwKGFVQREFURV9TVEFURV9ET1dOTE9BRElORxAEEhoKFlVQREFURV9TVEFURV9WRVJJRllJTkcQBRIiCh5VUERBVEVfU1RBVEVfUFJFRkxJR0hUX1JVTk5JTkcQBhIfChtVUERBVEVfU1RBVEVfUkVBRFlfVE9fQVBQTFkQBxIaChZVUERBVEVfU1RBVEVfUkVFWEVDSU5HEAgSIAocVVBEQVRFX1NUQVRFX0ZBSUxFRF9QUkVfRVhFQxAJEikKJVVQREFURV9TVEFURV9GQUlMRURfUE9TVF9FWEVDX1VOS05PV04QCjKJCAoLSG9zdFNlcnZpY2USUgoNR2V0SG9zdFN0YXR1cxIfLmhvcHRlci52MS5HZXRIb3N0U3RhdHVzUmVxdWVzdBogLmhvcHRlci52MS5HZXRIb3N0U3RhdHVzUmVzcG9uc2USTwoMTGlzdEJhY2tlbmRzEh4uaG9wdGVyLnYxLkxpc3RCYWNrZW5kc1JlcXVlc3QaHy5ob3B0ZXIudjEuTGlzdEJhY2tlbmRzUmVzcG9uc2USSQoKTGlzdE1vZGVscxIcLmhvcHRlci52MS5MaXN0TW9kZWxzUmVxdWVzdBodLmhvcHRlci52MS5MaXN0TW9kZWxzUmVzcG9uc2USSQoKTGlzdFNraWxscxIcLmhvcHRlci52MS5MaXN0U2tpbGxzUmVxdWVzdBodLmhvcHRlci52MS5MaXN0U2tpbGxzUmVzcG9uc2USVQoOTGlzdE1DUFNlcnZlcnMSIC5ob3B0ZXIudjEuTGlzdE1DUFNlcnZlcnNSZXF1ZXN0GiEuaG9wdGVyLnYxLkxpc3RNQ1BTZXJ2ZXJzUmVzcG9uc2USYQoSTGlzdERpcmVjdG9yeVJvb3RzEiQuaG9wdGVyLnYxLkxpc3REaXJlY3RvcnlSb290c1JlcXVlc3QaJS5ob3B0ZXIudjEuTGlzdERpcmVjdG9yeVJvb3RzUmVzcG9uc2USUgoNTGlzdERpcmVjdG9yeRIfLmhvcHRlci52MS5MaXN0RGlyZWN0b3J5UmVxdWVzdBogLmhvcHRlci52MS5MaXN0RGlyZWN0b3J5UmVzcG9uc2USWAoPR2V0UGF0aE1ldGFkYXRhEiEuaG9wdGVyLnYxLkdldFBhdGhNZXRhZGF0YVJlcXVlc3QaIi5ob3B0ZXIudjEuR2V0UGF0aE1ldGFkYXRhUmVzcG9uc2USWAoPTGlzdFJlY2VudFJlcG9zEiEuaG9wdGVyLnYxLkxpc3RSZWNlbnRSZXBvc1JlcXVlc3QaIi5ob3B0ZXIudjEuTGlzdFJlY2VudFJlcG9zUmVzcG9uc2USWAoPR2V0VXBkYXRlU3RhdHVzEiEuaG9wdGVyLnYxLkdldFVwZGF0ZVN0YXR1c1JlcXVlc3QaIi5ob3B0ZXIudjEuR2V0VXBkYXRlU3RhdHVzUmVzcG9uc2USVQoOQ2hlY2tGb3JVcGRhdGUSIC5ob3B0ZXIudjEuQ2hlY2tGb3JVcGRhdGVSZXF1ZXN0GiEuaG9wdGVyLnYxLkNoZWNrRm9yVXBkYXRlUmVzcG9uc2USTAoLQXBwbHlVcGRhdGUSHS5ob3B0ZXIudjEuQXBwbHlVcGRhdGVSZXF1ZXN0Gh4uaG9wdGVyLnYxLkFwcGx5VXBkYXRlUmVzcG9uc2VCowEKDWNvbS5ob3B0ZXIudjFCCUhvc3RQcm90b1ABWkJnaXRodWIuY29tL3NvcmNlcmVyeHcvaG9wdGVyL2ludGVybmFsL2dlbi9wcm90by9ob3B0ZXIvdjE7aG9wdGVydjGiAgNIWFiqAglIb3B0ZXIuVjHKAglIb3B0ZXJcVjHiAhVIb3B0ZXJcVjFcR1BCTWV0YWRhdGHqAgpIb3B0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_hopter_v1_common]);
 
 /**
  * @generated from message hopter.v1.BackendStatus
@@ -344,6 +344,119 @@ export const ListBackendsResponseSchema: GenMessage<ListBackendsResponse> = /*@_
   messageDesc(file_hopter_v1_host, 13);
 
 /**
+ * @generated from message hopter.v1.ModelReasoningEffort
+ */
+export type ModelReasoningEffort = Message<"hopter.v1.ModelReasoningEffort"> & {
+  /**
+   * @generated from field: string reasoning_effort = 1;
+   */
+  reasoningEffort: string;
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description: string;
+};
+
+/**
+ * Describes the message hopter.v1.ModelReasoningEffort.
+ * Use `create(ModelReasoningEffortSchema)` to create a new message.
+ */
+export const ModelReasoningEffortSchema: GenMessage<ModelReasoningEffort> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_host, 14);
+
+/**
+ * @generated from message hopter.v1.AgentModel
+ */
+export type AgentModel = Message<"hopter.v1.AgentModel"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string model = 2;
+   */
+  model: string;
+
+  /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: string description = 4;
+   */
+  description: string;
+
+  /**
+   * @generated from field: bool is_default = 5;
+   */
+  isDefault: boolean;
+
+  /**
+   * @generated from field: string default_reasoning_effort = 6;
+   */
+  defaultReasoningEffort: string;
+
+  /**
+   * @generated from field: repeated hopter.v1.ModelReasoningEffort supported_reasoning_efforts = 7;
+   */
+  supportedReasoningEfforts: ModelReasoningEffort[];
+
+  /**
+   * @generated from field: repeated string input_modalities = 8;
+   */
+  inputModalities: string[];
+};
+
+/**
+ * Describes the message hopter.v1.AgentModel.
+ * Use `create(AgentModelSchema)` to create a new message.
+ */
+export const AgentModelSchema: GenMessage<AgentModel> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_host, 15);
+
+/**
+ * @generated from message hopter.v1.ListModelsRequest
+ */
+export type ListModelsRequest = Message<"hopter.v1.ListModelsRequest"> & {
+  /**
+   * @generated from field: optional string backend_key = 1;
+   */
+  backendKey?: string;
+
+  /**
+   * @generated from field: bool include_hidden = 2;
+   */
+  includeHidden: boolean;
+};
+
+/**
+ * Describes the message hopter.v1.ListModelsRequest.
+ * Use `create(ListModelsRequestSchema)` to create a new message.
+ */
+export const ListModelsRequestSchema: GenMessage<ListModelsRequest> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_host, 16);
+
+/**
+ * @generated from message hopter.v1.ListModelsResponse
+ */
+export type ListModelsResponse = Message<"hopter.v1.ListModelsResponse"> & {
+  /**
+   * @generated from field: repeated hopter.v1.AgentModel models = 1;
+   */
+  models: AgentModel[];
+};
+
+/**
+ * Describes the message hopter.v1.ListModelsResponse.
+ * Use `create(ListModelsResponseSchema)` to create a new message.
+ */
+export const ListModelsResponseSchema: GenMessage<ListModelsResponse> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_host, 17);
+
+/**
  * @generated from message hopter.v1.SkillSummary
  */
 export type SkillSummary = Message<"hopter.v1.SkillSummary"> & {
@@ -373,7 +486,7 @@ export type SkillSummary = Message<"hopter.v1.SkillSummary"> & {
  * Use `create(SkillSummarySchema)` to create a new message.
  */
 export const SkillSummarySchema: GenMessage<SkillSummary> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 14);
+  messageDesc(file_hopter_v1_host, 18);
 
 /**
  * @generated from message hopter.v1.ListSkillsRequest
@@ -386,7 +499,7 @@ export type ListSkillsRequest = Message<"hopter.v1.ListSkillsRequest"> & {
  * Use `create(ListSkillsRequestSchema)` to create a new message.
  */
 export const ListSkillsRequestSchema: GenMessage<ListSkillsRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 15);
+  messageDesc(file_hopter_v1_host, 19);
 
 /**
  * @generated from message hopter.v1.ListSkillsResponse
@@ -403,7 +516,7 @@ export type ListSkillsResponse = Message<"hopter.v1.ListSkillsResponse"> & {
  * Use `create(ListSkillsResponseSchema)` to create a new message.
  */
 export const ListSkillsResponseSchema: GenMessage<ListSkillsResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 16);
+  messageDesc(file_hopter_v1_host, 20);
 
 /**
  * @generated from message hopter.v1.MCPServerSummary
@@ -430,7 +543,7 @@ export type MCPServerSummary = Message<"hopter.v1.MCPServerSummary"> & {
  * Use `create(MCPServerSummarySchema)` to create a new message.
  */
 export const MCPServerSummarySchema: GenMessage<MCPServerSummary> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 17);
+  messageDesc(file_hopter_v1_host, 21);
 
 /**
  * @generated from message hopter.v1.ListMCPServersRequest
@@ -443,7 +556,7 @@ export type ListMCPServersRequest = Message<"hopter.v1.ListMCPServersRequest"> &
  * Use `create(ListMCPServersRequestSchema)` to create a new message.
  */
 export const ListMCPServersRequestSchema: GenMessage<ListMCPServersRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 18);
+  messageDesc(file_hopter_v1_host, 22);
 
 /**
  * @generated from message hopter.v1.ListMCPServersResponse
@@ -460,7 +573,7 @@ export type ListMCPServersResponse = Message<"hopter.v1.ListMCPServersResponse">
  * Use `create(ListMCPServersResponseSchema)` to create a new message.
  */
 export const ListMCPServersResponseSchema: GenMessage<ListMCPServersResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 19);
+  messageDesc(file_hopter_v1_host, 23);
 
 /**
  * @generated from message hopter.v1.DirectoryRoot
@@ -487,7 +600,7 @@ export type DirectoryRoot = Message<"hopter.v1.DirectoryRoot"> & {
  * Use `create(DirectoryRootSchema)` to create a new message.
  */
 export const DirectoryRootSchema: GenMessage<DirectoryRoot> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 20);
+  messageDesc(file_hopter_v1_host, 24);
 
 /**
  * @generated from message hopter.v1.DirectoryEntry
@@ -529,7 +642,7 @@ export type DirectoryEntry = Message<"hopter.v1.DirectoryEntry"> & {
  * Use `create(DirectoryEntrySchema)` to create a new message.
  */
 export const DirectoryEntrySchema: GenMessage<DirectoryEntry> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 21);
+  messageDesc(file_hopter_v1_host, 25);
 
 /**
  * @generated from message hopter.v1.DirectoryListing
@@ -556,7 +669,7 @@ export type DirectoryListing = Message<"hopter.v1.DirectoryListing"> & {
  * Use `create(DirectoryListingSchema)` to create a new message.
  */
 export const DirectoryListingSchema: GenMessage<DirectoryListing> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 22);
+  messageDesc(file_hopter_v1_host, 26);
 
 /**
  * @generated from message hopter.v1.PathMetadata
@@ -613,7 +726,7 @@ export type PathMetadata = Message<"hopter.v1.PathMetadata"> & {
  * Use `create(PathMetadataSchema)` to create a new message.
  */
 export const PathMetadataSchema: GenMessage<PathMetadata> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 23);
+  messageDesc(file_hopter_v1_host, 27);
 
 /**
  * @generated from message hopter.v1.ListDirectoryRootsRequest
@@ -626,7 +739,7 @@ export type ListDirectoryRootsRequest = Message<"hopter.v1.ListDirectoryRootsReq
  * Use `create(ListDirectoryRootsRequestSchema)` to create a new message.
  */
 export const ListDirectoryRootsRequestSchema: GenMessage<ListDirectoryRootsRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 24);
+  messageDesc(file_hopter_v1_host, 28);
 
 /**
  * @generated from message hopter.v1.ListDirectoryRootsResponse
@@ -643,7 +756,7 @@ export type ListDirectoryRootsResponse = Message<"hopter.v1.ListDirectoryRootsRe
  * Use `create(ListDirectoryRootsResponseSchema)` to create a new message.
  */
 export const ListDirectoryRootsResponseSchema: GenMessage<ListDirectoryRootsResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 25);
+  messageDesc(file_hopter_v1_host, 29);
 
 /**
  * @generated from message hopter.v1.ListDirectoryRequest
@@ -660,7 +773,7 @@ export type ListDirectoryRequest = Message<"hopter.v1.ListDirectoryRequest"> & {
  * Use `create(ListDirectoryRequestSchema)` to create a new message.
  */
 export const ListDirectoryRequestSchema: GenMessage<ListDirectoryRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 26);
+  messageDesc(file_hopter_v1_host, 30);
 
 /**
  * @generated from message hopter.v1.ListDirectoryResponse
@@ -677,7 +790,7 @@ export type ListDirectoryResponse = Message<"hopter.v1.ListDirectoryResponse"> &
  * Use `create(ListDirectoryResponseSchema)` to create a new message.
  */
 export const ListDirectoryResponseSchema: GenMessage<ListDirectoryResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 27);
+  messageDesc(file_hopter_v1_host, 31);
 
 /**
  * @generated from message hopter.v1.GetPathMetadataRequest
@@ -694,7 +807,7 @@ export type GetPathMetadataRequest = Message<"hopter.v1.GetPathMetadataRequest">
  * Use `create(GetPathMetadataRequestSchema)` to create a new message.
  */
 export const GetPathMetadataRequestSchema: GenMessage<GetPathMetadataRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 28);
+  messageDesc(file_hopter_v1_host, 32);
 
 /**
  * @generated from message hopter.v1.GetPathMetadataResponse
@@ -711,7 +824,7 @@ export type GetPathMetadataResponse = Message<"hopter.v1.GetPathMetadataResponse
  * Use `create(GetPathMetadataResponseSchema)` to create a new message.
  */
 export const GetPathMetadataResponseSchema: GenMessage<GetPathMetadataResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 29);
+  messageDesc(file_hopter_v1_host, 33);
 
 /**
  * @generated from message hopter.v1.ListRecentReposRequest
@@ -728,7 +841,7 @@ export type ListRecentReposRequest = Message<"hopter.v1.ListRecentReposRequest">
  * Use `create(ListRecentReposRequestSchema)` to create a new message.
  */
 export const ListRecentReposRequestSchema: GenMessage<ListRecentReposRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 30);
+  messageDesc(file_hopter_v1_host, 34);
 
 /**
  * @generated from message hopter.v1.ListRecentReposResponse
@@ -745,7 +858,7 @@ export type ListRecentReposResponse = Message<"hopter.v1.ListRecentReposResponse
  * Use `create(ListRecentReposResponseSchema)` to create a new message.
  */
 export const ListRecentReposResponseSchema: GenMessage<ListRecentReposResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_host, 31);
+  messageDesc(file_hopter_v1_host, 35);
 
 /**
  * @generated from enum hopter.v1.InstallSource
@@ -934,6 +1047,14 @@ export const HostService: GenService<{
     methodKind: "unary";
     input: typeof ListBackendsRequestSchema;
     output: typeof ListBackendsResponseSchema;
+  },
+  /**
+   * @generated from rpc hopter.v1.HostService.ListModels
+   */
+  listModels: {
+    methodKind: "unary";
+    input: typeof ListModelsRequestSchema;
+    output: typeof ListModelsResponseSchema;
   },
   /**
    * @generated from rpc hopter.v1.HostService.ListSkills

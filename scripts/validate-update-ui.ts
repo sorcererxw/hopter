@@ -10,16 +10,9 @@ import {
   type ValidationCheck,
 } from "./lib/rebuild-validation.ts";
 
-const PACKAGE_PORT = Number.parseInt(
-  process.env.HOPTER_UPDATE_UI_PACKAGE_PORT?.trim() || "8896",
-  10
-);
-const DIRECT_PORT = Number.parseInt(
-  process.env.HOPTER_UPDATE_UI_DIRECT_PORT?.trim() || "8897",
-  10
-);
-const DEV_PROXY_URL =
-  process.env.HOPTER_UPDATE_UI_DEV_PROXY_URL?.trim() || "http://127.0.0.1:5173";
+const PACKAGE_PORT = 8896;
+const DIRECT_PORT = 8897;
+const DEV_PROXY_URL = "http://127.0.0.1:5173";
 
 async function waitForHttp(
   url: string,
@@ -39,24 +32,20 @@ async function waitForHttp(
   return false;
 }
 
-function spawnServer(
-  binaryPath: string,
-  port: number,
-  installSource: string,
-  availableVersion: string
-) {
-  return Bun.spawn([binaryPath], {
+function spawnServer(binaryPath: string, port: number) {
+  return Bun.spawn([
+    binaryPath,
+    "--host",
+    "127.0.0.1",
+    "--port",
+    String(port),
+    "--dev-proxy-url",
+    DEV_PROXY_URL,
+  ], {
     cwd: process.cwd(),
     stdout: "pipe",
     stderr: "pipe",
-    env: {
-      ...process.env,
-      HOPTER_HOST: "127.0.0.1",
-      HOPTER_PORT: String(port),
-      HOPTER_UI_DEV_PROXY_URL: DEV_PROXY_URL,
-      HOPTER_UPDATE_AVAILABLE_VERSION: availableVersion,
-      HOPTER_INSTALL_SOURCE: installSource,
-    },
+    env: process.env,
   });
 }
 
@@ -75,21 +64,44 @@ async function main(): Promise<void> {
         : (uiBuild.stderr || uiBuild.stdout || "ui build failed").trim(),
   });
 
-  const goBuild = await runCommand(
-    ["go", "build", "-o", path.join(run.rootDir, "bin", "hopter"), "./cmd/hopter"],
+  const packageBinaryPath = path.join(run.rootDir, "bin", "hopter-package");
+  const directBinaryPath = path.join(run.rootDir, "bin", "hopter-direct");
+  const packageGoBuild = await runCommand(
+    [
+      "go",
+      "build",
+      "-ldflags",
+      "-X main.installSource=homebrew_formula",
+      "-o",
+      packageBinaryPath,
+      "./cmd/hopter",
+    ],
     process.cwd()
   );
-  run.writeJson("commands/go-build.json", goBuild);
+  run.writeJson("commands/go-build-package.json", packageGoBuild);
   checks.push({
-    name: "go build ./cmd/hopter",
-    status: goBuild.exitCode === 0 ? "pass" : "fail",
+    name: "go build package-managed binary",
+    status: packageGoBuild.exitCode === 0 ? "pass" : "fail",
     detail:
-      goBuild.exitCode === 0
-        ? `built ${path.join(run.rootDir, "bin", "hopter")}`
-        : (goBuild.stderr || goBuild.stdout || "go build failed").trim(),
+      packageGoBuild.exitCode === 0
+        ? `built ${packageBinaryPath}`
+        : (packageGoBuild.stderr || packageGoBuild.stdout || "go build failed").trim(),
+  });
+  const directGoBuild = await runCommand(
+    ["go", "build", "-ldflags", "-X main.installSource=direct", "-o", directBinaryPath, "./cmd/hopter"],
+    process.cwd()
+  );
+  run.writeJson("commands/go-build-direct.json", directGoBuild);
+  checks.push({
+    name: "go build direct binary",
+    status: directGoBuild.exitCode === 0 ? "pass" : "fail",
+    detail:
+      directGoBuild.exitCode === 0
+        ? `built ${directBinaryPath}`
+        : (directGoBuild.stderr || directGoBuild.stdout || "go build failed").trim(),
   });
 
-  if (uiBuild.exitCode !== 0 || goBuild.exitCode !== 0) {
+  if (uiBuild.exitCode !== 0 || packageGoBuild.exitCode !== 0 || directGoBuild.exitCode !== 0) {
     const overallStatus = combineValidationStatus(checks.map((check) => check.status));
     run.writeJson("report.json", { runId: run.runId, status: overallStatus, checks });
     run.writeText("summary.md", renderValidationSummary("Update UI validation", checks));
@@ -103,10 +115,9 @@ async function main(): Promise<void> {
   }
 
   mkdirSync(path.join(run.rootDir, "screenshots"), { recursive: true });
-  const binaryPath = path.join(run.rootDir, "bin", "hopter");
 
-  const packageServer = spawnServer(binaryPath, PACKAGE_PORT, "homebrew_formula", "1.2.4");
-  const directServer = spawnServer(binaryPath, DIRECT_PORT, "direct", "1.2.4");
+  const packageServer = spawnServer(packageBinaryPath, PACKAGE_PORT);
+  const directServer = spawnServer(directBinaryPath, DIRECT_PORT);
 
   try {
     const packageReady = await waitForHttp(`http://127.0.0.1:${PACKAGE_PORT}/healthz`);

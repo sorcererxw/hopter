@@ -28,8 +28,8 @@ type githubReleaseAsset struct {
 	Size               int64  `json:"size"`
 }
 
-func fetchLatestGitHubRelease(ctx context.Context, client *http.Client, repo string, selfManaged bool) (*core.AvailableUpdate, error) {
-	apiBaseURL := strings.TrimRight(envValue("HOPTER_UPDATE_GITHUB_API_BASE_URL"), "/")
+func fetchLatestGitHubRelease(ctx context.Context, client *http.Client, repo string, apiBaseURL string, selfManaged bool) (*core.AvailableUpdate, error) {
+	apiBaseURL = strings.TrimRight(strings.TrimSpace(apiBaseURL), "/")
 	if apiBaseURL == "" {
 		apiBaseURL = defaultGitHubAPIBaseURL
 	}
@@ -140,12 +140,4 @@ func fetchChecksumForAsset(ctx context.Context, client *http.Client, checksumsUR
 		}
 	}
 	return "", nil
-}
-
-func updateReleaseRepository() string {
-	repo := strings.TrimSpace(envValue("HOPTER_UPDATE_RELEASE_REPO"))
-	if repo != "" {
-		return repo
-	}
-	return defaultReleaseRepository
 }

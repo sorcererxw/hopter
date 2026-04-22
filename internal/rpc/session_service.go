@@ -22,7 +22,7 @@ type sessionRuntime interface {
 	ListSessions(projectID string, limit uint32) ([]agents.ResolvedSession, error)
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
-	SendSessionInput(sessionID, input string) (core.Session, error)
+	SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error)
 	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
@@ -173,10 +173,12 @@ func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.R
 
 func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[hopterv1.CreateSessionRequest]) (*connect.Response[hopterv1.CreateSessionResponse], error) {
 	session, err := s.codex.CreateSession(core.CreateSessionInput{
-		ProjectID:  req.Msg.GetProjectId(),
-		BackendKey: req.Msg.GetBackendKey(),
-		Title:      req.Msg.GetTitle(),
-		Prompt:     req.Msg.GetPrompt(),
+		ProjectID:       req.Msg.GetProjectId(),
+		BackendKey:      req.Msg.GetBackendKey(),
+		Title:           req.Msg.GetTitle(),
+		Prompt:          req.Msg.GetPrompt(),
+		Model:           req.Msg.GetModel(),
+		ReasoningEffort: req.Msg.GetReasoningEffort(),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -188,7 +190,10 @@ func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[h
 }
 
 func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Request[hopterv1.SendSessionInputRequest]) (*connect.Response[hopterv1.SendSessionInputResponse], error) {
-	session, err := s.codex.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput())
+	session, err := s.codex.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput(), core.SessionTurnOptions{
+		Model:           req.Msg.GetModel(),
+		ReasoningEffort: req.Msg.GetReasoningEffort(),
+	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

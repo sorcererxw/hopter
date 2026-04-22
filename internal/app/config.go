@@ -1,6 +1,8 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/url"
@@ -38,8 +40,7 @@ func (c UIConfig) Mode() string {
 }
 
 type TaskConfig struct {
-	SchedulerMode string
-	StateHome     string
+	StateHome string
 }
 
 func (c TaskConfig) StorePath() string {
@@ -47,58 +48,55 @@ func (c TaskConfig) StorePath() string {
 }
 
 type Config struct {
-	Version             string
-	InstallSource       string
-	HostID              string
-	HTTP                HTTPConfig
-	UI                  UIConfig
-	Tasks               TaskConfig
-	LocalhostOnlyNoAuth bool
+	Version       string
+	InstallSource string
+	HostID        string
+	HTTP          HTTPConfig
+	UI            UIConfig
+	Tasks         TaskConfig
+}
+
+type LoadOptions struct {
+	Host        string
+	Port        int
+	DevProxyURL string
 }
 
 func LoadConfig(version string, installSource string) (Config, error) {
+	return LoadConfigWithOptions(version, installSource, LoadOptions{})
+}
+
+func LoadConfigWithOptions(version string, installSource string, opts LoadOptions) (Config, error) {
 	resolvedVersion := firstNonEmpty(strings.TrimSpace(version), "dev")
+	devProxyURL := strings.TrimSpace(opts.DevProxyURL)
 	cfg := Config{
-		Version:             resolvedVersion,
-		InstallSource:       firstNonEmpty(strings.TrimSpace(installSource), "direct"),
-		HostID:              envOrDefault(defaultHostID, "HOPTER_HOST_ID"),
-		LocalhostOnlyNoAuth: envBool(false, "HOPTER_LOCALHOST_ONLY_NO_AUTH"),
+		Version:       resolvedVersion,
+		InstallSource: firstNonEmpty(strings.TrimSpace(installSource), "direct"),
+		HostID:        defaultHostID,
 		HTTP: HTTPConfig{
-			Host: envOrDefault(defaultHTTPHost, "HOPTER_HOST"),
+			Host: firstNonEmpty(strings.TrimSpace(opts.Host), defaultHTTPHost),
 			Port: defaultHTTPPortForVersion(resolvedVersion),
 		},
 		UI: UIConfig{
-			DevProxyURL: envValue("HOPTER_UI_DEV_PROXY_URL"),
+			DevProxyURL: devProxyURL,
 		},
 		Tasks: TaskConfig{
-			SchedulerMode: envOrDefault("disabled", "HOPTER_TASK_SCHEDULER"),
-			StateHome:     envOrDefault(defaultStateHome(), "HOPTER_STATE_HOME"),
+			StateHome: defaultTaskStateHome(devProxyURL),
 		},
 	}
 
-	if rawPort := envValue("HOPTER_PORT"); rawPort != "" {
-		port, err := strconv.Atoi(rawPort)
-		if err != nil {
-			return Config{}, fmt.Errorf("parse HOPTER_PORT: %w", err)
-		}
-		cfg.HTTP.Port = port
+	if opts.Port != 0 {
+		cfg.HTTP.Port = opts.Port
 	}
 
 	if cfg.HTTP.Port < 1 || cfg.HTTP.Port > 65535 {
-		return Config{}, fmt.Errorf("HOPTER_PORT must be between 1 and 65535, got %d", cfg.HTTP.Port)
+		return Config{}, fmt.Errorf("port must be between 1 and 65535, got %d", cfg.HTTP.Port)
 	}
 
 	if cfg.UI.DevProxyURL != "" {
 		if _, err := parseProxyURL(cfg.UI.DevProxyURL); err != nil {
 			return Config{}, err
 		}
-	}
-
-	if cfg.LocalhostOnlyNoAuth && !isLoopbackHost(cfg.HTTP.Host) {
-		return Config{}, fmt.Errorf(
-			"refusing to bind non-local host %q while dev auth is disabled; set HOPTER_LOCALHOST_ONLY_NO_AUTH=false to override",
-			cfg.HTTP.Host,
-		)
 	}
 
 	return cfg, nil
@@ -124,43 +122,59 @@ func defaultStateHome() string {
 	return filepath.Join(home, ".hopter")
 }
 
+func defaultTaskStateHome(devProxyURL string) string {
+	if strings.TrimSpace(devProxyURL) == "" {
+		return defaultStateHome()
+	}
+	return defaultDevStateHome()
+}
+
+func defaultDevStateHome() string {
+	cwd, err := os.Getwd()
+	if err != nil || strings.TrimSpace(cwd) == "" {
+		return filepath.Join(defaultStateHome(), "devstate", "workspace")
+	}
+	cleanCWD := filepath.Clean(cwd)
+	return filepath.Join(defaultStateHome(), "devstate", devWorkspaceSlug(cleanCWD))
+}
+
+func devWorkspaceSlug(path string) string {
+	base := sanitizePathSegment(filepath.Base(path))
+	sum := sha256.Sum256([]byte(filepath.Clean(path)))
+	return fmt.Sprintf("%s-%s", base, hex.EncodeToString(sum[:])[:8])
+}
+
+func sanitizePathSegment(value string) string {
+	var builder strings.Builder
+	for _, r := range strings.TrimSpace(value) {
+		switch {
+		case r >= 'a' && r <= 'z':
+			builder.WriteRune(r)
+		case r >= 'A' && r <= 'Z':
+			builder.WriteRune(r)
+		case r >= '0' && r <= '9':
+			builder.WriteRune(r)
+		case r == '.', r == '_', r == '-':
+			builder.WriteRune(r)
+		default:
+			builder.WriteRune('-')
+		}
+	}
+	if builder.Len() == 0 {
+		return "workspace"
+	}
+	return builder.String()
+}
+
 func parseProxyURL(raw string) (*url.URL, error) {
 	target, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("parse HOPTER_UI_DEV_PROXY_URL: %w", err)
+		return nil, fmt.Errorf("parse dev proxy URL: %w", err)
 	}
 	if target.Scheme == "" || target.Host == "" {
-		return nil, fmt.Errorf("HOPTER_UI_DEV_PROXY_URL must include scheme and host")
+		return nil, fmt.Errorf("dev proxy URL must include scheme and host")
 	}
 	return target, nil
-}
-
-func envValue(keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func envOrDefault(fallback string, keys ...string) string {
-	if value := envValue(keys...); value != "" {
-		return value
-	}
-	return fallback
-}
-
-func envBool(fallback bool, keys ...string) bool {
-	if value := envValue(keys...); value != "" {
-		switch strings.ToLower(value) {
-		case "1", "true", "yes", "on":
-			return true
-		case "0", "false", "no", "off":
-			return false
-		}
-	}
-	return fallback
 }
 
 func firstNonEmpty(values ...string) string {
@@ -170,13 +184,4 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
-}
-
-func isLoopbackHost(host string) bool {
-	switch strings.TrimSpace(strings.ToLower(host)) {
-	case "", "localhost", "127.0.0.1", "::1", "[::1]":
-		return true
-	}
-	ip := net.ParseIP(host)
-	return ip != nil && ip.IsLoopback()
 }

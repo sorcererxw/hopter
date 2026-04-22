@@ -4,6 +4,8 @@ export const queryKeys = {
   host: () => ["host"] as const,
   hostUpdates: () => ["host", "updates"] as const,
   hostBackends: () => ["host", "backends"] as const,
+  hostModels: (backendKey?: string) =>
+    ["host", "models", { backendKey: backendKey ?? "codex" }] as const,
   hostSkills: () => ["host", "skills"] as const,
   hostMCPServers: () => ["host", "mcp-servers"] as const,
   hostRoots: () => ["host", "roots"] as const,

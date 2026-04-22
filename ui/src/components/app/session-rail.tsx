@@ -11,11 +11,8 @@ import {
   Copy,
   Folder,
   FolderOpen,
-  FolderPlus,
-  Grid2x2,
   ListChecks,
   LoaderCircle,
-  Search,
   Settings,
   SquarePen,
 } from "lucide-react"
@@ -122,7 +119,6 @@ function RailBrand({ right }: { right?: ReactNode }) {
 
 type SessionRailProps = {
   onNavigate?: () => void
-  onOpenSearch: () => void
 }
 
 const sessionRailUiStateStorageKey = "hopter.sessionRailUiState"
@@ -213,8 +209,8 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
   }
 }
 
-export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
-  const { eventStreamState, openProjectPicker, posture } = useWorkspaceShell()
+export function SessionRail({ onNavigate }: SessionRailProps) {
+  const { eventStreamState, posture } = useWorkspaceShell()
   const navigate = useNavigate()
   const railScrollRef = useRef<HTMLDivElement | null>(null)
   const railListRef = useRef<HTMLUListElement | null>(null)
@@ -369,22 +365,6 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
       },
     },
     {
-      key: "search",
-      kind: "row",
-      props: {
-        icon: <Search className="size-3.5" />,
-        label: "Search",
-        onClick: onOpenSearch,
-        className:
-          "text-muted-foreground hover:bg-accent hover:text-foreground",
-        right: (
-          <span className="rounded-md border border-border bg-secondary px-1.5 py-px text-[10px] leading-snug text-muted-foreground opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100">
-            ⌘K
-          </span>
-        ),
-      },
-    },
-    {
       key: "tasks",
       kind: "row",
       props: {
@@ -396,34 +376,6 @@ export function SessionRail({ onNavigate, onOpenSearch }: SessionRailProps) {
           "text-muted-foreground hover:bg-accent hover:text-foreground",
         activeClassName: "bg-accent text-foreground",
         nav: true,
-      },
-    },
-    {
-      key: "skills-apps",
-      kind: "row",
-      props: {
-        icon: <Grid2x2 className="size-3.5" />,
-        label: "Skills & Apps",
-        onClick: onNavigate,
-        to: "/plugins",
-        className:
-          "text-muted-foreground hover:bg-accent hover:text-foreground",
-        activeClassName: "bg-accent text-foreground",
-        nav: true,
-      },
-    },
-    {
-      key: "new-project",
-      kind: "row",
-      props: {
-        icon: <FolderPlus className="size-3.5" />,
-        label: "New project",
-        onClick: () => {
-          onNavigate?.()
-          openProjectPicker()
-        },
-        className:
-          "text-muted-foreground hover:bg-accent hover:text-foreground",
       },
     },
     {

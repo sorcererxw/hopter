@@ -16,11 +16,10 @@ type TaskService struct {
 	store     tasks.Store
 	workspace core.WorkspaceService
 	eventSink core.EventSink
-	mode      tasks.SchedulerMode
 }
 
-func NewTaskService(store tasks.Store, workspace core.WorkspaceService, eventSink core.EventSink, mode tasks.SchedulerMode) *TaskService {
-	return &TaskService{store: store, workspace: workspace, eventSink: eventSink, mode: mode}
+func NewTaskService(store tasks.Store, workspace core.WorkspaceService, eventSink core.EventSink) *TaskService {
+	return &TaskService{store: store, workspace: workspace, eventSink: eventSink}
 }
 
 func (s *TaskService) ListTasks(ctx context.Context, req *connect.Request[hopterv1.ListTasksRequest]) (*connect.Response[hopterv1.ListTasksResponse], error) {
@@ -64,7 +63,6 @@ func (s *TaskService) CreateTask(ctx context.Context, req *connect.Request[hopte
 		Priority:        req.Msg.GetPriority(),
 		InitialSubtasks: req.Msg.GetInitialSubtasks(),
 		IdempotencyKey:  req.Msg.GetIdempotencyKey(),
-		SchedulerMode:   s.mode,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)

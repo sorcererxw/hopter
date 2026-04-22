@@ -23,7 +23,6 @@ export function HomeWorkspacePane() {
     undefined,
     eventStreamState === "connected" ? 10_000 : 3_000
   )
-  const [selectedBackendKeyState, setSelectedBackendKeyState] = useState("")
   const [prompt, setPrompt] = useState("")
   const selectedProjectId =
     searchParams.get("projectId") || projects?.[0]?.id || ""
@@ -63,14 +62,16 @@ export function HomeWorkspacePane() {
     () => projectOptions.find((project) => project.id === selectedProjectId),
     [projectOptions, selectedProjectId]
   )
-  const selectedBackendKey =
-    selectedBackendKeyState || selectedProject?.defaultBackend || "codex"
   const isPhoneCompose =
     posture === "phone" && searchParams.get("compose") === "1"
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <WorkspacePageToolbar forceBack={isPhoneCompose} title="New Session" />
+      <WorkspacePageToolbar
+        forceBack={isPhoneCompose}
+        showOverflowMenu={false}
+        title="New Session"
+      />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-[720px]">
@@ -85,21 +86,23 @@ export function HomeWorkspacePane() {
             composerTestId="home-session-composer"
             disabled={!selectedProjectId}
             inputTestId="home-session-prompt-input"
-            placeholder="Ask Codex anything, @ to add files, / for commands, $ for skills"
+            placeholder="Ask anything"
             placement="inline"
             projectLabel={selectedProject?.name || "Local"}
             branchLabel="main"
             onValueChange={setPrompt}
-            onSubmit={async () => {
+            onSubmit={async ({ model, reasoningEffort }) => {
               if (!selectedProjectId || !prompt.trim()) {
                 return
               }
 
               const normalizedPrompt = prompt.trim()
               const session = await createSession.mutateAsync({
-                backendKey: selectedBackendKey,
+                backendKey: "codex",
+                model,
                 projectId: selectedProjectId,
                 prompt: normalizedPrompt,
+                reasoningEffort,
                 title: deriveTitle(normalizedPrompt),
               })
 
@@ -119,8 +122,8 @@ export function HomeWorkspacePane() {
             value={prompt}
           />
 
-          <div className="mt-4 flex items-center justify-center gap-1 text-base text-muted-foreground">
-            <label className="relative inline-flex items-center">
+          <div className="mt-4 flex items-center justify-start text-base text-muted-foreground">
+            <label className="relative flex max-w-80 min-w-0 items-center">
               <select
                 value={selectedProjectId}
                 onChange={(event) => {
@@ -135,7 +138,7 @@ export function HomeWorkspacePane() {
                     return next
                   })
                 }}
-                className="appearance-none bg-transparent pr-4 text-center font-medium text-foreground outline-none"
+                className="max-w-80 min-w-0 appearance-none truncate bg-transparent pr-5 text-left font-medium text-foreground outline-none"
               >
                 <option value="">
                   {projectsLoading ? "Loading…" : "Select project"}
@@ -145,22 +148,6 @@ export function HomeWorkspacePane() {
                     {project.name}
                   </option>
                 ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
-            </label>
-
-            <span className="text-muted-foreground">·</span>
-
-            <label className="relative inline-flex items-center">
-              <select
-                value={selectedBackendKey}
-                onChange={(event) =>
-                  setSelectedBackendKeyState(event.target.value)
-                }
-                className="appearance-none bg-transparent pr-4 text-center font-medium text-foreground outline-none"
-              >
-                <option value="codex">codex</option>
-                <option value="copilot">copilot</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
             </label>

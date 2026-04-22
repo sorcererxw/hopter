@@ -20,16 +20,24 @@ import (
 	"github.com/sorcererxw/hopter/internal/app"
 )
 
+type serveOptions struct {
+	host        string
+	port        int
+	devProxyURL string
+}
+
 func newRootCmd(version string, installSource string) *cobra.Command {
+	opts := serveOptions{}
 	cmd := &cobra.Command{
 		Use:           "hopter",
 		Short:         "Local control plane for coding agents",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(version, installSource, cmd.OutOrStdout())
+			return runServe(version, installSource, opts, cmd.OutOrStdout())
 		},
 	}
+	addServeFlags(cmd, &opts)
 
 	cmd.AddCommand(newServeCmd(version, installSource))
 	cmd.AddCommand(newDoctorCmd(version, installSource))
@@ -39,19 +47,32 @@ func newRootCmd(version string, installSource string) *cobra.Command {
 }
 
 func newServeCmd(version string, installSource string) *cobra.Command {
-	return &cobra.Command{
+	opts := serveOptions{}
+	cmd := &cobra.Command{
 		Use:           "serve",
 		Short:         "Start the hopter HTTP server",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(version, installSource, cmd.OutOrStdout())
+			return runServe(version, installSource, opts, cmd.OutOrStdout())
 		},
 	}
+	addServeFlags(cmd, &opts)
+	return cmd
 }
 
-func runServe(version string, installSource string, out io.Writer) error {
-	cfg, err := app.LoadConfig(version, installSource)
+func addServeFlags(cmd *cobra.Command, opts *serveOptions) {
+	cmd.Flags().StringVar(&opts.host, "host", "", "HTTP bind host")
+	cmd.Flags().IntVar(&opts.port, "port", 0, "HTTP bind port")
+	cmd.Flags().StringVar(&opts.devProxyURL, "dev-proxy-url", "", "Vite dev server URL to reverse proxy")
+}
+
+func runServe(version string, installSource string, opts serveOptions, out io.Writer) error {
+	cfg, err := app.LoadConfigWithOptions(version, installSource, app.LoadOptions{
+		Host:        opts.host,
+		Port:        opts.port,
+		DevProxyURL: opts.devProxyURL,
+	})
 	if err != nil {
 		slog.Error("load config", "error", err)
 		return err

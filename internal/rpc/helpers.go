@@ -120,6 +120,27 @@ func projectToProto(project core.Project) *hopterv1.Project {
 	}
 }
 
+func agentModelToProto(model core.AgentModel) *hopterv1.AgentModel {
+	efforts := make([]*hopterv1.ModelReasoningEffort, 0, len(model.SupportedReasoningEfforts))
+	for _, effort := range model.SupportedReasoningEfforts {
+		efforts = append(efforts, &hopterv1.ModelReasoningEffort{
+			ReasoningEffort: validUTF8(effort.ReasoningEffort),
+			Description:     validUTF8(effort.Description),
+		})
+	}
+
+	return &hopterv1.AgentModel{
+		Id:                        validUTF8(model.ID),
+		Model:                     validUTF8(model.Model),
+		DisplayName:               validUTF8(model.DisplayName),
+		Description:               validUTF8(model.Description),
+		IsDefault:                 model.IsDefault,
+		DefaultReasoningEffort:    validUTF8(model.DefaultReasoningEffort),
+		SupportedReasoningEfforts: efforts,
+		InputModalities:           validUTF8Slice(model.InputModalities),
+	}
+}
+
 func projectRef(project core.Project) *hopterv1.ProjectRef {
 	return &hopterv1.ProjectRef{
 		Id:       project.ID,
@@ -352,6 +373,14 @@ func sessionListItemToProto(project core.Project, session core.Session) *hopterv
 
 func validUTF8(value string) string {
 	return strings.ToValidUTF8(value, "")
+}
+
+func validUTF8Slice(values []string) []string {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		result = append(result, validUTF8(value))
+	}
+	return result
 }
 
 func optionalString(value string) *string {

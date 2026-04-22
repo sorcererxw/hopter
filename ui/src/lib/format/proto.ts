@@ -36,12 +36,10 @@ export function formatBackendKey(value?: string) {
   switch ((value || "").trim().toLowerCase()) {
     case "codex":
       return "codex"
-    case "copilot":
-      return "copilot"
     case "":
       return "unknown"
     default:
-      return (value || "").trim().toLowerCase()
+      return "unknown"
   }
 }
 

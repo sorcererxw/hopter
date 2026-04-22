@@ -124,6 +124,24 @@ type Backend struct {
 	Reason    string
 }
 
+const BackendKeyCodex = "codex"
+
+type ModelReasoningEffort struct {
+	ReasoningEffort string
+	Description     string
+}
+
+type AgentModel struct {
+	ID                        string
+	Model                     string
+	DisplayName               string
+	Description               string
+	IsDefault                 bool
+	DefaultReasoningEffort    string
+	SupportedReasoningEfforts []ModelReasoningEffort
+	InputModalities           []string
+}
+
 type Skill struct {
 	Name        string
 	Reference   string
@@ -395,10 +413,17 @@ type ListSessionsInput struct {
 }
 
 type CreateSessionInput struct {
-	ProjectID  string
-	BackendKey string
-	Title      string
-	Prompt     string
+	ProjectID       string
+	BackendKey      string
+	Title           string
+	Prompt          string
+	Model           string
+	ReasoningEffort string
+}
+
+type SessionTurnOptions struct {
+	Model           string
+	ReasoningEffort string
 }
 
 type SessionPatch struct {

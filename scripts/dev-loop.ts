@@ -4,6 +4,8 @@ import {
   appendDevLog,
   consumeTextStream,
   getRepoRoot,
+  localHttpUrl,
+  normalizeLocalhostHost,
   nowIso,
   summarizeErrorLine,
   waitForHttpOk,
@@ -13,12 +15,11 @@ import {
 const repoRoot = getRepoRoot()
 const sessionId = `dev-${Date.now()}`
 
-const uiDevHost = process.env.HOPTER_UI_DEV_HOST?.trim() || "0.0.0.0"
-const uiDevProxyHost = normalizeProxyHost(process.env.HOPTER_UI_DEV_PROXY_HOST?.trim() || uiDevHost)
-const goDevHost = process.env.HOPTER_HOST?.trim() || uiDevHost
-const goLocalhostOnlyNoAuth = process.env.HOPTER_LOCALHOST_ONLY_NO_AUTH?.trim() || "false"
-const uiDevProxyUrl = process.env.HOPTER_UI_DEV_PROXY_URL?.trim() || `http://${uiDevProxyHost}:5173`
-const healthUrl = process.env.HOPTER_GO_HEALTH_URL?.trim() || "http://127.0.0.1:8787/healthz"
+const uiDevHost = "0.0.0.0"
+const goDevHost = uiDevHost
+const uiDevProxyHost = normalizeLocalhostHost(uiDevHost)
+const uiDevProxyUrl = localHttpUrl(uiDevHost, 5173)
+const healthUrl = "http://127.0.0.1:8787/healthz"
 
 let viteProc: ReturnType<typeof spawn> | null = null
 let goProc: ReturnType<typeof spawn> | null = null
@@ -123,23 +124,8 @@ async function preflightPorts() {
 
   if (failures.length > 0) {
     throw new Error(
-      `dev preflight failed: ${failures.join(
-        "; "
-      )}. Stop the old listeners or change HOPTER_HOST/HOPTER_PORT and HOPTER_UI_DEV_HOST first.`
+        `dev preflight failed: ${failures.join("; ")}. Stop the old listeners first.`
     )
-  }
-}
-
-function normalizeProxyHost(host: string) {
-  switch (host) {
-    case "":
-    case "0.0.0.0":
-      return "127.0.0.1"
-    case "::":
-    case "[::]":
-      return "[::1]"
-    default:
-      return host
   }
 }
 
@@ -221,10 +207,7 @@ async function startVite() {
 
   viteProc = spawn("pnpm", ["--dir", "ui", "dev"], {
     cwd: repoRoot,
-    env: {
-      ...process.env,
-      HOPTER_UI_DEV_HOST: uiDevHost,
-    },
+    env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
   })
 
@@ -267,11 +250,6 @@ async function startVite() {
 }
 
 function resolveGoRunner() {
-  const airBin = process.env.HOPTER_AIR_BIN?.trim()
-  if (airBin) {
-    return { command: airBin, args: ["-c", ".air.toml"] }
-  }
-
   return {
     command: "go",
     args: ["run", "github.com/air-verse/air@latest", "-c", ".air.toml"],
@@ -292,12 +270,7 @@ async function startGoLoop() {
   const runner = resolveGoRunner()
   goProc = spawn(runner.command, runner.args, {
     cwd: repoRoot,
-    env: {
-      ...process.env,
-      HOPTER_HOST: goDevHost,
-      HOPTER_LOCALHOST_ONLY_NO_AUTH: goLocalhostOnlyNoAuth,
-      HOPTER_UI_DEV_PROXY_URL: uiDevProxyUrl,
-    },
+    env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
   })
 

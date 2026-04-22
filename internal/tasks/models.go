@@ -2,14 +2,6 @@ package tasks
 
 import "time"
 
-type SchedulerMode string
-
-const (
-	SchedulerDisabled SchedulerMode = "disabled"
-	SchedulerManual   SchedulerMode = "manual"
-	SchedulerAuto     SchedulerMode = "auto"
-)
-
 type LifecycleStatus string
 
 const (
@@ -146,7 +138,6 @@ type CreateTaskInput struct {
 	Priority        uint32
 	InitialSubtasks []string
 	IdempotencyKey  string
-	SchedulerMode   SchedulerMode
 }
 
 type CreateSubtaskInput struct {

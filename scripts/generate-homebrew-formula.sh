@@ -2,7 +2,7 @@
 set -euo pipefail
 
 version=""
-repo="${HOPTER_RELEASE_REPOSITORY:-sorcererxw/hopter}"
+repo="sorcererxw/hopter"
 checksums=""
 output=""
 

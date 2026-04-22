@@ -173,7 +173,7 @@ func defaultConfig() Config {
 	return Config{
 		Schema:     schemaReference,
 		Appearance: AppearanceConfig{Theme: ThemeSystem},
-		Agent:      AgentConfig{DefaultBackend: "codex"},
+		Agent:      AgentConfig{DefaultBackend: core.BackendKeyCodex},
 		Revision:   1,
 		UpdatedAt:  time.Now().UTC(),
 	}
@@ -185,9 +185,9 @@ func normalize(cfg Config) Config {
 	if cfg.Appearance.Theme == "" {
 		cfg.Appearance.Theme = ThemeSystem
 	}
-	cfg.Agent.DefaultBackend = strings.TrimSpace(cfg.Agent.DefaultBackend)
+	cfg.Agent.DefaultBackend = strings.ToLower(strings.TrimSpace(cfg.Agent.DefaultBackend))
 	if cfg.Agent.DefaultBackend == "" {
-		cfg.Agent.DefaultBackend = "codex"
+		cfg.Agent.DefaultBackend = core.BackendKeyCodex
 	}
 	cfg.Agent.DefaultModel = strings.TrimSpace(cfg.Agent.DefaultModel)
 	cfg.Agent.DefaultReasoningEffort = strings.TrimSpace(cfg.Agent.DefaultReasoningEffort)
@@ -199,6 +199,9 @@ func validate(cfg Config) error {
 	case ThemeSystem, ThemeDark, ThemeLight:
 	default:
 		return fmt.Errorf("appearance.theme must be one of system, dark, light")
+	}
+	if cfg.Agent.DefaultBackend != core.BackendKeyCodex {
+		return fmt.Errorf("agent.defaultBackend must be codex")
 	}
 	return nil
 }
@@ -302,6 +305,7 @@ const configSchemaJSON = `{
       "properties": {
         "defaultBackend": {
           "type": "string",
+          "enum": ["codex"],
           "default": "codex",
           "minLength": 1
         },

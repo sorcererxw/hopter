@@ -9,7 +9,7 @@ import {
   type ValidationCheck,
 } from "./lib/rebuild-validation.ts";
 
-const BASE_URL = process.env.HOPTER_BASE_URL?.trim() || "http://127.0.0.1:8787";
+const BASE_URL = "http://127.0.0.1:8787";
 const CODESHELL_ROOT = process.cwd();
 
 type Project = {

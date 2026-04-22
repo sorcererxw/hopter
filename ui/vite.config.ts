@@ -4,8 +4,7 @@ import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
-const devHost = process.env.HOPTER_UI_DEV_HOST?.trim() || "0.0.0.0"
-const previewHost = process.env.HOPTER_UI_PREVIEW_HOST?.trim() || devHost
+const devHost = "0.0.0.0"
 
 export default defineConfig({
   plugins: [
@@ -90,7 +89,7 @@ export default defineConfig({
   },
   preview: {
     allowedHosts: true,
-    host: previewHost,
+    host: devHost,
     port: 4173,
     strictPort: true,
   },

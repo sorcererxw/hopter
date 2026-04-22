@@ -7,7 +7,6 @@ import (
 
 	"github.com/sorcererxw/hopter/internal/agents"
 	"github.com/sorcererxw/hopter/internal/agents/codex"
-	copilotagent "github.com/sorcererxw/hopter/internal/agents/copilot"
 	"github.com/sorcererxw/hopter/internal/core"
 	"github.com/sorcererxw/hopter/internal/events"
 	"github.com/sorcererxw/hopter/internal/gitops"
@@ -42,7 +41,6 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	codexManager := codex.NewManager(workspace, eventHub)
 	agentManager := agents.NewManager(workspace, map[string]agents.Runtime{
 		agents.DefaultBackendKey: codex.NewRuntime(codexManager),
-		"copilot":                copilotagent.NewManager(workspace),
 	})
 	terminalManager := terminal.NewManagerWithResolver(workspace, agentManager)
 	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, agentManager)
@@ -53,10 +51,10 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		EventHub:               eventHub,
 		ConfigServiceHandler:   rpcserver.NewConfigService(configService),
 		GitServiceHandler:      rpcserver.NewGitService(gitService),
-		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService),
+		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService, codexManager),
 		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, agentManager),
 		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager, sessionReadModel),
-		TaskServiceHandler:     rpcserver.NewTaskService(taskStore, workspace, eventHub, tasks.SchedulerMode(cfg.Tasks.SchedulerMode)),
+		TaskServiceHandler:     rpcserver.NewTaskService(taskStore, workspace, eventHub),
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
 		TerminalStreamHandler:  terminalManager,
 		Workspace:              workspace,

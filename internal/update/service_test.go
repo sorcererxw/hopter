@@ -54,11 +54,10 @@ func TestCheckUsesSignedManifest(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
-	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
-
-	service := NewService("1.2.3", "direct")
+	service := NewServiceWithOptions("1.2.3", "direct", ServiceOptions{
+		ManifestBaseURL: server.URL,
+		PublicKeyB64:    base64.StdEncoding.EncodeToString(publicKey),
+	})
 	status, err := service.Check(true)
 	if err != nil {
 		t.Fatalf("check update: %v", err)
@@ -106,10 +105,10 @@ func TestCheckFailsOnInvalidSignature(t *testing.T) {
 	}))
 	defer server.Close()
 
-	t.Setenv("HOPTER_UPDATE_MANIFEST_URL", server.URL)
-	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-
-	service := NewService("1.2.3", "direct")
+	service := NewServiceWithOptions("1.2.3", "direct", ServiceOptions{
+		ManifestURL:  server.URL,
+		PublicKeyB64: base64.StdEncoding.EncodeToString(publicKey),
+	})
 	status, err := service.Check(true)
 	if err == nil {
 		t.Fatalf("expected signature verification error")
@@ -122,12 +121,13 @@ func TestCheckFailsOnInvalidSignature(t *testing.T) {
 	}
 }
 
-func TestCheckFallsBackToEnvironmentVersion(t *testing.T) {
-	t.Setenv("HOPTER_UPDATE_AVAILABLE_VERSION", "1.2.4")
-	t.Setenv("HOPTER_UPDATE_NOTES_URL", "https://hopter.dev/releases/1.2.4")
-	t.Setenv("HOPTER_INSTALL_SOURCE", "homebrew_formula")
-
-	service := NewService("1.2.3", "direct")
+func TestCheckUsesInjectedAvailableVersion(t *testing.T) {
+	service := NewServiceWithOptions("1.2.3", "homebrew_formula", ServiceOptions{
+		TestAvailableUpdate: &core.AvailableUpdate{
+			Version:  "1.2.4",
+			NotesURL: "https://hopter.dev/releases/1.2.4",
+		},
+	})
 	status, err := service.Check(true)
 	if err != nil {
 		t.Fatalf("check update: %v", err)
@@ -177,10 +177,7 @@ func TestCheckFallsBackToGitHubLatestRelease(t *testing.T) {
 	defer server.Close()
 	baseURL = server.URL
 
-	t.Setenv("HOPTER_UPDATE_GITHUB_API_BASE_URL", server.URL)
-	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
-
-	service := NewService("0.0.8", "direct")
+	service := NewServiceWithOptions("0.0.8", "direct", ServiceOptions{GitHubAPIBaseURL: server.URL})
 	status, err := service.Check(true)
 	if err != nil {
 		t.Fatalf("check update: %v", err)
@@ -252,11 +249,10 @@ func TestApplyDownloadsVerifiesAndRunsDoctorPreflight(t *testing.T) {
 	}
 	payloadJSON = signed
 
-	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
-	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
-
-	service := NewService("1.2.3", "direct")
+	service := NewServiceWithOptions("1.2.3", "direct", ServiceOptions{
+		ManifestBaseURL: server.URL,
+		PublicKeyB64:    base64.StdEncoding.EncodeToString(publicKey),
+	})
 	if _, err := service.Check(true); err != nil {
 		t.Fatalf("check update: %v", err)
 	}
@@ -334,11 +330,10 @@ func TestApplyRecordsFailureWhenReexecFails(t *testing.T) {
 	}
 	payloadJSON = signed
 
-	t.Setenv("HOPTER_UPDATE_BASE_URL", server.URL)
-	t.Setenv("HOPTER_UPDATE_PUBLIC_KEY_B64", base64.StdEncoding.EncodeToString(publicKey))
-	t.Setenv("HOPTER_INSTALL_SOURCE", "direct")
-
-	service := NewService("1.2.3", "direct")
+	service := NewServiceWithOptions("1.2.3", "direct", ServiceOptions{
+		ManifestBaseURL: server.URL,
+		PublicKeyB64:    base64.StdEncoding.EncodeToString(publicKey),
+	})
 	if _, err := service.Check(true); err != nil {
 		t.Fatalf("check update: %v", err)
 	}

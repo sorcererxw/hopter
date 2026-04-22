@@ -11,7 +11,8 @@ It is not a new coding agent, a browser IDE, or a generic AI chat wrapper. Codex
 ## Install
 
 ```bash
-brew install sorcererxw/tap/hopter
+brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap
+brew install hopter
 hopter
 ```
 

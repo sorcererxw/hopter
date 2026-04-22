@@ -153,8 +153,7 @@ In the current implementation direction, `install_source` should come primarily 
 Priority order:
 
 1. build-time injected `installSource`
-2. runtime override via `HOPTER_INSTALL_SOURCE` for debugging and validation
-3. fallback `direct`
+2. fallback `direct`
 
 This plan intentionally does **not** optimize for hand-moved binaries or unusual local copying flows.
 
@@ -186,10 +185,8 @@ Recommended default:
 https://updates.hopter.dev/update/v1/manifest.json
 ```
 
-Recommended overrides:
-
-- `HOPTER_UPDATE_BASE_URL`
-- `HOPTER_UPDATE_CHANNEL`
+Update metadata should come from signed release metadata or code-level test
+injection, not runtime environment variables.
 
 ## Manifest contract
 

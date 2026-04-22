@@ -10,6 +10,7 @@ import "hopter/v1/common.proto";
 service HostService {
   rpc GetHostStatus(GetHostStatusRequest) returns (GetHostStatusResponse);
   rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
   rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse);
   rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse);
   rpc ListDirectoryRoots(ListDirectoryRootsRequest) returns (ListDirectoryRootsResponse);
@@ -124,6 +125,31 @@ message ListBackendsRequest {}
 
 message ListBackendsResponse {
   repeated BackendStatus backends = 1;
+}
+
+message ModelReasoningEffort {
+  string reasoning_effort = 1;
+  string description = 2;
+}
+
+message AgentModel {
+  string id = 1;
+  string model = 2;
+  string display_name = 3;
+  string description = 4;
+  bool is_default = 5;
+  string default_reasoning_effort = 6;
+  repeated ModelReasoningEffort supported_reasoning_efforts = 7;
+  repeated string input_modalities = 8;
+}
+
+message ListModelsRequest {
+  optional string backend_key = 1;
+  bool include_hidden = 2;
+}
+
+message ListModelsResponse {
+  repeated AgentModel models = 1;
 }
 
 message SkillSummary {

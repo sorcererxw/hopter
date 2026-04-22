@@ -27,6 +27,23 @@ export function getRepoRoot() {
   return path.resolve(process.cwd())
 }
 
+export function normalizeLocalhostHost(host: string) {
+  switch (host.trim()) {
+    case "":
+    case "0.0.0.0":
+      return "127.0.0.1"
+    case "::":
+    case "[::]":
+      return "[::1]"
+    default:
+      return host.trim()
+  }
+}
+
+export function localHttpUrl(host: string, port: number) {
+  return `http://${normalizeLocalhostHost(host)}:${port}`
+}
+
 export function getRepoSlug(repoRoot = getRepoRoot()) {
   return path.basename(repoRoot).replace(/[^a-zA-Z0-9._-]+/g, "-")
 }

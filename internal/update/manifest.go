@@ -33,7 +33,7 @@ type manifestArtifact struct {
 	SizeBytes int64  `json:"size_bytes"`
 }
 
-func fetchManifest(ctx context.Context, client *http.Client, url string) (manifestPayload, error) {
+func fetchManifest(ctx context.Context, client *http.Client, url string, publicKeyB64 string) (manifestPayload, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return manifestPayload{}, fmt.Errorf("build manifest request: %w", err)
@@ -66,7 +66,7 @@ func fetchManifest(ctx context.Context, client *http.Client, url string) (manife
 		return manifestPayload{}, fmt.Errorf("manifest signature is empty")
 	}
 
-	publicKey, err := loadManifestPublicKey()
+	publicKey, err := loadManifestPublicKey(publicKeyB64)
 	if err != nil {
 		return manifestPayload{}, err
 	}
@@ -81,10 +81,10 @@ func fetchManifest(ctx context.Context, client *http.Client, url string) (manife
 	return payload, nil
 }
 
-func loadManifestPublicKey() (ed25519.PublicKey, error) {
-	encoded := strings.TrimSpace(strings.Trim(envValue("HOPTER_UPDATE_PUBLIC_KEY_B64"), `"`))
+func loadManifestPublicKey(publicKeyB64 string) (ed25519.PublicKey, error) {
+	encoded := strings.TrimSpace(strings.Trim(publicKeyB64, `"`))
 	if encoded == "" {
-		return nil, fmt.Errorf("HOPTER_UPDATE_PUBLIC_KEY_B64 is required for signed manifest verification")
+		return nil, fmt.Errorf("update public key is required for signed manifest verification")
 	}
 
 	keyBytes, err := base64.StdEncoding.DecodeString(encoded)

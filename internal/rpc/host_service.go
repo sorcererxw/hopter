@@ -15,10 +15,19 @@ import (
 type HostService struct {
 	workspace core.WorkspaceService
 	updates   core.UpdateService
+	models    hostModelLister
 }
 
-func NewHostService(workspace core.WorkspaceService, updates core.UpdateService) *HostService {
-	return &HostService{workspace: workspace, updates: updates}
+type hostModelLister interface {
+	ListModels(includeHidden bool) ([]core.AgentModel, error)
+}
+
+func NewHostService(workspace core.WorkspaceService, updates core.UpdateService, models ...hostModelLister) *HostService {
+	var modelLister hostModelLister
+	if len(models) > 0 {
+		modelLister = models[0]
+	}
+	return &HostService{workspace: workspace, updates: updates, models: modelLister}
 }
 
 func (s *HostService) GetHostStatus(_ context.Context, _ *connect.Request[hopterv1.GetHostStatusRequest]) (*connect.Response[hopterv1.GetHostStatusResponse], error) {
@@ -58,6 +67,32 @@ func (s *HostService) ListBackends(_ context.Context, _ *connect.Request[hopterv
 			Version:    backend.Version,
 			Reason:     backend.Reason,
 		})
+	}
+	return connect.NewResponse(response), nil
+}
+
+func (s *HostService) ListModels(_ context.Context, req *connect.Request[hopterv1.ListModelsRequest]) (*connect.Response[hopterv1.ListModelsResponse], error) {
+	backendKey := req.Msg.GetBackendKey()
+	if backendKey == "" {
+		backendKey = core.BackendKeyCodex
+	}
+	if backendKey != core.BackendKeyCodex {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("backend %q does not expose models", backendKey))
+	}
+	if s.models == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("model service unavailable"))
+	}
+
+	models, err := s.models.ListModels(req.Msg.GetIncludeHidden())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeUnavailable, fmt.Errorf("list codex models: %w", err))
+	}
+
+	response := &hopterv1.ListModelsResponse{
+		Models: make([]*hopterv1.AgentModel, 0, len(models)),
+	}
+	for _, model := range models {
+		response.Models = append(response.Models, agentModelToProto(model))
 	}
 	return connect.NewResponse(response), nil
 }

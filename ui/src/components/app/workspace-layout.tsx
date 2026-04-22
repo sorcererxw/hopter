@@ -160,7 +160,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
     ]
   )
 
-  const rail = <SessionRail onOpenSearch={() => setSearchOpen(true)} />
+  const rail = <SessionRail />
 
   return (
     <WorkspaceShellContext.Provider value={shellContext}>

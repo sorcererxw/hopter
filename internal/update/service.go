@@ -29,35 +29,56 @@ var (
 )
 
 type Service struct {
-	mu             sync.RWMutex
-	currentVersion string
-	currentCommit  string
-	channel        string
-	installSource  core.InstallSource
-	httpClient     *http.Client
-	reexecDelay    time.Duration
-	reexec         func(string) error
-	status         core.UpdateStatus
+	mu                  sync.RWMutex
+	currentVersion      string
+	currentCommit       string
+	channel             string
+	installSource       core.InstallSource
+	manifestURL         string
+	manifestBaseURL     string
+	publicKeyB64        string
+	githubAPIBaseURL    string
+	releaseRepository   string
+	testAvailableUpdate *core.AvailableUpdate
+	httpClient          *http.Client
+	reexecDelay         time.Duration
+	reexec              func(string) error
+	status              core.UpdateStatus
+}
+
+type ServiceOptions struct {
+	Channel             string
+	CurrentCommit       string
+	ManifestURL         string
+	ManifestBaseURL     string
+	PublicKeyB64        string
+	GitHubAPIBaseURL    string
+	ReleaseRepository   string
+	TestAvailableUpdate *core.AvailableUpdate
 }
 
 func NewService(currentVersion string, installSource string) *Service {
-	channel := envValue("HOPTER_UPDATE_CHANNEL")
-	if channel == "" {
-		channel = "stable"
-	}
-	currentCommit := envValue("HOPTER_COMMIT")
-	if currentCommit == "" {
-		currentCommit = "unknown"
-	}
+	return NewServiceWithOptions(currentVersion, installSource, ServiceOptions{})
+}
+
+func NewServiceWithOptions(currentVersion string, installSource string, opts ServiceOptions) *Service {
+	channel := firstNonEmpty(strings.TrimSpace(opts.Channel), "stable")
+	currentCommit := firstNonEmpty(strings.TrimSpace(opts.CurrentCommit), "unknown")
 
 	source := resolveInstallSource(installSource)
 	policy := policyForInstallSource(source)
 
 	service := &Service{
-		currentVersion: strings.TrimSpace(currentVersion),
-		currentCommit:  currentCommit,
-		channel:        channel,
-		installSource:  source,
+		currentVersion:      strings.TrimSpace(currentVersion),
+		currentCommit:       currentCommit,
+		channel:             channel,
+		installSource:       source,
+		manifestURL:         strings.TrimSpace(opts.ManifestURL),
+		manifestBaseURL:     strings.TrimRight(strings.TrimSpace(opts.ManifestBaseURL), "/"),
+		publicKeyB64:        strings.TrimSpace(opts.PublicKeyB64),
+		githubAPIBaseURL:    strings.TrimRight(strings.TrimSpace(opts.GitHubAPIBaseURL), "/"),
+		releaseRepository:   firstNonEmpty(strings.TrimSpace(opts.ReleaseRepository), defaultReleaseRepository),
+		testAvailableUpdate: cloneAvailableUpdate(opts.TestAvailableUpdate),
 		httpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
@@ -175,16 +196,20 @@ func (s *Service) Apply() (core.UpdateStatus, error) {
 func cloneStatus(status core.UpdateStatus) core.UpdateStatus {
 	cloned := status
 	if status.AvailableUpdate != nil {
-		update := *status.AvailableUpdate
-		cloned.AvailableUpdate = &update
+		cloned.AvailableUpdate = cloneAvailableUpdate(status.AvailableUpdate)
 	}
 	return cloned
 }
 
-func resolveInstallSource(buildInstallSource string) core.InstallSource {
-	if source := parseInstallSource(envValue("HOPTER_INSTALL_SOURCE")); source != "" {
-		return source
+func cloneAvailableUpdate(update *core.AvailableUpdate) *core.AvailableUpdate {
+	if update == nil {
+		return nil
 	}
+	cloned := *update
+	return &cloned
+}
+
+func resolveInstallSource(buildInstallSource string) core.InstallSource {
 	if source := parseInstallSource(strings.TrimSpace(buildInstallSource)); source != "" {
 		return source
 	}
@@ -218,6 +243,15 @@ func parseInstallSource(raw string) core.InstallSource {
 	default:
 		return ""
 	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func policyForInstallSource(source core.InstallSource) core.UpdatePolicy {
@@ -257,8 +291,8 @@ func commandHintForInstallSource(source core.InstallSource) string {
 }
 
 func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, time.Time, *core.AvailableUpdate, error) {
-	if manifestURL := updateManifestURL(); manifestURL != "" {
-		payload, err := fetchManifest(ctx, s.httpClient, manifestURL)
+	if manifestURL := s.updateManifestURL(); manifestURL != "" {
+		payload, err := fetchManifest(ctx, s.httpClient, manifestURL, s.publicKeyB64)
 		if err != nil {
 			return "", "", time.Time{}, nil, err
 		}
@@ -285,20 +319,19 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 		}, nil
 	}
 
-	availableVersion := envValue("HOPTER_UPDATE_AVAILABLE_VERSION")
-	notesURL := envValue("HOPTER_UPDATE_NOTES_URL")
-	if strings.TrimSpace(availableVersion) != "" {
-		return availableVersion, notesURL, time.Now().UTC(), &core.AvailableUpdate{
-			Version:     availableVersion,
-			NotesURL:    notesURL,
-			PublishedAt: time.Now().UTC(),
-		}, nil
+	if s.testAvailableUpdate != nil {
+		update := cloneAvailableUpdate(s.testAvailableUpdate)
+		if update.PublishedAt.IsZero() {
+			update.PublishedAt = time.Now().UTC()
+		}
+		return update.Version, update.NotesURL, update.PublishedAt, update, nil
 	}
 
 	update, err := fetchLatestGitHubRelease(
 		ctx,
 		s.httpClient,
-		updateReleaseRepository(),
+		s.releaseRepository,
+		s.githubAPIBaseURL,
 		s.status.UpdatePolicy == core.UpdatePolicySelfManaged,
 	)
 	if err != nil {
@@ -307,24 +340,14 @@ func (s *Service) resolveAvailableVersion(ctx context.Context) (string, string, 
 	return update.Version, update.NotesURL, update.PublishedAt, update, nil
 }
 
-func updateManifestURL() string {
-	if directURL := envValue("HOPTER_UPDATE_MANIFEST_URL"); directURL != "" {
-		return directURL
+func (s *Service) updateManifestURL() string {
+	if s.manifestURL != "" {
+		return s.manifestURL
 	}
-	baseURL := strings.TrimRight(envValue("HOPTER_UPDATE_BASE_URL"), "/")
-	if baseURL == "" {
+	if s.manifestBaseURL == "" {
 		return ""
 	}
-	return baseURL + "/update/v1/manifest.json"
-}
-
-func envValue(keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return value
-		}
-	}
-	return ""
+	return s.manifestBaseURL + "/update/v1/manifest.json"
 }
 
 func currentPlatformKey() string {

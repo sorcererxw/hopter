@@ -36,8 +36,8 @@ func (r *runtime) CreateSession(input core.CreateSessionInput) (core.Session, er
 	return r.manager.CreateSession(input)
 }
 
-func (r *runtime) SendSessionInput(sessionID, input string) (core.Session, error) {
-	return r.manager.SendSessionInput(sessionID, input)
+func (r *runtime) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
+	return r.manager.SendSessionInput(sessionID, input, options...)
 }
 
 func (r *runtime) InterruptSession(sessionID string) (core.Session, error) {

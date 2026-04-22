@@ -7,7 +7,7 @@ import { chromium, type Page } from "playwright";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const PORT = Number.parseInt(process.env.HOPTER_TETRIS_PORT?.trim() || "8787", 10);
+const PORT = 8787;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 function createTempRepo(): string {
@@ -184,15 +184,11 @@ async function main(): Promise<void> {
   const repoPath = createTempRepo();
   run.writeText("repo-path.txt", `${repoPath}\n`);
 
-  const server = Bun.spawn([binaryPath], {
+  const server = Bun.spawn([binaryPath, "--host", "127.0.0.1", "--port", String(PORT)], {
     cwd: process.cwd(),
     stdout: "pipe",
     stderr: "pipe",
-    env: {
-      ...process.env,
-      HOPTER_HOST: "127.0.0.1",
-      HOPTER_PORT: String(PORT),
-    },
+    env: process.env,
   });
 
   try {

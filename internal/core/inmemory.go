@@ -46,8 +46,7 @@ func (w *InMemoryWorkspace) GetHostStatus() HostSnapshot {
 
 func (w *InMemoryWorkspace) ListBackends() []Backend {
 	return []Backend{
-		detectBackend("codex"),
-		detectBackend("copilot"),
+		detectBackend(BackendKeyCodex),
 	}
 }
 
@@ -110,7 +109,12 @@ func (w *InMemoryWorkspace) CreateProject(input CreateProjectInput) (Project, er
 	}
 	defaultBackend := strings.TrimSpace(input.DefaultBackend)
 	if defaultBackend == "" {
-		defaultBackend = "codex"
+		defaultBackend = BackendKeyCodex
+	}
+	defaultBackend, err = normalizeSupportedBackendKey(defaultBackend)
+	if err != nil {
+		w.projectSeq--
+		return Project{}, err
 	}
 
 	for _, existing := range w.projects {
@@ -183,10 +187,15 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 	if title == "" {
 		title = fmt.Sprintf("%s session %d", project.Name, w.sessionSeq)
 	}
+	backendKey, err := normalizeSupportedBackendKey(firstNonEmpty(strings.TrimSpace(input.BackendKey), project.DefaultBackend))
+	if err != nil {
+		w.sessionSeq--
+		return Session{}, err
+	}
 	session := Session{
 		ID:              fmt.Sprintf("sess_%04d", w.sessionSeq),
 		ProjectID:       project.ID,
-		BackendKey:      firstNonEmpty(strings.TrimSpace(input.BackendKey), project.DefaultBackend),
+		BackendKey:      backendKey,
 		Title:           title,
 		BackendThreadID: "",
 		ActiveTurnID:    "",
@@ -200,6 +209,14 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 	w.publish(Event{Kind: EventSessionsChanged, ProjectID: project.ID, SessionID: session.ID})
 	w.publish(Event{Kind: EventSessionChanged, ProjectID: project.ID, SessionID: session.ID})
 	return session, nil
+}
+
+func normalizeSupportedBackendKey(value string) (string, error) {
+	key := strings.ToLower(strings.TrimSpace(value))
+	if key == "" || key == BackendKeyCodex {
+		return BackendKeyCodex, nil
+	}
+	return "", fmt.Errorf("backend %q is not supported; only codex is supported", key)
 }
 
 func (w *InMemoryWorkspace) SendSessionInput(sessionID string, input string) (Session, error) {

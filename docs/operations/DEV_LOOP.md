@@ -66,18 +66,6 @@ Example:
 make dev
 ```
 
-If you want a different bind host:
-
-```bash
-HOPTER_UI_DEV_HOST=127.0.0.1 HOPTER_HOST=127.0.0.1 make dev
-```
-
-If you want to force a specific `air` binary:
-
-```bash
-HOPTER_AIR_BIN=/path/to/air make dev
-```
-
 ## What is watched automatically
 
 There are two watch loops:
@@ -166,6 +154,26 @@ Why this is outside the repo:
 - easy for AI to read with `tail`, `rg`, and `jq`
 
 Do not wrap this in another local API for AI. Read the files directly.
+
+## Dev runtime state isolation
+
+When the Go server runs in dev-proxy mode, Hopter uses a dev-scoped state home by
+default:
+
+```text
+~/.hopter/devstate/<repo-slug>-<repo-path-hash>/
+```
+
+That keeps the dev task store from locking the normal Hopter task store at:
+
+```text
+~/.hopter/tasks/badger/
+```
+
+This matters because the Badger-backed task store is intentionally single-writer.
+A release or direct `hopter` process can run beside `make dev` without colliding
+with the dev loop's task metadata. This path is chosen by Hopter itself; do not
+use an environment-variable override to avoid the collision.
 
 Examples:
 
