@@ -235,6 +235,46 @@ func TestCreateSessionRejectsUnsupportedBackend(t *testing.T) {
 	}
 }
 
+func TestCreateSessionAcceptsExplicitSessionID(t *testing.T) {
+	root := t.TempDir()
+	repoDir := filepath.Join(root, "hopter")
+	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	project, err := workspace.CreateProject(CreateProjectInput{
+		Name:           "hopter",
+		RootPath:       repoDir,
+		DefaultBackend: BackendKeyCodex,
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+
+	session, err := workspace.CreateSession(CreateSessionInput{
+		SessionID: "019db46a-ffbb-7b61-97de-1daf9a8ac40c",
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if session.ID != "019db46a-ffbb-7b61-97de-1daf9a8ac40c" {
+		t.Fatalf("session id = %q, want explicit id", session.ID)
+	}
+
+	if _, err := workspace.CreateSession(CreateSessionInput{
+		SessionID: session.ID,
+		ProjectID: project.ID,
+		Title:     "duplicate",
+		Prompt:    "second",
+	}); err == nil {
+		t.Fatalf("expected duplicate explicit session id to be rejected")
+	}
+}
+
 func TestUpdateSessionAppendsTranscriptItems(t *testing.T) {
 	root := t.TempDir()
 	repoDir := filepath.Join(root, "hopter")

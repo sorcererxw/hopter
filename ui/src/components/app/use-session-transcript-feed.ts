@@ -19,8 +19,11 @@ import {
 import {
   type ActivityItem,
   activityItemSignature,
+  insertPendingInputActivityItem,
+  isDisplayableTranscriptItem,
   isUserMessageTranscriptItem,
   normalizeTranscriptText,
+  transcriptTextMatchesPendingHint,
 } from "./session-transcript-activity"
 
 type UseSessionTranscriptFeedInput = {
@@ -65,6 +68,7 @@ export function useSessionTranscriptFeed({
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null)
   const transcriptContentRef = useRef<HTMLDivElement | null>(null)
   const shouldStickToBottomRef = useRef(true)
+  const autoStickInProgressRef = useRef(false)
   const lastScrollHeightRef = useRef(0)
   const lastSessionIdRef = useRef("")
   const loadedTranscriptSessionRef = useRef(sessionId)
@@ -105,7 +109,7 @@ export function useSessionTranscriptFeed({
   )
   const transcriptItems = useMemo(() => {
     return (session?.transcriptItems ?? []).filter(
-      (item) => item.body.trim().length > 0
+      (item) => isDisplayableTranscriptItem(item)
     )
   }, [session?.transcriptItems])
   const showPendingInputHint = useMemo(() => {
@@ -121,7 +125,7 @@ export function useSessionTranscriptFeed({
     return !transcriptItems.some(
       (item) =>
         isUserMessageTranscriptItem(item) &&
-        normalizeTranscriptText(item.body).startsWith(normalizedHint)
+        transcriptTextMatchesPendingHint(item.body, normalizedHint)
     )
   }, [session, transcriptItems])
 
@@ -153,21 +157,19 @@ export function useSessionTranscriptFeed({
   ])
 
   const activityItems = useMemo(() => {
-    const items: ActivityItem[] = transcriptItems.map((item) => ({
+    let items: ActivityItem[] = transcriptItems.map((item) => ({
       item,
       kind: "transcript" as const,
       key: item.id,
     }))
 
     if (optimisticPendingInput) {
-      items.push({
-        kind: "pending-input" as const,
+      items = insertPendingInputActivityItem(items, {
         key: "optimistic-pending-input",
         text: optimisticPendingInput,
       })
     } else if (session && showPendingInputHint) {
-      items.push({
-        kind: "pending-input" as const,
+      items = insertPendingInputActivityItem(items, {
         key: "pending-input",
         text: session.lastInputHint,
       })
@@ -183,8 +185,10 @@ export function useSessionTranscriptFeed({
     return items
   }, [optimisticPendingInput, session, showPendingInputHint, transcriptItems])
   const transcriptPageCount = transcriptPages.length
-  const lastActivityKey = activityItems.at(-1)?.key ?? ""
-  const lastActivitySignature = activityItemSignature(activityItems.at(-1))
+  const scrollAnchorActivity = latestScrollAnchorActivity(activityItems)
+  const scrollAnchorActivityKey = scrollAnchorActivity?.key ?? ""
+  const scrollAnchorActivitySignature =
+    activityItemSignature(scrollAnchorActivity)
   const hasUnloadedTranscriptHistory =
     transcriptPages[0]?.hasMoreBefore ?? sessionMeta?.hasMoreBefore ?? false
   const isLoadingInitialTranscript =
@@ -262,10 +266,10 @@ export function useSessionTranscriptFeed({
     scheduleTranscriptStickToBottom("instant", true)
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = activityItems.length
-    lastActivitySignatureRef.current = lastActivitySignature
+    lastActivitySignatureRef.current = scrollAnchorActivitySignature
   }, [
     activityItems.length,
-    lastActivitySignature,
+    scrollAnchorActivitySignature,
     sessionId,
     transcriptVisible,
   ])
@@ -279,15 +283,16 @@ export function useSessionTranscriptFeed({
     const nextCount = activityItems.length
     const sessionChanged = lastSessionIdRef.current !== sessionId
     const activityChanged =
-      lastActivitySignature !== "" &&
-      lastActivitySignature !== lastActivitySignatureRef.current
+      (scrollAnchorActivitySignature !== "" &&
+        scrollAnchorActivitySignature !== lastActivitySignatureRef.current) ||
+      nextCount !== lastActivityCountRef.current
 
     if (sessionChanged) {
       historyFetchEnabledRef.current = false
       scheduleTranscriptStickToBottom("instant", true)
       lastSessionIdRef.current = sessionId
       lastActivityCountRef.current = nextCount
-      lastActivitySignatureRef.current = lastActivitySignature
+      lastActivitySignatureRef.current = scrollAnchorActivitySignature
       return
     } else if (activityChanged && shouldStickToBottomRef.current) {
       scheduleTranscriptStickToBottom(
@@ -298,13 +303,23 @@ export function useSessionTranscriptFeed({
 
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = nextCount
-    lastActivitySignatureRef.current = lastActivitySignature
-  }, [activityItems.length, lastActivityKey, lastActivitySignature, sessionId])
+    lastActivitySignatureRef.current = scrollAnchorActivitySignature
+  }, [
+    activityItems.length,
+    scrollAnchorActivityKey,
+    scrollAnchorActivitySignature,
+    sessionId,
+  ])
 
   useEffect(() => {
     const container = transcriptScrollRef.current
     const content = transcriptContentRef.current
-    if (!container || !content || typeof ResizeObserver === "undefined") {
+    if (
+      !container ||
+      !content ||
+      !transcriptVisible ||
+      typeof ResizeObserver === "undefined"
+    ) {
       return
     }
 
@@ -331,7 +346,7 @@ export function useSessionTranscriptFeed({
     observer.observe(content)
 
     return () => observer.disconnect()
-  }, [sessionId])
+  }, [sessionId, transcriptVisible])
 
   useEffect(() => {
     return () => {
@@ -474,9 +489,30 @@ export function useSessionTranscriptFeed({
     }
     handleScroll()
 
+    const scrolledUp =
+      container.scrollTop < lastTranscriptScrollTopRef.current - 24
+    if (autoStickInProgressRef.current) {
+      if (scrolledUp) {
+        cancelPendingTranscriptStick()
+        shouldStickToBottomRef.current = false
+      } else {
+        shouldStickToBottomRef.current = true
+        setTranscriptAwayFromBottom(false)
+        lastTranscriptScrollTopRef.current = container.scrollTop
+        return
+      }
+    }
+
+    if (scrolledUp) {
+      cancelPendingTranscriptStick()
+      shouldStickToBottomRef.current = false
+    }
+
     const distanceFromBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight
-    shouldStickToBottomRef.current = distanceFromBottom < 120
+    if (!scrolledUp) {
+      shouldStickToBottomRef.current = distanceFromBottom < 120
+    }
     setTranscriptAwayFromBottom(distanceFromBottom > 160)
     if (
       !suppressHistoryFetchRef.current &&
@@ -505,6 +541,15 @@ export function useSessionTranscriptFeed({
   }
 
   function cancelScheduledTranscriptStick() {
+    cancelPendingTranscriptStick()
+    if (historyRetryTimerRef.current !== null) {
+      window.clearTimeout(historyRetryTimerRef.current)
+      historyRetryTimerRef.current = null
+    }
+  }
+
+  function cancelPendingTranscriptStick() {
+    autoStickInProgressRef.current = false
     for (const frame of pendingStickFrameRef.current) {
       window.cancelAnimationFrame(frame)
     }
@@ -517,10 +562,6 @@ export function useSessionTranscriptFeed({
       window.clearTimeout(pendingStickTimerRef.current)
       pendingStickTimerRef.current = null
     }
-    if (historyRetryTimerRef.current !== null) {
-      window.clearTimeout(historyRetryTimerRef.current)
-      historyRetryTimerRef.current = null
-    }
     suppressHistoryFetchRef.current = false
   }
 
@@ -529,12 +570,14 @@ export function useSessionTranscriptFeed({
     force = false
   ) {
     cancelScheduledTranscriptStick()
+    autoStickInProgressRef.current = true
 
     if (mode === "instant") {
       let remainingTicks = 14
       const step = () => {
         const container = transcriptScrollRef.current
         if (!container || (!force && !shouldStickToBottomRef.current)) {
+          autoStickInProgressRef.current = false
           pendingStickFrameRef.current = []
           pendingStickTimerRef.current = null
           suppressHistoryFetchRef.current = false
@@ -551,6 +594,7 @@ export function useSessionTranscriptFeed({
 
         suppressHistoryFetchRef.current = false
         historyFetchEnabledRef.current = true
+        autoStickInProgressRef.current = false
         pendingStickFrameRef.current = []
         pendingStickTimerRef.current = null
       }
@@ -563,6 +607,7 @@ export function useSessionTranscriptFeed({
     const firstFrame = window.requestAnimationFrame(() => {
       const container = transcriptScrollRef.current
       if (!container || (!force && !shouldStickToBottomRef.current)) {
+        autoStickInProgressRef.current = false
         pendingStickFrameRef.current = []
         return
       }
@@ -626,6 +671,9 @@ export function useSessionTranscriptFeed({
     const delta = target - start
     if (Math.abs(delta) < 2) {
       container.scrollTop = target
+      autoStickInProgressRef.current = false
+      suppressHistoryFetchRef.current = false
+      historyFetchEnabledRef.current = true
       return
     }
 
@@ -647,6 +695,7 @@ export function useSessionTranscriptFeed({
         container.scrollTop = transcriptBottomScrollTop(container)
         lastTranscriptScrollTopRef.current = container.scrollTop
       }
+      autoStickInProgressRef.current = false
       suppressHistoryFetchRef.current = false
       historyFetchEnabledRef.current = true
       stickAnimationFrameRef.current = null
@@ -708,4 +757,15 @@ function transcriptPageSnapshotKey(page: SessionTranscriptPage | undefined) {
   }
 
   return String(snapshot.seconds ?? "") + ":" + String(snapshot.nanos ?? "")
+}
+
+function latestScrollAnchorActivity(items: ActivityItem[]) {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const item = items[index]
+    if (item?.kind !== "thinking") {
+      return item
+    }
+  }
+
+  return items.at(-1)
 }

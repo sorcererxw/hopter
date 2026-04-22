@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -57,7 +58,10 @@ func (s *TerminalService) GetTerminalSession(
 		req.Msg.GetTabId(),
 	)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+		if errors.Is(err, terminal.ErrTerminalSessionNotFound) {
+			return connect.NewResponse(&hopterv1.GetTerminalSessionResponse{}), nil
+		}
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return connect.NewResponse(&hopterv1.GetTerminalSessionResponse{
 		Terminal: terminalSessionToProto(session),

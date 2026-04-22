@@ -8,6 +8,9 @@ import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import type { SessionMeta } from "@/gen/proto/hopter/v1/session_pb"
 import { queryKeys } from "@/lib/query/keys"
 
+const RAW_REASONING_FALLBACK = "Raw reasoning emitted by Codex."
+const REASONING_PROGRESS_FALLBACK = "Reasoning progress emitted by Codex."
+
 export type WorkspaceEventEnvelope = {
   payload?: {
     refreshHint?: string | number
@@ -132,7 +135,9 @@ export function applyWorkspaceEventInvalidation(
         client.invalidateQueries({
           queryKey: queryKeys.sessionArtifacts(sessionId),
         })
-        client.invalidateQueries({ queryKey: queryKeys.sessionTranscript(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionTranscript(sessionId),
+        })
       }
       return
     default:
@@ -146,7 +151,9 @@ export function applyWorkspaceEventInvalidation(
         client.invalidateQueries({
           queryKey: queryKeys.sessionArtifacts(sessionId),
         })
-        client.invalidateQueries({ queryKey: queryKeys.sessionTranscript(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionTranscript(sessionId),
+        })
       }
       return
   }
@@ -185,9 +192,23 @@ function applySessionLivePatch(
   if (patchKind === SessionLivePatchKind.DRAFT_DELTA) {
     const draftItemId = patch.draftItemId || patch.draft_item_id || "live-draft"
     const delta = patch.draftDelta || patch.draft_delta || ""
-    if (!delta) {
+    if (!delta && !finalItem) {
       return
     }
+    const fallbackOrderKey = `live:${String(Date.now()).padStart(20, "0")}:${draftItemId}`
+    const normalizedPatchItem = finalItem
+      ? normalizeTranscriptItemEnvelope(finalItem, {
+          id: draftItemId,
+          orderKey: fallbackOrderKey,
+          status: "streaming",
+          title: "Codex",
+        })
+      : undefined
+    const explicitDisplayBodyDelta = finalItem
+      ? (finalItem.displayBody ?? finalItem.display_body ?? "")
+      : ""
+    const bodyDelta = finalItem ? finalItem.body || "" : delta
+    const displayBodyDelta = finalItem ? explicitDisplayBodyDelta : delta
     client.setQueriesData(
       { queryKey: queryKeys.sessionTranscript(sessionId) },
       (current: CachedTranscriptPage | undefined) => {
@@ -195,25 +216,44 @@ function applySessionLivePatch(
         const items = [...page.items]
         const index = items.findIndex((item) => item.id === draftItemId)
         if (index >= 0) {
+          const existingDisplayBody =
+            items[index].displayBody ||
+            (items[index].kind === 2 ? items[index].body : "")
+          const existingBody = items[index].body || ""
+          const nextBody = nextTranscriptBody({
+            bodyDelta,
+            displayBodyDelta,
+            existingBody,
+            kind: items[index].kind,
+          })
           items[index] = {
             ...items[index],
-            body: `${items[index].body || ""}${delta}`,
-            displayBody: `${items[index].displayBody || items[index].body || ""}${delta}`,
+            body: nextBody,
+            displayBody: `${existingDisplayBody}${displayBodyDelta}`,
+            kind: normalizedPatchItem?.kind ?? items[index].kind,
             orderKey:
               items[index].orderKey ||
-              `live:${String(Date.now()).padStart(20, "0")}:${draftItemId}`,
-            status: "streaming",
+              normalizedPatchItem?.orderKey ||
+              fallbackOrderKey,
+            status:
+              normalizedPatchItem?.status || items[index].status || "streaming",
+            title: normalizedPatchItem?.title || items[index].title,
           }
         } else {
+          const itemKind = normalizedPatchItem?.kind ?? 2
+          const initialBody =
+            bodyDelta ||
+            (itemKind === 3 && displayBodyDelta ? RAW_REASONING_FALLBACK : "")
           items.push({
             id: draftItemId,
-            orderKey: `live:${String(Date.now()).padStart(20, "0")}:${draftItemId}`,
-            kind: 2,
-            title: "Codex",
-            body: delta,
-            displayBody: delta,
+            orderKey: normalizedPatchItem?.orderKey || fallbackOrderKey,
+            kind: itemKind,
+            title: normalizedPatchItem?.title || "Codex",
+            body: initialBody,
+            displayBody:
+              displayBodyDelta || (itemKind === 2 ? initialBody : ""),
             attachments: [],
-            status: "streaming",
+            status: normalizedPatchItem?.status || "streaming",
           })
         }
         return {
@@ -231,20 +271,11 @@ function applySessionLivePatch(
       (current: CachedTranscriptPage | undefined) => {
         const page = ensureTranscriptPage(current)
         const items = [...page.items]
-        const normalizedItem = {
-          id: finalItem.id || "",
-          orderKey:
-            finalItem.orderKey ||
-            finalItem.order_key ||
-            `live:${String(Date.now()).padStart(20, "0")}:${finalItem.id}`,
-          kind: normalizeTranscriptItemKind(finalItem.kind),
-          title: finalItem.title || "Codex",
-          body: finalItem.body || "",
-          displayBody:
-            finalItem.displayBody || finalItem.display_body || finalItem.body || "",
-          attachments: finalItem.attachments || [],
-          status: finalItem.status || "",
-        }
+        const normalizedItem = normalizeTranscriptItemEnvelope(finalItem, {
+          id: finalItem.id,
+          orderKey: `live:${String(Date.now()).padStart(20, "0")}:${finalItem.id}`,
+          title: "Codex",
+        })
         const index = items.findIndex((item) => item.id === finalItem.id)
         if (index >= 0) {
           items[index] = normalizedItem
@@ -257,6 +288,64 @@ function applySessionLivePatch(
         }
       }
     )
+  }
+}
+
+function nextTranscriptBody({
+  bodyDelta,
+  displayBodyDelta,
+  existingBody,
+  kind,
+}: {
+  bodyDelta: string
+  displayBodyDelta: string
+  existingBody: string
+  kind: number
+}) {
+  if (kind !== 3) {
+    return `${existingBody}${bodyDelta}`
+  }
+
+  if (bodyDelta) {
+    return isReasoningFallbackBody(existingBody)
+      ? bodyDelta
+      : `${existingBody}${bodyDelta}`
+  }
+
+  if (displayBodyDelta && existingBody === REASONING_PROGRESS_FALLBACK) {
+    return RAW_REASONING_FALLBACK
+  }
+
+  return existingBody
+}
+
+function isReasoningFallbackBody(value: string) {
+  return (
+    value === RAW_REASONING_FALLBACK || value === REASONING_PROGRESS_FALLBACK
+  )
+}
+
+function normalizeTranscriptItemEnvelope(
+  item: SessionTranscriptItemEnvelope,
+  fallback: {
+    id: string
+    orderKey: string
+    status?: string
+    title: string
+  }
+): CachedTranscriptItem {
+  const body = item.body || ""
+  const kind = normalizeTranscriptItemKind(item.kind)
+  return {
+    id: item.id || fallback.id,
+    orderKey: item.orderKey || item.order_key || fallback.orderKey,
+    kind,
+    title: item.title || fallback.title,
+    body,
+    displayBody:
+      item.displayBody || item.display_body || (kind === 2 ? body : ""),
+    attachments: item.attachments || [],
+    status: item.status || fallback.status || "",
   }
 }
 

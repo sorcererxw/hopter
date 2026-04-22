@@ -16,6 +16,7 @@ type fakeTerminalManager struct {
 	fetched         terminal.Session
 	terminated      terminal.Session
 	terminatedCount int
+	getErr          error
 	createInput     terminal.CreateInput
 	getCall         struct {
 		sessionID         string
@@ -38,6 +39,9 @@ func (f *fakeTerminalManager) GetTerminalSession(sessionID, browserInstanceID, t
 	f.getCall.sessionID = sessionID
 	f.getCall.browserInstanceID = browserInstanceID
 	f.getCall.tabID = tabID
+	if f.getErr != nil {
+		return terminal.Session{}, f.getErr
+	}
 	return f.fetched, nil
 }
 
@@ -148,5 +152,24 @@ func TestTerminalServiceCreateGetTerminate(t *testing.T) {
 	}
 	if tabResp.Msg.GetTerminatedCount() != 0 {
 		t.Fatalf("terminated count = %d, want 0", tabResp.Msg.GetTerminatedCount())
+	}
+}
+
+func TestTerminalServiceGetMissingTerminalReturnsEmptyLookup(t *testing.T) {
+	manager := &fakeTerminalManager{
+		getErr: terminal.ErrTerminalSessionNotFound,
+	}
+	service := NewTerminalService(manager)
+
+	getResp, err := service.GetTerminalSession(context.Background(), connect.NewRequest(&hopterv1.GetTerminalSessionRequest{
+		SessionId:         "sess_1",
+		BrowserInstanceId: "browser_1",
+		TabId:             "tab_1",
+	}))
+	if err != nil {
+		t.Fatalf("GetTerminalSession missing terminal: %v", err)
+	}
+	if getResp.Msg.GetTerminal() != nil {
+		t.Fatalf("missing terminal returned terminal = %+v", getResp.Msg.GetTerminal())
 	}
 }

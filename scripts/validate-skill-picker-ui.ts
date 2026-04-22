@@ -12,7 +12,7 @@ import { createValidationRun } from "./lib/validation.ts";
 
 const baseUrl =
   "http://127.0.0.1:8787";
-const healthUrl = `/healthz`;
+const healthUrl = `${baseUrl}/healthz`;
 
 const sessionId = "sess_skill_picker_mock";
 const projectId = "proj_skill_picker_mock";

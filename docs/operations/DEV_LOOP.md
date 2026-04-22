@@ -66,6 +66,13 @@ Example:
 make dev
 ```
 
+When `make dev` is launched from a non-interactive agent shell, the launcher
+anchors the loop in a detached tmux session named `hopter-<repo>-dev` and exits
+after printing the attach command. Interactive terminals still run the loop in
+the foreground. If the tmux session exists but one of the dev listeners is
+missing, the launcher opens a fresh tmux window that runs `make reset` and starts
+the loop again. Set `HOPTER_DEV_FOREGROUND=1` to force foreground mode.
+
 ## What is watched automatically
 
 There are two watch loops:

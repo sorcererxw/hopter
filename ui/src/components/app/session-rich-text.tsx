@@ -8,6 +8,9 @@ import type {
 import { Check, Copy } from "lucide-react"
 
 import { ShikiCodeFrame } from "@/components/app/shiki-code-frame"
+import { SkillReferenceChip } from "@/components/app/skill-reference-chip"
+import { useMCPServers } from "@/features/host/use-host-mcp-servers"
+import { useHostSkills } from "@/features/host/use-host-skills"
 import type { HighlightLanguage } from "@/lib/shiki/highlighter"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +19,14 @@ type SessionRichTextProps = {
   className?: string
   markdown?: boolean
   onLocalPathClick?: (path: string, label: string) => void
+}
+
+type InlineReferenceMetadata = {
+  description?: string
+  name?: string
+  reference: string
+  source?: string
+  variant: "plugin" | "skill"
 }
 
 type MarkdownCodeProps = ComponentPropsWithoutRef<"code"> & {
@@ -65,6 +76,24 @@ export function SessionRichText({
   onLocalPathClick,
   text,
 }: SessionRichTextProps) {
+  const hostSkillsQuery = useHostSkills()
+  const mcpServersQuery = useMCPServers()
+  const skillByReference = new Map(
+    (hostSkillsQuery.data ?? []).map((skill) => [
+      skill.reference.toLowerCase(),
+      skill,
+    ])
+  )
+  const pluginByReference = new Map(
+    (mcpServersQuery.data ?? []).map((server) => [
+      normalizeReference(server.name),
+      {
+        name: server.name,
+        reference: server.name,
+        source: server.source,
+      },
+    ])
+  )
   const [markdownModules, setMarkdownModules] =
     useState<MarkdownModules | null>(() => markdownModulesCache)
   const paragraphCount = text
@@ -100,6 +129,8 @@ export function SessionRichText({
       <PlainRichText
         className={className}
         isLongForm={isLongForm}
+        skillByReference={skillByReference}
+        pluginByReference={pluginByReference}
         text={text}
       />
     )
@@ -122,6 +153,7 @@ export function SessionRichText({
             <MarkdownLink
               href={href}
               onLocalPathClick={onLocalPathClick}
+              pluginByReference={pluginByReference}
               {...props}
             >
               {children}
@@ -135,6 +167,21 @@ export function SessionRichText({
 
             if (codeClassName?.includes("language-")) {
               return <code className={codeClassName}>{code}</code>
+            }
+
+            if (isSkillReferenceText(code)) {
+              const reference = code.replace(/^\$/, "")
+              const skill = skillByReference.get(normalizeReference(reference))
+              return (
+                <SkillReferenceChip
+                  data-testid="session-skill-reference"
+                  description={skill?.description}
+                  name={skill?.name}
+                  reference={reference}
+                  source={skill?.source}
+                  variant="skill"
+                />
+              )
             }
 
             return (
@@ -185,9 +232,7 @@ export function SessionRichText({
             </tr>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">
-              {children}
-            </strong>
+            <strong className="font-bold text-foreground">{children}</strong>
           ),
           ul: ({ children }) => (
             <ul className="space-y-1.5 pl-5">{children}</ul>
@@ -203,10 +248,20 @@ export function SessionRichText({
 function PlainRichText({
   className,
   isLongForm,
+  skillByReference,
+  pluginByReference,
   text,
 }: {
   className?: string
   isLongForm: boolean
+  skillByReference: Map<
+    string,
+    InlineReferenceMetadata
+  >
+  pluginByReference: Map<
+    string,
+    InlineReferenceMetadata
+  >
   text: string
 }) {
   return (
@@ -217,25 +272,180 @@ function PlainRichText({
         className
       )}
     >
-      <div className="whitespace-pre-wrap break-words">{text}</div>
+      <div className="whitespace-pre-wrap break-words">
+        {renderInlineHighlightedPlainText(
+          text,
+          skillByReference,
+          pluginByReference
+        )}
+      </div>
     </div>
   )
+}
+
+function isSkillReferenceText(value: string) {
+  return /^\$[a-z0-9:-]+$/i.test(value.trim())
+}
+
+function renderInlineHighlightedPlainText(
+  text: string,
+  skillByReference: Map<string, InlineReferenceMetadata>,
+  pluginByReference: Map<string, InlineReferenceMetadata>
+) {
+  const parts = renderPluginMarkdownTokens(text, pluginByReference)
+  return parts.flatMap((part, index) =>
+    typeof part === "string"
+      ? renderReferenceTokens(part, skillByReference, pluginByReference, index)
+      : [part]
+  )
+}
+
+function renderPluginMarkdownTokens(
+  text: string,
+  pluginByReference: Map<string, InlineReferenceMetadata>
+) {
+  const pattern = /\[([^\]]+)\]\((plugin:\/\/[^)]+)\)/gi
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(pattern)) {
+    const token = match[0] ?? ""
+    const label = match[1]?.replace(/^@/, "").trim() ?? ""
+    const href = match[2] ?? ""
+    const matchIndex = match.index ?? 0
+    const reference = pluginReferenceFromHref(href, label)
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex))
+    }
+
+    if (!reference) {
+      parts.push(token)
+    } else {
+      const metadata = pluginByReference.get(normalizeReference(reference))
+      parts.push(
+        <SkillReferenceChip
+          key={`plugin-md-${matchIndex}`}
+          data-testid="session-plugin-reference"
+          description={metadata?.description}
+          name={metadata?.name}
+          reference={label || metadata?.name || reference}
+          source={metadata?.source}
+          variant="plugin"
+        />
+      )
+    }
+    lastIndex = matchIndex + token.length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
+}
+
+function renderReferenceTokens(
+  text: string,
+  skillByReference: Map<string, InlineReferenceMetadata>,
+  pluginByReference: Map<string, InlineReferenceMetadata>,
+  keyPrefix: number
+) {
+  const pattern = /(^|[\s([{])([@$][a-z0-9:-]+)/gi
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(pattern)) {
+    const fullMatch = match[0] ?? ""
+    const prefix = match[1] ?? ""
+    const token = match[2] ?? ""
+    const matchIndex = match.index ?? 0
+    const tokenPrefix = token[0]
+    const reference = token.slice(1)
+    const label = reference
+    const metadata =
+      tokenPrefix === "$"
+        ? skillByReference.get(normalizeReference(reference))
+        : pluginByReference.get(normalizeReference(reference))
+    const tokenStart = matchIndex + prefix.length
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex))
+    }
+    if (prefix) {
+      parts.push(prefix)
+    }
+    if (token) {
+      if (tokenPrefix === "@" && !metadata) {
+        parts.push(token)
+      } else {
+        parts.push(
+          <SkillReferenceChip
+            key={`${keyPrefix}-${token}-${tokenStart}`}
+            data-testid={
+              tokenPrefix === "@" || metadata?.variant === "plugin"
+                ? "session-plugin-reference"
+                : "session-skill-reference"
+            }
+            description={metadata?.description}
+            name={metadata?.name}
+            reference={
+              tokenPrefix === "@"
+                ? metadata?.name || label
+                : metadata?.reference ?? reference
+            }
+            source={metadata?.source}
+            variant={tokenPrefix === "@" ? "plugin" : (metadata?.variant ?? "skill")}
+          />
+        )
+      }
+    }
+
+    lastIndex = matchIndex + fullMatch.length
+    if (lastIndex < tokenStart + token.length) {
+      lastIndex = tokenStart + token.length
+    }
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : text
 }
 
 function MarkdownLink({
   children,
   href,
   onLocalPathClick,
+  pluginByReference,
   ...props
 }: AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode
   href?: string
   onLocalPathClick?: (path: string, label: string) => void
+  pluginByReference: Map<string, InlineReferenceMetadata>
 }) {
   const label = flattenMarkdownChildren(children)
 
   if (!href) {
     return <span>{children}</span>
+  }
+
+  const pluginReference = pluginReferenceFromHref(href, label)
+  if (pluginReference) {
+    const plugin = pluginByReference.get(normalizeReference(pluginReference))
+    const displayLabel = label.replace(/^@/, "").trim()
+    return (
+      <SkillReferenceChip
+        data-testid="session-plugin-reference"
+        description={plugin?.description}
+        name={plugin?.name}
+        reference={displayLabel || plugin?.name || pluginReference}
+        source={plugin?.source}
+        variant="plugin"
+      />
+    )
   }
 
   if (/^https?:\/\//.test(href)) {
@@ -269,6 +479,22 @@ function MarkdownLink({
       {children}
     </a>
   )
+}
+
+function pluginReferenceFromHref(href: string, label: string) {
+  if (!href.startsWith("plugin://")) {
+    return ""
+  }
+  const withoutScheme = href.slice("plugin://".length)
+  const reference = withoutScheme.split("@")[0]?.trim()
+  if (reference) {
+    return reference
+  }
+  return label.replace(/^@/, "").trim()
+}
+
+function normalizeReference(value: string) {
+  return value.trim().toLowerCase()
 }
 
 function CodeBlock({ code, language }: { code: string; language?: string }) {

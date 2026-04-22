@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import {
   ChevronRight,
   FileImage,
@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import type { ActivityItem } from "./session-transcript-activity"
+import { isReasoningPlaceholderText } from "./session-transcript-activity"
 import { useWorkspaceShell } from "./workspace-shell-context"
 
 type TimelineItem =
@@ -77,7 +78,9 @@ export function TranscriptTimeline({
   isLoadingInitialTranscript: boolean
   onSelectPath: (path: string) => void
 }) {
-  const timelineItems = groupTimelineItems(items)
+  const timelineItems = groupTimelineItems(
+    orderCompletedReasoningBeforeAgentAnswers(items)
+  )
 
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return (
@@ -98,11 +101,40 @@ export function TranscriptTimeline({
     >
       {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
       {timelineItems.map((item, index) => (
-        <div key={item.key} data-index={index} className="min-w-0">
+        <div
+          key={item.key}
+          data-index={index}
+          className={cn(
+            "min-w-0",
+            index > 0 &&
+              isAssistantReplyAfterUserMessage(timelineItems[index - 1], item) &&
+              "mt-4"
+          )}
+        >
           {renderTimelineItem(item, { onSelectPath })}
         </div>
       ))}
     </div>
+  )
+}
+
+function isAssistantReplyAfterUserMessage(
+  previous: TimelineItem | undefined,
+  current: TimelineItem
+) {
+  if (
+    previous?.kind !== "transcript" ||
+    previous.item.kind !== SessionTranscriptItemKind.USER_MESSAGE
+  ) {
+    return false
+  }
+
+  if (current.kind === "thought-group") {
+    return true
+  }
+  return (
+    current.kind === "transcript" &&
+    current.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE
   )
 }
 
@@ -182,30 +214,41 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   while (cursor < items.length) {
     const current = items[cursor]
 
-    if (
-      isTranscriptActivityItem(current) &&
-      shouldFoldCommandExecution(current.item)
-    ) {
-      const commandItems: SessionTranscriptItem[] = []
+    if (isTranscriptActivityItem(current) && shouldFoldThoughtItem(current.item)) {
+      const thoughtItems: SessionTranscriptItem[] = []
 
       while (cursor < items.length) {
         const next = items[cursor]
         if (
           !isTranscriptActivityItem(next) ||
-          !shouldFoldCommandExecution(next.item)
+          !shouldFoldThoughtItem(next.item)
         ) {
           break
         }
 
-        commandItems.push(next.item)
+        thoughtItems.push(next.item)
         cursor += 1
       }
 
-      timelineItems.push({
-        items: commandItems,
-        key: commandExecutionGroupKey(commandItems),
-        kind: "command-group",
-      })
+      const nextItem = items[cursor]
+      const shouldCollapseThoughts =
+        isFinalAgentActivityItem(nextItem) ||
+        thoughtRunBelongsToCompletedAnswer(items, cursor)
+      if (shouldCollapseThoughts) {
+        timelineItems.push({
+          items: thoughtItems,
+          key: thoughtProcessGroupKey(thoughtItems),
+          kind: "thought-group",
+        })
+      } else {
+        for (const item of thoughtItems) {
+          timelineItems.push({
+            item,
+            key: item.id,
+            kind: "transcript",
+          })
+        }
+      }
       continue
     }
 
@@ -220,6 +263,111 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   }
 
   return timelineItems
+}
+
+function thoughtRunBelongsToCompletedAnswer(items: ActivityItem[], from: number) {
+  for (let index = from; index < items.length; index += 1) {
+    const item = items[index]
+    if (!isTranscriptActivityItem(item)) {
+      continue
+    }
+    if (isFinalAgentActivityItem(item)) {
+      return true
+    }
+    if (
+      item.item.kind === SessionTranscriptItemKind.USER_MESSAGE ||
+      isActiveThoughtProcessItem(item.item)
+    ) {
+      return false
+    }
+  }
+
+  return false
+}
+
+function orderCompletedReasoningBeforeAgentAnswers(
+  items: ActivityItem[]
+): ActivityItem[] {
+  const ordered: ActivityItem[] = []
+  let cursor = 0
+
+  while (cursor < items.length) {
+    const current = items[cursor]
+
+    if (isFinalAgentActivityItem(current)) {
+      const reasoningItems: ActivityItem[] = []
+      let nextCursor = cursor + 1
+
+      while (
+        nextCursor < items.length &&
+        isCompletedReasoningActivityItem(items[nextCursor])
+      ) {
+        reasoningItems.push(items[nextCursor])
+        nextCursor += 1
+      }
+
+      if (reasoningItems.length > 0) {
+        ordered.push(...reasoningItems, current)
+        cursor = nextCursor
+        continue
+      }
+    }
+
+    ordered.push(current)
+    cursor += 1
+  }
+
+  return ordered
+}
+
+function isFinalAgentActivityItem(item: ActivityItem) {
+  return (
+    item.kind === "transcript" &&
+    item.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE &&
+    !isActiveAgentMessageStatus(item.item.status)
+  )
+}
+
+function isActiveAgentMessageStatus(status: string) {
+  const normalized = status
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+  return (
+    normalized === "streaming" ||
+    normalized === "inprogress" ||
+    normalized === "running"
+  )
+}
+
+function isCompletedReasoningActivityItem(item: ActivityItem) {
+  return (
+    item.kind === "transcript" &&
+    item.item.kind === SessionTranscriptItemKind.REASONING &&
+    !isActiveReasoningStatus(item.item.status)
+  )
+}
+
+function shouldFoldThoughtItem(item: SessionTranscriptItem) {
+  if (item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
+    return !isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  }
+
+  return (
+    item.kind === SessionTranscriptItemKind.REASONING ||
+    item.kind === SessionTranscriptItemKind.TOOL_CALL ||
+    item.kind === SessionTranscriptItemKind.FILE_CHANGE
+  )
+}
+
+function isActiveThoughtProcessItem(item: SessionTranscriptItem) {
+  if (item.kind === SessionTranscriptItemKind.REASONING) {
+    return isActiveReasoningStatus(item.status)
+  }
+  if (item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
+    return isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  }
+  return false
 }
 
 function PendingInputEntry({
@@ -246,7 +394,7 @@ function PendingInputEntry({
 function ThinkingEntry() {
   return (
     <div className="min-w-0" data-testid="session-transcript-thinking">
-      <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+      <div className="inline-flex items-center gap-2 text-muted-foreground">
         <LoaderCircle className="size-3.5 animate-spin" />
         <span>Thinking...</span>
       </div>
@@ -314,7 +462,7 @@ function UserMessageEntry({
     item.displayBody.trim() || formatUserMessageForDisplay(item.body)
 
   return (
-    <div className="flex justify-end" data-testid="session-transcript-user">
+    <div className="my-4 flex justify-end" data-testid="session-transcript-user">
       <div className="max-w-[85%]">
         <SessionRichText
           text={displayText}
@@ -567,36 +715,86 @@ function ReasoningEntry({
   item: SessionTranscriptItem
   onSelectPath: (path: string) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const label = item.title || "Thinking"
-  const preview = item.body.split("\n")[0]?.slice(0, 120) || ""
+  const isStreaming = isActiveReasoningStatus(item.status)
+  const [expanded, setExpanded] = useState(isStreaming)
+  const label = item.title || (isStreaming ? "Thinking" : "Reasoning")
+  const summaryText = isReasoningPlaceholderText(item.body)
+    ? ""
+    : item.body.trim()
+  const rawText = isReasoningPlaceholderText(item.displayBody)
+    ? ""
+    : item.displayBody.trim()
+  const hasRawText = rawText.length > 0 && rawText !== summaryText
+  const preview = summaryText.split("\n")[0]?.slice(0, 120) || ""
+  const showContent = expanded || isStreaming
+  const disclosureLabel =
+    !showContent && preview ? `${label}: ${preview}` : label
 
   return (
     <div className="flex gap-3" data-testid="session-transcript-reasoning">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Lightbulb className="size-3.5 text-foreground/50" />
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        {isStreaming ? (
+          <LoaderCircle className="size-3.5 animate-spin" />
+        ) : (
+          <Lightbulb className="size-3.5" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <TranscriptDisclosureButton
           onClick={() => setExpanded((prev) => !prev)}
-          expanded={expanded}
+          expanded={showContent}
           iconClassName="size-3"
-          className="gap-1.5 text-foreground/70 hover:text-foreground"
+          aria-label={disclosureLabel}
+          className="w-full gap-2 rounded-lg border border-border bg-card px-3 py-2 text-muted-foreground hover:text-foreground"
         >
-          <span className="text-sm">{label}</span>
-          {!expanded && preview ? (
+          <span className="text-sm font-medium text-foreground">{label}</span>
+          {!showContent && preview ? (
             <span className="truncate text-muted-foreground">— {preview}</span>
           ) : null}
         </TranscriptDisclosureButton>
-        {expanded ? (
-          <SessionRichText
-            text={item.body}
-            className="mt-1 text-foreground/70"
-            onLocalPathClick={onSelectPath}
-          />
+        {showContent ? (
+          <div
+            className="mt-1 flex flex-col gap-2"
+            data-testid="session-transcript-reasoning-body"
+          >
+            {summaryText ? (
+              <SessionRichText
+                text={summaryText}
+                className="text-muted-foreground"
+                onLocalPathClick={onSelectPath}
+              />
+            ) : null}
+            {hasRawText ? <RawReasoningBlock text={rawText} /> : null}
+          </div>
         ) : null}
       </div>
     </div>
+  )
+}
+
+function RawReasoningBlock({ text }: { text: string }) {
+  return (
+    <div
+      className="flex flex-col gap-1"
+      data-testid="session-transcript-reasoning-raw"
+    >
+      <div className="text-xs text-muted-foreground">Raw reasoning</div>
+      <CodeContainer as="pre" className="whitespace-pre-wrap">
+        {text}
+      </CodeContainer>
+    </div>
+  )
+}
+
+function isActiveReasoningStatus(status: string) {
+  const normalized = status
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+  return (
+    normalized === "streaming" ||
+    normalized === "inprogress" ||
+    normalized === "running"
   )
 }
 
@@ -638,27 +836,96 @@ function ThoughtProcessGroupEntry({
   items: SessionTranscriptItem[]
   onSelectPath: (path: string) => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const summary = summarizeThoughtProcess(items)
+  const hasActiveThought = items.some((item) =>
+    isActiveReasoningStatus(item.status)
+  )
+  const [expanded, setExpanded] = useState(hasActiveThought)
+  const label = `Previous ${items.length} message${items.length === 1 ? "" : "s"}`
+
+  useEffect(() => {
+    setExpanded(hasActiveThought)
+  }, [hasActiveThought])
 
   return (
-    <TranscriptBatchEntry
-      expanded={expanded}
-      label={summary}
-      onToggle={() => setExpanded((prev) => !prev)}
-      testId="session-transcript-thought-group"
+    <div
+      className="min-w-0 text-foreground"
+      data-testid="session-transcript-thought-group"
     >
-      <div className="space-y-4 border-l border-border pl-4">
-        {items.map((item) => (
-          <TranscriptEntry
-            key={item.id}
-            item={item}
-            onSelectPath={onSelectPath}
-          />
-        ))}
-      </div>
-    </TranscriptBatchEntry>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-1 border-b border-border pb-1 text-base font-medium text-muted-foreground transition hover:text-foreground"
+        onClick={() => setExpanded((prev) => !prev)}
+      >
+        <span className="min-w-0 truncate">{label}</span>
+        <ChevronRight
+          aria-hidden="true"
+          className={cn(
+            "size-4 shrink-0 transition",
+            expanded ? "rotate-90" : "opacity-70"
+          )}
+        />
+      </button>
+      {expanded ? (
+        <div
+          className="mt-4 space-y-4"
+          data-testid="session-transcript-thought-group-body"
+        >
+          {items.map((item) => (
+            <ThoughtProcessText
+              item={item}
+              key={item.id}
+              onSelectPath={onSelectPath}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
+}
+
+function ThoughtProcessText({
+  item,
+  onSelectPath,
+}: {
+  item: SessionTranscriptItem
+  onSelectPath: (path: string) => void
+}) {
+  const body = isReasoningPlaceholderText(item.body) ? "" : item.body.trim()
+  const raw = isReasoningPlaceholderText(item.displayBody)
+    ? ""
+    : item.displayBody.trim()
+  const text = body || raw
+
+  if (!text) {
+    return null
+  }
+
+  return (
+    <div
+      className="min-w-0 text-foreground"
+      data-testid="session-transcript-thought-item"
+    >
+      {renderThoughtProcessItem(item, text, onSelectPath)}
+    </div>
+  )
+}
+
+function renderThoughtProcessItem(
+  item: SessionTranscriptItem,
+  text: string,
+  onSelectPath: (path: string) => void
+) {
+  switch (item.kind) {
+    case SessionTranscriptItemKind.TOOL_CALL:
+      return <ToolCallEntry item={item} />
+    case SessionTranscriptItemKind.COMMAND_EXECUTION:
+      return <CommandEntry item={item} />
+    case SessionTranscriptItemKind.FILE_CHANGE:
+      return <FileChangeGroupEntry items={[item]} />
+    default:
+      return <SessionRichText text={text} onLocalPathClick={onSelectPath} />
+  }
 }
 
 function CommandExecutionGroupEntry({
@@ -767,6 +1034,12 @@ function commandExecutionGroupKey(items: SessionTranscriptItem[]) {
   return `command-group:${first}:${last}:${items.length}`
 }
 
+function thoughtProcessGroupKey(items: SessionTranscriptItem[]) {
+  const first = items[0]?.id ?? "start"
+  const last = items.at(-1)?.id ?? "end"
+  return `thought-group:${first}:${last}:${items.length}`
+}
+
 function FileChangeGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
   const changes = items.flatMap((item) => parseFileChangeBody(item.body))
 
@@ -870,6 +1143,7 @@ function TranscriptDisclosureButton({
   return (
     <button
       type="button"
+      aria-expanded={expanded}
       className={cn(
         "group inline-flex max-w-full items-center text-left transition",
         className
@@ -878,6 +1152,7 @@ function TranscriptDisclosureButton({
     >
       {children}
       <ChevronRight
+        aria-hidden="true"
         className={cn(
           "shrink-0 transition",
           expanded

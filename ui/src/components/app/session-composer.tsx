@@ -6,7 +6,14 @@ import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
 } from "react"
-import { ArrowUp, ChevronDown, LoaderCircle, Pause, Plus } from "lucide-react"
+import {
+  ArrowUp,
+  ChevronDown,
+  LoaderCircle,
+  Pause,
+  Plus,
+  Square,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button"
@@ -15,7 +22,16 @@ import { useHostSkills } from "@/features/host/use-host-skills"
 import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
+import type { SessionComposerSelection } from "./session-composer-selection"
+import {
+  applyAtomicSkillDeletion,
+  normalizeAtomicSkillSelection,
+} from "./session-composer-skill-token"
+import { SkillReferenceChip } from "./skill-reference-chip"
+
 const MAX_SKILL_SUGGESTIONS = 8
+const DEFAULT_MODEL = "gpt-5.4"
+const DEFAULT_REASONING_EFFORT = "xhigh"
 
 const REASONING_LABELS: Record<string, string> = {
   none: "None",
@@ -35,6 +51,7 @@ type SessionComposerProps = {
   busy?: boolean
   disabled?: boolean
   interruptMode?: boolean
+  initialSelection?: Partial<SessionComposerSelection>
   placeholder: string
   placement?: "sticky" | "inline"
   composerTestId?: string
@@ -43,9 +60,11 @@ type SessionComposerProps = {
   branchLabel?: string
   settingsLabel?: string
   onInterrupt?: () => Promise<void> | void
+  onSelectionChange?: (selection: SessionComposerSelection) => void
   onSubmit: (options: SessionComposerSubmitOptions) => Promise<void> | void
   onValueChange: (value: string) => void
   interruptTestId?: string
+  selectionKey?: string
   submitTestId?: string
   value: string
 }
@@ -58,6 +77,9 @@ type SkillMentionMatch = {
 
 type ComposerTextSegment = {
   highlighted: boolean
+  known?: boolean
+  reference?: string
+  selected?: boolean
   text: string
 }
 
@@ -65,30 +87,40 @@ export function SessionComposer({
   busy = false,
   disabled = false,
   interruptMode = false,
+  initialSelection,
   placeholder,
   placement = "sticky",
   composerTestId,
   inputTestId,
   onInterrupt,
+  onSelectionChange,
   onSubmit,
   onValueChange,
   interruptTestId,
+  selectionKey,
   submitTestId,
   value,
 }: SessionComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const composerOverlayRef = useRef<HTMLDivElement | null>(null)
   const canSubmit =
     ((value.trim().length > 0 && !interruptMode) ||
       (interruptMode && value.trim().length === 0)) &&
     !busy &&
     !disabled
   const [caretPosition, setCaretPosition] = useState(value.length)
+  const [selectionRange, setSelectionRange] = useState({
+    end: value.length,
+    start: value.length,
+  })
   const [skillSuggestionsDismissed, setSkillSuggestionsDismissed] =
     useState(false)
   const [highlightedSkillIndex, setHighlightedSkillIndex] = useState(0)
-  const [selectedModel, setSelectedModel] = useState("gpt-5.4")
+  const [selectedModel, setSelectedModel] = useState(
+    initialSelection?.model ?? DEFAULT_MODEL
+  )
   const [selectedReasoningEffort, setSelectedReasoningEffort] =
-    useState("xhigh")
+    useState(initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT)
   const hostSkillsQuery = useHostSkills()
   const codexModelsQuery = useCodexModels()
   const modelOptions = codexModelsQuery.data ?? []
@@ -112,6 +144,17 @@ export function SessionComposer({
     ? modelValue(selectedModelOption)
     : ""
 
+  useEffect(() => {
+    setSelectedModel(initialSelection?.model ?? DEFAULT_MODEL)
+    setSelectedReasoningEffort(
+      initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
+    )
+  }, [
+    initialSelection?.model,
+    initialSelection?.reasoningEffort,
+    selectionKey,
+  ])
+
   const activeSkillMatch = useMemo(
     () => getActiveSkillMatch(value, caretPosition),
     [caretPosition, value]
@@ -129,9 +172,19 @@ export function SessionComposer({
       MAX_SKILL_SUGGESTIONS
     )
   }, [activeSkillMatch, hostSkillsQuery.data])
+  const atomicSkillReferences = useMemo(
+    () =>
+      new Set(
+        (hostSkillsQuery.data ?? [])
+          .map((skill) => normalizeSearch(skill.reference))
+          .filter(Boolean)
+      ),
+    [hostSkillsQuery.data]
+  )
   const composerTextSegments = useMemo(
-    () => buildComposerTextSegments(value),
-    [value]
+    () =>
+      buildComposerTextSegments(value, atomicSkillReferences, selectionRange),
+    [atomicSkillReferences, selectionRange, value]
   )
   const showSkillSuggestions =
     Boolean(activeSkillMatch) &&
@@ -170,14 +223,48 @@ export function SessionComposer({
     if (!textareaRef.current) {
       return
     }
-    setCaretPosition(textareaRef.current.selectionStart ?? value.length)
+    const textarea = textareaRef.current
+    syncComposerOverlayScroll()
+    const selection = normalizeAtomicSkillSelection(
+      textarea.value,
+      textarea.selectionStart ?? textarea.value.length,
+      textarea.selectionEnd ?? textarea.value.length,
+      atomicSkillReferences
+    )
+    if (selection.changed) {
+      textarea.setSelectionRange(selection.start, selection.end)
+    }
+    setCaretPosition(selection.end)
+    setSelectionRange({ end: selection.end, start: selection.start })
   }
 
   function handleComposerInput(value: string) {
     onValueChange(value)
     window.requestAnimationFrame(() => {
+      syncComposerOverlayScroll()
       syncCaretPosition()
     })
+  }
+
+  function syncComposerOverlayScroll() {
+    if (!textareaRef.current || !composerOverlayRef.current) {
+      return
+    }
+    const textarea = textareaRef.current
+    const overlay = composerOverlayRef.current
+    const textareaScrollRange = Math.max(
+      0,
+      textarea.scrollHeight - textarea.clientHeight
+    )
+    const overlayScrollRange = Math.max(
+      0,
+      overlay.scrollHeight - overlay.clientHeight
+    )
+    overlay.scrollTop =
+      textareaScrollRange > 0
+        ? (textarea.scrollTop / textareaScrollRange) * overlayScrollRange
+        : 0
+    overlay.scrollLeft = textarea.scrollLeft
   }
 
   function insertSkillReference(skill: SkillSummary) {
@@ -224,16 +311,52 @@ export function SessionComposer({
     if (!nextModel) {
       return
     }
-    setSelectedModel(modelValue(nextModel))
-    const nextReasoningEfforts = nextModel.supportedReasoningEfforts.map(
-      (effort) => effort.reasoningEffort
+    const nextModelValue = modelValue(nextModel)
+    const nextReasoningEffort = resolveReasoningEffort(
+      nextModel,
+      selectedReasoningEffort
     )
-    if (!nextReasoningEfforts.includes(selectedReasoningEffort)) {
-      setSelectedReasoningEffort(nextModel.defaultReasoningEffort)
+
+    setSelectedModel(nextModelValue)
+    if (nextReasoningEffort !== selectedReasoningEffort) {
+      setSelectedReasoningEffort(nextReasoningEffort)
     }
+    onSelectionChange?.({
+      model: nextModelValue,
+      reasoningEffort: nextReasoningEffort,
+    })
+  }
+
+  function handleReasoningEffortChange(reasoningEffort: string) {
+    setSelectedReasoningEffort(reasoningEffort)
+    onSelectionChange?.({
+      model: effectiveModel,
+      reasoningEffort,
+    })
   }
 
   function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    const atomicDeletion = applyAtomicSkillDeletion(
+      value,
+      event.currentTarget.selectionStart ?? value.length,
+      event.currentTarget.selectionEnd ?? value.length,
+      event.key,
+      atomicSkillReferences
+    )
+    if (atomicDeletion) {
+      event.preventDefault()
+      onValueChange(atomicDeletion.value)
+      window.requestAnimationFrame(() => {
+        textareaRef.current?.setSelectionRange(
+          atomicDeletion.selectionStart,
+          atomicDeletion.selectionEnd
+        )
+        textareaRef.current?.focus()
+        setCaretPosition(atomicDeletion.selectionEnd)
+      })
+      return
+    }
+
     if (showSkillSuggestions) {
       if (event.key === "ArrowDown") {
         event.preventDefault()
@@ -300,18 +423,20 @@ export function SessionComposer({
                 <div className="relative min-h-14">
                   {value.length > 0 ? (
                     <div
+                      ref={composerOverlayRef}
                       aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 py-0 text-base leading-relaxed break-words whitespace-pre-wrap text-foreground"
+                      data-testid="composer-visual-overlay"
+                      className="pointer-events-none absolute inset-0 overflow-hidden py-0 text-base leading-relaxed break-words whitespace-pre-wrap text-foreground"
                     >
                       {composerTextSegments.map((segment, index) =>
                         segment.highlighted ? (
-                          <span
+                          <ComposerSkillToken
                             key={`${segment.text}-${index}`}
-                            data-testid="composer-skill-highlight"
-                            className="rounded-md bg-muted px-1 py-0.5 text-foreground"
-                          >
-                            {segment.text}
-                          </span>
+                            known={Boolean(segment.known)}
+                            reference={segment.reference}
+                            selected={Boolean(segment.selected)}
+                            text={segment.text}
+                          />
                         ) : (
                           <span key={`${segment.text}-${index}`}>
                             {segment.text}
@@ -333,12 +458,15 @@ export function SessionComposer({
                     onClick={syncCaretPosition}
                     onKeyDown={handleTextareaKeyDown}
                     onKeyUp={syncCaretPosition}
+                    onMouseUp={syncCaretPosition}
+                    onScroll={syncComposerOverlayScroll}
                     onSelect={syncCaretPosition}
+                    onTouchEnd={syncCaretPosition}
                     placeholder={placeholder}
                     className={cn(
-                      "relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground",
+                      "scrollbar-native-hidden relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground",
                       value.length > 0
-                        ? "text-transparent caret-foreground"
+                        ? "text-transparent caret-foreground selection:bg-transparent selection:text-transparent"
                         : "text-foreground"
                     )}
                   />
@@ -378,7 +506,7 @@ export function SessionComposer({
                     disabled={supportedReasoningOptions.length === 0}
                     options={supportedReasoningOptions}
                     value={effectiveReasoningEffort}
-                    onValueChange={setSelectedReasoningEffort}
+                    onValueChange={handleReasoningEffortChange}
                   >
                     {REASONING_LABELS[effectiveReasoningEffort] ??
                       effectiveReasoningEffort}
@@ -404,7 +532,7 @@ export function SessionComposer({
                     {busy ? (
                       <LoaderCircle className="size-4 animate-spin" />
                     ) : interruptMode ? (
-                      <Pause className="size-4" />
+                      <Square className="size-3.5 fill-current" />
                     ) : (
                       <ArrowUp className="size-4" />
                     )}
@@ -416,6 +544,49 @@ export function SessionComposer({
         </div>
       </div>
     </>
+  )
+}
+
+function ComposerSkillToken({
+  known,
+  reference,
+  selected,
+  text,
+}: {
+  known: boolean
+  reference?: string
+  selected: boolean
+  text: string
+}) {
+  if (known) {
+    return (
+      <span
+        data-testid="composer-skill-highlight"
+        data-known="true"
+        data-selected={selected ? "true" : "false"}
+        className="relative inline-block text-accent-foreground"
+      >
+        <span aria-hidden="true" className="invisible inline-flex">
+          <SkillReferenceChip reference={reference || text.replace(/^\$/, "")} />
+        </span>
+        <span className="absolute inset-y-0 left-0 inline-flex items-center">
+          <SkillReferenceChip reference={reference || text.replace(/^\$/, "")} />
+        </span>
+      </span>
+    )
+  }
+
+  return (
+    <span
+      data-testid="composer-skill-highlight"
+      className="relative inline-block text-accent-foreground"
+    >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 -inset-x-1 rounded-md bg-accent"
+      />
+      <span className="relative">{text}</span>
+    </span>
   )
 }
 
@@ -526,6 +697,16 @@ function GhostIconButton({
 
 function modelValue(model: AgentModel) {
   return model.model || model.id
+}
+
+function resolveReasoningEffort(model: AgentModel, requested: string) {
+  const efforts = model.supportedReasoningEfforts.map(
+    (effort) => effort.reasoningEffort
+  )
+  if (efforts.includes(requested)) {
+    return requested
+  }
+  return model.defaultReasoningEffort || efforts[0] || ""
 }
 
 function InlineSelect({
@@ -678,7 +859,14 @@ function normalizeSearch(value?: string) {
   return (value ?? "").trim().toLowerCase()
 }
 
-function buildComposerTextSegments(value: string): ComposerTextSegment[] {
+function buildComposerTextSegments(
+  value: string,
+  skillReferences: ReadonlySet<string>,
+  selectedRange: {
+    end: number
+    start: number
+  }
+): ComposerTextSegment[] {
   if (!value) {
     return []
   }
@@ -692,7 +880,9 @@ function buildComposerTextSegments(value: string): ComposerTextSegment[] {
     const prefix = match[1] ?? ""
     const token = match[2] ?? ""
     const matchIndex = match.index ?? 0
+    const reference = normalizeSearch(token.slice(1))
     const tokenStart = matchIndex + prefix.length
+    const tokenEnd = tokenStart + token.length
 
     if (matchIndex > lastIndex) {
       segments.push({
@@ -709,8 +899,14 @@ function buildComposerTextSegments(value: string): ComposerTextSegment[] {
     }
 
     if (token) {
+      const known = skillReferences.has(reference)
       segments.push({
         highlighted: true,
+        known,
+        reference,
+        selected:
+          known && selectedRange.start === tokenStart &&
+          selectedRange.end === tokenEnd,
         text: token,
       })
     }

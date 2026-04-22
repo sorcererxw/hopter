@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { classifyAppServerScope, isTruthyAck } from "../scripts/lib/app-server-docs-guard.ts";
-import { localHttpUrl, normalizeLocalhostHost } from "../scripts/lib/devloop.ts";
+import { localHttpUrl, nextDevStateLastError, normalizeLocalhostHost } from "../scripts/lib/devloop.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary } from "../scripts/lib/rebuild-validation.ts";
 
 describe("rebuild validation helpers", () => {
@@ -42,6 +42,18 @@ describe("dev loop URL helpers", () => {
     expect(normalizeLocalhostHost("::")).toBe("[::1]");
     expect(localHttpUrl("0.0.0.0", 5173)).toBe("http://127.0.0.1:5173");
     expect(() => new URL(localHttpUrl("0.0.0.0", 5173))).not.toThrow();
+  });
+});
+
+describe("dev loop state helpers", () => {
+  test("clears stale errors when the supervisor becomes ready", () => {
+    expect(nextDevStateLastError("ready", "old build error")).toBe("");
+  });
+
+  test("preserves useful errors for failure and stopped states", () => {
+    expect(nextDevStateLastError("build_failed", "old build error")).toBe("old build error");
+    expect(nextDevStateLastError("stopped", "old build error")).toBe("old build error");
+    expect(nextDevStateLastError("build_failed", "old build error", "new build error")).toBe("new build error");
   });
 });
 

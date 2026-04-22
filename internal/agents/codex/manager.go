@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -53,7 +54,20 @@ type liveSession struct {
 	optimisticUpdatedAt time.Time
 	draftItemID         string
 	draftText           string
+	reasoningDrafts     map[string]*reasoningDraft
 	pendingApproval     *pendingApproval
+}
+
+type reasoningDraft struct {
+	summary             string
+	raw                 string
+	pendingSummaryBreak bool
+	turnID              string
+}
+
+type liveSessionKey struct {
+	mu    sync.RWMutex
+	value string
 }
 
 const watchTurnPollAttempts = 180
@@ -273,14 +287,54 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 	if !ok {
 		return core.Session{}, fmt.Errorf("project %q not found", input.ProjectID)
 	}
-	session, err := m.workspace.CreateSession(input)
-	if err != nil {
-		return core.Session{}, err
-	}
-	go m.runSession(project, session.ID, input.Prompt, core.SessionTurnOptions{
+
+	options := core.SessionTurnOptions{
 		Model:           input.Model,
 		ReasoningEffort: input.ReasoningEffort,
+	}
+	live, err := m.startNewLiveSession(project, options)
+	if err != nil {
+		return core.Session{}, fmt.Errorf("start codex thread: %w", err)
+	}
+
+	threadID := strings.TrimSpace(live.thread)
+	input.ProjectID = project.ID
+	input.SessionID = threadID
+	session, err := m.workspace.CreateSession(input)
+	if err != nil {
+		_ = live.client.Close()
+		m.mu.Lock()
+		delete(m.live, threadID)
+		m.mu.Unlock()
+		return core.Session{}, err
+	}
+
+	summary := "Codex thread started. Running the first turn…"
+	running := core.SessionStateRunning
+	session, err = m.workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		Status:          &running,
+		Summary:         &summary,
 	})
+	if err != nil {
+		_ = live.client.Close()
+		m.mu.Lock()
+		delete(m.live, threadID)
+		m.mu.Unlock()
+		return core.Session{}, err
+	}
+
+	now := time.Now().UTC()
+	m.mu.Lock()
+	if current := m.live[session.ID]; current != nil {
+		current.optimisticSummary = summary
+		current.optimisticLastInput = truncate(strings.TrimSpace(input.Prompt), 120)
+		current.optimisticStatus = running
+		current.optimisticUpdatedAt = now
+	}
+	m.mu.Unlock()
+
+	go m.dispatchInput(project, session.ID, threadID, input.Prompt, options)
 	return session, nil
 }
 
@@ -369,6 +423,7 @@ func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
 		current.pendingApproval = nil
 		current.draftItemID = ""
 		current.draftText = ""
+		current.reasoningDrafts = nil
 	}
 	m.mu.Unlock()
 
@@ -526,6 +581,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			live.optimisticStatus = ""
 			live.draftItemID = ""
 			live.draftText = ""
+			live.reasoningDrafts = nil
 		}
 		m.mu.Unlock()
 
@@ -543,7 +599,7 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 
 		if live != nil {
 			if read, err := live.client.ReadThread(live.thread); err == nil {
-				transcriptItems := normalizeTranscriptItems(read)
+				transcriptItems := m.mergeSessionTranscriptItems(sessionID, normalizeTranscriptItems(read))
 				if len(transcriptItems) > 0 {
 					m.updateWorkspaceSession(sessionID, core.SessionPatch{
 						TranscriptItems: &transcriptItems,
@@ -598,15 +654,27 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 				})
 			}
 		}
+	case "item/started":
+		m.handleReasoningItemStarted(sessionID, notification.Params)
+	case "item/reasoning/summaryTextDelta":
+		var payload protocol.ReasoningSummaryTextDeltaNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil && payload.Delta != "" {
+			m.handleReasoningDelta(sessionID, payload.TurnID, payload.ItemID, payload.Delta, "")
+		}
+	case "item/reasoning/summaryPartAdded":
+		var payload protocol.ReasoningSummaryPartAddedNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil {
+			m.handleReasoningSummaryPartAdded(sessionID, payload.TurnID, payload.ItemID)
+		}
+	case "item/reasoning/textDelta":
+		var payload protocol.ReasoningTextDeltaNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil && payload.Delta != "" {
+			m.handleReasoningDelta(sessionID, payload.TurnID, payload.ItemID, "", payload.Delta)
+		}
 	case "item/completed":
 		var payload protocol.ItemCompletedNotification
 		if err := json.Unmarshal(notification.Params, &payload); err == nil {
-			var item struct {
-				ID    string `json:"id"`
-				Type  string `json:"type"`
-				Text  string `json:"text"`
-				Phase string `json:"phase"`
-			}
+			var item ReadThreadItem
 			_ = json.Unmarshal(payload.Item, &item)
 			text := strings.TrimSpace(item.Text)
 			if item.Type == "agentMessage" && text != "" {
@@ -666,8 +734,187 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 					})
 				}
 			}
+			if item.Type == "reasoning" {
+				m.handleReasoningItemCompleted(sessionID, item)
+			}
 		}
 	}
+}
+
+func (m *Manager) handleReasoningItemStarted(sessionID string, rawParams json.RawMessage) {
+	var payload struct {
+		ThreadID string         `json:"threadId"`
+		TurnID   string         `json:"turnId"`
+		Item     ReadThreadItem `json:"item"`
+	}
+	if err := json.Unmarshal(rawParams, &payload); err != nil || payload.Item.Type != "reasoning" {
+		return
+	}
+
+	item, ok := normalizeThreadItemWithOptions(payload.Item, liveReasoningNormalizeOptions())
+	if !ok {
+		return
+	}
+	item.Status = "streaming"
+	if strings.TrimSpace(item.OrderKey) == "" {
+		item.OrderKey = liveTranscriptOrderKey(item.ID)
+	}
+
+	var projectID string
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		draft := live.ensureReasoningDraft(item.ID)
+		draft.summary = item.Body
+		draft.raw = item.DisplayBody
+		draft.turnID = strings.TrimSpace(payload.TurnID)
+		if strings.TrimSpace(payload.TurnID) != "" {
+			live.active = payload.TurnID
+		}
+		projectID = live.project.ID
+	}
+	m.mu.Unlock()
+
+	if projectID != "" {
+		m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+			Kind:         core.SessionLivePatchKindDraftDelta,
+			ActiveTurnID: strings.TrimSpace(payload.TurnID),
+			DraftItemID:  strings.TrimSpace(item.ID),
+			FinalItem:    &item,
+			Status:       core.SessionStateRunning,
+		})
+	}
+}
+
+func (m *Manager) handleReasoningSummaryPartAdded(sessionID, turnID, itemID string) {
+	itemID = strings.TrimSpace(itemID)
+	if itemID == "" {
+		return
+	}
+
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		draft := live.ensureReasoningDraft(itemID)
+		draft.pendingSummaryBreak = strings.TrimSpace(draft.summary) != ""
+		draft.turnID = strings.TrimSpace(turnID)
+		if strings.TrimSpace(turnID) != "" {
+			live.active = turnID
+		}
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) handleReasoningDelta(
+	sessionID string,
+	turnID string,
+	itemID string,
+	summaryDelta string,
+	rawDelta string,
+) {
+	itemID = strings.TrimSpace(itemID)
+	if itemID == "" || (summaryDelta == "" && rawDelta == "") {
+		return
+	}
+
+	var projectID string
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		draft := live.ensureReasoningDraft(itemID)
+		if summaryDelta != "" {
+			if draft.pendingSummaryBreak && strings.TrimSpace(draft.summary) != "" {
+				summaryDelta = "\n\n" + summaryDelta
+			}
+			draft.summary += summaryDelta
+			draft.pendingSummaryBreak = false
+		}
+		if rawDelta != "" {
+			draft.raw += rawDelta
+		}
+		draft.turnID = strings.TrimSpace(turnID)
+		if strings.TrimSpace(turnID) != "" {
+			live.active = turnID
+		}
+		projectID = live.project.ID
+	}
+	m.mu.Unlock()
+
+	if projectID != "" {
+		m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+			Kind:         core.SessionLivePatchKindDraftDelta,
+			ActiveTurnID: strings.TrimSpace(turnID),
+			DraftItemID:  itemID,
+			DraftDelta:   summaryDelta + rawDelta,
+			FinalItem: &core.SessionTranscriptItem{
+				ID:          itemID,
+				OrderKey:    liveTranscriptOrderKey(itemID),
+				Kind:        core.SessionTranscriptItemKindReasoning,
+				Title:       "Thinking",
+				Body:        summaryDelta,
+				DisplayBody: rawDelta,
+				Status:      "streaming",
+			},
+			Status: core.SessionStateRunning,
+		})
+	}
+}
+
+func (m *Manager) handleReasoningItemCompleted(sessionID string, item ReadThreadItem) {
+	normalized, ok := normalizeThreadItemWithOptions(item, liveReasoningNormalizeOptions())
+	if !ok {
+		return
+	}
+	if strings.TrimSpace(normalized.Status) == "" {
+		normalized.Status = "completed"
+	}
+	if strings.TrimSpace(normalized.OrderKey) == "" {
+		normalized.OrderKey = liveTranscriptOrderKey(normalized.ID)
+	}
+	m.rememberCodexEmittedTranscriptItem(sessionID, normalized)
+
+	var projectID string
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		delete(live.reasoningDrafts, strings.TrimSpace(item.ID))
+		projectID = live.project.ID
+	}
+	m.mu.Unlock()
+
+	if projectID != "" {
+		m.publishLivePatch(sessionID, projectID, core.SessionLivePatch{
+			Kind:      core.SessionLivePatchKindMessageFinalized,
+			FinalItem: &normalized,
+			Status:    core.SessionStateRunning,
+		})
+	}
+}
+
+func (l *liveSession) ensureReasoningDraft(itemID string) *reasoningDraft {
+	if l.reasoningDrafts == nil {
+		l.reasoningDrafts = make(map[string]*reasoningDraft)
+	}
+	itemID = strings.TrimSpace(itemID)
+	draft := l.reasoningDrafts[itemID]
+	if draft == nil {
+		draft = &reasoningDraft{}
+		l.reasoningDrafts[itemID] = draft
+	}
+	return draft
+}
+
+func liveReasoningNormalizeOptions() transcriptNormalizeOptions {
+	return transcriptNormalizeOptions{
+		itemLimit:          0,
+		reasoningLimit:     1200,
+		commandOutputLimit: 1600,
+		includeFileDiff:    true,
+	}
+}
+
+func liveTranscriptOrderKey(itemID string) string {
+	return fmt.Sprintf(
+		"live:%020d:%s",
+		time.Now().UTC().UnixNano(),
+		strings.TrimSpace(itemID),
+	)
 }
 
 func (m *Manager) handleServerRequest(sessionID string, req ServerRequest) {
@@ -786,7 +1033,7 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 				active := ""
 				status := finalSessionState(statusText, core.SessionStateCompleted)
 				summary := latestAgentSummary(read)
-				transcriptItems := normalizeTranscriptItems(read)
+				transcriptItems := m.mergeSessionTranscriptItems(sessionID, normalizeTranscriptItems(read))
 				if summary == "" {
 					if statusText == "interrupted" {
 						summary = "Codex stopped before completing the turn."
@@ -816,6 +1063,7 @@ func (m *Manager) watchTurn(sessionID, threadID, turnID string) {
 					current.optimisticStatus = ""
 					current.draftItemID = ""
 					current.draftText = ""
+					current.reasoningDrafts = nil
 				}
 				m.mu.Unlock()
 				return
@@ -850,6 +1098,128 @@ func (m *Manager) publishLivePatch(sessionID, projectID string, patch core.Sessi
 		Summary:   summary,
 		LivePatch: &patch,
 	})
+}
+
+func (m *Manager) rememberCodexEmittedTranscriptItem(
+	sessionID string,
+	item core.SessionTranscriptItem,
+) {
+	if !shouldRetainCodexEmittedTranscriptItem(item) {
+		return
+	}
+	session, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		return
+	}
+	items := appendOrReplaceTranscriptItem(
+		append([]core.SessionTranscriptItem(nil), session.TranscriptItems...),
+		item,
+	)
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		TranscriptItems: &items,
+	})
+}
+
+func (m *Manager) mergeSessionTranscriptItems(
+	sessionID string,
+	canonical []core.SessionTranscriptItem,
+) []core.SessionTranscriptItem {
+	session, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		return canonical
+	}
+	return mergeCodexSourcedTranscriptItems(canonical, session.TranscriptItems)
+}
+
+func (k *liveSessionKey) Get() string {
+	if k == nil {
+		return ""
+	}
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+	return k.value
+}
+
+func (k *liveSessionKey) Set(value string) {
+	if k == nil {
+		return
+	}
+	k.mu.Lock()
+	k.value = value
+	k.mu.Unlock()
+}
+
+func (m *Manager) startNewLiveSession(project core.Project, options core.SessionTurnOptions) (*liveSession, error) {
+	sessionKey := &liveSessionKey{}
+	traceWriter := newDeferredAppServerTraceWriter(project.RootPath)
+	client, err := m.start(context.Background(), project.RootPath, func(n Notification) {
+		if key := sessionKey.Get(); key != "" {
+			m.handleNotification(key, n)
+		}
+	}, func(req ServerRequest) {
+		if key := sessionKey.Get(); key != "" {
+			m.handleServerRequest(key, req)
+		}
+	}, func(entry TraceEntry) {
+		traceWriter.Write(entry)
+	}, func() {
+		key := sessionKey.Get()
+		if key == "" {
+			return
+		}
+		summary := "Codex runtime exited unexpectedly."
+		degraded := true
+		active := ""
+		m.updateWorkspaceSession(key, core.SessionPatch{
+			Status:            ptrSessionState(core.SessionStateDegraded),
+			Summary:           &summary,
+			AttentionReason:   &summary,
+			AttentionRequired: &degraded,
+			ActiveTurnID:      &active,
+		})
+		m.mu.Lock()
+		delete(m.live, key)
+		m.mu.Unlock()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	started, err := client.StartThread(project.RootPath, options)
+	if err != nil {
+		_ = client.Close()
+		return nil, err
+	}
+
+	threadID := strings.TrimSpace(started.Thread.ID)
+	if threadID == "" {
+		_ = client.Close()
+		return nil, errors.New("app-server returned empty thread id")
+	}
+	sessionKey.Set(threadID)
+	traceWriter.SetSessionID(threadID)
+
+	record := ThreadRecord{
+		ID:        threadID,
+		Path:      started.Thread.Path,
+		Cwd:       started.Thread.Cwd,
+		UpdatedAt: time.Now().UTC().Unix(),
+		Status:    ThreadStatus{Type: "active"},
+	}
+	if strings.TrimSpace(record.Cwd) == "" {
+		record.Cwd = project.RootPath
+	}
+
+	live := &liveSession{
+		project: project,
+		client:  client,
+		thread:  threadID,
+		record:  record,
+	}
+	m.mu.Lock()
+	m.live[threadID] = live
+	m.mu.Unlock()
+	return live, nil
 }
 
 func (m *Manager) startLiveSession(sessionKey string, project core.Project, options core.SessionTurnOptions) (*liveSession, error) {
@@ -1092,6 +1462,10 @@ func (m *Manager) fetchThreadSession(
 		session.ProjectID = project.ID
 		session.BackendThreadID = threadID
 		hydrateSessionFromRead(&session, read)
+		session.TranscriptItems = mergeCodexSourcedTranscriptItems(
+			session.TranscriptItems,
+			local.TranscriptItems,
+		)
 		latestStatus := latestTerminalTurnStatus(read)
 		optimisticPendingStart :=
 			local.Status == core.SessionStateRunning &&
@@ -1137,6 +1511,12 @@ func (m *Manager) fetchThreadSession(
 	session := sessionFromThread(resumed.Thread, project, local, hasLocal)
 	session.BackendThreadID = threadID
 	hydrateSessionFromRead(&session, read)
+	if hasLocal {
+		session.TranscriptItems = mergeCodexSourcedTranscriptItems(
+			session.TranscriptItems,
+			local.TranscriptItems,
+		)
+	}
 	if session.Summary == "" {
 		session.Summary = fallbackThreadPreview(resumed.Thread, local, hasLocal)
 	}
@@ -1279,6 +1659,10 @@ func (m *Manager) sessionFromLiveRaw(threadID string, live *liveSession, read *R
 		session.AttentionReason = live.pendingApproval.Message
 	}
 
+	for _, item := range liveReasoningDraftTranscriptItems(read, live.reasoningDrafts) {
+		session.TranscriptItems = appendOrReplaceTranscriptItem(session.TranscriptItems, item)
+	}
+
 	if strings.TrimSpace(live.draftText) != "" {
 		draftID := strings.TrimSpace(live.draftItemID)
 		if draftID == "" {
@@ -1322,6 +1706,58 @@ func draftTranscriptOrderKey(read *ReadThreadResult, itemID string) string {
 	return transcriptOrderKey(turnIndex, itemIndex, itemID)
 }
 
+func liveReasoningDraftTranscriptItems(
+	read *ReadThreadResult,
+	drafts map[string]*reasoningDraft,
+) []core.SessionTranscriptItem {
+	if len(drafts) == 0 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(drafts))
+	for id := range drafts {
+		if strings.TrimSpace(id) != "" {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+
+	items := make([]core.SessionTranscriptItem, 0, len(ids))
+	for _, id := range ids {
+		draft := drafts[id]
+		if draft == nil || (draft.summary == "" && draft.raw == "") {
+			continue
+		}
+		body := draft.summary
+		if strings.TrimSpace(body) == "" && strings.TrimSpace(draft.raw) != "" {
+			body = rawReasoningFallbackBody
+		}
+		items = append(items, core.SessionTranscriptItem{
+			ID:          id,
+			OrderKey:    draftTranscriptOrderKey(read, id),
+			Kind:        core.SessionTranscriptItemKindReasoning,
+			Title:       "Thinking",
+			Body:        body,
+			DisplayBody: draft.raw,
+			Status:      "streaming",
+		})
+	}
+	return items
+}
+
+func appendOrReplaceTranscriptItem(
+	items []core.SessionTranscriptItem,
+	item core.SessionTranscriptItem,
+) []core.SessionTranscriptItem {
+	for index := range items {
+		if strings.TrimSpace(items[index].ID) == strings.TrimSpace(item.ID) {
+			items[index] = item
+			return items
+		}
+	}
+	return append(items, item)
+}
+
 func hydrateSessionFromRead(session *core.Session, read *ReadThreadResult) {
 	if session == nil || read == nil {
 		return
@@ -1360,7 +1796,9 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 		UpdatedAt:       time.Unix(thread.UpdatedAt, 0).UTC(),
 	}
 	if hasLocal {
-		session.ID = local.ID
+		if strings.TrimSpace(local.BackendThreadID) == "" {
+			session.ID = local.ID
+		}
 		session.AttentionRequired = local.AttentionRequired
 		session.AttentionReason = local.AttentionReason
 		session.PendingApprovalID = local.PendingApprovalID
@@ -1368,6 +1806,9 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 		session.Artifacts = append([]core.Artifact(nil), local.Artifacts...)
 		if strings.TrimSpace(local.Title) != "" && strings.TrimSpace(thread.NameValue()) == "" {
 			session.Title = local.Title
+		}
+		if local.UpdatedAt.After(session.UpdatedAt) {
+			session.UpdatedAt = local.UpdatedAt
 		}
 	}
 	return session

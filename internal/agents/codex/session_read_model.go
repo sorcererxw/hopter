@@ -165,6 +165,7 @@ func (m *SessionReadModel) loadLatestTranscriptPage(meta core.SessionMeta, limit
 		return core.SessionTranscriptPage{}, err
 	}
 	items := normalizeReadThreadItemsForPage(read)
+	items = m.supplementCodexTranscriptItems(meta.Session.ID, meta.Project, items)
 	pages := m.cacheTranscriptPages(meta, items, limit)
 	return pages[""], nil
 }
@@ -301,7 +302,24 @@ func (m *SessionReadModel) readCodexTranscriptItems(sessionID string, project co
 	if err != nil {
 		return nil, err
 	}
-	return normalizeReadThreadItemsForPage(read), nil
+	items := normalizeReadThreadItemsForPage(read)
+	items = m.supplementCodexTranscriptItems(sessionID, project, items)
+	return items, nil
+}
+
+func (m *SessionReadModel) supplementCodexTranscriptItems(
+	sessionID string,
+	project core.Project,
+	items []core.SessionTranscriptItem,
+) []core.SessionTranscriptItem {
+	items = mergeCodexSourcedTranscriptItems(
+		items,
+		appServerTraceReasoningItems(project.RootPath, sessionID),
+	)
+	if local, ok := m.workspace.GetSession(sessionID); ok {
+		items = mergeCodexSourcedTranscriptItems(items, local.TranscriptItems)
+	}
+	return items
 }
 
 func (m *SessionReadModel) readCodexTranscript(sessionID string, project core.Project, threadID string) (*ReadThreadResult, error) {

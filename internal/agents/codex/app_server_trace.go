@@ -18,14 +18,39 @@ type TraceEntry struct {
 }
 
 type appServerTraceWriter struct {
-	mu   sync.Mutex
-	path string
+	mu       sync.Mutex
+	rootPath string
+	path     string
+	pending  []TraceEntry
 }
 
 func newAppServerTraceWriter(rootPath, sessionID string) *appServerTraceWriter {
+	writer := &appServerTraceWriter{rootPath: rootPath}
+	writer.SetSessionID(sessionID)
+	return writer
+}
+
+func newDeferredAppServerTraceWriter(rootPath string) *appServerTraceWriter {
+	return &appServerTraceWriter{rootPath: rootPath}
+}
+
+func (w *appServerTraceWriter) SetSessionID(sessionID string) {
+	if w == nil {
+		return
+	}
 	sessionID = filepath.Base(sessionID)
-	return &appServerTraceWriter{
-		path: filepath.Join(rootPath, "storage", "runtime", "app-server-traces", sessionID+".jsonl"),
+	if sessionID == "." || sessionID == string(filepath.Separator) || sessionID == "" {
+		return
+	}
+
+	w.mu.Lock()
+	w.path = filepath.Join(w.rootPath, "storage", "runtime", "app-server-traces", sessionID+".jsonl")
+	pending := append([]TraceEntry(nil), w.pending...)
+	w.pending = nil
+	w.mu.Unlock()
+
+	for _, entry := range pending {
+		w.Write(entry)
 	}
 }
 
@@ -42,6 +67,11 @@ func (w *appServerTraceWriter) Write(entry TraceEntry) {
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	if w.path == "" {
+		w.pending = append(w.pending, entry)
+		return
+	}
 
 	if err := os.MkdirAll(filepath.Dir(w.path), 0o755); err != nil {
 		return

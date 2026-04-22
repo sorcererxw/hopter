@@ -413,6 +413,7 @@ type ListSessionsInput struct {
 }
 
 type CreateSessionInput struct {
+	SessionID       string
 	ProjectID       string
 	BackendKey      string
 	Title           string

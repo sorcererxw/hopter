@@ -371,6 +371,64 @@ func TestListSessionsMergesLocalSessionsMissingFromRuntime(t *testing.T) {
 	}
 }
 
+func TestListSessionsSkipsLocalAliasWhenRuntimeReturnsBackendThread(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+	project, err := workspace.CreateProject(core.CreateProjectInput{
+		Name:           "probe",
+		RootPath:       root,
+		DefaultBackend: "codex",
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+	local, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "local alias",
+		Prompt:    "hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	threadID := "thread_123"
+	if _, err := workspace.UpdateSession(local.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	service := NewSessionService(workspace, &fakeSessionRuntime{
+		listSessionsResult: []agents.ResolvedSession{
+			{
+				Project: project,
+				Session: core.Session{
+					ID:              threadID,
+					ProjectID:       project.ID,
+					BackendKey:      "codex",
+					BackendThreadID: threadID,
+					Title:           "remote thread",
+					Status:          core.SessionStateCompleted,
+					UpdatedAt:       time.Now().UTC(),
+				},
+			},
+		},
+	}, &fakeSessionDetailReader{})
+
+	resp, err := service.ListSessions(context.Background(), connect.NewRequest(&hopterv1.ListSessionsRequest{}))
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(resp.Msg.GetSessions()) != 1 {
+		t.Fatalf("session count = %d, want 1", len(resp.Msg.GetSessions()))
+	}
+	if resp.Msg.GetSessions()[0].GetId() != threadID {
+		t.Fatalf("session id = %q, want backend thread id", resp.Msg.GetSessions()[0].GetId())
+	}
+}
+
 func TestRespondToSessionApprovalPassesDecisionToRuntime(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	runtime := &fakeSessionRuntime{

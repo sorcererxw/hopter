@@ -11,7 +11,11 @@ import (
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
-const transcriptItemLimit = 200
+const (
+	transcriptItemLimit      = 200
+	rawReasoningFallbackBody = "Raw reasoning emitted by Codex."
+	reasoningProgressBody    = "Reasoning progress emitted by Codex."
+)
 
 func normalizeTranscriptItems(read *ReadThreadResult) []core.SessionTranscriptItem {
 	return normalizeTranscriptItemsWithOptions(read, transcriptNormalizeOptions{
@@ -172,7 +176,13 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 			return core.SessionTranscriptItem{}, false
 		}
 		if isCommentaryAgentMessage(item) {
-			return core.SessionTranscriptItem{}, false
+			return core.SessionTranscriptItem{
+				ID:     item.ID,
+				Kind:   core.SessionTranscriptItemKindReasoning,
+				Title:  "Progress",
+				Body:   body,
+				Status: "completed",
+			}, true
 		}
 		return core.SessionTranscriptItem{
 			ID:     item.ID,
@@ -183,23 +193,20 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 		}, true
 	case "reasoning":
 		body := strings.TrimSpace(extractText(item.Summary))
-		if body == "" {
-			body = strings.TrimSpace(extractText(item.Content))
+		rawBody := strings.TrimSpace(extractText(item.Content))
+		if body == "" && rawBody != "" {
+			body = rawReasoningFallbackBody
 		}
 		if body == "" {
-			body = strings.TrimSpace(compactJSON(item.Summary, opts.reasoningLimit))
-		}
-		if body == "" {
-			body = strings.TrimSpace(compactJSON(item.Content, opts.reasoningLimit))
-		}
-		if body == "" {
-			return core.SessionTranscriptItem{}, false
+			body = reasoningProgressBody
 		}
 		return core.SessionTranscriptItem{
-			ID:    item.ID,
-			Kind:  core.SessionTranscriptItemKindReasoning,
-			Title: "Thinking",
-			Body:  body,
+			ID:          item.ID,
+			Kind:        core.SessionTranscriptItemKindReasoning,
+			Title:       "Thinking",
+			Body:        body,
+			DisplayBody: rawBody,
+			Status:      strings.TrimSpace(item.Status),
 		}, true
 	case "mcpToolCall":
 		body := formatToolCall(item)
@@ -544,7 +551,7 @@ func truncateTranscriptBody(
 ) string {
 	switch kind {
 	case core.SessionTranscriptItemKindReasoning:
-		return truncateString(body, opts.reasoningLimit)
+		return body
 	case core.SessionTranscriptItemKindCommandExecution:
 		return truncateString(body, opts.commandOutputLimit+200)
 	default:
@@ -602,6 +609,43 @@ func compactJSON(raw json.RawMessage, limit int) string {
 		return text[:limit] + "…"
 	}
 	return text
+}
+
+func mergeCodexSourcedTranscriptItems(
+	canonical []core.SessionTranscriptItem,
+	cached []core.SessionTranscriptItem,
+) []core.SessionTranscriptItem {
+	if len(cached) == 0 {
+		return canonical
+	}
+
+	merged := append([]core.SessionTranscriptItem(nil), canonical...)
+	seen := make(map[string]struct{}, len(merged))
+	for _, item := range merged {
+		if id := strings.TrimSpace(item.ID); id != "" {
+			seen[id] = struct{}{}
+		}
+	}
+
+	for _, item := range cached {
+		if !shouldRetainCodexEmittedTranscriptItem(item) {
+			continue
+		}
+		id := strings.TrimSpace(item.ID)
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		merged = append(merged, item)
+		seen[id] = struct{}{}
+	}
+
+	return merged
+}
+
+func shouldRetainCodexEmittedTranscriptItem(item core.SessionTranscriptItem) bool {
+	return item.Kind == core.SessionTranscriptItemKindReasoning &&
+		strings.TrimSpace(item.ID) != "" &&
+		strings.TrimSpace(item.Body) != ""
 }
 
 func truncateString(value string, limit int) string {

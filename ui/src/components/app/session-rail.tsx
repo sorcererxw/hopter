@@ -492,54 +492,54 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                   return (
                     <Fragment key={groupKey}>
                       <li>
-                        <RailRow
-                          icon={
-                            folderClosed ? (
-                              <Folder className="size-3.5" />
-                            ) : (
-                              <FolderOpen className="size-3.5" />
-                            )
-                          }
-                          label={group.projectName}
-                          title={group.projectRootPath || group.projectName}
-                          onClick={() =>
-                            setRailUiState((current) => ({
-                              ...current,
-                              closedProjectIds: {
-                                ...current.closedProjectIds,
-                                [groupKey]: !current.closedProjectIds[groupKey],
-                              },
-                            }))
-                          }
-                          right={
-                            <button
-                              type="button"
-                              title={`New thread in ${group.projectName}`}
-                              className="flex size-5 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                onNavigate?.()
-                                navigate({
-                                  pathname: "/",
-                                  search: new URLSearchParams(
-                                    group.projectId
-                                      ? {
-                                          compose: "1",
-                                          projectId: group.projectId,
-                                        }
-                                      : { compose: "1" }
-                                  ).toString(),
-                                })
-                              }}
-                            >
-                              <SquarePen className="size-3" />
-                            </button>
-                          }
-                          rightClassName="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-                          labelClassName="truncate whitespace-nowrap tracking-tight text-foreground"
-                          className="text-foreground hover:bg-accent/60 hover:text-foreground"
-                          ariaExpanded={!folderClosed}
-                        />
+                        <div className="group relative">
+                          <RailRow
+                            icon={
+                              folderClosed ? (
+                                <Folder className="size-3.5" />
+                              ) : (
+                                <FolderOpen className="size-3.5" />
+                              )
+                            }
+                            label={group.projectName}
+                            title={group.projectRootPath || group.projectName}
+                            onClick={() =>
+                              setRailUiState((current) => ({
+                                ...current,
+                                closedProjectIds: {
+                                  ...current.closedProjectIds,
+                                  [groupKey]:
+                                    !current.closedProjectIds[groupKey],
+                                },
+                              }))
+                            }
+                            labelClassName="truncate whitespace-nowrap tracking-tight text-foreground"
+                            className="pr-10 text-foreground hover:bg-accent/60 hover:text-foreground group-hover:bg-accent/60 group-hover:text-foreground"
+                            ariaExpanded={!folderClosed}
+                          />
+                          <button
+                            type="button"
+                            title={`New thread in ${group.projectName}`}
+                            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              onNavigate?.()
+                              navigate({
+                                pathname: "/",
+                                search: new URLSearchParams(
+                                  group.projectId
+                                    ? {
+                                        compose: "1",
+                                        projectId: group.projectId,
+                                      }
+                                    : { compose: "1" }
+                                ).toString(),
+                              })
+                            }}
+                          >
+                            <SquarePen className="size-3" />
+                          </button>
+                        </div>
                       </li>
                       {folderClosed
                         ? null

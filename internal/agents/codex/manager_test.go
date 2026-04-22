@@ -248,6 +248,12 @@ func TestCreateSessionRunsThroughAppServerAndUpdatesSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
 	}
+	if session.ID != "thread-started" {
+		t.Fatalf("created session id = %q, want real thread id", session.ID)
+	}
+	if session.BackendThreadID != "thread-started" {
+		t.Fatalf("created backend thread id = %q, want thread-started", session.BackendThreadID)
+	}
 
 	waitFor(t, func() bool {
 		current, ok := workspace.GetSession(session.ID)
@@ -585,6 +591,150 @@ func TestGetSessionIncludesTranscriptItems(t *testing.T) {
 	}
 	if got.Summary != "Implemented the first pass." {
 		t.Fatalf("summary = %q", got.Summary)
+	}
+}
+
+func TestHandleReasoningItemCompletedPreservesCodexSourcedProgress(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	sink := &fakeEventSink{}
+	manager := NewManager(workspace, sink)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		thread:  "thread-1",
+		active:  "turn-1",
+	}
+
+	manager.handleNotification(session.ID, Notification{
+		Method: "item/completed",
+		Params: json.RawMessage(`{
+			"item": {
+				"id": "reasoning-1",
+				"type": "reasoning",
+				"summary": [],
+				"content": []
+			}
+		}`),
+	})
+
+	current, ok := workspace.GetSession(session.ID)
+	if !ok {
+		t.Fatalf("session %q not found", session.ID)
+	}
+	if len(current.TranscriptItems) != 1 {
+		t.Fatalf("stored transcript items = %d, want 1", len(current.TranscriptItems))
+	}
+	if current.TranscriptItems[0].Kind != core.SessionTranscriptItemKindReasoning {
+		t.Fatalf("stored item kind = %q", current.TranscriptItems[0].Kind)
+	}
+	if current.TranscriptItems[0].Body != reasoningProgressBody {
+		t.Fatalf("stored reasoning body = %q, want %q", current.TranscriptItems[0].Body, reasoningProgressBody)
+	}
+	if current.TranscriptItems[0].DisplayBody != "" {
+		t.Fatalf("stored raw reasoning = %q, want empty", current.TranscriptItems[0].DisplayBody)
+	}
+
+	if len(sink.events) < 1 {
+		t.Fatalf("published events = %d, want at least 1", len(sink.events))
+	}
+	patch := sink.events[len(sink.events)-1].LivePatch
+	if patch == nil || patch.FinalItem == nil {
+		t.Fatalf("reasoning final patch missing: %#v", patch)
+	}
+	if patch.FinalItem.Kind != core.SessionTranscriptItemKindReasoning {
+		t.Fatalf("final patch item kind = %q", patch.FinalItem.Kind)
+	}
+}
+
+func TestSessionReadModelPreservesEmittedReasoningWhenThreadReadOmitsIt(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	threadID := "thread-1"
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		SessionID: threadID,
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		TranscriptItems: &[]core.SessionTranscriptItem{
+			{
+				ID:       "reasoning-1",
+				OrderKey: "live:00000000000000000001:reasoning-1",
+				Kind:     core.SessionTranscriptItemKindReasoning,
+				Title:    "Thinking",
+				Body:     reasoningProgressBody,
+				Status:   "completed",
+			},
+		},
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	read := readThreadResultWithTurns(ReadThreadTurn{
+		ID:     "turn-1",
+		Status: "completed",
+		Items: []ReadThreadItem{
+			{
+				Type:    "userMessage",
+				ID:      "user-1",
+				Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
+			},
+			{
+				Type:  "agentMessage",
+				ID:    "agent-1",
+				Text:  "done",
+				Phase: "final_answer",
+			},
+		},
+	})
+	read.Thread.ID = threadID
+	read.Thread.Cwd = project.RootPath
+	read.Thread.UpdatedAt = time.Now().UTC().Unix()
+	read.Thread.Status = ThreadStatus{Type: "idle"}
+
+	client := &fakeCodexClient{readResult: read}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	readModel := NewSessionReadModel(workspace, manager, manager)
+
+	page, err := readModel.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID: threadID,
+		Limit:     50,
+	})
+	if err != nil {
+		t.Fatalf("ListSessionTranscript: %v", err)
+	}
+	if len(page.Items) != 3 {
+		t.Fatalf("page items = %d, want 3", len(page.Items))
+	}
+	if page.Items[2].ID != "reasoning-1" {
+		t.Fatalf("preserved item id = %q, want reasoning-1", page.Items[2].ID)
+	}
+	if page.Items[2].DisplayBody != "" {
+		t.Fatalf("preserved raw reasoning = %q, want empty", page.Items[2].DisplayBody)
 	}
 }
 
@@ -1339,6 +1489,61 @@ func TestListSessionsMapsActiveFlagsToWaitingStates(t *testing.T) {
 	}
 	if got["thread-input"] != core.SessionStateWaitingInput {
 		t.Fatalf("input status = %q, want %q", got["thread-input"], core.SessionStateWaitingInput)
+	}
+}
+
+func TestListSessionsKeepsThreadIDForAppServerBackedLocalReferences(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	local, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "local alias",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	threadID := "thread-1"
+	if _, err := workspace.UpdateSession(local.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        threadID,
+					Cwd:       project.RootPath,
+					Preview:   "remote thread",
+					UpdatedAt: time.Now().UTC().Unix(),
+					Status:    ThreadStatus{Type: "idle"},
+				},
+			},
+		},
+	}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	sessions, err := manager.ListSessions(project.ID, 10)
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("session count = %d, want 1", len(sessions))
+	}
+	if sessions[0].Session.ID != threadID {
+		t.Fatalf("listed session id = %q, want real thread id", sessions[0].Session.ID)
 	}
 }
 

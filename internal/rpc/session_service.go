@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -76,11 +77,11 @@ func mergeResolvedSessions(
 
 	for _, resolved := range remote {
 		merged = append(merged, resolved)
-		seen[resolved.Session.ID] = struct{}{}
+		markSessionSeen(seen, resolved.Session)
 	}
 
 	for _, session := range local {
-		if _, ok := seen[session.ID]; ok {
+		if sessionSeen(seen, session) {
 			continue
 		}
 		project, ok := workspace.GetProject(session.ProjectID)
@@ -91,7 +92,7 @@ func mergeResolvedSessions(
 			Project: project,
 			Session: session,
 		})
-		seen[session.ID] = struct{}{}
+		markSessionSeen(seen, session)
 	}
 
 	slices.SortFunc(merged, func(left, right agents.ResolvedSession) int {
@@ -110,6 +111,29 @@ func mergeResolvedSessions(
 	}
 
 	return merged
+}
+
+func markSessionSeen(seen map[string]struct{}, session core.Session) {
+	if id := strings.TrimSpace(session.ID); id != "" {
+		seen[id] = struct{}{}
+	}
+	if threadID := strings.TrimSpace(session.BackendThreadID); threadID != "" {
+		seen[threadID] = struct{}{}
+	}
+}
+
+func sessionSeen(seen map[string]struct{}, session core.Session) bool {
+	if id := strings.TrimSpace(session.ID); id != "" {
+		if _, ok := seen[id]; ok {
+			return true
+		}
+	}
+	if threadID := strings.TrimSpace(session.BackendThreadID); threadID != "" {
+		if _, ok := seen[threadID]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *SessionService) GetSession(_ context.Context, req *connect.Request[hopterv1.GetSessionRequest]) (*connect.Response[hopterv1.GetSessionResponse], error) {
@@ -237,13 +261,17 @@ func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connec
 }
 
 func (s *SessionService) ListSessionArtifacts(_ context.Context, req *connect.Request[hopterv1.ListSessionArtifactsRequest]) (*connect.Response[hopterv1.ListSessionArtifactsResponse], error) {
-	artifacts, err := s.workspace.ListSessionArtifacts(req.Msg.GetSessionId())
+	response := &hopterv1.ListSessionArtifactsResponse{}
+	sessionID := strings.TrimSpace(req.Msg.GetSessionId())
+	if sessionID == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("session id is required"))
+	}
+
+	artifacts, err := s.workspace.ListSessionArtifacts(sessionID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return connect.NewResponse(response), nil
 	}
-	response := &hopterv1.ListSessionArtifactsResponse{
-		Artifacts: make([]*hopterv1.ArtifactRef, 0, len(artifacts)),
-	}
+	response.Artifacts = make([]*hopterv1.ArtifactRef, 0, len(artifacts))
 	for _, artifact := range artifacts {
 		response.Artifacts = append(response.Artifacts, &hopterv1.ArtifactRef{
 			Id:          artifact.ID,

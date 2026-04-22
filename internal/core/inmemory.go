@@ -181,19 +181,29 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 		return Session{}, fmt.Errorf("project %q not found", input.ProjectID)
 	}
 
-	w.sessionSeq++
 	now := time.Now().UTC()
 	title := strings.TrimSpace(input.Title)
+	sessionID := strings.TrimSpace(input.SessionID)
+	generatedSessionID := false
+	if sessionID == "" {
+		w.sessionSeq++
+		generatedSessionID = true
+		sessionID = fmt.Sprintf("sess_%04d", w.sessionSeq)
+	} else if _, exists := w.sessions[sessionID]; exists {
+		return Session{}, fmt.Errorf("session %q already exists", sessionID)
+	}
 	if title == "" {
-		title = fmt.Sprintf("%s session %d", project.Name, w.sessionSeq)
+		title = fmt.Sprintf("%s session %d", project.Name, len(w.sessionIDs)+1)
 	}
 	backendKey, err := normalizeSupportedBackendKey(firstNonEmpty(strings.TrimSpace(input.BackendKey), project.DefaultBackend))
 	if err != nil {
-		w.sessionSeq--
+		if generatedSessionID {
+			w.sessionSeq--
+		}
 		return Session{}, err
 	}
 	session := Session{
-		ID:              fmt.Sprintf("sess_%04d", w.sessionSeq),
+		ID:              sessionID,
 		ProjectID:       project.ID,
 		BackendKey:      backendKey,
 		Title:           title,

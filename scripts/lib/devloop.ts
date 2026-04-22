@@ -44,6 +44,22 @@ export function localHttpUrl(host: string, port: number) {
   return `http://${normalizeLocalhostHost(host)}:${port}`
 }
 
+export function nextDevStateLastError(
+  status: DevStateStatus,
+  previousLastError: string,
+  nextLastError?: string
+) {
+  if (nextLastError !== undefined) {
+    return nextLastError
+  }
+
+  if (status === "ready") {
+    return ""
+  }
+
+  return previousLastError
+}
+
 export function getRepoSlug(repoRoot = getRepoRoot()) {
   return path.basename(repoRoot).replace(/[^a-zA-Z0-9._-]+/g, "-")
 }

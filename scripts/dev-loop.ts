@@ -5,6 +5,7 @@ import {
   consumeTextStream,
   getRepoRoot,
   localHttpUrl,
+  nextDevStateLastError,
   normalizeLocalhostHost,
   nowIso,
   summarizeErrorLine,
@@ -135,7 +136,7 @@ function setStatus(status: typeof currentStatus, extra: { lastError?: string } =
   }
 
   currentStatus = status
-  lastError = extra.lastError ?? lastError
+  lastError = nextDevStateLastError(status, lastError, extra.lastError)
   writeDevState({
     sessionId,
     status,
@@ -170,6 +171,44 @@ function logProcessLine(source: "go" | "vite", stream: "stderr" | "stdout", line
     repoRoot
   )
   printConsoleLine(source, line, stream)
+}
+
+function signalProcessGroup(proc: ReturnType<typeof spawn>, signal: NodeJS.Signals) {
+  if (proc.killed) {
+    return
+  }
+
+  if (proc.pid) {
+    try {
+      process.kill(-proc.pid, signal)
+      return
+    } catch (error) {
+      const code = typeof error === "object" && error !== null && "code" in error ? error.code : ""
+      if (code === "ESRCH") {
+        return
+      }
+    }
+  }
+
+  proc.kill(signal)
+}
+
+async function stopPortListeners(signal: NodeJS.Signals) {
+  const killSignal = signal.replace(/^SIG/, "")
+  for (const port of [5173, 8787]) {
+    const proc = spawn(
+      "bash",
+      [
+        "-lc",
+        `pids=$(lsof -tiTCP:${port} -sTCP:LISTEN -n -P 2>/dev/null || true); if [ -n "$pids" ]; then kill -${killSignal} $pids 2>/dev/null || true; fi`,
+      ],
+      {
+        cwd: repoRoot,
+        stdio: ["ignore", "ignore", "ignore"],
+      }
+    )
+    await new Promise((resolve) => proc.on("close", resolve))
+  }
 }
 
 function maybeInferGoState(line: string, stream: "stderr" | "stdout") {
@@ -207,6 +246,7 @@ async function startVite() {
 
   viteProc = spawn("pnpm", ["--dir", "ui", "dev"], {
     cwd: repoRoot,
+    detached: true,
     env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
   })
@@ -270,6 +310,7 @@ async function startGoLoop() {
   const runner = resolveGoRunner()
   goProc = spawn(runner.command, runner.args, {
     cwd: repoRoot,
+    detached: true,
     env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
   })
@@ -357,22 +398,24 @@ async function shutdown(exitCode = 0) {
     if (!proc || proc.killed) {
       continue
     }
-    proc.kill("SIGTERM")
+    signalProcessGroup(proc, "SIGTERM")
   }
+  await stopPortListeners("SIGTERM")
 
   await Bun.sleep(500)
   for (const proc of [goProc, viteProc]) {
     if (!proc || proc.killed) {
       continue
     }
-    proc.kill("SIGKILL")
+    signalProcessGroup(proc, "SIGKILL")
   }
+  await stopPortListeners("SIGKILL")
 
   setStatus("stopped")
   process.exit(exitCode)
 }
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
+for (const signal of ["SIGHUP", "SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     void shutdown(0)
   })

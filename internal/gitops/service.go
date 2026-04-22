@@ -131,9 +131,9 @@ func NewService(workspace core.WorkspaceService, eventSink core.EventSink) *Serv
 }
 
 func (s *Service) GetProjectGitStatus(ctx context.Context, projectID string) (ProjectStatus, error) {
-	project, ok := s.workspace.GetProject(strings.TrimSpace(projectID))
-	if !ok {
-		return ProjectStatus{}, fmt.Errorf("project %q not found", projectID)
+	project, err := s.resolveProject(projectID)
+	if err != nil {
+		return ProjectStatus{}, err
 	}
 	return s.readStatus(ctx, project)
 }
@@ -153,9 +153,9 @@ func (s *Service) CommitProjectChanges(
 		return CommitResult{}, errors.New("commit message is required")
 	}
 
-	project, ok := s.workspace.GetProject(strings.TrimSpace(projectID))
-	if !ok {
-		return CommitResult{}, fmt.Errorf("project %q not found", projectID)
+	project, err := s.resolveProject(projectID)
+	if err != nil {
+		return CommitResult{}, err
 	}
 
 	lock := s.projectLock(project.ID)
@@ -259,9 +259,9 @@ func (s *Service) PushProjectBranch(
 	expectedHeadSHA string,
 	expectedToken string,
 ) (PushResult, error) {
-	project, ok := s.workspace.GetProject(strings.TrimSpace(projectID))
-	if !ok {
-		return PushResult{}, fmt.Errorf("project %q not found", projectID)
+	project, err := s.resolveProject(projectID)
+	if err != nil {
+		return PushResult{}, err
 	}
 
 	lock := s.projectLock(project.ID)
@@ -415,6 +415,45 @@ func (s *Service) failedCommit(status ProjectStatus, step string, err error) Com
 		StatusAfter: status,
 		Diagnostics: []Diagnostic{diagnosticFromError("commit_failed", step, "Commit failed.", err)},
 	}
+}
+
+func (s *Service) resolveProject(projectID string) (core.Project, error) {
+	trimmed := strings.TrimSpace(projectID)
+	if project, ok := s.workspace.GetProject(trimmed); ok {
+		return project, nil
+	}
+	if !strings.HasPrefix(trimmed, "cwd:") {
+		return core.Project{}, fmt.Errorf("project %q not found", projectID)
+	}
+
+	rootPath := filepath.Clean(strings.TrimSpace(strings.TrimPrefix(trimmed, "cwd:")))
+	if rootPath == "." || rootPath == "" {
+		return core.Project{}, fmt.Errorf("project %q not found", projectID)
+	}
+	for _, project := range s.workspace.ListProjects() {
+		if filepath.Clean(strings.TrimSpace(project.RootPath)) == rootPath {
+			return project, nil
+		}
+	}
+
+	name := filepath.Base(rootPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = rootPath
+	}
+	project, err := s.workspace.CreateProject(core.CreateProjectInput{
+		Name:           name,
+		RootPath:       rootPath,
+		DefaultBackend: core.BackendKeyCodex,
+	})
+	if err == nil {
+		return project, nil
+	}
+	for _, project := range s.workspace.ListProjects() {
+		if filepath.Clean(strings.TrimSpace(project.RootPath)) == rootPath {
+			return project, nil
+		}
+	}
+	return core.Project{}, err
 }
 
 func (s *Service) projectLock(projectID string) *sync.Mutex {

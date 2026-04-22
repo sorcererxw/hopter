@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/session-composer"
+import { rememberSessionComposerSelection } from "@/components/app/session-composer-selection"
 import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { useProjects } from "@/features/projects/use-projects"
@@ -109,6 +110,10 @@ export function HomeWorkspacePane() {
               setPrompt("")
 
               if (session?.id) {
+                rememberSessionComposerSelection(session.id, {
+                  model,
+                  reasoningEffort,
+                })
                 setSearchParams((current) => {
                   const next = new URLSearchParams(current)
                   next.delete("compose")

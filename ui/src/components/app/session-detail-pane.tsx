@@ -1,15 +1,15 @@
 import { useCallback, useState } from "react"
 
 import { SessionComposer } from "@/components/app/session-composer"
+import {
+  getSessionComposerSelection,
+  rememberSessionComposerSelection,
+} from "@/components/app/session-composer-selection"
 import { CenteredTranscriptLoader } from "@/components/app/session-transcript-timeline"
 import { SessionTranscriptSurface } from "@/components/app/session-transcript-surface"
-import { ProjectGitActionDialog } from "@/components/app/project-git-action-dialog"
 import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
 import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { useSessionTranscriptFeed } from "@/components/app/use-session-transcript-feed"
-import { SessionTerminalDrawer } from "@/features/terminal/terminal-drawer"
-import { useTerminalSession } from "@/features/terminal/use-terminal-session"
-import { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
 import {
   useInterruptSession,
   useRespondToSessionApproval,
@@ -17,22 +17,18 @@ import {
   useSessionMeta,
 } from "@/features/sessions/use-sessions"
 import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
-import { GitCommitMode } from "@/gen/proto/hopter/v1/git_pb"
-import { useProjectGitStatus } from "@/features/git/use-project-git"
 import { useSessionReadTarget } from "@/lib/session-unread"
 
 import { shouldShowThinkingState } from "./session-detail-model"
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
-  const { eventStreamState, posture } = useWorkspaceShell()
+  const { eventStreamState } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
   const sendInput = useSendSessionInput()
   const interruptSession = useInterruptSession()
   const respondToApproval = useRespondToSessionApproval()
   const [prompt, setPrompt] = useState("")
   const [optimisticPendingInput, setOptimisticPendingInput] = useState("")
-  const [gitDialogOpen, setGitDialogOpen] = useState(false)
-  const [gitDialogMode, setGitDialogMode] = useState(GitCommitMode.COMMIT_ONLY)
   const clearOptimisticPendingInput = useCallback(() => {
     setOptimisticPendingInput("")
   }, [])
@@ -48,14 +44,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     transcriptFeed.transcriptVisible && !transcriptFeed.transcriptAwayFromBottom
   )
   const { session } = transcriptFeed
-  const projectId = sessionMetaQuery.data?.project?.id
-  const projectGitStatusQuery = useProjectGitStatus(
-    projectId,
-    Boolean(projectId)
-  )
-  const terminalEnabled = posture !== "phone"
-  const terminalUIState = useTerminalUIState(sessionId)
-  const terminalState = useTerminalSession(sessionId, terminalEnabled)
+  const initialComposerSelection = getSessionComposerSelection(sessionId)
   const shouldShowInterruptAction =
     Boolean(session) &&
     shouldShowThinkingState(session!.status) &&
@@ -64,37 +53,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <ProjectGitActionDialog
-        initialMode={gitDialogMode}
-        onOpenChange={setGitDialogOpen}
-        open={gitDialogOpen}
-        projectId={projectId}
-      />
       <WorkspacePageToolbar
         title={session?.title || "Thread"}
         projectName={session?.project?.name || "Local"}
         resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
-        onCommit={() => {
-          setGitDialogMode(GitCommitMode.COMMIT_ONLY)
-          setGitDialogOpen(true)
-        }}
-        onCommitAndPush={() => {
-          setGitDialogMode(GitCommitMode.COMMIT_AND_PUSH)
-          setGitDialogOpen(true)
-        }}
-        onOpenTerminal={() => {
-          if (!terminalEnabled) {
-            return
-          }
-          terminalUIState.setOpen(!terminalUIState.open)
-        }}
-        showCommit={Boolean(projectGitStatusQuery.data?.isGitRepository)}
-        showTerminal={terminalEnabled}
-        terminalButtonTestId="workspace-topbar-terminal"
-        terminalActive={Boolean(
-          terminalState.terminal && !terminalUIState.open
-        )}
       />
 
       {sessionMetaQuery.isLoading ? (
@@ -156,6 +119,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             <SessionComposer
               busy={sendInput.isPending || interruptSession.isPending}
               composerTestId="session-composer"
+              initialSelection={initialComposerSelection}
               interruptMode={shouldShowInterruptAction}
               interruptTestId="session-interrupt-submit"
               inputTestId="session-prompt-input"
@@ -166,6 +130,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               projectLabel={session.project?.name || "Local"}
               branchLabel="main"
               settingsLabel="Custom (config.toml)"
+              selectionKey={sessionId}
+              onSelectionChange={(selection) => {
+                rememberSessionComposerSelection(sessionId, selection)
+              }}
               onValueChange={setPrompt}
               onSubmit={async ({ model, reasoningEffort }) => {
                 if (!prompt.trim()) {
@@ -175,6 +143,10 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 const normalizedPrompt = prompt.trim()
                 setPrompt("")
                 setOptimisticPendingInput(normalizedPrompt)
+                rememberSessionComposerSelection(sessionId, {
+                  model,
+                  reasoningEffort,
+                })
                 try {
                   await sendInput.mutateAsync({
                     input: normalizedPrompt,
@@ -190,12 +162,6 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               }}
               submitTestId="session-followup-submit"
               value={prompt}
-            />
-
-            <SessionTerminalDrawer
-              enabled={terminalEnabled}
-              terminal={terminalState}
-              uiState={terminalUIState}
             />
           </div>
         </div>

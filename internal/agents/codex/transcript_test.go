@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"sort"
 	"testing"
+
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 func TestNormalizeTranscriptItemsAssignsStableSortableIdentity(t *testing.T) {
@@ -70,7 +72,7 @@ func TestNormalizeTranscriptItemsAssignsStableSortableIdentity(t *testing.T) {
 	}
 }
 
-func TestNormalizeTranscriptItemsSkipsCommentaryAgentMessages(t *testing.T) {
+func TestNormalizeTranscriptItemsMapsCommentaryAgentMessagesToReasoning(t *testing.T) {
 	read := readThreadResultWithTurns(
 		ReadThreadTurn{
 			ID:     "turn-1",
@@ -98,14 +100,80 @@ func TestNormalizeTranscriptItemsSkipsCommentaryAgentMessages(t *testing.T) {
 	)
 
 	items := normalizeReadThreadItemsForPage(read)
-	if len(items) != 2 {
-		t.Fatalf("items = %d, want 2", len(items))
+	if len(items) != 3 {
+		t.Fatalf("items = %d, want 3", len(items))
 	}
 	if items[0].Body != "continue" {
 		t.Fatalf("first item body = %q", items[0].Body)
 	}
-	if items[1].Body != "Implemented the change." {
+	if items[1].Kind != core.SessionTranscriptItemKindReasoning {
+		t.Fatalf("second item kind = %q, want reasoning", items[1].Kind)
+	}
+	if items[1].Title != "Progress" {
+		t.Fatalf("second item title = %q, want Progress", items[1].Title)
+	}
+	if items[1].Body != "I will make this implementation change next." {
 		t.Fatalf("second item body = %q", items[1].Body)
+	}
+	if items[2].Body != "Implemented the change." {
+		t.Fatalf("third item body = %q", items[2].Body)
+	}
+}
+
+func TestNormalizeReasoningWithoutSummaryPreservesProgressOnly(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type:    "reasoning",
+		ID:      "reasoning-empty",
+		Summary: json.RawMessage(`[]`),
+		Content: json.RawMessage(`[]`),
+	})
+	if !ok {
+		t.Fatalf("reasoning item was not normalized")
+	}
+	if item.Body != reasoningProgressBody {
+		t.Fatalf("reasoning body = %q, want %q", item.Body, reasoningProgressBody)
+	}
+	if item.DisplayBody != "" {
+		t.Fatalf("display body = %q, want empty raw body", item.DisplayBody)
+	}
+}
+
+func TestMergeCodexSourcedTranscriptItemsKeepsOnlyReasoningMissedByRead(t *testing.T) {
+	canonical := []core.SessionTranscriptItem{
+		{
+			ID:    "user-1",
+			Kind:  core.SessionTranscriptItemKindUserMessage,
+			Title: "You",
+			Body:  "continue",
+		},
+		{
+			ID:    "agent-1",
+			Kind:  core.SessionTranscriptItemKindAgentMessage,
+			Title: "Codex",
+			Body:  "done",
+		},
+	}
+	cached := []core.SessionTranscriptItem{
+		{
+			ID:    "local-user",
+			Kind:  core.SessionTranscriptItemKindUserMessage,
+			Title: "You",
+			Body:  "continue",
+		},
+		{
+			ID:    "reasoning-1",
+			Kind:  core.SessionTranscriptItemKindReasoning,
+			Title: "Thinking",
+			Body:  reasoningProgressBody,
+		},
+	}
+
+	merged := mergeCodexSourcedTranscriptItems(canonical, cached)
+	if len(merged) != 3 {
+		t.Fatalf("merged items = %d, want 3", len(merged))
+	}
+	if merged[2].ID != "reasoning-1" {
+		t.Fatalf("preserved item id = %q, want reasoning-1", merged[2].ID)
 	}
 }
 

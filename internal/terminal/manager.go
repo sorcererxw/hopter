@@ -34,6 +34,8 @@ type SessionResolver interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 }
 
+var ErrTerminalSessionNotFound = errors.New("terminal session not found")
+
 type CreateInput struct {
 	SessionID         string
 	BrowserInstanceID string
@@ -175,7 +177,7 @@ func (m *Manager) GetTerminalSession(sessionID, browserInstanceID, tabID string)
 	}
 	record, ok := m.store.GetByKey(key)
 	if !ok {
-		return Session{}, fmt.Errorf("terminal for session %q not found", key.SessionID)
+		return Session{}, fmt.Errorf("%w: session %q", ErrTerminalSessionNotFound, key.SessionID)
 	}
 	return record, nil
 }
