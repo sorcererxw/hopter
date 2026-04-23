@@ -193,7 +193,7 @@ For ordinary implementation work, use this cadence:
 
 For complex implementation requests that need planning, delegation, QA, browser or
 computer-use verification, repair loops, and final user acceptance, follow
-[`docs/operations/AGENT_TEAM_WORKFLOW.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/AGENT_TEAM_WORKFLOW.md).
+[`docs/operations/AGENT_TEAM_WORKFLOW.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/AGENT_TEAM_WORKFLOW.md).
 
 The lead agent owns requirement confirmation, task decomposition, subagent scope,
 fresh QA, final browser/computer-use verification, evidence consolidation, and
@@ -220,23 +220,23 @@ and logs from:
 
 Deeper reference:
 
-- [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
+- [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/DEV_LOOP.md)
 
 ## Read these docs
 
 Start here, in this order:
 
-0. [docs/README.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
-1. [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/DEV_LOOP.md)
-2. [docs/planning/GO_REBUILD_MASTER_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_MASTER_PLAN.md)
-3. [docs/planning/GO_REBUILD_TASK_LIST.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_TASK_LIST.md)
-4. [docs/planning/BACKEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/BACKEND_EXECUTION_PLAN.md)
-5. [docs/planning/FRONTEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/FRONTEND_EXECUTION_PLAN.md)
-6. [docs/planning/IDL_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_EXECUTION_PLAN.md)
-7. [docs/planning/IDL_SURFACE_V1_DRAFT.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/IDL_SURFACE_V1_DRAFT.md)
-8. [docs/product/UI_REBUILD_DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md)
-9. [docs/VALIDATION_HARNESS.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/VALIDATION_HARNESS.md)
-10. [docs/planning/GO_REBUILD_VALIDATION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
+0. [docs/README.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/README.md)
+1. [docs/operations/DEV_LOOP.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/DEV_LOOP.md)
+2. [docs/planning/GO_REBUILD_MASTER_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_MASTER_PLAN.md)
+3. [docs/planning/GO_REBUILD_TASK_LIST.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_TASK_LIST.md)
+4. [docs/planning/BACKEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/BACKEND_EXECUTION_PLAN.md)
+5. [docs/planning/FRONTEND_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/FRONTEND_EXECUTION_PLAN.md)
+6. [docs/planning/IDL_EXECUTION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/IDL_EXECUTION_PLAN.md)
+7. [docs/planning/IDL_SURFACE_V1_DRAFT.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/IDL_SURFACE_V1_DRAFT.md)
+8. [docs/product/UI_REBUILD_DESIGN_DOC.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/product/UI_REBUILD_DESIGN_DOC.md)
+9. [docs/VALIDATION_HARNESS.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/VALIDATION_HARNESS.md)
+10. [docs/planning/GO_REBUILD_VALIDATION_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
 
 ## Immediate next step
 
@@ -261,7 +261,7 @@ Do not:
 ## Codex app-server development gate
 
 For any work that changes the `codex app-server` connection path, follow
-[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
+[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
 and run the local guard before claiming completion:
 
 ```bash

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Agent Team Workflow"
-  short_description: "Plan, delegate, QA, verify, repair"
-  default_prompt: "Use $agent-team-workflow to run a requirement through lead planning, dev subagents, fresh QA, browser verification, repair loops, and final acceptance."

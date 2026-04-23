@@ -24,7 +24,7 @@ function buildListProjectsResponse() {
       {
         id: projectId,
         name: "codeshell",
-        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell",
+        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
         defaultBackend: "codex",
         createdAt: updatedAt,
         updatedAt,
@@ -42,7 +42,7 @@ function buildListSessionsResponse() {
         project: {
           id: projectId,
           name: "codeshell",
-          rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell",
+          rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
         },
         status: "SESSION_STATUS_RUNNING",
         updatedAt,
@@ -60,7 +60,7 @@ function buildSessionMetaResponse() {
       project: {
         id: projectId,
         name: "codeshell",
-        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell",
+        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
       },
       status: "SESSION_STATUS_RUNNING",
       summary: "Breakpoint shell validation is in progress.",

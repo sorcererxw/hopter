@@ -10,7 +10,7 @@
 
 This document turns the current UI review into implementation-ready rules.
 
-[`UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/UI_REBUILD_DESIGN_DOC.md) still defines the product shape.
+[`UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/product/UI_REBUILD_DESIGN_DOC.md) still defines the product shape.
 This document defines the next-pass refinement rules that should guide the actual UI implementation.
 
 The goal is not "make it prettier."
@@ -473,12 +473,12 @@ The following files are the expected touch points for implementation.
 
 ### Core
 
-- [`ui/src/index.css`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/index.css)
-- [`ui/src/components/app/workspace-topbar.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/workspace-topbar.tsx)
-- [`ui/src/components/app/session-composer.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-composer.tsx)
-- [`ui/src/components/app/session-rail.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-rail.tsx)
-- [`ui/src/components/app/session-detail-pane.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-detail-pane.tsx)
-- [`ui/src/components/app/session-rich-text.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/ui/src/components/app/session-rich-text.tsx)
+- [`ui/src/index.css`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/index.css)
+- [`ui/src/components/app/workspace-topbar.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/workspace-topbar.tsx)
+- [`ui/src/components/app/session-composer.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-composer.tsx)
+- [`ui/src/components/app/session-rail.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-rail.tsx)
+- [`ui/src/components/app/session-detail-pane.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-detail-pane.tsx)
+- [`ui/src/components/app/session-rich-text.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-rich-text.tsx)
 
 ### Principles for implementation
 

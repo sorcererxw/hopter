@@ -24,7 +24,7 @@ Hopter starts the local server and prints the URL to open.
 - [ ] Better mobile flows for review, approval, and continuation.
 - [ ] Simple self-hosted access from another device.
 
-See [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/README.md)
+See [`docs/README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/README.md)
 for development notes.
 
 ## License

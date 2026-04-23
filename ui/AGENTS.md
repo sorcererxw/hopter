@@ -2,7 +2,7 @@
 
 This file adds UI-specific implementation rules for everything under `/ui`.
 
-These rules refine the root [`AGENTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/AGENTS.md). If they conflict, this file wins for `ui/**`.
+These rules refine the root [`AGENTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/AGENTS.md). If they conflict, this file wins for `ui/**`.
 
 ## Breakpoint architecture
 

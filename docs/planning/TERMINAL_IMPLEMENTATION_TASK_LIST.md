@@ -6,7 +6,7 @@ Proposed execution checklist.
 
 This task list operationalizes:
 
-- [TERMINAL_CAPABILITY_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/planning/TERMINAL_CAPABILITY_PLAN.md)
+- [TERMINAL_CAPABILITY_PLAN.md](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/TERMINAL_CAPABILITY_PLAN.md)
 
 ## Goal
 

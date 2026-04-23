@@ -9,8 +9,8 @@ Use it when you need to answer one of four questions:
 3. where AI should read machine state and logs
 4. how to validate the current live loop without rebuilding everything
 
-If you only need the shortest path, start with [`README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/README.md).
-If you need the full contributor workflow, read [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/CONTRIBUTING.md).
+If you only need the shortest path, start with [`README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/README.md).
+If you need the full contributor workflow, read [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/CONTRIBUTING.md).
 
 ## One-screen summary
 
@@ -106,7 +106,7 @@ Configured exclusions include:
 - `tmp/`
 - `node_modules/`
 
-The config lives in [`.air.toml`](/Users/sorcererxw/repo/sorcererxw/codeshell/.air.toml).
+The config lives in [`.air.toml`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/.air.toml).
 
 ## Machine-readable dev state
 

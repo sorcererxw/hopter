@@ -48,7 +48,7 @@ After this refactor, the user should feel one coherent typographic voice:
 
 ### Premise 1
 
-The right problem is not "pick better fonts." That decision is already made in [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md).
+The right problem is not "pick better fonts." That decision is already made in [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md).
 
 Verdict: accepted.
 
