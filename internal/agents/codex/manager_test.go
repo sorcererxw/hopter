@@ -1381,6 +1381,82 @@ func TestInterruptSessionUsesActiveTurnAndClearsState(t *testing.T) {
 	}
 }
 
+func TestInterruptSessionSignalsExternalCodexExec(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	startedAt := time.Now().UTC().Add(-10 * time.Second)
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{ID: "turn-interrupted", Status: "interrupted"},
+		),
+	}
+	client.readResult.Thread.ID = "thread-exec-interrupt"
+	client.readResult.Thread.Cwd = project.RootPath
+	client.readResult.Thread.UpdatedAt = startedAt.Unix()
+	client.readResult.Thread.Status = ThreadStatus{Type: "idle"}
+
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-exec-interrupt.jsonl")
+	sessionJSON := `{"type":"session_meta","payload":{"id":"thread-exec-interrupt","timestamp":"` +
+		startedAt.Format(time.RFC3339Nano) +
+		`","cwd":"` + project.RootPath + `","source":"exec"}}` + "\n" +
+		`{"type":"response_item","payload":{"type":"function_call_output","output":"Process running with session ID 42"}}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(sessionJSON), 0o644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	originalListProcesses := listLocalCodexExecProcesses
+	originalSignalProcess := signalLocalCodexExecProcess
+	signaledPID := 0
+	listLocalCodexExecProcesses = func() ([]localCodexExecProcess, error) {
+		return []localCodexExecProcess{
+			{
+				PID:     1234,
+				Command: "/opt/homebrew/bin/codex exec -C " + project.RootPath + " --full-auto prompt",
+			},
+		}, nil
+	}
+	signalLocalCodexExecProcess = func(pid int) error {
+		signaledPID = pid
+		return nil
+	}
+	t.Cleanup(func() {
+		listLocalCodexExecProcesses = originalListProcesses
+		signalLocalCodexExecProcess = originalSignalProcess
+	})
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	updated, err := manager.InterruptSession("thread-exec-interrupt")
+	if err != nil {
+		t.Fatalf("InterruptSession: %v", err)
+	}
+	if signaledPID != 1234 {
+		t.Fatalf("signaled pid = %d, want 1234", signaledPID)
+	}
+	if updated.Status != core.SessionStateWaitingInput {
+		t.Fatalf("status = %q, want %q", updated.Status, core.SessionStateWaitingInput)
+	}
+	if updated.ActiveTurnID != "" {
+		t.Fatalf("active turn id = %q, want empty", updated.ActiveTurnID)
+	}
+}
+
 func TestListSessionsCachesThreadListCalls(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
@@ -1428,6 +1504,327 @@ func TestListSessionsCachesThreadListCalls(t *testing.T) {
 	}
 	if client.listThreadsCalls != 1 {
 		t.Fatalf("ListThreads calls = %d, want 1", client.listThreadsCalls)
+	}
+}
+
+func TestSessionListMonitorPublishesExternalThreadStatusChanges(t *testing.T) {
+	originalTTL := threadListCacheTTL
+	threadListCacheTTL = 0
+	t.Cleanup(func() {
+		threadListCacheTTL = originalTTL
+	})
+
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	sink := &fakeEventSink{}
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        "thread-external",
+					Cwd:       project.RootPath,
+					Preview:   "external turn",
+					UpdatedAt: 100,
+					Status:    ThreadStatus{Type: "idle"},
+				},
+			},
+		},
+	}
+	manager := NewManager(workspace, sink)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	state := manager.pollSessionListMonitor(context.Background(), nil, 10)
+	if len(sink.events) != 0 {
+		t.Fatalf("initial monitor poll published %d events, want 0", len(sink.events))
+	}
+
+	client.listResult = &ThreadListResult{
+		Data: []ThreadRecord{
+			{
+				ID:        "thread-external",
+				Cwd:       project.RootPath,
+				Preview:   "external turn",
+				UpdatedAt: 101,
+				Status:    ThreadStatus{Type: "active"},
+			},
+		},
+	}
+
+	state = manager.pollSessionListMonitor(context.Background(), state, 10)
+	if len(sink.events) != 2 {
+		t.Fatalf("status change published %d events, want 2", len(sink.events))
+	}
+	if sink.events[0].Kind != core.EventSessionsChanged {
+		t.Fatalf("first event kind = %q, want %q", sink.events[0].Kind, core.EventSessionsChanged)
+	}
+	if sink.events[1].Kind != core.EventSessionChanged {
+		t.Fatalf("second event kind = %q, want %q", sink.events[1].Kind, core.EventSessionChanged)
+	}
+	if sink.events[1].SessionID != "thread-external" {
+		t.Fatalf("session event id = %q, want thread-external", sink.events[1].SessionID)
+	}
+	if sink.events[1].ProjectID != project.ID {
+		t.Fatalf("session event project = %q, want %q", sink.events[1].ProjectID, project.ID)
+	}
+
+	manager.pollSessionListMonitor(context.Background(), state, 10)
+	if len(sink.events) != 2 {
+		t.Fatalf("unchanged poll published %d events, want 2", len(sink.events))
+	}
+}
+
+func TestListSessionsHydratesRecentExternalRunningTurn(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        "thread-external-running",
+					Cwd:       project.RootPath,
+					Preview:   "external running",
+					UpdatedAt: time.Now().UTC().Unix(),
+					Status:    ThreadStatus{Type: "idle"},
+				},
+			},
+		},
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{ID: "turn-running", Status: "inProgress"},
+		),
+	}
+	client.readResult.Thread.ID = "thread-external-running"
+	client.readResult.Thread.UpdatedAt = time.Now().UTC().Unix()
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	sessions, err := manager.ListSessions("", 10)
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("session count = %d, want 1", len(sessions))
+	}
+	if sessions[0].Session.Status != core.SessionStateRunning {
+		t.Fatalf("session status = %q, want %q", sessions[0].Session.Status, core.SessionStateRunning)
+	}
+	if client.readCalls != 1 {
+		t.Fatalf("ReadThread calls = %d, want 1", client.readCalls)
+	}
+}
+
+func TestListSessionsHydratesRunningStatusFromLocalCodexJsonl(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		listResult: &ThreadListResult{
+			Data: []ThreadRecord{
+				{
+					ID:        "thread-local-running",
+					Cwd:       project.RootPath,
+					Preview:   "local running",
+					UpdatedAt: time.Now().UTC().Unix(),
+					Status:    ThreadStatus{Type: "idle"},
+				},
+			},
+		},
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{ID: "turn-interrupted", Status: "interrupted"},
+		),
+	}
+	client.readResult.Thread.ID = "thread-local-running"
+	client.readResult.Thread.UpdatedAt = time.Now().UTC().Unix()
+
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-local-running.jsonl")
+	if err := os.WriteFile(
+		sessionPath,
+		[]byte(`{"type":"response_item","payload":{"type":"function_call_output","output":"Process running with session ID 36741"}}`+"\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	sessions, err := manager.ListSessions("", 10)
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("session count = %d, want 1", len(sessions))
+	}
+	if sessions[0].Session.Status != core.SessionStateRunning {
+		t.Fatalf("session status = %q, want %q", sessions[0].Session.Status, core.SessionStateRunning)
+	}
+	if client.readCalls != 0 {
+		t.Fatalf("ReadThread calls = %d, want 0 when local running marker is present", client.readCalls)
+	}
+}
+
+func TestGetSessionMetaHydratesRunningStatusFromLocalCodexJsonl(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(
+			ReadThreadTurn{ID: "turn-interrupted", Status: "interrupted"},
+		),
+	}
+	client.readResult.Thread.ID = "thread-meta-local-running"
+	client.readResult.Thread.Cwd = project.RootPath
+	client.readResult.Thread.UpdatedAt = time.Now().UTC().Unix()
+	client.readResult.Thread.Status = ThreadStatus{Type: "idle"}
+
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-meta-local-running.jsonl")
+	if err := os.WriteFile(
+		sessionPath,
+		[]byte(`{"type":"item.started","item":{"type":"command_execution","status":"in_progress"}}`+"\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	reader := NewSessionReadModel(workspace, manager, manager)
+
+	meta, err := reader.GetSessionMeta("thread-meta-local-running")
+	if err != nil {
+		t.Fatalf("GetSessionMeta: %v", err)
+	}
+	if meta.Session.Status != core.SessionStateRunning {
+		t.Fatalf("session status = %q, want %q", meta.Session.Status, core.SessionStateRunning)
+	}
+}
+
+func TestLocalCodexSessionRunningTracksOpenFunctionCall(t *testing.T) {
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-open-call.jsonl")
+
+	openCall := `{"type":"response_item","payload":{"type":"function_call","name":"exec_command","call_id":"call_1"}}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(openCall), 0o644); err != nil {
+		t.Fatalf("WriteFile open call: %v", err)
+	}
+	if !localCodexSessionRunning("thread-open-call") {
+		t.Fatal("localCodexSessionRunning = false, want true for open exec_command call")
+	}
+
+	closedCall := openCall + `{"type":"response_item","payload":{"type":"function_call_output","call_id":"call_1","output":"succeeded in 1ms"}}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(closedCall), 0o644); err != nil {
+		t.Fatalf("WriteFile closed call: %v", err)
+	}
+	if localCodexSessionRunning("thread-open-call") {
+		t.Fatal("localCodexSessionRunning = true, want false after function_call_output")
+	}
+}
+
+func TestLocalCodexSessionRunningTracksCommandExecutionItems(t *testing.T) {
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-command-item.jsonl")
+
+	runningItem := `{"type":"item.started","item":{"type":"command_execution","status":"in_progress"}}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(runningItem), 0o644); err != nil {
+		t.Fatalf("WriteFile running item: %v", err)
+	}
+	if !localCodexSessionRunning("thread-command-item") {
+		t.Fatal("localCodexSessionRunning = false, want true for in-progress command_execution")
+	}
+
+	completedItem := runningItem + `{"type":"item.completed","item":{"type":"command_execution","status":"completed"}}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(completedItem), 0o644); err != nil {
+		t.Fatalf("WriteFile completed item: %v", err)
+	}
+	if localCodexSessionRunning("thread-command-item") {
+		t.Fatal("localCodexSessionRunning = true, want false after completed command_execution")
+	}
+}
+
+func TestLocalCodexSessionRunningIgnoresStaleRunningMarkers(t *testing.T) {
+	originalTTL := localCodexRunningMarkerTTL
+	localCodexRunningMarkerTTL = time.Minute
+	t.Cleanup(func() {
+		localCodexRunningMarkerTTL = originalTTL
+	})
+
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	sessionDir := filepath.Join(codexHome, "sessions", "2026", "04", "23")
+	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	sessionPath := filepath.Join(sessionDir, "rollout-2026-04-23T11-43-00-thread-stale-running.jsonl")
+	if err := os.WriteFile(
+		sessionPath,
+		[]byte(`{"type":"response_item","payload":{"type":"function_call_output","output":"Process running with session ID 36741"}}`+"\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	staleTime := time.Now().Add(-2 * time.Minute)
+	if err := os.Chtimes(sessionPath, staleTime, staleTime); err != nil {
+		t.Fatalf("Chtimes: %v", err)
+	}
+
+	if localCodexSessionRunning("thread-stale-running") {
+		t.Fatal("localCodexSessionRunning = true, want false for stale running marker")
 	}
 }
 

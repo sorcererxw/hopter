@@ -1,12 +1,61 @@
 package codex
 
 import (
+	"context"
 	"encoding/json"
+	"io"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/pmenglund/codex-sdk-go/protocol"
+	"github.com/pmenglund/codex-sdk-go/rpc"
 	"github.com/sorcererxw/hopter/internal/core"
 )
+
+type fakeRPCTransport struct {
+	mu     sync.Mutex
+	reads  chan string
+	writes []string
+}
+
+func newFakeRPCTransport() *fakeRPCTransport {
+	return &fakeRPCTransport{reads: make(chan string, 8)}
+}
+
+func (f *fakeRPCTransport) ReadLine() (string, error) {
+	line, ok := <-f.reads
+	if !ok {
+		return "", io.EOF
+	}
+	return line, nil
+}
+
+func (f *fakeRPCTransport) WriteLine(line string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.writes = append(f.writes, line)
+	return nil
+}
+
+func (f *fakeRPCTransport) Close() error {
+	close(f.reads)
+	return nil
+}
+
+func (f *fakeRPCTransport) queueResponse(id int, result string) {
+	f.reads <- `{"id":` + strconv.Itoa(id) + `,"result":` + result + `}`
+}
+
+func (f *fakeRPCTransport) writtenLine(index int) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if index < 0 || index >= len(f.writes) {
+		return ""
+	}
+	return f.writes[index]
+}
 
 func TestTraceLineClassifiesAppServerRequestWithoutJSONRPC(t *testing.T) {
 	var traces []TraceEntry
@@ -42,6 +91,25 @@ func TestApplyServiceTierUsesFastWhenRequested(t *testing.T) {
 
 	if serviceTier != protocol.ServiceTierFast {
 		t.Fatalf("service tier = %#v, want fast", serviceTier)
+	}
+}
+
+func TestListThreadsIncludesExecSource(t *testing.T) {
+	transport := newFakeRPCTransport()
+	client := &Client{
+		ctx: context.Background(),
+		rpc: rpc.NewClient(transport, rpc.ClientOptions{}),
+	}
+	defer client.rpc.Close()
+	transport.queueResponse(1, `{"data":[]}`)
+
+	if _, err := client.ListThreads("", 10); err != nil {
+		t.Fatalf("ListThreads: %v", err)
+	}
+
+	line := transport.writtenLine(0)
+	if !strings.Contains(line, `"sourceKinds":["cli","exec","vscode","appServer"]`) {
+		t.Fatalf("thread/list sourceKinds = %s", line)
 	}
 }
 

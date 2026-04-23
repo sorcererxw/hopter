@@ -283,6 +283,7 @@ func (c *Client) ListThreads(cwd string, limit uint32) (*ThreadListResult, error
 		SortKey:  sortKey,
 		SourceKinds: []protocol.ThreadSourceKind{
 			protocol.ThreadSourceKindCli,
+			protocol.ThreadSourceKindExec,
 			protocol.ThreadSourceKindVscode,
 			protocol.ThreadSourceKindAppServer,
 		},

@@ -73,7 +73,10 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		_ = taskStore.Close()
 	})
 
-	go sessionReadModel.PrewarmRecent(context.Background(), 10, 50)
+	backgroundCtx, cancelBackground := context.WithCancel(context.Background())
+	server.RegisterOnShutdown(cancelBackground)
+	go sessionReadModel.PrewarmRecent(backgroundCtx, 10, 50)
+	codexManager.StartSessionListMonitor(backgroundCtx, 0, 0)
 
 	return &Runtime{
 		Config:    cfg,

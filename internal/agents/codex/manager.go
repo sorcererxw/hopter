@@ -77,6 +77,12 @@ var (
 	threadListCacheTTL    = 750 * time.Millisecond
 )
 
+const (
+	threadListHydrateReadLimit     = 20
+	threadListHydrateRecentWindow  = 24 * time.Hour
+	threadListHydrateRunningWindow = 7 * 24 * time.Hour
+)
+
 type codexClient interface {
 	Close() error
 	InterruptTurn(threadID, turnID string) error
@@ -218,6 +224,7 @@ func (m *Manager) listThreadsCached(limit uint32) (*ThreadListResult, error) {
 		if err != nil {
 			return nil, err
 		}
+		m.hydrateRecentThreadListStatuses(client, list)
 		m.setCachedThreadList(key, list)
 		return cloneThreadListResult(list), nil
 	})
@@ -230,6 +237,56 @@ func (m *Manager) listThreadsCached(limit uint32) (*ThreadListResult, error) {
 		return nil, fmt.Errorf("thread list cache returned %T", value)
 	}
 	return cloneThreadListResult(list), nil
+}
+
+func (m *Manager) hydrateRecentThreadListStatuses(client codexClient, list *ThreadListResult) {
+	if client == nil || list == nil || len(list.Data) == 0 {
+		return
+	}
+
+	now := time.Now().UTC()
+	hydrated := 0
+	for index := range list.Data {
+		thread := &list.Data[index]
+		if strings.TrimSpace(thread.ID) == "" {
+			continue
+		}
+		if strings.EqualFold(thread.Status.Type, "active") {
+			continue
+		}
+
+		threadAge := time.Duration(0)
+		if thread.UpdatedAt > 0 {
+			threadAge = now.Sub(time.Unix(thread.UpdatedAt, 0).UTC())
+		}
+		if threadAge <= threadListHydrateRunningWindow && localCodexSessionRunning(thread.ID) {
+			thread.Status = ThreadStatus{Type: "active"}
+			thread.UpdatedAt = max(thread.UpdatedAt, now.Unix())
+			continue
+		}
+
+		if hydrated >= threadListHydrateReadLimit {
+			continue
+		}
+		if threadAge > threadListHydrateRecentWindow {
+			continue
+		}
+
+		read, err := client.ReadThread(thread.ID)
+		if err != nil {
+			continue
+		}
+		hydrated++
+		if latestActiveTurnID(read) != "" {
+			thread.Status = ThreadStatus{Type: "active"}
+			thread.UpdatedAt = max(thread.UpdatedAt, read.Thread.UpdatedAt)
+			continue
+		}
+		if latestTerminalTurnStatus(read) == "failed" {
+			thread.Status = ThreadStatus{Type: "systemError"}
+			thread.UpdatedAt = max(thread.UpdatedAt, read.Thread.UpdatedAt)
+		}
+	}
 }
 
 func (m *Manager) getCachedThreadList(key string) (*ThreadListResult, bool) {
@@ -389,6 +446,9 @@ func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
 	threadID := strings.TrimSpace(session.BackendThreadID)
 	turnID := strings.TrimSpace(session.ActiveTurnID)
 	if threadID == "" || turnID == "" {
+		if interrupted, err := m.interruptExternalLocalSession(sessionID, session, project); err == nil {
+			return interrupted, nil
+		}
 		return core.Session{}, fmt.Errorf("session %q has no active turn to interrupt", sessionID)
 	}
 
@@ -440,6 +500,63 @@ func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
 		return core.Session{}, fmt.Errorf("session %q not found", sessionID)
 	}
 	return updated, nil
+}
+
+func (m *Manager) interruptExternalLocalSession(
+	sessionID string,
+	session core.Session,
+	project core.Project,
+) (core.Session, error) {
+	threadID := strings.TrimSpace(session.BackendThreadID)
+	if threadID == "" {
+		threadID = strings.TrimSpace(sessionID)
+	}
+	if threadID == "" {
+		return core.Session{}, fmt.Errorf("session %q is missing backend thread id", sessionID)
+	}
+	if err := interruptLocalCodexExecSession(threadID); err != nil {
+		return core.Session{}, err
+	}
+
+	active := ""
+	pendingApprovalID := ""
+	waiting := core.SessionStateWaitingInput
+	attention := false
+	reason := ""
+	summary := "Codex stopped before completing the turn."
+	patch := core.SessionPatch{
+		PendingApprovalID: &pendingApprovalID,
+		ActiveTurnID:      &active,
+		Status:            &waiting,
+		AttentionRequired: &attention,
+		AttentionReason:   &reason,
+		Summary:           &summary,
+	}
+	m.updateWorkspaceSession(sessionID, patch)
+
+	session.ActiveTurnID = active
+	session.PendingApprovalID = pendingApprovalID
+	session.Status = waiting
+	session.AttentionRequired = attention
+	session.AttentionReason = reason
+	session.Summary = summary
+	session.UpdatedAt = time.Now().UTC()
+
+	if m.eventSink != nil {
+		m.eventSink.Publish(core.Event{
+			Kind:      core.EventSessionChanged,
+			ProjectID: project.ID,
+			SessionID: sessionID,
+			Summary:   summary,
+			LivePatch: &core.SessionLivePatch{
+				Kind:            core.SessionLivePatchKindStatus,
+				Status:          waiting,
+				Summary:         summary,
+				RequiresRefetch: true,
+			},
+		})
+	}
+	return session, nil
 }
 
 func (m *Manager) runSession(project core.Project, sessionID, prompt string, options core.SessionTurnOptions) {
@@ -1786,15 +1903,21 @@ func (m *Manager) updateWorkspaceSession(sessionID string, patch core.SessionPat
 }
 
 func sessionFromThread(thread ThreadRecord, project core.Project, local core.Session, hasLocal bool) core.Session {
+	status := mapThreadStatus(thread.Status)
+	updatedAt := time.Unix(thread.UpdatedAt, 0).UTC()
+	if status != core.SessionStateRunning && localCodexSessionRunning(thread.ID) {
+		status = core.SessionStateRunning
+		updatedAt = time.Now().UTC()
+	}
 	session := core.Session{
 		ID:              thread.ID,
 		ProjectID:       project.ID,
 		BackendKey:      "codex",
 		Title:           fallbackThreadTitle(thread, local, hasLocal),
 		BackendThreadID: thread.ID,
-		Status:          mapThreadStatus(thread.Status),
+		Status:          status,
 		Summary:         fallbackThreadPreview(thread, local, hasLocal),
-		UpdatedAt:       time.Unix(thread.UpdatedAt, 0).UTC(),
+		UpdatedAt:       updatedAt,
 	}
 	if hasLocal {
 		if strings.TrimSpace(local.BackendThreadID) == "" {
