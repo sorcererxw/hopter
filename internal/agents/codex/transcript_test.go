@@ -120,6 +120,51 @@ func TestNormalizeTranscriptItemsMapsCommentaryAgentMessagesToReasoning(t *testi
 	}
 }
 
+func TestNormalizeUserMessageRedactsSyncedDataImageURL(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type: "userMessage",
+		ID:   "user-image",
+		Content: json.RawMessage(`[
+			{"type":"text","text":"please inspect this"},
+			{"type":"image","image_url":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"}
+		]`),
+	})
+	if !ok {
+		t.Fatalf("user message was not normalized")
+	}
+	if item.Body != "please inspect this\n[image]" {
+		t.Fatalf("body = %q", item.Body)
+	}
+	if item.DisplayBody != "please inspect this" {
+		t.Fatalf("display body = %q", item.DisplayBody)
+	}
+	if len(item.Attachments) != 1 {
+		t.Fatalf("attachments = %d, want 1", len(item.Attachments))
+	}
+	if item.Attachments[0].URL != "" {
+		t.Fatalf("attachment url leaked data URL: %q", item.Attachments[0].URL)
+	}
+}
+
+func TestNormalizeUserMessageRedactsDataImageURLInsideTextPart(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type: "userMessage",
+		ID:   "user-text-data-image",
+		Content: json.RawMessage(`[
+			{"type":"text","text":"before data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ== after"}
+		]`),
+	})
+	if !ok {
+		t.Fatalf("user message was not normalized")
+	}
+	if item.Body != "before [image data omitted] after" {
+		t.Fatalf("body = %q", item.Body)
+	}
+	if item.DisplayBody != "before [image data omitted] after" {
+		t.Fatalf("display body = %q", item.DisplayBody)
+	}
+}
+
 func TestNormalizeReasoningWithoutSummaryPreservesProgressOnly(t *testing.T) {
 	item, ok := normalizeThreadItem(ReadThreadItem{
 		Type:    "reasoning",

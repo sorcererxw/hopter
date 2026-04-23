@@ -276,7 +276,7 @@ func formatContent(rawID string, raw json.RawMessage) (string, []core.SessionTra
 		switch partType {
 		case "text":
 			if text, _ := part["text"].(string); strings.TrimSpace(text) != "" {
-				lines = append(lines, strings.TrimSpace(text))
+				lines = append(lines, sanitizeUserContentText(strings.TrimSpace(text)))
 			}
 		case "localImage":
 			if path, _ := part["path"].(string); strings.TrimSpace(path) != "" {
@@ -288,7 +288,7 @@ func formatContent(rawID string, raw json.RawMessage) (string, []core.SessionTra
 			}
 		case "image":
 			if imageURL := imageURL(part); imageURL != "" {
-				lines = append(lines, "[image] "+imageURL)
+				lines = append(lines, imageTranscriptLine(part, imageURL))
 				attachments = append(attachments, transcriptAttachment(rawID, index, core.SessionTranscriptAttachmentKindImage, attachmentLabel(part, "Image"), "", imageAttachmentURL(imageURL), contentType(part)))
 			} else {
 				lines = append(lines, "[image]")
@@ -338,9 +338,20 @@ func imageAttachmentURL(rawURL string) string {
 		return ""
 	}
 	if strings.HasPrefix(strings.ToLower(normalized), "data:image/") {
-		return normalized
+		return ""
 	}
 	return imageProxyRemoteURL(normalized)
+}
+
+func imageTranscriptLine(part map[string]any, rawURL string) string {
+	normalized := strings.TrimSpace(rawURL)
+	if strings.HasPrefix(strings.ToLower(normalized), "data:image/") {
+		if label := attachmentLabel(part, "Image"); label != "" && label != "Image" {
+			return "[image] " + label
+		}
+		return "[image]"
+	}
+	return "[image] " + normalized
 }
 
 func imageURL(part map[string]any) string {
@@ -413,7 +424,7 @@ func formatUserMessageForDisplay(value string) string {
 	const marker = "## My request for Codex:"
 	markerIndex := strings.Index(value, marker)
 	if markerIndex < 0 {
-		return value
+		return cleanUserMessageFragment(value)
 	}
 
 	afterMarker := value[markerIndex+len(marker):]
@@ -475,7 +486,7 @@ func extractDiffCommentBodies(value string) []string {
 }
 
 func cleanUserMessageFragment(value string) string {
-	cleaned := strings.TrimSpace(value)
+	cleaned := strings.TrimSpace(sanitizeUserContentText(value))
 	cleaned = strings.TrimPrefix(cleaned, ":")
 	cleaned = strings.TrimPrefix(cleaned, "：")
 	cleaned = strings.TrimSpace(cleaned)
@@ -488,6 +499,50 @@ func cleanUserMessageFragment(value string) string {
 	cleaned = strings.TrimSpace(cleaned)
 	cleaned = strings.TrimSuffix(cleaned, "[image]")
 	return strings.TrimSpace(cleaned)
+}
+
+func sanitizeUserContentText(value string) string {
+	cleaned := redactDataImageURLs(value)
+	return strings.TrimSpace(cleaned)
+}
+
+func redactDataImageURLs(value string) string {
+	const marker = "data:image/"
+	if !strings.Contains(strings.ToLower(value), marker) {
+		return value
+	}
+
+	var builder strings.Builder
+	remaining := value
+	for {
+		lower := strings.ToLower(remaining)
+		index := strings.Index(lower, marker)
+		if index < 0 {
+			builder.WriteString(remaining)
+			break
+		}
+
+		builder.WriteString(remaining[:index])
+		builder.WriteString("[image data omitted]")
+		remaining = remaining[index:]
+
+		end := len(remaining)
+		for offset, r := range remaining {
+			if offset == 0 {
+				continue
+			}
+			if isDataURLTerminator(r) {
+				end = offset
+				break
+			}
+		}
+		remaining = remaining[end:]
+	}
+	return builder.String()
+}
+
+func isDataURLTerminator(r rune) bool {
+	return r <= ' ' || r == '"' || r == '\'' || r == '<' || r == '>' || r == ')' || r == ']'
 }
 
 func formatToolCall(item ReadThreadItem) string {
