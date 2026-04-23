@@ -3,7 +3,10 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/sessions/composer"
-import { rememberSessionComposerSelection } from "@/components/app/sessions/composer"
+import {
+  rememberSessionComposerSelection,
+  resolveSessionComposerSelection,
+} from "@/components/app/sessions/composer"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
 import {
@@ -15,6 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useProjects } from "@/features/projects/use-projects"
+import {
+  agentSelectionPreferenceFromConfig,
+  useConfig,
+  useUpdateConfig,
+} from "@/features/config/use-config"
 import { useCreateSession, useSessions } from "@/features/sessions/use-sessions"
 
 function deriveTitle(prompt: string) {
@@ -28,6 +36,8 @@ export function HomeWorkspacePane() {
   const { eventStreamState, posture } = useWorkspaceShell()
   const [searchParams, setSearchParams] = useSearchParams()
   const createSession = useCreateSession()
+  const configQuery = useConfig()
+  const updateConfig = useUpdateConfig()
   const { data: projects, isLoading: projectsLoading } = useProjects()
   const { data: sessions } = useSessions(
     undefined,
@@ -74,6 +84,9 @@ export function HomeWorkspacePane() {
   )
   const isPhoneCompose =
     posture === "phone" && searchParams.get("compose") === "1"
+  const initialComposerSelection = resolveSessionComposerSelection(
+    agentSelectionPreferenceFromConfig(configQuery.data)
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
@@ -96,6 +109,7 @@ export function HomeWorkspacePane() {
             composerTestId="home-session-composer"
             disabled={!selectedProjectId}
             inputTestId="home-session-prompt-input"
+            initialSelection={initialComposerSelection}
             placeholder={t("home.askAnything")}
             placement="inline"
             projectLabel={selectedProject?.name || t("home.localProject")}
@@ -136,6 +150,15 @@ export function HomeWorkspacePane() {
                   codexFastMode,
                   model,
                   reasoningEffort,
+                })
+                updateConfig.mutate({
+                  agent: {
+                    defaultBackend: "codex",
+                    defaultCodexFastMode: codexFastMode,
+                    defaultModel: model,
+                    defaultReasoningEffort: reasoningEffort,
+                  },
+                  expectedRevision: configQuery.data?.revision ?? 0n,
                 })
                 setSearchParams((current) => {
                   const next = new URLSearchParams(current)

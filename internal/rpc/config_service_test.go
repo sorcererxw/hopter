@@ -31,11 +31,20 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	if getResp.Msg.GetConfig().GetComposer().GetSendShortcut() != hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER {
 		t.Fatalf("initial composer shortcut = %v, want cmd-enter", getResp.Msg.GetConfig().GetComposer().GetSendShortcut())
 	}
+	if getResp.Msg.GetConfig().GetAgent().GetDefaultCodexFastMode() {
+		t.Fatal("initial default codex fast mode = true, want false")
+	}
 
 	updateResp, err := service.UpdateConfig(context.Background(), connect.NewRequest(&hopterv1.UpdateConfigRequest{
 		Appearance: &hopterv1.AppearanceConfig{
 			Theme:  hopterv1.ConfigTheme_CONFIG_THEME_DARK,
 			Locale: hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN,
+		},
+		Agent: &hopterv1.AgentConfig{
+			DefaultBackend:         "codex",
+			DefaultModel:           "gpt-5.4",
+			DefaultReasoningEffort: "xhigh",
+			DefaultCodexFastMode:   true,
 		},
 		Composer: &hopterv1.ComposerConfig{
 			SendShortcut: hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER,
@@ -53,6 +62,15 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	}
 	if updateResp.Msg.GetConfig().GetComposer().GetSendShortcut() != hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER {
 		t.Fatalf("updated composer shortcut = %v, want enter", updateResp.Msg.GetConfig().GetComposer().GetSendShortcut())
+	}
+	if updateResp.Msg.GetConfig().GetAgent().GetDefaultModel() != "gpt-5.4" {
+		t.Fatalf("updated default model = %q, want gpt-5.4", updateResp.Msg.GetConfig().GetAgent().GetDefaultModel())
+	}
+	if updateResp.Msg.GetConfig().GetAgent().GetDefaultReasoningEffort() != "xhigh" {
+		t.Fatalf("updated default reasoning effort = %q, want xhigh", updateResp.Msg.GetConfig().GetAgent().GetDefaultReasoningEffort())
+	}
+	if !updateResp.Msg.GetConfig().GetAgent().GetDefaultCodexFastMode() {
+		t.Fatal("updated default codex fast mode = false, want true")
 	}
 }
 

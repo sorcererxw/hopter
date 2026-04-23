@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pmenglund/codex-sdk-go/protocol"
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
@@ -1030,6 +1031,59 @@ func TestHandleNotificationPublishesDraftDeltaPatch(t *testing.T) {
 	}
 }
 
+func TestHandleNotificationStoresContextWindowUsage(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "continue",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		thread:  "thread-1",
+	}
+
+	manager.handleNotification(session.ID, Notification{
+		Method: "thread/tokenUsage/updated",
+		Params: mustJSON(t, protocol.ThreadTokenUsageUpdatedNotification{
+			ThreadID: "thread-1",
+			TurnID:   "turn-1",
+			TokenUsage: protocol.ThreadTokenUsage{
+				ModelContextWindow: intPtr(950_000),
+				Total: protocol.TokenUsageBreakdown{
+					TotalTokens: 130_000,
+				},
+				Last: protocol.TokenUsageBreakdown{
+					TotalTokens: 8_192,
+				},
+			},
+		}),
+	})
+
+	updated, ok := workspace.GetSession(session.ID)
+	if !ok {
+		t.Fatalf("session %q not found", session.ID)
+	}
+	if updated.ContextWindowUsage == nil {
+		t.Fatalf("context window usage = nil")
+	}
+	if updated.ContextWindowUsage.UsedTokens != 8_192 {
+		t.Fatalf("used tokens = %d, want 8192", updated.ContextWindowUsage.UsedTokens)
+	}
+	if updated.ContextWindowUsage.TotalTokens != 950_000 {
+		t.Fatalf("total tokens = %d, want 950000", updated.ContextWindowUsage.TotalTokens)
+	}
+	if updated.ContextWindowUsage.LastTokens != 8_192 {
+		t.Fatalf("last tokens = %d, want 8192", updated.ContextWindowUsage.LastTokens)
+	}
+}
+
 func TestHandleNotificationDoesNotFinalizeCommentaryIntoTranscript(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
@@ -1996,6 +2050,20 @@ func mustCreateProject(t *testing.T, workspace core.WorkspaceService) core.Proje
 		t.Fatalf("CreateProject: %v", err)
 	}
 	return project
+}
+
+func mustJSON(t *testing.T, value any) json.RawMessage {
+	t.Helper()
+
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	return raw
+}
+
+func intPtr(value int) *int {
+	return &value
 }
 
 type errThreadNotReady struct{}

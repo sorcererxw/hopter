@@ -1,12 +1,19 @@
 import { describe, expect, test } from "bun:test"
 
-import { SessionTranscriptItemKind } from "../ui/src/gen/proto/hopter/v1/session_pb.ts"
+import {
+  SessionTranscriptItemKind,
+  type SessionTranscriptPage,
+} from "../ui/src/gen/proto/hopter/v1/session_pb.ts"
 import {
   insertPendingInputActivityItem,
   isDisplayableTranscriptItem,
   transcriptTextMatchesPendingHint,
   type ActivityItem,
-} from "../ui/src/components/app/session-transcript-activity.ts"
+} from "../ui/src/components/app/sessions/transcript/activity.ts"
+import {
+  mergeLatestTranscriptPage,
+  shouldPreserveLiveTranscriptItem,
+} from "../ui/src/components/app/sessions/transcript/page-merge.ts"
 
 describe("session transcript pending hint reconciliation", () => {
   test("matches ellipsis-truncated hints against the full user transcript text", () => {
@@ -87,23 +94,37 @@ describe("session transcript pending hint reconciliation", () => {
     ])
   })
 
-  test("hides placeholder-only reasoning transcript items", () => {
+  test("hides completed placeholder-only reasoning transcript markers", () => {
     expect(
       isDisplayableTranscriptItem(
         transcriptItem("reasoning-empty", SessionTranscriptItemKind.REASONING, {
           body: "Reasoning progress emitted by Codex.",
           displayBody: "",
           orderKey: "trace:000000000001:reasoning-empty",
+          status: "completed",
+          title: "Thinking",
         })
       )
     ).toBe(false)
 
     expect(
       isDisplayableTranscriptItem(
+        transcriptItem("reasoning-active", SessionTranscriptItemKind.REASONING, {
+          body: "Reasoning progress emitted by Codex.",
+          displayBody: "",
+          orderKey: "trace:000000000002:reasoning-active",
+          status: "streaming",
+          title: "Thinking",
+        })
+      )
+    ).toBe(true)
+
+    expect(
+      isDisplayableTranscriptItem(
         transcriptItem("reasoning-real", SessionTranscriptItemKind.REASONING, {
           body: "Inspecting the route tree.",
           displayBody: "",
-          orderKey: "trace:000000000002:reasoning-real",
+          orderKey: "trace:000000000003:reasoning-real",
         })
       )
     ).toBe(true)
@@ -112,7 +133,7 @@ describe("session transcript pending hint reconciliation", () => {
   test("keeps a terminal completed thought item visible", async () => {
     ensureBrowserOrigin()
     const { buildTimelineItems } = await import(
-      "../ui/src/components/app/session-transcript-timeline.tsx"
+      "../ui/src/components/app/sessions/transcript/timeline.tsx"
     )
     const items: ActivityItem[] = [
       transcriptActivityItem(
@@ -135,7 +156,7 @@ describe("session transcript pending hint reconciliation", () => {
   test("groups consecutive completed commands before an active command", async () => {
     ensureBrowserOrigin()
     const { buildTimelineItems } = await import(
-      "../ui/src/components/app/session-transcript-timeline.tsx"
+      "../ui/src/components/app/sessions/transcript/timeline.tsx"
     )
     const items: ActivityItem[] = [
       transcriptActivityItem(
@@ -179,6 +200,63 @@ describe("session transcript pending hint reconciliation", () => {
     }
     expect(timeline[0].items.map((item) => item.id)).toEqual(["cmd-1", "cmd-2"])
     expect(timeline[1]?.key).toBe("cmd-running")
+  })
+
+  test("preserves active live transcript items across same-snapshot poll refreshes", () => {
+    const current: SessionTranscriptPage = {
+      hasMoreBefore: false,
+      items: [
+        transcriptItem("agent-1", SessionTranscriptItemKind.AGENT_MESSAGE, {
+          body: "stable answer",
+          displayBody: "stable answer",
+          orderKey: "000000000001:000000000001:agent-1",
+          status: "completed",
+        }),
+        transcriptItem("reasoning-live", SessionTranscriptItemKind.REASONING, {
+          body: "Reasoning progress emitted by Codex.",
+          displayBody: "",
+          orderKey: "live:00000000000000000002:reasoning-live",
+          status: "streaming",
+          title: "Thinking",
+        }),
+      ],
+      nextBeforeCursor: "",
+      snapshotUpdatedAt: "2026-04-23T08:00:00Z",
+    }
+    const next: SessionTranscriptPage = {
+      hasMoreBefore: false,
+      items: [
+        transcriptItem("agent-1", SessionTranscriptItemKind.AGENT_MESSAGE, {
+          body: "stable answer",
+          displayBody: "stable answer",
+          orderKey: "000000000001:000000000001:agent-1",
+          status: "completed",
+        }),
+      ],
+      nextBeforeCursor: "",
+      snapshotUpdatedAt: "2026-04-23T08:00:00Z",
+    }
+
+    const merged = mergeLatestTranscriptPage(current, next)
+
+    expect(merged.items.map((item) => item.id)).toEqual([
+      "agent-1",
+      "reasoning-live",
+    ])
+  })
+
+  test("does not preserve completed placeholder reasoning items across poll refreshes", () => {
+    expect(
+      shouldPreserveLiveTranscriptItem(
+        transcriptItem("reasoning-done", SessionTranscriptItemKind.REASONING, {
+          body: "Reasoning progress emitted by Codex.",
+          displayBody: "",
+          orderKey: "trace:00000000000000000002:reasoning-done",
+          status: "completed",
+          title: "Thinking",
+        })
+      )
+    ).toBe(false)
   })
 })
 
@@ -226,6 +304,7 @@ function transcriptItem(
     displayBody: string
     orderKey: string
     status?: string
+    title?: string
   }
 ) {
   return {
@@ -236,6 +315,8 @@ function transcriptItem(
     kind,
     orderKey: options.orderKey,
     status: options.status ?? "",
-    title: kind === SessionTranscriptItemKind.USER_MESSAGE ? "You" : "Codex",
+    title:
+      options.title ??
+      (kind === SessionTranscriptItemKind.USER_MESSAGE ? "You" : "Codex"),
   }
 }

@@ -1,14 +1,17 @@
 package codex
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/pmenglund/codex-sdk-go/protocol"
 	"golang.org/x/sync/singleflight"
 
 	"github.com/sorcererxw/hopter/internal/core"
@@ -253,6 +256,25 @@ func (m *SessionReadModel) readCodexMeta(
 		}
 		session := sessionFromThread(thread, project, local, hasLocal)
 		session.BackendThreadID = threadID
+		session.ContextWindowUsage = sessionContextWindowUsageFromRead(read)
+		if session.ContextWindowUsage == nil {
+			fullRead, err := m.readThreadWithSingleflight(
+				"thread-read-live:"+sessionID+":"+threadID,
+				func() (*ReadThreadResult, error) {
+					return live.client.ReadThread(threadID)
+				},
+			)
+			if err == nil {
+				session.ContextWindowUsage = sessionContextWindowUsageFromRead(
+					fullRead,
+				)
+			}
+		}
+		if session.ContextWindowUsage == nil {
+			session.ContextWindowUsage = sessionContextWindowUsageFromSessionPath(
+				read.Thread.Path,
+			)
+		}
 		return session, project, nil
 	}
 
@@ -294,7 +316,100 @@ func (m *SessionReadModel) readCodexMeta(
 	}
 	session := sessionFromThread(thread, project, local, hasLocal)
 	session.BackendThreadID = threadID
+	session.ContextWindowUsage = sessionContextWindowUsageFromRead(read)
+	if session.ContextWindowUsage == nil {
+		fullRead, err := m.readCodexTranscript(sessionID, project, threadID)
+		if err == nil {
+			session.ContextWindowUsage = sessionContextWindowUsageFromRead(fullRead)
+		}
+	}
+	if session.ContextWindowUsage == nil {
+		session.ContextWindowUsage = sessionContextWindowUsageFromSessionPath(
+			read.Thread.Path,
+		)
+	}
 	return session, project, nil
+}
+
+func sessionContextWindowUsageFromSessionPath(
+	path *string,
+) *core.SessionContextWindowUsage {
+	if path == nil || strings.TrimSpace(*path) == "" {
+		return nil
+	}
+
+	file, err := os.Open(strings.TrimSpace(*path))
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	type tokenCountInfo struct {
+		TotalTokenUsage struct {
+			TotalTokens int `json:"total_tokens"`
+		} `json:"total_token_usage"`
+		LastTokenUsage struct {
+			TotalTokens int `json:"total_tokens"`
+		} `json:"last_token_usage"`
+		ModelContextWindow int `json:"model_context_window"`
+	}
+	type sessionFileRecord struct {
+		Type    string `json:"type"`
+		Payload struct {
+			Type       string                    `json:"type"`
+			Info       tokenCountInfo            `json:"info"`
+			Method     string                    `json:"method"`
+			Params     json.RawMessage           `json:"params"`
+			TokenUsage protocol.ThreadTokenUsage `json:"tokenUsage"`
+		} `json:"payload"`
+	}
+
+	const maxScanTokenSize = 4 << 20
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 0, 64*1024), maxScanTokenSize)
+
+	var latest *core.SessionContextWindowUsage
+	for scanner.Scan() {
+		var record sessionFileRecord
+		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
+			continue
+		}
+
+		if record.Type == "event_msg" && record.Payload.Type == "token_count" {
+			if record.Payload.Info.ModelContextWindow <= 0 {
+				continue
+			}
+			usedTokens := uint64(max(record.Payload.Info.LastTokenUsage.TotalTokens, 0))
+			totalTokens := uint64(record.Payload.Info.ModelContextWindow)
+			if usedTokens == 0 || totalTokens == 0 {
+				continue
+			}
+			if usedTokens > totalTokens {
+				usedTokens = totalTokens
+			}
+			latest = &core.SessionContextWindowUsage{
+				UsedTokens:  usedTokens,
+				TotalTokens: totalTokens,
+				LastTokens:  uint64(max(record.Payload.Info.LastTokenUsage.TotalTokens, 0)),
+			}
+			continue
+		}
+
+		if record.Payload.Method == "thread/tokenUsage/updated" {
+			var params protocol.ThreadTokenUsageUpdatedNotification
+			if err := json.Unmarshal(record.Payload.Params, &params); err != nil {
+				continue
+			}
+			if usage := sessionContextWindowUsageFromTokenUsage(params.TokenUsage); usage != nil {
+				latest = usage
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return latest
+	}
+	return latest
 }
 
 func (m *SessionReadModel) readCodexTranscriptItems(sessionID string, project core.Project, threadID string) ([]core.SessionTranscriptItem, error) {

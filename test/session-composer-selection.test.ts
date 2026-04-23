@@ -4,6 +4,7 @@ import {
   clearSessionComposerSelections,
   getSessionComposerSelection,
   rememberSessionComposerSelection,
+  resolveSessionComposerSelection,
 } from "../ui/src/components/app/sessions/composer/selection.ts";
 
 describe("session composer selection handoff", () => {
@@ -51,5 +52,27 @@ describe("session composer selection handoff", () => {
     expect(getSessionComposerSelection("session-low")?.reasoningEffort).toBe(
       "low",
     );
+  });
+
+  test("prefers the first non-empty persisted selection candidate", () => {
+    expect(
+      resolveSessionComposerSelection(
+        undefined,
+        {
+          codexFastMode: true,
+          model: " ",
+          reasoningEffort: "",
+        },
+        {
+          codexFastMode: false,
+          model: "gpt-5.4",
+          reasoningEffort: "medium",
+        },
+      ),
+    ).toEqual({
+      codexFastMode: false,
+      model: "gpt-5.4",
+      reasoningEffort: "medium",
+    });
   });
 });

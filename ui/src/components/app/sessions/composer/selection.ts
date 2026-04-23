@@ -26,3 +26,26 @@ export function rememberSessionComposerSelection(
 export function clearSessionComposerSelections() {
   sessionComposerSelections.clear()
 }
+
+export function resolveSessionComposerSelection(
+  ...candidates: Array<Partial<SessionComposerSelection> | undefined>
+) {
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue
+    }
+    const model = candidate.model?.trim() ?? ""
+    const reasoningEffort = candidate.reasoningEffort?.trim() ?? ""
+    if (!model && !reasoningEffort) {
+      continue
+    }
+
+    return {
+      codexFastMode: candidate.codexFastMode ?? false,
+      model,
+      reasoningEffort,
+    } satisfies SessionComposerSelection
+  }
+
+  return undefined
+}

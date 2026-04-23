@@ -20,11 +20,13 @@ import {
   type ActivityItem,
   activityItemSignature,
   insertPendingInputActivityItem,
+  isActiveReasoningTranscriptItem,
   isDisplayableTranscriptItem,
   isUserMessageTranscriptItem,
   normalizeTranscriptText,
   transcriptTextMatchesPendingHint,
 } from "./activity"
+import { mergeLatestTranscriptPage } from "./page-merge"
 
 type UseSessionTranscriptFeedInput = {
   eventStreamState: SessionEventStreamState
@@ -170,7 +172,15 @@ export function useSessionTranscriptFeed({
       })
     }
 
-    if (session && shouldShowThinkingState(session.status)) {
+    const hasActiveReasoningTranscriptItem = transcriptItems.some(
+      isActiveReasoningTranscriptItem
+    )
+
+    if (
+      session &&
+      shouldShowThinkingState(session.status) &&
+      !hasActiveReasoningTranscriptItem
+    ) {
       items.push({
         kind: "thinking" as const,
         key: "thinking",
@@ -221,7 +231,10 @@ export function useSessionTranscriptFeed({
         return [latestPage]
       }
 
-      return [...current.slice(0, -1), latestPage]
+      return [
+        ...current.slice(0, -1),
+        mergeLatestTranscriptPage(current.at(-1), latestPage),
+      ]
     })
   }, [latestTranscriptQuery.data, sessionId])
 
@@ -285,7 +298,7 @@ export function useSessionTranscriptFeed({
       lastActivitySignatureRef.current = scrollAnchorActivitySignature
       return
     } else if (activityChanged && shouldStickToBottomRef.current) {
-      scheduleTranscriptStickToBottom("animated")
+      scheduleTranscriptStickToBottom("instant")
     }
 
     lastSessionIdRef.current = sessionId
@@ -327,7 +340,7 @@ export function useSessionTranscriptFeed({
         return
       }
 
-      scheduleTranscriptStickToBottom("animated")
+      scheduleTranscriptStickToBottom("instant")
     })
 
     observer.observe(content)

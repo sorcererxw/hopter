@@ -170,19 +170,20 @@ type ReadThreadTurn struct {
 
 type ReadThreadResult struct {
 	Thread struct {
-		ID            string           `json:"id"`
-		ForkedFromID  *string          `json:"forkedFromId"`
-		Preview       string           `json:"preview"`
-		Ephemeral     bool             `json:"ephemeral"`
-		ModelProvider string           `json:"modelProvider"`
-		CreatedAt     int64            `json:"createdAt"`
-		UpdatedAt     int64            `json:"updatedAt"`
-		Status        ThreadStatus     `json:"status"`
-		Path          *string          `json:"path"`
-		Cwd           string           `json:"cwd"`
-		CLIVersion    string           `json:"cliVersion"`
-		Name          *string          `json:"name"`
-		Turns         []ReadThreadTurn `json:"turns"`
+		ID            string                     `json:"id"`
+		ForkedFromID  *string                    `json:"forkedFromId"`
+		Preview       string                     `json:"preview"`
+		Ephemeral     bool                       `json:"ephemeral"`
+		ModelProvider string                     `json:"modelProvider"`
+		CreatedAt     int64                      `json:"createdAt"`
+		UpdatedAt     int64                      `json:"updatedAt"`
+		Status        ThreadStatus               `json:"status"`
+		Path          *string                    `json:"path"`
+		Cwd           string                     `json:"cwd"`
+		CLIVersion    string                     `json:"cliVersion"`
+		Name          *string                    `json:"name"`
+		TokenUsage    *protocol.ThreadTokenUsage `json:"tokenUsage,omitempty"`
+		Turns         []ReadThreadTurn           `json:"turns"`
 	} `json:"thread"`
 }
 

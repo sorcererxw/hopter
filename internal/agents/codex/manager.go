@@ -56,6 +56,7 @@ type liveSession struct {
 	draftText           string
 	reasoningDrafts     map[string]*reasoningDraft
 	pendingApproval     *pendingApproval
+	contextWindowUsage  *core.SessionContextWindowUsage
 }
 
 type reasoningDraft struct {
@@ -404,6 +405,11 @@ func (m *Manager) SendSessionInput(sessionID, input string, options ...core.Sess
 		if err != nil {
 			return core.Session{}, err
 		}
+		m.updateWorkspaceSession(sessionID, core.SessionPatch{
+			PreferredModel:           stringPtr(strings.TrimSpace(turnOptions.Model)),
+			PreferredReasoningEffort: stringPtr(strings.TrimSpace(turnOptions.ReasoningEffort)),
+			PreferredCodexFastMode:   boolPtr(turnOptions.CodexFastMode),
+		})
 		project, ok := m.workspace.GetProject(session.ProjectID)
 		if !ok {
 			return core.Session{}, fmt.Errorf("project %q not found", session.ProjectID)
@@ -419,8 +425,11 @@ func (m *Manager) SendSessionInput(sessionID, input string, options ...core.Sess
 	summary := "Codex is processing the latest input…"
 	running := core.SessionStateRunning
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
-		Status:  &running,
-		Summary: &summary,
+		Status:                   &running,
+		Summary:                  &summary,
+		PreferredModel:           stringPtr(strings.TrimSpace(turnOptions.Model)),
+		PreferredReasoningEffort: stringPtr(strings.TrimSpace(turnOptions.ReasoningEffort)),
+		PreferredCodexFastMode:   boolPtr(turnOptions.CodexFastMode),
 	})
 	session.LastInputHint = truncate(strings.TrimSpace(input), 120)
 	session.Status = core.SessionStateRunning
@@ -428,6 +437,14 @@ func (m *Manager) SendSessionInput(sessionID, input string, options ...core.Sess
 	session.UpdatedAt = time.Now().UTC()
 	go m.dispatchInput(project, sessionID, session.BackendThreadID, input, turnOptions)
 	return session, nil
+}
+
+func stringPtr(value string) *string {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }
 
 func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {
@@ -775,6 +792,11 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 		}
 	case "item/started":
 		m.handleReasoningItemStarted(sessionID, notification.Params)
+	case "thread/tokenUsage/updated":
+		var payload protocol.ThreadTokenUsageUpdatedNotification
+		if err := json.Unmarshal(notification.Params, &payload); err == nil {
+			m.handleThreadTokenUsageUpdated(sessionID, payload.TokenUsage)
+		}
 	case "item/reasoning/summaryTextDelta":
 		var payload protocol.ReasoningSummaryTextDeltaNotification
 		if err := json.Unmarshal(notification.Params, &payload); err == nil && payload.Delta != "" {
@@ -1026,6 +1048,26 @@ func liveReasoningNormalizeOptions() transcriptNormalizeOptions {
 		commandOutputLimit: 1600,
 		includeFileDiff:    true,
 	}
+}
+
+func (m *Manager) handleThreadTokenUsageUpdated(
+	sessionID string,
+	tokenUsage protocol.ThreadTokenUsage,
+) {
+	usage := sessionContextWindowUsageFromTokenUsage(tokenUsage)
+	if usage == nil {
+		return
+	}
+
+	m.mu.Lock()
+	if live := m.live[sessionID]; live != nil {
+		live.contextWindowUsage = cloneSessionContextWindowUsage(usage)
+	}
+	m.mu.Unlock()
+
+	m.updateWorkspaceSession(sessionID, core.SessionPatch{
+		ContextWindowUsage: usage,
+	})
 }
 
 func liveTranscriptOrderKey(itemID string) string {
@@ -1885,6 +1927,7 @@ func hydrateSessionFromRead(session *core.Session, read *ReadThreadResult) {
 	session.TranscriptItems = normalizeTranscriptItems(read)
 	session.Summary = latestAgentSummary(read)
 	session.ActiveTurnID = latestActiveTurnID(read)
+	session.ContextWindowUsage = sessionContextWindowUsageFromRead(read)
 }
 
 func (m *Manager) sessionByThreadID(threadID string) (core.Session, bool) {
@@ -1928,6 +1971,9 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 		session.AttentionReason = local.AttentionReason
 		session.PendingApprovalID = local.PendingApprovalID
 		session.LastInputHint = local.LastInputHint
+		session.ContextWindowUsage = cloneSessionContextWindowUsage(
+			local.ContextWindowUsage,
+		)
 		session.Artifacts = append([]core.Artifact(nil), local.Artifacts...)
 		if strings.TrimSpace(local.Title) != "" && strings.TrimSpace(thread.NameValue()) == "" {
 			session.Title = local.Title
@@ -1937,6 +1983,49 @@ func sessionFromThread(thread ThreadRecord, project core.Project, local core.Ses
 		}
 	}
 	return session
+}
+
+func sessionContextWindowUsageFromRead(
+	read *ReadThreadResult,
+) *core.SessionContextWindowUsage {
+	if read == nil || read.Thread.TokenUsage == nil {
+		return nil
+	}
+	return sessionContextWindowUsageFromTokenUsage(*read.Thread.TokenUsage)
+}
+
+func sessionContextWindowUsageFromTokenUsage(
+	tokenUsage protocol.ThreadTokenUsage,
+) *core.SessionContextWindowUsage {
+	if tokenUsage.ModelContextWindow == nil || *tokenUsage.ModelContextWindow <= 0 {
+		return nil
+	}
+
+	totalTokens := uint64(*tokenUsage.ModelContextWindow)
+	usedTokens := uint64(max(tokenUsage.Last.TotalTokens, 0))
+	if usedTokens == 0 || totalTokens == 0 {
+		return nil
+	}
+	if usedTokens > totalTokens {
+		usedTokens = totalTokens
+	}
+
+	return &core.SessionContextWindowUsage{
+		UsedTokens:  usedTokens,
+		TotalTokens: totalTokens,
+		LastTokens:  uint64(max(tokenUsage.Last.TotalTokens, 0)),
+	}
+}
+
+func cloneSessionContextWindowUsage(
+	usage *core.SessionContextWindowUsage,
+) *core.SessionContextWindowUsage {
+	if usage == nil {
+		return nil
+	}
+
+	cloned := *usage
+	return &cloned
 }
 
 func fallbackThreadTitle(thread ThreadRecord, local core.Session, hasLocal bool) string {

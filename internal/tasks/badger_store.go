@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -22,6 +23,8 @@ const (
 type BadgerStore struct {
 	db *badger.DB
 }
+
+var openBadger = badger.Open
 
 type StoreInUseError struct {
 	Path string
@@ -44,12 +47,24 @@ func NewBadgerStore(root string) (*BadgerStore, error) {
 		return nil, fmt.Errorf("task store path is required")
 	}
 	cleanRoot := filepath.Clean(root)
+	if err := os.MkdirAll(cleanRoot, 0o700); err != nil {
+		return nil, fmt.Errorf("create task store directory: %w", err)
+	}
 	opts := badger.DefaultOptions(cleanRoot)
 	opts.Logger = nil
-	db, err := badger.Open(opts)
+	db, err := openBadger(opts)
 	if err != nil {
 		if isBadgerDirectoryLockError(err) {
 			return nil, &StoreInUseError{Path: cleanRoot, Err: err}
+		}
+		if isRecoverableBadgerOpenError(err) {
+			if recoverErr := archiveCorruptBadgerStore(cleanRoot); recoverErr != nil {
+				return nil, fmt.Errorf("archive corrupt task store: %w", recoverErr)
+			}
+			db, err = openBadger(opts)
+			if err == nil {
+				return &BadgerStore{db: db}, nil
+			}
 		}
 		return nil, err
 	}
@@ -63,6 +78,38 @@ func isBadgerDirectoryLockError(err error) bool {
 	message := err.Error()
 	return strings.Contains(message, "Cannot acquire directory lock") ||
 		strings.Contains(message, "resource temporarily unavailable")
+}
+
+func isRecoverableBadgerOpenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	return strings.Contains(message, "while opening memtables") ||
+		strings.Contains(message, "while opening fid") ||
+		strings.Contains(message, "Create a new file") ||
+		strings.Contains(message, "manifest has unsupported version") ||
+		strings.Contains(message, "checksum mismatch") ||
+		strings.Contains(message, "value log truncate")
+}
+
+func archiveCorruptBadgerStore(root string) error {
+	info, err := os.Stat(root)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("task store root is not a directory: %s", root)
+	}
+	parent := filepath.Dir(root)
+	archivePath := fmt.Sprintf("%s.corrupt-%s", root, time.Now().UTC().Format("20060102T150405"))
+	if err := os.Rename(root, archivePath); err != nil {
+		return err
+	}
+	return os.MkdirAll(filepath.Join(parent, filepath.Base(root)), 0o700)
 }
 
 func (s *BadgerStore) Close() error {

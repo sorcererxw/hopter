@@ -203,16 +203,19 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 		return Session{}, err
 	}
 	session := Session{
-		ID:              sessionID,
-		ProjectID:       project.ID,
-		BackendKey:      backendKey,
-		Title:           title,
-		BackendThreadID: "",
-		ActiveTurnID:    "",
-		Status:          SessionStatePending,
-		Summary:         "Starting Codex session…",
-		LastInputHint:   truncate(strings.TrimSpace(input.Prompt), 120),
-		UpdatedAt:       now,
+		ID:                       sessionID,
+		ProjectID:                project.ID,
+		BackendKey:               backendKey,
+		Title:                    title,
+		BackendThreadID:          "",
+		ActiveTurnID:             "",
+		Status:                   SessionStatePending,
+		Summary:                  "Starting Codex session…",
+		LastInputHint:            truncate(strings.TrimSpace(input.Prompt), 120),
+		PreferredModel:           strings.TrimSpace(input.Model),
+		PreferredReasoningEffort: strings.TrimSpace(input.ReasoningEffort),
+		PreferredCodexFastMode:   input.CodexFastMode,
+		UpdatedAt:                now,
 	}
 	w.sessions[session.ID] = session
 	w.sessionIDs = append([]string{session.ID}, w.sessionIDs...)
@@ -282,6 +285,20 @@ func (w *InMemoryWorkspace) UpdateSession(sessionID string, patch SessionPatch) 
 	if patch.LastInputHint != nil {
 		session.LastInputHint = *patch.LastInputHint
 	}
+	if patch.PreferredModel != nil {
+		session.PreferredModel = strings.TrimSpace(*patch.PreferredModel)
+	}
+	if patch.PreferredReasoningEffort != nil {
+		session.PreferredReasoningEffort = strings.TrimSpace(*patch.PreferredReasoningEffort)
+	}
+	if patch.PreferredCodexFastMode != nil {
+		session.PreferredCodexFastMode = *patch.PreferredCodexFastMode
+	}
+	if patch.ContextWindowUsage != nil {
+		session.ContextWindowUsage = cloneSessionContextWindowUsage(
+			patch.ContextWindowUsage,
+		)
+	}
 	if patch.Artifacts != nil {
 		session.Artifacts = append([]Artifact(nil), (*patch.Artifacts)...)
 	}
@@ -324,6 +341,17 @@ func truncate(value string, limit int) string {
 		return value
 	}
 	return value[:limit-1] + "…"
+}
+
+func cloneSessionContextWindowUsage(
+	usage *SessionContextWindowUsage,
+) *SessionContextWindowUsage {
+	if usage == nil {
+		return nil
+	}
+
+	cloned := *usage
+	return &cloned
 }
 
 func firstNonEmpty(values ...string) string {

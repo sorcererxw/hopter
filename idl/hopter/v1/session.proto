@@ -35,6 +35,10 @@ message Session {
   repeated SessionTranscriptItem transcript_items = 11;
   string backend_key = 12;
   optional string pending_approval_id = 13;
+  optional string preferred_model = 14;
+  optional string preferred_reasoning_effort = 15;
+  optional bool preferred_codex_fast_mode = 16;
+  SessionContextWindowUsage context_window_usage = 17;
 }
 
 message SessionMeta {
@@ -53,6 +57,16 @@ message SessionMeta {
   uint32 latest_page_size_hint = 13;
   string resume_command = 14;
   optional string pending_approval_id = 15;
+  optional string preferred_model = 16;
+  optional string preferred_reasoning_effort = 17;
+  optional bool preferred_codex_fast_mode = 18;
+  SessionContextWindowUsage context_window_usage = 19;
+}
+
+message SessionContextWindowUsage {
+  uint64 used_tokens = 1;
+  uint64 total_tokens = 2;
+  uint64 last_tokens = 3;
 }
 
 enum SessionTranscriptItemKind {

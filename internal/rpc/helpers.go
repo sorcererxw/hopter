@@ -211,19 +211,23 @@ func sessionToProto(project core.Project, session core.Session) *hopterv1.Sessio
 		transcriptItems = append(transcriptItems, sessionTranscriptItemToProto(item))
 	}
 	return &hopterv1.Session{
-		Id:                session.ID,
-		Title:             validUTF8(session.Title),
-		BackendKey:        validUTF8(session.BackendKey),
-		Project:           projectRef(project),
-		Status:            mapSessionState(session.Status),
-		Summary:           validUTF8(session.Summary),
-		AttentionRequired: session.AttentionRequired,
-		AttentionReason:   validUTF8(session.AttentionReason),
-		LastInputHint:     validUTF8(session.LastInputHint),
-		UpdatedAt:         timestamp(session.UpdatedAt),
-		Artifacts:         artifacts,
-		TranscriptItems:   transcriptItems,
-		PendingApprovalId: optionalString(session.PendingApprovalID),
+		Id:                       session.ID,
+		Title:                    validUTF8(session.Title),
+		BackendKey:               validUTF8(session.BackendKey),
+		Project:                  projectRef(project),
+		Status:                   mapSessionState(session.Status),
+		Summary:                  validUTF8(session.Summary),
+		AttentionRequired:        session.AttentionRequired,
+		AttentionReason:          validUTF8(session.AttentionReason),
+		LastInputHint:            validUTF8(session.LastInputHint),
+		UpdatedAt:                timestamp(session.UpdatedAt),
+		Artifacts:                artifacts,
+		TranscriptItems:          transcriptItems,
+		PendingApprovalId:        optionalString(session.PendingApprovalID),
+		PreferredModel:           optionalString(session.PreferredModel),
+		PreferredReasoningEffort: optionalString(session.PreferredReasoningEffort),
+		PreferredCodexFastMode:   optionalBool(session.PreferredCodexFastMode),
+		ContextWindowUsage:       sessionContextWindowUsageToProto(session.ContextWindowUsage),
 	}
 }
 
@@ -240,21 +244,39 @@ func sessionMetaToProto(meta core.SessionMeta) *hopterv1.SessionMeta {
 		})
 	}
 	return &hopterv1.SessionMeta{
-		Id:                 meta.Session.ID,
-		Title:              validUTF8(meta.Session.Title),
-		BackendKey:         validUTF8(meta.Session.BackendKey),
-		Project:            projectRef(meta.Project),
-		Status:             mapSessionState(meta.Session.Status),
-		Summary:            validUTF8(meta.Session.Summary),
-		AttentionRequired:  meta.Session.AttentionRequired,
-		AttentionReason:    validUTF8(meta.Session.AttentionReason),
-		LastInputHint:      validUTF8(meta.Session.LastInputHint),
-		UpdatedAt:          timestamp(meta.Session.UpdatedAt),
-		Artifacts:          artifacts,
-		HasMoreBefore:      meta.HasMoreBefore,
-		LatestPageSizeHint: meta.LatestPageSizeHint,
-		ResumeCommand:      buildCodexResumeCommand(meta.Project.RootPath, meta.Session),
-		PendingApprovalId:  optionalString(meta.Session.PendingApprovalID),
+		Id:                       meta.Session.ID,
+		Title:                    validUTF8(meta.Session.Title),
+		BackendKey:               validUTF8(meta.Session.BackendKey),
+		Project:                  projectRef(meta.Project),
+		Status:                   mapSessionState(meta.Session.Status),
+		Summary:                  validUTF8(meta.Session.Summary),
+		AttentionRequired:        meta.Session.AttentionRequired,
+		AttentionReason:          validUTF8(meta.Session.AttentionReason),
+		LastInputHint:            validUTF8(meta.Session.LastInputHint),
+		UpdatedAt:                timestamp(meta.Session.UpdatedAt),
+		Artifacts:                artifacts,
+		HasMoreBefore:            meta.HasMoreBefore,
+		LatestPageSizeHint:       meta.LatestPageSizeHint,
+		ResumeCommand:            buildCodexResumeCommand(meta.Project.RootPath, meta.Session),
+		PendingApprovalId:        optionalString(meta.Session.PendingApprovalID),
+		PreferredModel:           optionalString(meta.Session.PreferredModel),
+		PreferredReasoningEffort: optionalString(meta.Session.PreferredReasoningEffort),
+		PreferredCodexFastMode:   optionalBool(meta.Session.PreferredCodexFastMode),
+		ContextWindowUsage:       sessionContextWindowUsageToProto(meta.Session.ContextWindowUsage),
+	}
+}
+
+func sessionContextWindowUsageToProto(
+	usage *core.SessionContextWindowUsage,
+) *hopterv1.SessionContextWindowUsage {
+	if usage == nil {
+		return nil
+	}
+
+	return &hopterv1.SessionContextWindowUsage{
+		UsedTokens:  usage.UsedTokens,
+		TotalTokens: usage.TotalTokens,
+		LastTokens:  usage.LastTokens,
 	}
 }
 
@@ -389,4 +411,8 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &normalized
+}
+
+func optionalBool(value bool) *bool {
+	return &value
 }

@@ -78,6 +78,7 @@ func configPatchFromProto(req *hopterv1.UpdateConfigRequest) (userconfig.Patch, 
 			DefaultBackend:         agent.GetDefaultBackend(),
 			DefaultModel:           agent.GetDefaultModel(),
 			DefaultReasoningEffort: agent.GetDefaultReasoningEffort(),
+			DefaultCodexFastMode:   agent.GetDefaultCodexFastMode(),
 		}
 	}
 	if composer := req.GetComposer(); composer != nil {
@@ -102,6 +103,7 @@ func configToProto(cfg userconfig.Config) *hopterv1.UserConfig {
 			DefaultBackend:         cfg.Agent.DefaultBackend,
 			DefaultModel:           cfg.Agent.DefaultModel,
 			DefaultReasoningEffort: cfg.Agent.DefaultReasoningEffort,
+			DefaultCodexFastMode:   cfg.Agent.DefaultCodexFastMode,
 		},
 		Composer: &hopterv1.ComposerConfig{
 			SendShortcut: composerSendShortcutToProto(cfg.Composer.SendShortcut),

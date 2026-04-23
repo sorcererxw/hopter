@@ -37,6 +37,9 @@ func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
 	if cfg.Composer.SendShortcut != ComposerSendShortcutCmdEnter {
 		t.Fatalf("composer send shortcut = %q, want %q", cfg.Composer.SendShortcut, ComposerSendShortcutCmdEnter)
 	}
+	if cfg.Agent.DefaultCodexFastMode {
+		t.Fatal("default codex fast mode = true, want false")
+	}
 	if cfg.Revision == 0 {
 		t.Fatal("revision should be initialized")
 	}
@@ -102,6 +105,12 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 
 	cfg, err := service.Update(Patch{
+		Agent: &AgentConfig{
+			DefaultBackend:         core.BackendKeyCodex,
+			DefaultModel:           "gpt-5.4",
+			DefaultReasoningEffort: "xhigh",
+			DefaultCodexFastMode:   true,
+		},
 		Appearance: &AppearanceConfig{Theme: ThemeDark, Locale: LocaleZhCN},
 		Composer:   &ComposerConfig{SendShortcut: ComposerSendShortcutEnter},
 	})
@@ -117,6 +126,15 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 	if cfg.Composer.SendShortcut != ComposerSendShortcutEnter {
 		t.Fatalf("composer send shortcut = %q, want %q", cfg.Composer.SendShortcut, ComposerSendShortcutEnter)
+	}
+	if cfg.Agent.DefaultModel != "gpt-5.4" {
+		t.Fatalf("default model = %q, want gpt-5.4", cfg.Agent.DefaultModel)
+	}
+	if cfg.Agent.DefaultReasoningEffort != "xhigh" {
+		t.Fatalf("default reasoning effort = %q, want xhigh", cfg.Agent.DefaultReasoningEffort)
+	}
+	if !cfg.Agent.DefaultCodexFastMode {
+		t.Fatal("default codex fast mode = false, want true")
 	}
 	if len(sink.events) != 1 || sink.events[0].Kind != core.EventConfigChanged {
 		t.Fatalf("events = %#v, want one config changed event", sink.events)
@@ -142,6 +160,16 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 	if appearance["locale"] != string(LocaleZhCN) {
 		t.Fatalf("stored locale = %v, want %q", appearance["locale"], LocaleZhCN)
+	}
+	agent := stored["agent"].(map[string]any)
+	if agent["defaultModel"] != "gpt-5.4" {
+		t.Fatalf("stored default model = %v, want gpt-5.4", agent["defaultModel"])
+	}
+	if agent["defaultReasoningEffort"] != "xhigh" {
+		t.Fatalf("stored default reasoning effort = %v, want xhigh", agent["defaultReasoningEffort"])
+	}
+	if agent["defaultCodexFastMode"] != true {
+		t.Fatalf("stored default codex fast mode = %v, want true", agent["defaultCodexFastMode"])
 	}
 	composer := stored["composer"].(map[string]any)
 	if composer["sendShortcut"] != string(ComposerSendShortcutEnter) {

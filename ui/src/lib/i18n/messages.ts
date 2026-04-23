@@ -278,6 +278,18 @@ export const messages = {
     "terminal.unavailableAfterRestart": "Unavailable after restart",
     "composer.attachImages": "Attach images",
     "composer.codexFastMode": "Codex fast mode",
+    "composer.contextWindow": "Context window",
+    "composer.contextWindowAutoCompact":
+      "Codex automatically compacts older context.",
+    "composer.contextWindowRemaining": "{{percent}}% left",
+    "composer.contextWindowSummary":
+      "{{usedPercent}}% used ({{remainingPercent}}% left)",
+    "composer.contextWindowTokensCompact":
+      "{{used}} used, {{total}} total tokens",
+    "composer.contextWindowUsed": "{{percent}}% used",
+    "composer.contextWindowTooltip":
+      "{{usedPercent}}% used ({{remainingPercent}}% left)",
+    "composer.contextWindowTokens": "{{used}} used of {{total}} tokens",
     "composer.defaultModel": "Default model",
     "composer.fastMode": "Fast mode",
     "composer.imageAttachFailed": "Unable to attach that image.",
@@ -603,6 +615,16 @@ export const messages = {
     "terminal.unavailableAfterRestart": "重启后不可用",
     "composer.attachImages": "添加图片附件",
     "composer.codexFastMode": "Codex 快速模式",
+    "composer.contextWindow": "上下文窗口",
+    "composer.contextWindowAutoCompact": "Codex 会自动压缩较早的上下文。",
+    "composer.contextWindowRemaining": "剩余 {{percent}}%",
+    "composer.contextWindowSummary":
+      "{{usedPercent}}% 已用（剩余 {{remainingPercent}}%）",
+    "composer.contextWindowTokensCompact":
+      "已用 {{used}} 标记，共 {{total}}",
+    "composer.contextWindowUsed": "已使用 {{percent}}%",
+    "composer.contextWindowTooltip": "已使用 {{usedPercent}}%（剩余 {{remainingPercent}}%）",
+    "composer.contextWindowTokens": "已用 {{used}} / 共 {{total}} 标记",
     "composer.defaultModel": "默认模型",
     "composer.fastMode": "快速模式",
     "composer.imageAttachFailed": "无法添加这张图片。",

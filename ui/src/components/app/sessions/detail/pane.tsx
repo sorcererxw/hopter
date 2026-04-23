@@ -1,15 +1,21 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { SessionComposer } from "@/components/app/sessions/composer"
 import {
   getSessionComposerSelection,
   rememberSessionComposerSelection,
+  resolveSessionComposerSelection,
 } from "@/components/app/sessions/composer"
 import { CenteredTranscriptLoader } from "@/components/app/sessions/transcript"
 import { SessionTranscriptSurface } from "@/components/app/sessions/transcript"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
+import {
+  agentSelectionPreferenceFromConfig,
+  useConfig,
+  useUpdateConfig,
+} from "@/features/config/use-config"
 import { useSessionTranscriptFeed } from "@/components/app/sessions/transcript"
 import {
   useInterruptSession,
@@ -26,6 +32,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const { t } = useTranslation()
   const { eventStreamState } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
+  const configQuery = useConfig()
+  const updateConfig = useUpdateConfig()
   const sendInput = useSendSessionInput()
   const interruptSession = useInterruptSession()
   const respondToApproval = useRespondToSessionApproval()
@@ -46,7 +54,21 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
     transcriptFeed.transcriptVisible && !transcriptFeed.transcriptAwayFromBottom
   )
   const { session } = transcriptFeed
-  const initialComposerSelection = getSessionComposerSelection(sessionId)
+  const initialComposerSelection = useMemo(
+    () =>
+      resolveSessionComposerSelection(
+        getSessionComposerSelection(sessionId),
+        sessionMetaQuery.data
+          ? {
+              codexFastMode: sessionMetaQuery.data.preferredCodexFastMode,
+              model: sessionMetaQuery.data.preferredModel,
+              reasoningEffort: sessionMetaQuery.data.preferredReasoningEffort,
+            }
+          : undefined,
+        agentSelectionPreferenceFromConfig(configQuery.data)
+      ),
+    [configQuery.data, sessionId, sessionMetaQuery.data]
+  )
   const shouldShowInterruptAction =
     Boolean(session) &&
     shouldShowThinkingState(session!.status) &&
@@ -121,6 +143,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
             <SessionComposer
               busy={sendInput.isPending || interruptSession.isPending}
               composerTestId="session-composer"
+              contextWindowUsage={sessionMetaQuery.data?.contextWindowUsage}
               initialSelection={initialComposerSelection}
               interruptMode={shouldShowInterruptAction}
               interruptTestId="session-interrupt-submit"
@@ -156,6 +179,15 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                   codexFastMode,
                   model,
                   reasoningEffort,
+                })
+                updateConfig.mutate({
+                  agent: {
+                    defaultBackend: "codex",
+                    defaultCodexFastMode: codexFastMode,
+                    defaultModel: model,
+                    defaultReasoningEffort: reasoningEffort,
+                  },
+                  expectedRevision: configQuery.data?.revision ?? 0n,
                 })
                 try {
                   await sendInput.mutateAsync({

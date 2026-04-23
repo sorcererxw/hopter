@@ -232,6 +232,7 @@ type AgentConfig struct {
 	DefaultBackend         string                 `protobuf:"bytes,1,opt,name=default_backend,json=defaultBackend,proto3" json:"default_backend,omitempty"`
 	DefaultModel           string                 `protobuf:"bytes,2,opt,name=default_model,json=defaultModel,proto3" json:"default_model,omitempty"`
 	DefaultReasoningEffort string                 `protobuf:"bytes,3,opt,name=default_reasoning_effort,json=defaultReasoningEffort,proto3" json:"default_reasoning_effort,omitempty"`
+	DefaultCodexFastMode   bool                   `protobuf:"varint,4,opt,name=default_codex_fast_mode,json=defaultCodexFastMode,proto3" json:"default_codex_fast_mode,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -285,6 +286,13 @@ func (x *AgentConfig) GetDefaultReasoningEffort() string {
 		return x.DefaultReasoningEffort
 	}
 	return ""
+}
+
+func (x *AgentConfig) GetDefaultCodexFastMode() bool {
+	if x != nil {
+		return x.DefaultCodexFastMode
+	}
+	return false
 }
 
 type ComposerConfig struct {
@@ -606,11 +614,12 @@ const file_hopter_v1_config_proto_rawDesc = "" +
 	"\x16hopter/v1/config.proto\x12\thopter.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"q\n" +
 	"\x10AppearanceConfig\x12,\n" +
 	"\x05theme\x18\x01 \x01(\x0e2\x16.hopter.v1.ConfigThemeR\x05theme\x12/\n" +
-	"\x06locale\x18\x02 \x01(\x0e2\x17.hopter.v1.ConfigLocaleR\x06locale\"\x95\x01\n" +
+	"\x06locale\x18\x02 \x01(\x0e2\x17.hopter.v1.ConfigLocaleR\x06locale\"\xcc\x01\n" +
 	"\vAgentConfig\x12'\n" +
 	"\x0fdefault_backend\x18\x01 \x01(\tR\x0edefaultBackend\x12#\n" +
 	"\rdefault_model\x18\x02 \x01(\tR\fdefaultModel\x128\n" +
-	"\x18default_reasoning_effort\x18\x03 \x01(\tR\x16defaultReasoningEffort\"\\\n" +
+	"\x18default_reasoning_effort\x18\x03 \x01(\tR\x16defaultReasoningEffort\x125\n" +
+	"\x17default_codex_fast_mode\x18\x04 \x01(\bR\x14defaultCodexFastMode\"\\\n" +
 	"\x0eComposerConfig\x12J\n" +
 	"\rsend_shortcut\x18\x01 \x01(\x0e2%.hopter.v1.ConfigComposerSendShortcutR\fsendShortcut\"\x85\x02\n" +
 	"\n" +

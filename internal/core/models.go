@@ -279,22 +279,32 @@ type Artifact struct {
 	ContentType string
 }
 
+type SessionContextWindowUsage struct {
+	UsedTokens  uint64
+	TotalTokens uint64
+	LastTokens  uint64
+}
+
 type Session struct {
-	ID                string
-	ProjectID         string
-	BackendKey        string
-	Title             string
-	BackendThreadID   string
-	PendingApprovalID string
-	ActiveTurnID      string
-	Status            SessionState
-	Summary           string
-	AttentionRequired bool
-	AttentionReason   string
-	LastInputHint     string
-	UpdatedAt         time.Time
-	Artifacts         []Artifact
-	TranscriptItems   []SessionTranscriptItem
+	ID                       string
+	ProjectID                string
+	BackendKey               string
+	Title                    string
+	BackendThreadID          string
+	PendingApprovalID        string
+	ActiveTurnID             string
+	Status                   SessionState
+	Summary                  string
+	AttentionRequired        bool
+	AttentionReason          string
+	LastInputHint            string
+	PreferredModel           string
+	PreferredReasoningEffort string
+	PreferredCodexFastMode   bool
+	ContextWindowUsage       *SessionContextWindowUsage
+	UpdatedAt                time.Time
+	Artifacts                []Artifact
+	TranscriptItems          []SessionTranscriptItem
 }
 
 type SessionMeta struct {
@@ -438,16 +448,20 @@ type SessionTurnOptions struct {
 }
 
 type SessionPatch struct {
-	BackendKey            *string
-	BackendThreadID       *string
-	PendingApprovalID     *string
-	ActiveTurnID          *string
-	Status                *SessionState
-	Summary               *string
-	AttentionRequired     *bool
-	AttentionReason       *string
-	LastInputHint         *string
-	Artifacts             *[]Artifact
-	TranscriptItems       *[]SessionTranscriptItem
-	AppendTranscriptItems *[]SessionTranscriptItem
+	BackendKey               *string
+	BackendThreadID          *string
+	PendingApprovalID        *string
+	ActiveTurnID             *string
+	Status                   *SessionState
+	Summary                  *string
+	AttentionRequired        *bool
+	AttentionReason          *string
+	LastInputHint            *string
+	PreferredModel           *string
+	PreferredReasoningEffort *string
+	PreferredCodexFastMode   *bool
+	ContextWindowUsage       *SessionContextWindowUsage
+	Artifacts                *[]Artifact
+	TranscriptItems          *[]SessionTranscriptItem
+	AppendTranscriptItems    *[]SessionTranscriptItem
 }

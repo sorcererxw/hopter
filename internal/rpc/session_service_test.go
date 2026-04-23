@@ -113,13 +113,16 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 		UpdatedAt:      time.Now().UTC(),
 	}
 	session := core.Session{
-		ID:            "sess_1",
-		ProjectID:     project.ID,
-		Title:         "probe",
-		Status:        core.SessionStateCompleted,
-		Summary:       "done",
-		UpdatedAt:     time.Now().UTC(),
-		LastInputHint: "follow up",
+		ID:                       "sess_1",
+		ProjectID:                project.ID,
+		Title:                    "probe",
+		Status:                   core.SessionStateCompleted,
+		Summary:                  "done",
+		UpdatedAt:                time.Now().UTC(),
+		LastInputHint:            "follow up",
+		PreferredModel:           "gpt-5.4",
+		PreferredReasoningEffort: "xhigh",
+		PreferredCodexFastMode:   true,
 		TranscriptItems: []core.SessionTranscriptItem{
 			{
 				ID:    "u1",
@@ -165,6 +168,15 @@ func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
 	if got.GetTranscriptItems()[1].GetStatus() != "completed" {
 		t.Fatalf("second transcript status = %q", got.GetTranscriptItems()[1].GetStatus())
 	}
+	if got.GetPreferredModel() != "gpt-5.4" {
+		t.Fatalf("preferred model = %q, want gpt-5.4", got.GetPreferredModel())
+	}
+	if got.GetPreferredReasoningEffort() != "xhigh" {
+		t.Fatalf("preferred reasoning effort = %q, want xhigh", got.GetPreferredReasoningEffort())
+	}
+	if !got.GetPreferredCodexFastMode() {
+		t.Fatal("preferred codex fast mode = false, want true")
+	}
 }
 
 func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
@@ -179,14 +191,17 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 	}
 	meta := core.SessionMeta{
 		Session: core.Session{
-			ID:              "sess_1",
-			ProjectID:       project.ID,
-			Title:           "probe",
-			Status:          core.SessionStateCompleted,
-			Summary:         "done",
-			UpdatedAt:       time.Now().UTC(),
-			BackendKey:      "codex",
-			BackendThreadID: "thread_123",
+			ID:                       "sess_1",
+			ProjectID:                project.ID,
+			Title:                    "probe",
+			Status:                   core.SessionStateCompleted,
+			Summary:                  "done",
+			UpdatedAt:                time.Now().UTC(),
+			BackendKey:               "codex",
+			BackendThreadID:          "thread_123",
+			PreferredModel:           "gpt-5.4",
+			PreferredReasoningEffort: "high",
+			PreferredCodexFastMode:   true,
 		},
 		Project:            project,
 		HasMoreBefore:      true,
@@ -223,6 +238,15 @@ func TestGetSessionMetaAndTranscriptPage(t *testing.T) {
 	wantResume := `codex -C "/tmp/probe" resume "thread_123"`
 	if metaResp.Msg.GetSession().GetResumeCommand() != wantResume {
 		t.Fatalf("resume command = %q, want %q", metaResp.Msg.GetSession().GetResumeCommand(), wantResume)
+	}
+	if metaResp.Msg.GetSession().GetPreferredModel() != "gpt-5.4" {
+		t.Fatalf("meta preferred model = %q, want gpt-5.4", metaResp.Msg.GetSession().GetPreferredModel())
+	}
+	if metaResp.Msg.GetSession().GetPreferredReasoningEffort() != "high" {
+		t.Fatalf("meta preferred reasoning effort = %q, want high", metaResp.Msg.GetSession().GetPreferredReasoningEffort())
+	}
+	if !metaResp.Msg.GetSession().GetPreferredCodexFastMode() {
+		t.Fatal("meta preferred codex fast mode = false, want true")
 	}
 
 	pageResp, err := service.ListSessionTranscript(context.Background(), connect.NewRequest(&hopterv1.ListSessionTranscriptRequest{

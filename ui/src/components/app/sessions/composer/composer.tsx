@@ -76,6 +76,7 @@ type SessionComposerSubmitOptions = {
 
 type SessionComposerProps = {
   busy?: boolean
+  contextWindowUsage?: SessionComposerContextWindowUsage
   disabled?: boolean
   interruptMode?: boolean
   initialSelection?: Partial<SessionComposerSelection>
@@ -96,6 +97,12 @@ type SessionComposerProps = {
   value: string
 }
 
+type SessionComposerContextWindowUsage = {
+  lastTokens?: bigint | number
+  totalTokens?: bigint | number
+  usedTokens?: bigint | number
+}
+
 type SkillMentionMatch = {
   end: number
   query: string
@@ -112,6 +119,7 @@ type ComposerTextSegment = {
 
 export function SessionComposer({
   busy = false,
+  contextWindowUsage,
   disabled = false,
   interruptMode = false,
   initialSelection,
@@ -699,6 +707,11 @@ export function SessionComposer({
                   </div>
 
                   <div className="flex min-w-0 items-center justify-end gap-1">
+                    <ContextWindowIndicator
+                      t={t}
+                      usage={contextWindowUsage}
+                    />
+
                     <InlineDropdownMenu
                       aria-label={t("composer.model")}
                       codexFastMode={codexFastMode}
@@ -779,6 +792,83 @@ export function SessionComposer({
         </div>
       </div>
     </>
+  )
+}
+
+function ContextWindowIndicator({
+  t,
+  usage,
+}: {
+  t: ReturnType<typeof useTranslation>["t"]
+  usage?: SessionComposerContextWindowUsage
+}) {
+  const usedTokens = toSafeNumber(usage?.usedTokens)
+  const totalTokens = toSafeNumber(usage?.totalTokens)
+
+  if (!usedTokens || !totalTokens) {
+    return null
+  }
+
+  const clampedUsedTokens = Math.min(usedTokens, totalTokens)
+  const usedPercent = Math.max(
+    1,
+    Math.min(99, Math.round((clampedUsedTokens / totalTokens) * 100))
+  )
+  const remainingPercent = Math.max(0, 100 - usedPercent)
+  const ringStyle = {
+    background: `conic-gradient(currentColor ${usedPercent}%, transparent 0)`,
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("composer.contextWindow")}
+          className="inline-flex size-8 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-accent"
+        >
+          <span className="relative flex size-4 items-center justify-center text-muted-foreground">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-full bg-border"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 rounded-full opacity-80"
+              style={ringStyle}
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-[2px] rounded-full bg-background"
+            />
+          </span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={8}
+        className="max-w-72 px-5 py-4"
+      >
+        <div className="space-y-3 text-center">
+          <div className="text-sm font-medium">
+            {t("composer.contextWindow")}
+          </div>
+          <div className="text-sm leading-snug">
+            {t("composer.contextWindowSummary", {
+              usedPercent,
+              percent: remainingPercent,
+              remainingPercent,
+            })}
+          </div>
+          <div className="text-sm leading-snug">
+            {t("composer.contextWindowTokensCompact", {
+              total: formatTokenCount(totalTokens),
+              used: formatTokenCount(clampedUsedTokens),
+            })}
+          </div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -1185,6 +1275,32 @@ function formatReasoningEffort(
     default:
       return effort
   }
+}
+
+function toSafeNumber(value: bigint | number | undefined) {
+  if (typeof value === "bigint") {
+    return Number(value)
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value
+  }
+  return 0
+}
+
+function formatTokenCount(value: number) {
+  if (value >= 1_000_000) {
+    const compact = value / 1_000_000
+    return `${trimTrailingZeroes(compact.toFixed(compact >= 10 ? 0 : 1))}M`
+  }
+  if (value >= 1_000) {
+    const compact = value / 1_000
+    return `${trimTrailingZeroes(compact.toFixed(compact >= 100 ? 0 : 1))}k`
+  }
+  return `${value}`
+}
+
+function trimTrailingZeroes(value: string) {
+  return value.replace(/\.0$/, "")
 }
 
 function normalizeSearch(value?: string) {

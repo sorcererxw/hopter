@@ -41,6 +41,8 @@ export function activityItemSignature(item: ActivityItem | undefined) {
         item.item.status,
         item.item.body.length,
         item.item.body.slice(-160),
+        item.item.displayBody.length,
+        item.item.displayBody.slice(-160),
       ].join(":")
     case "pending-input":
       return `${item.key}:${item.text.length}:${item.text.slice(-160)}`
@@ -94,7 +96,24 @@ export function isDisplayableTranscriptItem(item: SessionTranscriptItem) {
 
   return (
     hasSubstantiveReasoningText(item.body) ||
-    hasSubstantiveReasoningText(item.displayBody)
+    hasSubstantiveReasoningText(item.displayBody) ||
+    isActiveReasoningTranscriptItem(item)
+  )
+}
+
+export function isActiveReasoningTranscriptItem(item: SessionTranscriptItem) {
+  if (item.kind !== SessionTranscriptItemKind.REASONING) {
+    return false
+  }
+
+  const normalized = item.status
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+  return (
+    normalized === "streaming" ||
+    normalized === "inprogress" ||
+    normalized === "running"
   )
 }
 

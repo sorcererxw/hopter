@@ -40,6 +40,7 @@ message AgentConfig {
   string default_backend = 1;
   string default_model = 2;
   string default_reasoning_effort = 3;
+  bool default_codex_fast_mode = 4;
 }
 
 message ComposerConfig {

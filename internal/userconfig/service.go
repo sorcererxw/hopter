@@ -46,6 +46,7 @@ type AgentConfig struct {
 	DefaultBackend         string `json:"defaultBackend"`
 	DefaultModel           string `json:"defaultModel,omitempty"`
 	DefaultReasoningEffort string `json:"defaultReasoningEffort,omitempty"`
+	DefaultCodexFastMode   bool   `json:"defaultCodexFastMode,omitempty"`
 }
 
 type ComposerConfig struct {
@@ -128,7 +129,7 @@ func (s *Service) Update(patch Patch) (Config, error) {
 	if patch.ExpectedRevision > 0 && patch.ExpectedRevision != s.config.Revision {
 		return Config{}, ErrRevisionConflict
 	}
-	if patch.Appearance == nil && patch.Agent == nil {
+	if patch.Appearance == nil && patch.Agent == nil && patch.Composer == nil {
 		return s.config, nil
 	}
 
@@ -359,6 +360,9 @@ const configSchemaJSON = `{
         },
         "defaultReasoningEffort": {
           "type": "string"
+        },
+        "defaultCodexFastMode": {
+          "type": "boolean"
         }
       },
       "required": ["defaultBackend"]

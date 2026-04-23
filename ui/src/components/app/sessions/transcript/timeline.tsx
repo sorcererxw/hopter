@@ -80,7 +80,8 @@ function isTranscriptActivityItem(
   return item?.kind === "transcript"
 }
 
-function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return groupTimelineItems(orderCompletedReasoningBeforeAgentAnswers(items))
 }
 
@@ -821,6 +822,14 @@ function ReasoningEntry({
   const disclosureLabel =
     !showContent && preview ? `${label}: ${preview}` : label
 
+  if (!summaryText && !rawText) {
+    return (
+      <div className="min-w-0" data-testid="session-transcript-reasoning">
+        <ReasoningMarker active={isStreaming} label={label} />
+      </div>
+    )
+  }
+
   if (isPlainProgressReasoning(label, isStreaming)) {
     const text = summaryText || rawText
 
@@ -879,6 +888,27 @@ function ReasoningEntry({
 
 function isPlainProgressReasoning(label: string, isStreaming: boolean) {
   return !isStreaming && label.trim().toLowerCase() === "progress"
+}
+
+function ReasoningMarker({
+  active,
+  label,
+}: {
+  active: boolean
+  label: string
+}) {
+  return (
+    <div className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+        {active ? (
+          <LoaderCircle className="size-3.5 animate-spin" />
+        ) : (
+          <Lightbulb className="size-3.5" />
+        )}
+      </span>
+      <span className="min-w-0 truncate">{label}</span>
+    </div>
+  )
 }
 
 function RawReasoningBlock({ text }: { text: string }) {
@@ -1025,6 +1055,7 @@ function ThoughtProcessText({
   item: SessionTranscriptItem
   onSelectPath: (path: string) => void
 }) {
+  const { t } = useTranslation()
   const body = isReasoningPlaceholderText(item.body) ? "" : item.body.trim()
   const raw = isReasoningPlaceholderText(item.displayBody)
     ? ""
@@ -1032,6 +1063,23 @@ function ThoughtProcessText({
   const text = body || raw
 
   if (!text) {
+    if (item.kind === SessionTranscriptItemKind.REASONING) {
+      const active = isActiveReasoningStatus(item.status)
+      return (
+        <div
+          className="min-w-0 text-foreground"
+          data-testid="session-transcript-thought-item"
+        >
+          <ReasoningMarker
+            active={active}
+            label={
+              item.title ||
+              (active ? t("transcript.thinking") : t("transcript.reasoning"))
+            }
+          />
+        </div>
+      )
+    }
     return null
   }
 

@@ -3,8 +3,13 @@ package tasks
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/dgraph-io/badger/v4"
 )
 
 func TestBadgerStoreCreateGetListTask(t *testing.T) {
@@ -129,5 +134,60 @@ func TestBadgerStoreReportsFriendlyErrorWhenAlreadyOpen(t *testing.T) {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("NewBadgerStore() error missing %q: %v", want, err)
 		}
+	}
+}
+
+func TestBadgerStoreRecoversFromCorruptOpenByArchivingStore(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "badger")
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	markerPath := filepath.Join(root, "marker.txt")
+	if err := os.WriteFile(markerPath, []byte("corrupt"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	realOpen := openBadger
+	t.Cleanup(func() {
+		openBadger = realOpen
+	})
+	calls := 0
+	openBadger = func(opts badger.Options) (*badger.DB, error) {
+		calls++
+		if calls == 1 {
+			return nil, fmt.Errorf("while opening memtables err: while opening fid: 2 err: Create a new file")
+		}
+		return realOpen(opts)
+	}
+
+	store, err := NewBadgerStore(root)
+	if err != nil {
+		t.Fatalf("NewBadgerStore() error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = store.Close()
+	})
+
+	if calls != 2 {
+		t.Fatalf("openBadger() calls = %d, want 2", calls)
+	}
+
+	if _, err := os.Stat(markerPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("marker still exists in live store: stat error = %v", err)
+	}
+
+	archives, err := filepath.Glob(root + ".corrupt-*")
+	if err != nil {
+		t.Fatalf("Glob() error = %v", err)
+	}
+	if len(archives) != 1 {
+		t.Fatalf("archive matches = %v, want exactly 1", archives)
+	}
+
+	archivedMarker := filepath.Join(archives[0], "marker.txt")
+	if contents, err := os.ReadFile(archivedMarker); err != nil {
+		t.Fatalf("ReadFile(%q) error = %v", archivedMarker, err)
+	} else if string(contents) != "corrupt" {
+		t.Fatalf("archived marker contents = %q, want corrupt", string(contents))
 	}
 }
