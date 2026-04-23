@@ -48,12 +48,12 @@ const SettingsRoute = lazy(() =>
   }))
 )
 const WorkspaceRouteFrame = lazy(() =>
-  import("@/components/app/workspace-route-frame").then((module) => ({
+  import("@/components/app/workspace").then((module) => ({
     default: module.WorkspaceRouteFrame,
   }))
 )
 const ProjectPickerPage = lazy(() =>
-  import("@/components/app/project-picker-dialog").then((module) => ({
+  import("@/components/app/projects").then((module) => ({
     default: module.ProjectPickerPage,
   }))
 )

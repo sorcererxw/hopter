@@ -10,7 +10,6 @@ import {
   ArrowUp,
   ChevronDown,
   LoaderCircle,
-  Pause,
   Plus,
   Square,
 } from "lucide-react"
@@ -22,12 +21,12 @@ import { useHostSkills } from "@/features/host/use-host-skills"
 import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
-import type { SessionComposerSelection } from "./session-composer-selection"
+import type { SessionComposerSelection } from "./selection"
 import {
   applyAtomicSkillDeletion,
   normalizeAtomicSkillSelection,
-} from "./session-composer-skill-token"
-import { SkillReferenceChip } from "./skill-reference-chip"
+} from "./skill-token"
+import { SkillReferenceChip } from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"

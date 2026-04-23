@@ -173,6 +173,17 @@ Completion requires:
 
 No evidence, no pass.
 
+## Agent team workflow
+
+For complex implementation requests that need planning, delegation, QA, browser or
+computer-use verification, repair loops, and final user acceptance, follow
+[`docs/operations/AGENT_TEAM_WORKFLOW.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/docs/operations/AGENT_TEAM_WORKFLOW.md).
+
+The lead agent owns requirement confirmation, task decomposition, subagent scope,
+fresh QA, final browser/computer-use verification, evidence consolidation, and
+the user acceptance handoff. Do not write final progress docs before the user
+accepts the finished work.
+
 ## Local dev loop
 
 When working on the live stack, the authority is the file-based dev loop, not terminal memory.

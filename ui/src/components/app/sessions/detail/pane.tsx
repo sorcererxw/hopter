@@ -1,15 +1,15 @@
 import { useCallback, useState } from "react"
 
-import { SessionComposer } from "@/components/app/session-composer"
+import { SessionComposer } from "@/components/app/sessions/composer"
 import {
   getSessionComposerSelection,
   rememberSessionComposerSelection,
-} from "@/components/app/session-composer-selection"
-import { CenteredTranscriptLoader } from "@/components/app/session-transcript-timeline"
-import { SessionTranscriptSurface } from "@/components/app/session-transcript-surface"
-import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
-import { useSessionTranscriptFeed } from "@/components/app/use-session-transcript-feed"
+} from "@/components/app/sessions/composer"
+import { CenteredTranscriptLoader } from "@/components/app/sessions/transcript"
+import { SessionTranscriptSurface } from "@/components/app/sessions/transcript"
+import { WorkspacePageToolbar } from "@/components/app/workspace"
+import { useWorkspaceShell } from "@/components/app/workspace"
+import { useSessionTranscriptFeed } from "@/components/app/sessions/transcript"
 import {
   useInterruptSession,
   useRespondToSessionApproval,
@@ -19,7 +19,7 @@ import {
 import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
 import { useSessionReadTarget } from "@/lib/session-unread"
 
-import { shouldShowThinkingState } from "./session-detail-model"
+import { shouldShowThinkingState } from "./model"
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const { eventStreamState } = useWorkspaceShell()

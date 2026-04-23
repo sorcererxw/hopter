@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { File, Folder, FolderGit2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
+import { useWorkspaceShell } from "@/components/app/workspace"
 import type {
   DirectoryEntry,
   DirectoryRoot,

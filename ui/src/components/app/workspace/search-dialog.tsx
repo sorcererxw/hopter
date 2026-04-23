@@ -2,12 +2,13 @@ import { useMemo, useState } from "react"
 import { FolderGit2, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useProjects } from "@/features/projects/use-projects"
 import { useSessions } from "@/features/sessions/use-sessions"
 import { formatSessionStatus } from "@/lib/format/proto"
+
+import { useWorkspaceShell } from "./shell-context"
 
 type SearchDialogProps = {
   open: boolean

@@ -9,8 +9,8 @@ import {
   X,
 } from "lucide-react"
 
-import { CodeContainer } from "@/components/app/code-container"
-import { SessionRichText } from "@/components/app/session-rich-text"
+import { CodeContainer } from "@/components/app/shared"
+import { useWorkspaceShell } from "@/components/app/workspace"
 import {
   Dialog,
   DialogClose,
@@ -25,9 +25,9 @@ import {
 } from "@/gen/proto/hopter/v1/session_pb"
 import { cn } from "@/lib/utils"
 
-import type { ActivityItem } from "./session-transcript-activity"
-import { isReasoningPlaceholderText } from "./session-transcript-activity"
-import { useWorkspaceShell } from "./workspace-shell-context"
+import type { ActivityItem } from "./activity"
+import { isReasoningPlaceholderText } from "./activity"
+import { SessionRichText } from "./rich-text"
 
 type TimelineItem =
   | {
@@ -62,9 +62,13 @@ type TimelineItem =
     }
 
 function isTranscriptActivityItem(
-  item: ActivityItem
+  item: ActivityItem | undefined
 ): item is Extract<ActivityItem, { kind: "transcript" }> {
-  return item.kind === "transcript"
+  return item?.kind === "transcript"
+}
+
+export function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
+  return groupTimelineItems(orderCompletedReasoningBeforeAgentAnswers(items))
 }
 
 export function TranscriptTimeline({
@@ -78,9 +82,7 @@ export function TranscriptTimeline({
   isLoadingInitialTranscript: boolean
   onSelectPath: (path: string) => void
 }) {
-  const timelineItems = groupTimelineItems(
-    orderCompletedReasoningBeforeAgentAnswers(items)
-  )
+  const timelineItems = buildTimelineItems(items)
 
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return (
@@ -213,6 +215,45 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
 
   while (cursor < items.length) {
     const current = items[cursor]
+    if (!current) {
+      cursor += 1
+      continue
+    }
+
+    if (
+      isTranscriptActivityItem(current) &&
+      shouldFoldCommandExecution(current.item)
+    ) {
+      const commandItems: SessionTranscriptItem[] = []
+
+      while (cursor < items.length) {
+        const next = items[cursor]
+        if (
+          !isTranscriptActivityItem(next) ||
+          !shouldFoldCommandExecution(next.item)
+        ) {
+          break
+        }
+
+        commandItems.push(next.item)
+        cursor += 1
+      }
+
+      if (commandItems.length > 1) {
+        timelineItems.push({
+          items: commandItems,
+          key: commandExecutionGroupKey(commandItems),
+          kind: "command-group",
+        })
+      } else if (commandItems[0]) {
+        timelineItems.push({
+          item: commandItems[0],
+          key: commandItems[0].id,
+          kind: "transcript",
+        })
+      }
+      continue
+    }
 
     if (isTranscriptActivityItem(current) && shouldFoldThoughtItem(current.item)) {
       const thoughtItems: SessionTranscriptItem[] = []
@@ -293,6 +334,10 @@ function orderCompletedReasoningBeforeAgentAnswers(
 
   while (cursor < items.length) {
     const current = items[cursor]
+    if (!current) {
+      cursor += 1
+      continue
+    }
 
     if (isFinalAgentActivityItem(current)) {
       const reasoningItems: ActivityItem[] = []
@@ -320,9 +365,9 @@ function orderCompletedReasoningBeforeAgentAnswers(
   return ordered
 }
 
-function isFinalAgentActivityItem(item: ActivityItem) {
+function isFinalAgentActivityItem(item: ActivityItem | undefined) {
   return (
-    item.kind === "transcript" &&
+    item?.kind === "transcript" &&
     item.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE &&
     !isActiveAgentMessageStatus(item.item.status)
   )
@@ -340,9 +385,9 @@ function isActiveAgentMessageStatus(status: string) {
   )
 }
 
-function isCompletedReasoningActivityItem(item: ActivityItem) {
+function isCompletedReasoningActivityItem(item: ActivityItem | undefined) {
   return (
-    item.kind === "transcript" &&
+    item?.kind === "transcript" &&
     item.item.kind === SessionTranscriptItemKind.REASONING &&
     !isActiveReasoningStatus(item.item.status)
   )
@@ -840,7 +885,7 @@ function ThoughtProcessGroupEntry({
     isActiveReasoningStatus(item.status)
   )
   const [expanded, setExpanded] = useState(hasActiveThought)
-  const label = `Previous ${items.length} message${items.length === 1 ? "" : "s"}`
+  const label = summarizeThoughtProcess(items)
 
   useEffect(() => {
     setExpanded(hasActiveThought)

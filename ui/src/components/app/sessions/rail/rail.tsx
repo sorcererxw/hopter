@@ -19,8 +19,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 
-import { RailRow, type RailRowProps } from "@/components/app/rail-row"
-import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
+import { ScrollbarIndicator } from "@/components/app/shared"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -44,8 +43,10 @@ import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import { timestampToDate } from "@/lib/format/proto"
 import { useUnreadSessionIds } from "@/lib/session-unread"
 import { cn } from "@/lib/utils"
-import { useAutoHideScrollbar } from "@/components/app/use-auto-hide-scrollbar"
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
+import { useAutoHideScrollbar } from "@/components/app/shared"
+import { useWorkspaceShell } from "@/components/app/workspace"
+
+import { RailRow, type RailRowProps } from "./row"
 
 function formatRelativeTime(date?: Date) {
   if (!date) {

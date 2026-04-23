@@ -1,10 +1,7 @@
 import { useNavigate } from "react-router-dom"
 
-import { useWorkspaceShell } from "@/components/app/workspace-shell-context"
-import {
-  WorkspaceTopbar,
-  type WorkspaceTopbarProps,
-} from "@/components/app/workspace-topbar"
+import { useWorkspaceShell } from "./shell-context"
+import { WorkspaceTopbar, type WorkspaceTopbarProps } from "./topbar"
 
 type WorkspacePageToolbarProps = Omit<
   WorkspaceTopbarProps,

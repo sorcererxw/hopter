@@ -266,17 +266,18 @@ function applySessionLivePatch(
   }
 
   if (patchKind === SessionLivePatchKind.MESSAGE_FINALIZED && finalItem?.id) {
+    const finalItemId = finalItem.id
     client.setQueriesData(
       { queryKey: queryKeys.sessionTranscript(sessionId) },
       (current: CachedTranscriptPage | undefined) => {
         const page = ensureTranscriptPage(current)
         const items = [...page.items]
         const normalizedItem = normalizeTranscriptItemEnvelope(finalItem, {
-          id: finalItem.id,
-          orderKey: `live:${String(Date.now()).padStart(20, "0")}:${finalItem.id}`,
+          id: finalItemId,
+          orderKey: `live:${String(Date.now()).padStart(20, "0")}:${finalItemId}`,
           title: "Codex",
         })
-        const index = items.findIndex((item) => item.id === finalItem.id)
+        const index = items.findIndex((item) => item.id === finalItemId)
         if (index >= 0) {
           items[index] = normalizedItem
         } else {

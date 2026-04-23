@@ -108,7 +108,94 @@ describe("session transcript pending hint reconciliation", () => {
       )
     ).toBe(true)
   })
+
+  test("keeps a terminal completed thought item visible", async () => {
+    ensureBrowserOrigin()
+    const { buildTimelineItems } = await import(
+      "../ui/src/components/app/session-transcript-timeline.tsx"
+    )
+    const items: ActivityItem[] = [
+      transcriptActivityItem(
+        "reasoning-tail",
+        SessionTranscriptItemKind.REASONING,
+        {
+          body: "Inspected the current mobile route state.",
+          orderKey: "000000000001:000000000000:reasoning-tail",
+          status: "completed",
+        }
+      ),
+    ]
+
+    const timeline = buildTimelineItems(items)
+
+    expect(timeline.map((item) => item.kind)).toEqual(["transcript"])
+    expect(timeline[0]?.key).toBe("reasoning-tail")
+  })
+
+  test("groups consecutive completed commands before an active command", async () => {
+    ensureBrowserOrigin()
+    const { buildTimelineItems } = await import(
+      "../ui/src/components/app/session-transcript-timeline.tsx"
+    )
+    const items: ActivityItem[] = [
+      transcriptActivityItem(
+        "cmd-1",
+        SessionTranscriptItemKind.COMMAND_EXECUTION,
+        {
+          body: "git status\n\nstatus: completed\n\noutput:\nclean",
+          orderKey: "000000000001:000000000001:cmd-1",
+          status: "completed",
+        }
+      ),
+      transcriptActivityItem(
+        "cmd-2",
+        SessionTranscriptItemKind.COMMAND_EXECUTION,
+        {
+          body: "pnpm --dir ui typecheck\n\nstatus: completed\n\noutput:\npassed",
+          orderKey: "000000000001:000000000002:cmd-2",
+          status: "completed",
+        }
+      ),
+      transcriptActivityItem(
+        "cmd-running",
+        SessionTranscriptItemKind.COMMAND_EXECUTION,
+        {
+          body: "pnpm --dir ui build\n\nstatus: inProgress\n\noutput:\nbuilding",
+          orderKey: "000000000001:000000000003:cmd-running",
+          status: "inProgress",
+        }
+      ),
+    ]
+
+    const timeline = buildTimelineItems(items)
+
+    expect(timeline.map((item) => item.kind)).toEqual([
+      "command-group",
+      "transcript",
+    ])
+    expect(timeline[0]?.kind).toBe("command-group")
+    if (timeline[0]?.kind !== "command-group") {
+      throw new Error("expected command group")
+    }
+    expect(timeline[0].items.map((item) => item.id)).toEqual(["cmd-1", "cmd-2"])
+    expect(timeline[1]?.key).toBe("cmd-running")
+  })
 })
+
+function ensureBrowserOrigin() {
+  if ("window" in globalThis) {
+    return
+  }
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      location: {
+        origin: "http://127.0.0.1:8787",
+      },
+    },
+  })
+}
 
 function transcriptActivityItem(
   id: string,

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
-import { useAutoHideScrollbar } from "@/components/app/use-auto-hide-scrollbar"
+import { useAutoHideScrollbar } from "@/components/app/shared"
 import {
   fetchSessionTranscriptPage,
   useSessionTranscript,
@@ -15,7 +15,7 @@ import {
   shouldPollSessionState,
   shouldShowThinkingState,
   type SessionEventStreamState,
-} from "./session-detail-model"
+} from "@/components/app/sessions/detail"
 import {
   type ActivityItem,
   activityItemSignature,
@@ -24,7 +24,7 @@ import {
   isUserMessageTranscriptItem,
   normalizeTranscriptText,
   transcriptTextMatchesPendingHint,
-} from "./session-transcript-activity"
+} from "./activity"
 
 type UseSessionTranscriptFeedInput = {
   eventStreamState: SessionEventStreamState

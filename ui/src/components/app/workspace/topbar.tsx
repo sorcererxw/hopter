@@ -11,8 +11,9 @@ import {
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import type { WorkspaceToolbarMode } from "@/components/app/workspace-posture"
 import { cn } from "@/lib/utils"
+
+import type { WorkspaceToolbarMode } from "./posture"
 
 export type WorkspaceTopbarProps = {
   leadingAction?: "back" | "toggle-rail"

@@ -13,20 +13,21 @@ import {
   getToolbarMode,
   getWorkspacePosture,
   type WorkspacePosture,
-} from "@/components/app/workspace-posture"
-import { SessionRail } from "@/components/app/session-rail"
-import { SidebarPane } from "@/components/app/sidebar-pane"
-import { WorkspaceShellContext } from "@/components/app/workspace-shell-context"
+} from "./posture"
+import { SessionRail } from "@/components/app/sessions/rail"
 import { useWorkspaceEvents } from "@/lib/sse/use-workspace-events"
 import { cn } from "@/lib/utils"
 
+import { SidebarPane } from "./sidebar-pane"
+import { WorkspaceShellContext } from "./shell-context"
+
 const ProjectPickerDialog = lazy(() =>
-  import("@/components/app/project-picker-dialog").then((module) => ({
+  import("@/components/app/projects").then((module) => ({
     default: module.ProjectPickerDialog,
   }))
 )
 const SearchDialog = lazy(() =>
-  import("@/components/app/search-dialog").then((module) => ({
+  import("./search-dialog").then((module) => ({
     default: module.SearchDialog,
   }))
 )

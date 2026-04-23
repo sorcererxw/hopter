@@ -6,7 +6,7 @@ import {
   type WorkspaceEventEnvelope,
 } from "@/lib/query/invalidation"
 import { applySessionUnreadEvent } from "@/lib/session-unread"
-import type { WorkspaceEventStreamState } from "@/components/app/workspace-shell-context"
+import type { WorkspaceEventStreamState } from "@/components/app/workspace"
 
 export function useWorkspaceEvents() {
   const queryClient = useQueryClient()

@@ -1,21 +1,21 @@
 import type { RefObject } from "react"
 import { ArrowDown } from "lucide-react"
 
-import { SessionArtifactWorkspace } from "@/components/app/session-artifact-workspace"
-import { ScrollbarIndicator } from "@/components/app/scrollbar-indicator"
-import type { Session } from "@/gen/proto/hopter/v1/session_pb"
-import { cn } from "@/lib/utils"
-
-import type { SessionEventStreamState } from "./session-detail-model"
+import { ScrollbarIndicator } from "@/components/app/shared"
 import {
   SessionAttentionBlock,
   SessionConnectionBlock,
-} from "./session-detail-status"
-import type { ActivityItem } from "./session-transcript-activity"
+  type SessionEventStreamState,
+} from "@/components/app/sessions/detail"
+import type { Session } from "@/gen/proto/hopter/v1/session_pb"
+import { cn } from "@/lib/utils"
+
+import { SessionArtifactWorkspace } from "./artifact-workspace"
+import type { ActivityItem } from "./activity"
 import {
   InitialTranscriptLoader,
   TranscriptTimeline,
-} from "./session-transcript-timeline"
+} from "./timeline"
 
 type SessionTranscriptSurfaceProps = {
   activityItems: ActivityItem[]

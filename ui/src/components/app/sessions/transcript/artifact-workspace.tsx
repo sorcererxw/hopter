@@ -11,8 +11,7 @@ import {
   TestTube2,
 } from "lucide-react"
 
-import { CodeContainer } from "@/components/app/code-container"
-import { SessionRichText } from "@/components/app/session-rich-text"
+import { CodeContainer } from "@/components/app/shared"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { ArtifactRef } from "@/gen/proto/hopter/v1/common_pb"
@@ -20,6 +19,8 @@ import { ArtifactKind } from "@/gen/proto/hopter/v1/common_pb"
 import { useSessionArtifacts } from "@/features/sessions/use-sessions"
 import { formatArtifactKind, formatUpdatedAt } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
+
+import { SessionRichText } from "./rich-text"
 
 type SessionArtifactWorkspaceProps = {
   artifacts: ArtifactRef[]

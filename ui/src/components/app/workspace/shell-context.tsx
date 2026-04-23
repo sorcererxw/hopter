@@ -3,7 +3,7 @@ import { createContext, useContext } from "react"
 import type {
   WorkspacePosture,
   WorkspaceToolbarMode,
-} from "@/components/app/workspace-posture"
+} from "./posture"
 
 export type WorkspaceShellContextValue = {
   closeProjectPicker: () => void

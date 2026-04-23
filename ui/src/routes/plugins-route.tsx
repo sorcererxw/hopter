@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { Search } from "lucide-react"
 import { Navigate, useLocation } from "react-router-dom"
 
-import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
+import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"

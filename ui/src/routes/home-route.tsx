@@ -1,4 +1,4 @@
-import { HomeWorkspacePane } from "@/components/app/home-workspace-pane"
+import { HomeWorkspacePane } from "@/components/app/home"
 
 export function HomeRoute() {
   return <HomeWorkspacePane />

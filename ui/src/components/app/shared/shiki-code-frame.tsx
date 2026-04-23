@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 
-import { CodeContainer } from "@/components/app/code-container"
 import { useTheme } from "@/components/theme-provider"
 import {
   highlightCodeToTokens,
   type HighlightLanguage,
 } from "@/lib/shiki/highlighter"
 import { cn } from "@/lib/utils"
+
+import { CodeContainer } from "./code-container"
 
 type HighlightToken = {
   bgColor?: string

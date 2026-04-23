@@ -2,7 +2,7 @@ import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import type { Session } from "@/gen/proto/hopter/v1/session_pb"
 import { cn } from "@/lib/utils"
 
-import type { SessionEventStreamState } from "./session-detail-model"
+import type { SessionEventStreamState } from "./model"
 
 export function SessionConnectionBlock({
   state,

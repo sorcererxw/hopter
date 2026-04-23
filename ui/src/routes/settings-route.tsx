@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Navigate, useLocation } from "react-router-dom"
 
-import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
+import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useTheme } from "@/components/theme-provider"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { useBackends } from "@/features/host/use-host-backends"

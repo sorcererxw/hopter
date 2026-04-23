@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { CheckCircle2, Circle, ListChecks, LoaderCircle } from "lucide-react"
 
-import { WorkspacePageToolbar } from "@/components/app/workspace-page-toolbar"
+import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { Button } from "@/components/ui/button"
 import { NativeSelect } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"

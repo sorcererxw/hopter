@@ -7,8 +7,8 @@ import type {
 } from "react"
 import { Check, Copy } from "lucide-react"
 
-import { ShikiCodeFrame } from "@/components/app/shiki-code-frame"
-import { SkillReferenceChip } from "@/components/app/skill-reference-chip"
+import { ShikiCodeFrame } from "@/components/app/shared"
+import { SkillReferenceChip } from "@/components/app/shared"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import type { HighlightLanguage } from "@/lib/shiki/highlighter"
@@ -81,7 +81,13 @@ export function SessionRichText({
   const skillByReference = new Map(
     (hostSkillsQuery.data ?? []).map((skill) => [
       skill.reference.toLowerCase(),
-      skill,
+      {
+        description: skill.description,
+        name: skill.name,
+        reference: skill.reference,
+        source: skill.source,
+        variant: "skill" as const,
+      },
     ])
   )
   const pluginByReference = new Map(
@@ -91,6 +97,7 @@ export function SessionRichText({
         name: server.name,
         reference: server.name,
         source: server.source,
+        variant: "plugin" as const,
       },
     ])
   )

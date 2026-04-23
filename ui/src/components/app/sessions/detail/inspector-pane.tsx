@@ -1,6 +1,6 @@
 import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "lucide-react"
 
-import { ShikiCodeFrame } from "@/components/app/shiki-code-frame"
+import { ShikiCodeFrame } from "@/components/app/shared"
 import { Button } from "@/components/ui/button"
 import type {
   SessionFile,

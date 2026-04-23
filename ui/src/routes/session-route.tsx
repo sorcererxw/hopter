@@ -1,6 +1,6 @@
 import { Navigate, useParams } from "react-router-dom"
 
-import { SessionWorkspacePane } from "@/components/app/session-detail-pane"
+import { SessionWorkspacePane } from "@/components/app/sessions"
 
 export function SessionRoute() {
   const { sessionId } = useParams<{ sessionId: string }>()
