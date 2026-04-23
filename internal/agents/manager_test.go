@@ -200,6 +200,57 @@ func TestManagerSendSessionInputMaterializesSyntheticProject(t *testing.T) {
 	}
 }
 
+func TestManagerSendSessionInputAllowsVisibleNonGitSyntheticProject(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := t.TempDir()
+	metadata, err := workspace.GetPathMetadata(root)
+	if err != nil {
+		t.Fatalf("GetPathMetadata: %v", err)
+	}
+	syntheticProject := core.Project{
+		ID:             "cwd:" + root,
+		Name:           filepath.Base(root),
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: "codex",
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}
+	runtime := &fakeRuntime{
+		getSession: core.Session{
+			ID:         "sess_non_git",
+			ProjectID:  syntheticProject.ID,
+			BackendKey: "codex",
+			Title:      "probe",
+			Status:     core.SessionStateCompleted,
+			UpdatedAt:  time.Now().UTC(),
+		},
+		getProject: syntheticProject,
+		sendResult: core.Session{
+			ID:        "sess_non_git",
+			ProjectID: syntheticProject.ID,
+			Status:    core.SessionStateRunning,
+			UpdatedAt: time.Now().UTC(),
+		},
+	}
+	manager := NewManager(workspace, map[string]Runtime{
+		"codex": runtime,
+	})
+
+	updated, err := manager.SendSessionInput("sess_non_git", "follow up")
+	if err != nil {
+		t.Fatalf("SendSessionInput: %v", err)
+	}
+	if runtime.lastSendID != "sess_non_git" {
+		t.Fatalf("send session id = %q, want sess_non_git", runtime.lastSendID)
+	}
+	if runtime.lastSendText != "follow up" {
+		t.Fatalf("send text = %q, want follow up", runtime.lastSendText)
+	}
+	if updated.ID != "sess_non_git" {
+		t.Fatalf("updated session id = %q, want sess_non_git", updated.ID)
+	}
+}
+
 func TestManagerRespondToSessionApprovalRoutesByBackend(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace, "codex")

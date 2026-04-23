@@ -13,6 +13,7 @@ import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
 import {
   agentSelectionPreferenceFromConfig,
+  buildAgentSelectionConfigPatch,
   useConfig,
   useUpdateConfig,
 } from "@/features/config/use-config"
@@ -158,6 +159,17 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               selectionKey={sessionId}
               onSelectionChange={(selection) => {
                 rememberSessionComposerSelection(sessionId, selection)
+                const currentFastMode =
+                  configQuery.data?.agent?.defaultCodexFastMode ?? false
+                if (selection.codexFastMode === currentFastMode) {
+                  return
+                }
+                updateConfig.mutate({
+                  agent: buildAgentSelectionConfigPatch(configQuery.data, {
+                    codexFastMode: selection.codexFastMode,
+                  }),
+                  expectedRevision: configQuery.data?.revision ?? 0n,
+                })
               }}
               onValueChange={setPrompt}
               onSubmit={async ({
@@ -181,12 +193,11 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                   reasoningEffort,
                 })
                 updateConfig.mutate({
-                  agent: {
-                    defaultBackend: "codex",
-                    defaultCodexFastMode: codexFastMode,
-                    defaultModel: model,
-                    defaultReasoningEffort: reasoningEffort,
-                  },
+                  agent: buildAgentSelectionConfigPatch(configQuery.data, {
+                    codexFastMode,
+                    model,
+                    reasoningEffort,
+                  }),
                   expectedRevision: configQuery.data?.revision ?? 0n,
                 })
                 try {

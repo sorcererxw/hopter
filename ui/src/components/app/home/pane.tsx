@@ -10,6 +10,11 @@ import {
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -20,6 +25,7 @@ import {
 import { useProjects } from "@/features/projects/use-projects"
 import {
   agentSelectionPreferenceFromConfig,
+  buildAgentSelectionConfigPatch,
   useConfig,
   useUpdateConfig,
 } from "@/features/config/use-config"
@@ -44,6 +50,7 @@ export function HomeWorkspacePane() {
     eventStreamState === "connected" ? 10_000 : 3_000
   )
   const [prompt, setPrompt] = useState("")
+  const [projectSelectOpen, setProjectSelectOpen] = useState(false)
   const selectedProjectId =
     searchParams.get("projectId") || projects?.[0]?.id || ""
   const fallbackProject = useMemo(() => {
@@ -108,12 +115,82 @@ export function HomeWorkspacePane() {
             busy={createSession.isPending}
             composerTestId="home-session-composer"
             disabled={!selectedProjectId}
+            footerStart={
+              <div className="min-w-0">
+                <Tooltip open={projectSelectOpen ? false : undefined}>
+                  <TooltipTrigger asChild>
+                    <div className="min-w-0">
+                      <Select
+                        value={selectedProjectId}
+                        disabled={projectsLoading && projectOptions.length === 0}
+                        onOpenChange={setProjectSelectOpen}
+                        onValueChange={(nextProjectId) => {
+                          setSearchParams((current) => {
+                            const next = new URLSearchParams(current)
+                            if (nextProjectId) {
+                              next.set("projectId", nextProjectId)
+                            } else {
+                              next.delete("projectId")
+                            }
+                            return next
+                          })
+                        }}
+                      >
+                        <SelectTrigger
+                          aria-label={t("home.selectProject")}
+                          className="h-8 w-auto max-w-44 min-w-0 justify-start gap-1 rounded-full border-0 bg-transparent px-2.5 text-muted-foreground shadow-none hover:bg-accent hover:text-foreground focus-visible:border-transparent focus-visible:ring-0"
+                          size="sm"
+                        >
+                          <SelectValue asChild>
+                            <span className="min-w-0 truncate">
+                              {selectedProject?.name ||
+                                (projectsLoading
+                                  ? t("app.settings.loading")
+                                  : t("home.selectProject"))}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          align="start"
+                          position="popper"
+                          className="min-w-40"
+                        >
+                          <SelectGroup>
+                            {projectOptions.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {t("home.selectProject")}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            }
             inputTestId="home-session-prompt-input"
             initialSelection={initialComposerSelection}
             placeholder={t("home.askAnything")}
             placement="inline"
             projectLabel={selectedProject?.name || t("home.localProject")}
             branchLabel="main"
+            onSelectionChange={(selection) => {
+              const currentFastMode =
+                configQuery.data?.agent?.defaultCodexFastMode ?? false
+              if (selection.codexFastMode === currentFastMode) {
+                return
+              }
+              updateConfig.mutate({
+                agent: buildAgentSelectionConfigPatch(configQuery.data, {
+                  codexFastMode: selection.codexFastMode,
+                }),
+                expectedRevision: configQuery.data?.revision ?? 0n,
+              })
+            }}
             onValueChange={setPrompt}
             onSubmit={async ({
               attachments,
@@ -152,12 +229,11 @@ export function HomeWorkspacePane() {
                   reasoningEffort,
                 })
                 updateConfig.mutate({
-                  agent: {
-                    defaultBackend: "codex",
-                    defaultCodexFastMode: codexFastMode,
-                    defaultModel: model,
-                    defaultReasoningEffort: reasoningEffort,
-                  },
+                  agent: buildAgentSelectionConfigPatch(configQuery.data, {
+                    codexFastMode,
+                    model,
+                    reasoningEffort,
+                  }),
                   expectedRevision: configQuery.data?.revision ?? 0n,
                 })
                 setSearchParams((current) => {
@@ -172,46 +248,6 @@ export function HomeWorkspacePane() {
             submitTestId="home-session-submit"
             value={prompt}
           />
-
-          <div className="mt-4 flex items-center justify-start">
-            <Select
-              value={selectedProjectId}
-              disabled={projectsLoading && projectOptions.length === 0}
-              onValueChange={(nextProjectId) => {
-                setSearchParams((current) => {
-                  const next = new URLSearchParams(current)
-                  if (nextProjectId) {
-                    next.set("projectId", nextProjectId)
-                  } else {
-                    next.delete("projectId")
-                  }
-                  return next
-                })
-              }}
-            >
-              <SelectTrigger
-                aria-label={t("home.selectProject")}
-                className="min-w-40 max-w-80"
-              >
-                <SelectValue
-                  placeholder={
-                    projectsLoading
-                      ? t("app.settings.loading")
-                      : t("home.selectProject")
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {projectOptions.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
     </div>

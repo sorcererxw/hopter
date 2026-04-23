@@ -254,12 +254,33 @@ func (m *Manager) resolveProject(projectID, backendKey string) (core.Project, er
 	if err == nil {
 		return project, nil
 	}
+	if synthetic, ok := m.syntheticProjectForVisibleNonGitRoot(projectID, rootPath, name, backendKey, err); ok {
+		return synthetic, nil
+	}
 
 	if project, ok := projectByRootPath(m.workspace.ListProjects(), rootPath); ok {
 		return project, nil
 	}
 
 	return core.Project{}, err
+}
+
+func (m *Manager) syntheticProjectForVisibleNonGitRoot(projectID, rootPath, name, backendKey string, createErr error) (core.Project, bool) {
+	if createErr == nil || !strings.Contains(createErr.Error(), "is not a git repository") {
+		return core.Project{}, false
+	}
+
+	metadata, err := m.workspace.GetPathMetadata(rootPath)
+	if err != nil || !metadata.IsAllowed || !metadata.IsDirectory {
+		return core.Project{}, false
+	}
+
+	return core.Project{
+		ID:             strings.TrimSpace(projectID),
+		Name:           name,
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: normalizeBackendKey(backendKey),
+	}, true
 }
 
 func projectByRootPath(projects []core.Project, rootPath string) (core.Project, bool) {

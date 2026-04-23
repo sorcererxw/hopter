@@ -3,6 +3,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type ButtonHTMLAttributes,
   type ChangeEvent,
   type ClipboardEvent,
@@ -83,6 +84,7 @@ type SessionComposerProps = {
   placeholder: string
   placement?: "sticky" | "inline"
   composerTestId?: string
+  footerStart?: ReactNode
   inputTestId?: string
   projectLabel?: string
   branchLabel?: string
@@ -126,6 +128,7 @@ export function SessionComposer({
   placeholder,
   placement = "sticky",
   composerTestId,
+  footerStart,
   inputTestId,
   onInterrupt,
   onSelectionChange,
@@ -679,7 +682,7 @@ export function SessionComposer({
 
               <TooltipProvider>
                 <div className="flex items-center justify-between px-2 pb-2">
-                  <div className="flex items-center gap-1">
+                  <div className="flex min-w-0 items-center gap-1">
                     <input
                       ref={imageInputRef}
                       type="file"
@@ -704,6 +707,9 @@ export function SessionComposer({
                         {t("composer.attachImages")}
                       </TooltipContent>
                     </Tooltip>
+                    {footerStart ? (
+                      <div className="min-w-0">{footerStart}</div>
+                    ) : null}
                   </div>
 
                   <div className="flex min-w-0 items-center justify-end gap-1">

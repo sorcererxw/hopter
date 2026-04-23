@@ -10,15 +10,15 @@ import {
 } from "@/gen/proto/hopter/v1/config_pb"
 import { configClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
+import {
+  type AgentSelectionPreference,
+  agentSelectionPreferenceFromConfig,
+  buildAgentSelectionConfigPatch,
+} from "./agent-selection"
 
 export type ThemePreference = "system" | "dark" | "light"
 export type LocalePreference = "system" | "en" | "zh-CN"
 export type ComposerSendShortcutPreference = "cmd-enter" | "enter"
-export type AgentSelectionPreference = {
-  codexFastMode: boolean
-  model: string
-  reasoningEffort: string
-}
 
 export function useConfig() {
   return useQuery({
@@ -73,27 +73,6 @@ export function composerSendShortcutPreferenceFromConfig(
   return composerSendShortcutPreferenceFromProto(
     config?.composer?.sendShortcut ?? ConfigComposerSendShortcut.CMD_ENTER
   )
-}
-
-export function agentSelectionPreferenceFromConfig(
-  config?: UserConfig
-): AgentSelectionPreference | undefined {
-  const agent = config?.agent
-  if (!agent) {
-    return undefined
-  }
-
-  const model = agent.defaultModel.trim()
-  const reasoningEffort = agent.defaultReasoningEffort.trim()
-  if (!model && !reasoningEffort) {
-    return undefined
-  }
-
-  return {
-    codexFastMode: agent.defaultCodexFastMode,
-    model,
-    reasoningEffort,
-  }
 }
 
 export function themePreferenceFromProto(theme: ConfigTheme): ThemePreference {
@@ -217,3 +196,9 @@ function getNavigatorPlatform() {
 function isApplePlatform(platform: string) {
   return /Mac|iPhone|iPad|iPod/.test(platform)
 }
+
+export {
+  agentSelectionPreferenceFromConfig,
+  buildAgentSelectionConfigPatch,
+}
+export type { AgentSelectionPreference }

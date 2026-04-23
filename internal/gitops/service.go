@@ -448,12 +448,33 @@ func (s *Service) resolveProject(projectID string) (core.Project, error) {
 	if err == nil {
 		return project, nil
 	}
+	if synthetic, ok := s.syntheticProjectForVisibleNonGitRoot(trimmed, rootPath, name, err); ok {
+		return synthetic, nil
+	}
 	for _, project := range s.workspace.ListProjects() {
 		if filepath.Clean(strings.TrimSpace(project.RootPath)) == rootPath {
 			return project, nil
 		}
 	}
 	return core.Project{}, err
+}
+
+func (s *Service) syntheticProjectForVisibleNonGitRoot(projectID, rootPath, name string, createErr error) (core.Project, bool) {
+	if createErr == nil || !strings.Contains(createErr.Error(), "is not a git repository") {
+		return core.Project{}, false
+	}
+
+	metadata, err := s.workspace.GetPathMetadata(rootPath)
+	if err != nil || !metadata.IsAllowed || !metadata.IsDirectory {
+		return core.Project{}, false
+	}
+
+	return core.Project{
+		ID:             projectID,
+		Name:           name,
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: core.BackendKeyCodex,
+	}, true
 }
 
 func (s *Service) projectLock(projectID string) *sync.Mutex {

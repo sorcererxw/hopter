@@ -30,22 +30,33 @@ export function clearSessionComposerSelections() {
 export function resolveSessionComposerSelection(
   ...candidates: Array<Partial<SessionComposerSelection> | undefined>
 ) {
+  let fastModeOnlySelection: SessionComposerSelection | undefined
+
   for (const candidate of candidates) {
     if (!candidate) {
       continue
     }
     const model = candidate.model?.trim() ?? ""
     const reasoningEffort = candidate.reasoningEffort?.trim() ?? ""
-    if (!model && !reasoningEffort) {
+    const codexFastMode = candidate.codexFastMode ?? false
+    if (!codexFastMode && !model && !reasoningEffort) {
       continue
     }
 
-    return {
-      codexFastMode: candidate.codexFastMode ?? false,
+    const normalizedSelection = {
+      codexFastMode,
       model,
       reasoningEffort,
     } satisfies SessionComposerSelection
+
+    if (model || reasoningEffort) {
+      return normalizedSelection
+    }
+
+    if (!fastModeOnlySelection) {
+      fastModeOnlySelection = normalizedSelection
+    }
   }
 
-  return undefined
+  return fastModeOnlySelection
 }

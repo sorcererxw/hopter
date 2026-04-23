@@ -141,6 +141,61 @@ func TestMissingGitDirectoryDisablesCommitStatus(t *testing.T) {
 	}
 }
 
+func TestSyntheticNonGitProjectReturnsDisabledStatus(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("test-host", nil)
+	service := NewService(workspace, nil)
+	root := t.TempDir()
+
+	status, err := service.GetProjectGitStatus(context.Background(), "cwd:"+root)
+	if err != nil {
+		t.Fatalf("GetProjectGitStatus: %v", err)
+	}
+	metadata, err := workspace.GetPathMetadata(root)
+	if err != nil {
+		t.Fatalf("GetPathMetadata: %v", err)
+	}
+	if status.RootPath != metadata.CanonicalPath {
+		t.Fatalf("root path = %q, want %q", status.RootPath, metadata.CanonicalPath)
+	}
+	if status.IsGitRepository {
+		t.Fatalf("expected isGitRepository=false")
+	}
+	if status.CanCommit {
+		t.Fatalf("expected canCommit=false")
+	}
+	if len(status.Blockers) == 0 || status.Blockers[0].Code != "not_git_repository" {
+		t.Fatalf("unexpected blockers: %+v", status.Blockers)
+	}
+}
+
+func TestSyntheticNonGitProjectCommitIsRejectedWithoutRPCError(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("test-host", nil)
+	service := NewService(workspace, nil)
+	root := t.TempDir()
+
+	status, err := service.GetProjectGitStatus(context.Background(), "cwd:"+root)
+	if err != nil {
+		t.Fatalf("GetProjectGitStatus: %v", err)
+	}
+
+	result, err := service.CommitProjectChanges(
+		context.Background(),
+		"cwd:"+root,
+		CommitOnly,
+		"test: should be blocked",
+		status.StatusToken,
+	)
+	if err != nil {
+		t.Fatalf("CommitProjectChanges: %v", err)
+	}
+	if result.Outcome != OutcomeRejectedBlocked {
+		t.Fatalf("outcome = %q, want rejected_blocked", result.Outcome)
+	}
+	if len(result.Diagnostics) == 0 || result.Diagnostics[0].Code != "not_git_repository" {
+		t.Fatalf("unexpected diagnostics: %+v", result.Diagnostics)
+	}
+}
+
 func testWorkspaceWithRepo(t *testing.T) (*core.InMemoryWorkspace, core.Project) {
 	t.Helper()
 	root := t.TempDir()

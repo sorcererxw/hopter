@@ -75,4 +75,18 @@ describe("session composer selection handoff", () => {
       reasoningEffort: "medium",
     });
   });
+
+  test("treats fast mode only as a valid persisted selection candidate", () => {
+    expect(
+      resolveSessionComposerSelection({
+        codexFastMode: true,
+        model: " ",
+        reasoningEffort: "",
+      }),
+    ).toEqual({
+      codexFastMode: true,
+      model: "",
+      reasoningEffort: "",
+    });
+  });
 });

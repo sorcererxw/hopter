@@ -116,23 +116,41 @@ export function TranscriptTimeline({
       data-testid="session-transcript"
     >
       {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
-      {timelineItems.map((item, index) => (
-        <div
-          key={item.key}
-          data-index={index}
-          className={cn(
-            "min-w-0",
-            index > 0 &&
-              isAssistantReplyAfterUserMessage(
-                timelineItems[index - 1],
-                item
-              ) &&
-              "mt-4"
-          )}
-        >
-          {renderTimelineItem(item, { onSelectPath })}
-        </div>
-      ))}
+      {timelineItems.map((item, index) => {
+        const previousItem = timelineItems[index - 1]
+        const nextItem = timelineItems[index + 1]
+        const renderedItem = renderTimelineItem(item, {
+          onSelectPath,
+          suppressStandaloneFileChanges:
+            shouldAttachFileChangesToCompletedMessage(item, nextItem),
+        })
+        const attachedFileChanges = completedMessageFileChanges(
+          item,
+          previousItem
+        )
+
+        if (!renderedItem && attachedFileChanges.length === 0) {
+          return null
+        }
+
+        return (
+          <div
+            key={item.key}
+            data-index={index}
+            className={cn(
+              "min-w-0",
+              index > 0 &&
+                isAssistantReplyAfterUserMessage(previousItem, item) &&
+                "mt-4"
+            )}
+          >
+            {renderedItem}
+            {attachedFileChanges.length > 0 ? (
+              <CompletedMessageChangedFiles items={attachedFileChanges} />
+            ) : null}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -161,6 +179,7 @@ function renderTimelineItem(
   item: TimelineItem,
   handlers: {
     onSelectPath: (path: string) => void
+    suppressStandaloneFileChanges?: boolean
   }
 ) {
   switch (item.kind) {
@@ -189,9 +208,60 @@ function renderTimelineItem(
         <ThoughtProcessGroupEntry
           items={item.items}
           onSelectPath={handlers.onSelectPath}
+          suppressFileChanges={handlers.suppressStandaloneFileChanges === true}
         />
       )
   }
+}
+
+function shouldAttachFileChangesToCompletedMessage(
+  item: TimelineItem,
+  next: TimelineItem | undefined
+) {
+  return (
+    isCompletedAgentTimelineItem(next) &&
+    fileChangeItemsFromTimelineItem(item).length > 0
+  )
+}
+
+function completedMessageFileChanges(
+  item: TimelineItem,
+  previous: TimelineItem | undefined
+) {
+  if (!isCompletedAgentTimelineItem(item)) {
+    return []
+  }
+
+  return fileChangeItemsFromTimelineItem(previous)
+}
+
+function isCompletedAgentTimelineItem(item: TimelineItem | undefined) {
+  return (
+    item?.kind === "transcript" &&
+    item.item.kind === SessionTranscriptItemKind.AGENT_MESSAGE &&
+    !isActiveAgentMessageStatus(item.item.status)
+  )
+}
+
+function fileChangeItemsFromTimelineItem(item: TimelineItem | undefined) {
+  if (!item) {
+    return []
+  }
+
+  if (
+    item.kind === "transcript" &&
+    item.item.kind === SessionTranscriptItemKind.FILE_CHANGE
+  ) {
+    return [item.item]
+  }
+
+  if (item.kind === "thought-group") {
+    return item.items.filter(
+      (entry) => entry.kind === SessionTranscriptItemKind.FILE_CHANGE
+    )
+  }
+
+  return []
 }
 
 function TranscriptLoadingRow() {
@@ -988,13 +1058,22 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
 function ThoughtProcessGroupEntry({
   items,
   onSelectPath,
+  suppressFileChanges = false,
 }: {
   items: SessionTranscriptItem[]
   onSelectPath: (path: string) => void
+  suppressFileChanges?: boolean
 }) {
   const { t } = useTranslation()
   const [expanded, toggleExpanded] = useTranscriptDisclosure()
-  const label = summarizeThoughtProcess(items, t)
+  const visibleItems = suppressFileChanges
+    ? items.filter((item) => item.kind !== SessionTranscriptItemKind.FILE_CHANGE)
+    : items
+  const label = summarizeThoughtProcess(visibleItems, t)
+
+  if (visibleItems.length === 0) {
+    return null
+  }
 
   return (
     <div
@@ -1021,7 +1100,7 @@ function ThoughtProcessGroupEntry({
           className="mt-4 space-y-4"
           data-testid="session-transcript-thought-group-body"
         >
-          {renderThoughtProcessItems(items, onSelectPath)}
+          {renderThoughtProcessItems(visibleItems, onSelectPath)}
         </div>
       ) : null}
     </div>
@@ -1303,6 +1382,85 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
   )
 }
 
+function CompletedMessageChangedFiles({
+  items,
+}: {
+  items: SessionTranscriptItem[]
+}) {
+  const { t } = useTranslation()
+  const changes = items.flatMap((item) => parseFileChangeBody(item.body, t))
+  const additions = changes.reduce((sum, change) => sum + change.additions, 0)
+  const deletions = changes.reduce((sum, change) => sum + change.deletions, 0)
+
+  if (changes.length === 0) {
+    return null
+  }
+
+  return (
+    <div
+      className="mt-3 min-w-0 overflow-hidden rounded-xl border border-border bg-card"
+      data-testid="session-transcript-completed-message-files"
+    >
+      <div className="flex items-center gap-2 border-b border-border bg-popover px-4 py-3 text-foreground">
+        <span>{t("transcript.filesChanged", { count: changes.length })}</span>
+        {changes.length > 1 ? (
+          <span className="flex shrink-0 items-center gap-1 text-sm">
+            <span className="text-emerald-600">+{additions}</span>
+            <span className="text-destructive">-{deletions}</span>
+          </span>
+        ) : null}
+      </div>
+      <div className="divide-y divide-border">
+        {changes.map((change) => (
+          <CompletedMessageChangedFileRow
+            change={change}
+            key={`${change.path}-${change.kindLabel}-${change.movePath ?? ""}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CompletedMessageChangedFileRow({
+  change,
+}: {
+  change: ParsedFileChange
+}) {
+  const pathLabel = change.movePath
+    ? `${formatRelativeFileChangePath(change.path)} → ${formatRelativeFileChangePath(change.movePath)}`
+    : formatRelativeFileChangePath(change.path)
+
+  return (
+    <div className="min-w-0">
+      <TranscriptDisclosureItem
+        buttonClassName="w-full items-center gap-3 px-4 py-3 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        iconClassName="size-3"
+        label={
+          <>
+            <span className="min-w-0 break-all text-foreground">
+              {pathLabel}
+            </span>
+            <span className="flex shrink-0 items-center gap-1 text-sm">
+              <span className="text-emerald-600">+{change.additions}</span>
+              <span className="text-destructive">-{change.deletions}</span>
+            </span>
+            <span className="flex-1" />
+          </>
+        }
+        title={pathLabel}
+      >
+        <CodeContainer
+          as="pre"
+          className="mb-4 max-h-96 break-words whitespace-pre-wrap rounded-none border-0 bg-transparent px-0 py-0"
+        >
+          <DiffCodeBlock diff={change.diff} />
+        </CodeContainer>
+      </TranscriptDisclosureItem>
+    </div>
+  )
+}
+
 function DiffCodeBlock({ diff }: { diff?: string }) {
   const { t } = useTranslation()
   const lines = diff?.trim().split("\n") ?? []
@@ -1504,6 +1662,44 @@ function formatFileChangePath(path: string) {
 
   const segments = normalized.split(/[\\/]/)
   return segments.at(-1) || normalized
+}
+
+function formatRelativeFileChangePath(path: string) {
+  const normalized = path.trim().replaceAll("\\", "/")
+  if (!normalized) {
+    return path
+  }
+
+  const segments = normalized.split("/")
+  const repoRootMarkers = new Set([
+    "cmd",
+    "docs",
+    "fixtures",
+    "idl",
+    "internal",
+    "scripts",
+    "site",
+    "storage",
+    "test",
+    "ui",
+  ])
+  const markerIndex = segments.findIndex((segment) =>
+    repoRootMarkers.has(segment)
+  )
+
+  if (markerIndex >= 0) {
+    return segments.slice(markerIndex).join("/")
+  }
+
+  if (normalized.startsWith("/repo/")) {
+    return normalized.slice("/repo/".length)
+  }
+
+  if (normalized.startsWith("repo/")) {
+    return normalized.slice("repo/".length)
+  }
+
+  return normalized.replace(/^\/+/, "")
 }
 
 function formatUserMessageForDisplay(value: string) {
