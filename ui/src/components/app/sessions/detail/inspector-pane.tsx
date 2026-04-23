@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "lucide-react"
 
 import { ShikiCodeFrame } from "@/components/app/shared"
@@ -40,6 +41,7 @@ export function SessionInspectorPane({
   reviewLoading = false,
   reviewView,
 }: SessionInspectorPaneProps) {
+  const { t } = useTranslation()
   const selectedReviewFile =
     review?.files.find((entry) => entry.path === reviewFile) ?? review?.files[0]
 
@@ -57,13 +59,13 @@ export function SessionInspectorPane({
             active={mode === "file"}
             onClick={() => onModeChange("file")}
           >
-            File
+            {t("inspector.file")}
           </ModeButton>
           <ModeButton
             active={mode === "review"}
             onClick={() => onModeChange("review")}
           >
-            Review
+            {t("inspector.review")}
           </ModeButton>
         </div>
 
@@ -74,14 +76,14 @@ export function SessionInspectorPane({
               onClick={() => onReviewViewChange("file")}
             >
               {reviewFile ? <PanelRightOpen className="size-3.5" /> : null}
-              File
+              {t("inspector.file")}
             </ViewButton>
             <ViewButton
               active={reviewView === "full"}
               onClick={() => onReviewViewChange("full")}
             >
               <PanelRightClose className="size-3.5" />
-              Full patch
+              {t("inspector.fullPatch")}
             </ViewButton>
           </div>
         ) : (
@@ -123,22 +125,27 @@ function FilePanel({
   file?: SessionFile
   loading: boolean
 }) {
+  const { t } = useTranslation()
   if (loading) {
-    return <PanelLoading label="Loading file…" />
+    return <PanelLoading label={t("inspector.loadingFile")} />
   }
 
   if (!file) {
-    return <PanelEmpty label="Select a file from the thread to open it here." />
+    return <PanelEmpty label={t("inspector.selectFile")} />
   }
 
   if (!file.available) {
     return (
       <PanelMessage
-        title="File unavailable"
-        body={file.reason || "The requested file could not be opened."}
+        title={t("inspector.fileUnavailable")}
+        body={file.reason || t("inspector.fileNotOpened")}
         meta={[
-          file.requestedPath ? `Requested: ${file.requestedPath}` : null,
-          file.canonicalPath ? `Resolved: ${file.canonicalPath}` : null,
+          file.requestedPath
+            ? t("inspector.requested", { path: file.requestedPath })
+            : null,
+          file.canonicalPath
+            ? t("inspector.resolved", { path: file.canonicalPath })
+            : null,
         ]}
       />
     )
@@ -147,11 +154,8 @@ function FilePanel({
   if (file.isBinary) {
     return (
       <PanelMessage
-        title="Binary file not previewable"
-        body={
-          file.reason ||
-          "This file exists, but the sidebar only previews text files."
-        }
+        title={t("inspector.binaryFile")}
+        body={file.reason || t("inspector.previewTextOnly")}
         meta={[
           file.displayPath || file.requestedPath || null,
           file.canonicalPath || null,
@@ -171,7 +175,7 @@ function FilePanel({
         </div>
         {file.truncated ? (
           <div className="mt-2 text-xs text-amber-200/80">
-            Preview truncated for large file size.
+            {t("inspector.previewTruncated")}
           </div>
         ) : null}
       </div>
@@ -200,18 +204,19 @@ function ReviewPanel({
   reviewView: SessionReviewView
   onReviewFileSelect: (path: string) => void
 }) {
+  const { t } = useTranslation()
   if (reviewLoading) {
-    return <PanelLoading label="Loading review…" />
+    return <PanelLoading label={t("inspector.loadingReview")} />
   }
 
   if (!review || !review.available) {
     return (
       <PanelMessage
-        title="Review unavailable"
-        body={review?.reason || "No completed turn is available to review yet."}
+        title={t("inspector.reviewUnavailable")}
+        body={review?.reason || t("inspector.noCompletedTurn")}
         meta={
           review?.pendingTurnInProgress
-            ? ["A newer turn is still running."]
+            ? [t("inspector.newerTurnRunning")]
             : undefined
         }
       />
@@ -225,18 +230,14 @@ function ReviewPanel({
     <div className="flex h-full min-h-0 flex-col">
       {review.pendingTurnInProgress ? (
         <div className="border-b border-border bg-secondary px-4 py-2 text-xs text-muted-foreground">
-          A newer turn is still running. Review is showing the latest completed
-          turn.
+          {t("inspector.newerTurnRunningDetail")}
         </div>
       ) : null}
 
       {reviewView === "full" ? (
         <div className="min-h-0 flex-1 overflow-auto py-2">
           <ShikiCodeFrame
-            code={
-              review.fullPatch.trim() ||
-              "This turn does not currently expose a full patch."
-            }
+            code={review.fullPatch.trim() || t("inspector.noFullPatch")}
             language="diff"
           />
         </div>
@@ -244,7 +245,7 @@ function ReviewPanel({
         <div className="flex min-h-0 flex-1">
           <div className="flex w-56 shrink-0 flex-col border-r border-border bg-popover">
             <div className="border-b border-border px-3 py-2 text-xs tracking-wide text-muted-foreground uppercase">
-              Changed files
+              {t("inspector.changedFiles")}
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-2">
               <div className="space-y-1">
@@ -293,7 +294,7 @@ function ReviewPanel({
                   <ShikiCodeFrame
                     code={
                       selectedFile.diff.trim() ||
-                      "This file change does not currently expose inline diff content."
+                      t("inspector.inlineDiffUnavailable")
                     }
                     filePath={selectedFile.path}
                     language="diff"
@@ -301,7 +302,7 @@ function ReviewPanel({
                 </div>
               </div>
             ) : (
-              <PanelEmpty label="Select a changed file to inspect its diff." />
+              <PanelEmpty label={t("inspector.selectChangedFile")} />
             )}
           </div>
         </div>

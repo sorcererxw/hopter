@@ -8,7 +8,6 @@ export function SkillReferenceChip({
   description,
   name,
   reference,
-  source,
   variant = "skill",
   ...props
 }: {

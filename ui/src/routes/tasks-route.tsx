@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { CheckCircle2, Circle, ListChecks, LoaderCircle } from "lucide-react"
 
 import { WorkspacePageToolbar } from "@/components/app/workspace"
@@ -10,35 +11,38 @@ import { useCreateTask, useTasks } from "@/features/tasks/use-tasks"
 import { TaskLifecycleStatus } from "@/gen/proto/hopter/v1/tasks_pb"
 import type { Timestamp } from "@bufbuild/protobuf/wkt"
 import { timestampToDate } from "@/lib/format/proto"
+import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
-function formatTaskStatus(status: TaskLifecycleStatus) {
+type TFunction = ReturnType<typeof useTranslation>["t"]
+
+function formatTaskStatus(status: TaskLifecycleStatus, t: TFunction) {
   switch (status) {
     case TaskLifecycleStatus.ACTIVE:
-      return "Active"
+      return t("tasks.status.active")
     case TaskLifecycleStatus.WAITING:
-      return "Waiting"
+      return t("tasks.status.waiting")
     case TaskLifecycleStatus.PAUSED:
-      return "Paused"
+      return t("tasks.status.paused")
     case TaskLifecycleStatus.BLOCKED:
-      return "Blocked"
+      return t("tasks.status.blocked")
     case TaskLifecycleStatus.FAILED:
-      return "Failed"
+      return t("tasks.status.failed")
     case TaskLifecycleStatus.CANCELED:
-      return "Canceled"
+      return t("tasks.status.canceled")
     case TaskLifecycleStatus.DONE:
-      return "Done"
+      return t("tasks.status.done")
     default:
-      return "Unknown"
+      return t("tasks.status.unknown")
   }
 }
 
-function formatUpdatedAt(value?: Timestamp) {
+function formatUpdatedAt(value: Timestamp | undefined, locale: string) {
   const date = timestampToDate(value)
   if (!date) {
     return ""
   }
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",
     month: "short",
@@ -47,6 +51,8 @@ function formatUpdatedAt(value?: Timestamp) {
 }
 
 export function TasksRoute() {
+  const { t } = useTranslation()
+  const { resolvedLocale } = useLocale()
   const { data: projects } = useProjects()
   const tasksQuery = useTasks()
   const createTask = useCreateTask()
@@ -73,7 +79,10 @@ export function TasksRoute() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-      <WorkspacePageToolbar title="Tasks" showOverflowMenu={false} />
+      <WorkspacePageToolbar
+        title={t("tasks.pageTitle")}
+        showOverflowMenu={false}
+      />
       <div className="min-h-0 flex-1 overflow-hidden">
         <section className="min-h-0 max-w-3xl overflow-y-auto p-4">
           <form className="group mb-5" onSubmit={handleSubmit}>
@@ -81,12 +90,12 @@ export function TasksRoute() {
               <Textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
-                placeholder="Describe the work. Hopter will start planning, not changing files."
+                placeholder={t("tasks.placeholder")}
                 className="min-h-28 border-0 bg-transparent focus-visible:ring-0"
               />
               <div className="hidden items-center justify-between gap-2 border-t border-border px-3 py-2 group-focus-within:flex">
                 <NativeSelect
-                  aria-label="Project"
+                  aria-label={t("tasks.project")}
                   className="min-w-40"
                   size="sm"
                   value={selectedProjectId}
@@ -110,7 +119,7 @@ export function TasksRoute() {
                   ) : (
                     <ListChecks className="size-3.5" />
                   )}
-                  Create and start planning
+                  {t("tasks.createAndStart")}
                 </Button>
               </div>
             </div>
@@ -119,12 +128,12 @@ export function TasksRoute() {
           <div className="space-y-1">
             {tasksQuery.isLoading ? (
               <p className="px-2 py-3 text-sm text-muted-foreground">
-                Loading tasks...
+                {t("tasks.loading")}
               </p>
             ) : null}
             {tasksQuery.isError ? (
               <p className="px-2 py-3 text-sm text-muted-foreground">
-                Tasks will appear when the backend responds.
+                {t("tasks.backendPending")}
               </p>
             ) : null}
             {!tasksQuery.isLoading &&
@@ -135,10 +144,10 @@ export function TasksRoute() {
                   <ListChecks className="size-5" />
                 </div>
                 <p className="text-sm font-medium text-foreground">
-                  No tasks yet
+                  {t("tasks.emptyTitle")}
                 </p>
                 <p className="mt-1 max-w-60 text-sm text-muted-foreground">
-                  Describe work above to start a plan for the selected project.
+                  {t("tasks.emptyBody")}
                 </p>
               </div>
             ) : null}
@@ -158,7 +167,7 @@ export function TasksRoute() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h2 className="truncate text-sm font-medium">
-                          {task.title || "Untitled task"}
+                          {task.title || t("tasks.untitled")}
                         </h2>
                         <span
                           className={cn(
@@ -167,12 +176,12 @@ export function TasksRoute() {
                               TaskLifecycleStatus.BLOCKED && "text-amber-400"
                           )}
                         >
-                          {formatTaskStatus(task.lifecycleStatus)}
+                          {formatTaskStatus(task.lifecycleStatus, t)}
                         </span>
                       </div>
                       <p className="mt-1 truncate text-xs text-muted-foreground">
-                        {task.project?.name || "Project"} ·{" "}
-                        {formatUpdatedAt(task.updatedAt)}
+                        {task.project?.name || t("tasks.project")} ·{" "}
+                        {formatUpdatedAt(task.updatedAt, resolvedLocale)}
                       </p>
                       {task.diagnostics.length > 0 ? (
                         <p className="mt-2 text-xs text-muted-foreground">

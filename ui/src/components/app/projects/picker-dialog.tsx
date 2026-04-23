@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { File, Folder, FolderGit2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -40,11 +41,11 @@ function inferDefaultPath(roots: DirectoryRoot[]) {
   return roots[0]?.path || ""
 }
 
-function errorMessage(error: unknown) {
+function errorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
     return error.message
   }
-  return "The host could not finish that request."
+  return fallback
 }
 
 function entryIcon(entry: DirectoryEntry) {
@@ -108,6 +109,7 @@ function ProjectPickerContent({
   onRequestClose: () => void
   standalone: boolean
 }) {
+  const { t } = useTranslation()
   const createProject = useCreateProject()
   const rootsQuery = useDirectoryRoots()
 
@@ -169,24 +171,24 @@ function ProjectPickerContent({
     setFormError("")
 
     if (!canOpenFolder) {
-      setFormError("Pick a visible folder before opening the project.")
+      setFormError(t("projectPicker.pickVisibleFolder"))
       return
     }
 
     if (!selectedRepoPath) {
-      setFormError("This folder is visible, but it is not a git repository.")
+      setFormError(t("projectPicker.notGitRepository"))
       return
     }
 
     try {
       await createProject.mutateAsync({
         defaultBackend: "codex",
-        name: previewMetadata?.basename || "Project",
+        name: previewMetadata?.basename || t("projectPicker.defaultProject"),
         rootPath: selectedRepoPath,
       })
       onProjectOpened(selectedRepoPath)
     } catch (error) {
-      setFormError(errorMessage(error))
+      setFormError(errorMessage(error, t("projectPicker.hostError")))
     }
   }, [
     canOpenFolder,
@@ -194,6 +196,7 @@ function ProjectPickerContent({
     onProjectOpened,
     previewMetadata,
     selectedRepoPath,
+    t,
   ])
 
   useEffect(() => {
@@ -212,7 +215,7 @@ function ProjectPickerContent({
 
   const footerText = selectedPath
     ? previewMetadata?.basename || selectedPath
-    : `${entries.length} item${entries.length === 1 ? "" : "s"}`
+    : t("projectPicker.itemCount", { count: entries.length })
 
   const activeError =
     formError || rootsQuery.error || listingQuery.error || previewQuery.error
@@ -249,7 +252,7 @@ function ProjectPickerContent({
         <div className="border-t border-amber-500/20 bg-amber-500/10 px-4 py-2 text-amber-700 dark:text-amber-100">
           {typeof activeError === "string"
             ? activeError
-            : errorMessage(activeError)}
+            : errorMessage(activeError, t("projectPicker.hostError"))}
         </div>
       ) : null}
 
@@ -260,7 +263,7 @@ function ProjectPickerContent({
 
         <div className="ml-4 flex shrink-0 items-center gap-2">
           <Button type="button" onClick={onRequestClose} variant="secondary">
-            Cancel
+            {t("projectPicker.cancel")}
           </Button>
           <Button
             type="button"
@@ -271,7 +274,7 @@ function ProjectPickerContent({
             )}
             data-testid="project-create-submit"
           >
-            Open
+            {t("projectPicker.open")}
           </Button>
         </div>
       </div>
@@ -292,6 +295,7 @@ function ListView({
   selectedPath: string
   standalone?: boolean
 }) {
+  const { t } = useTranslation()
   if (entries.length === 0) {
     return <EmptyState />
   }
@@ -307,13 +311,13 @@ function ListView({
         <thead className="text-sm font-normal text-muted-foreground">
           <tr className="border-b border-border">
             <th className="sticky top-0 bg-popover px-6 py-4 text-left">
-              Name
+              {t("projectPicker.name")}
             </th>
             <th className="sticky top-0 bg-popover px-6 py-4 text-left">
-              Date Modified
+              {t("projectPicker.dateModified")}
             </th>
             <th className="sticky top-0 bg-popover px-6 py-4 text-left">
-              Size
+              {t("projectPicker.size")}
             </th>
           </tr>
         </thead>
@@ -388,10 +392,11 @@ function ListView({
 }
 
 function EmptyState() {
+  const { t } = useTranslation()
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-muted-foreground">
       <Folder className="size-8 opacity-30" />
-      <span>No results</span>
+      <span>{t("projectPicker.noResults")}</span>
     </div>
   )
 }

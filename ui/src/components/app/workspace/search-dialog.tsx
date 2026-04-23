@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { FolderGit2, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -16,6 +17,7 @@ type SearchDialogProps = {
 }
 
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
+  const { t } = useTranslation()
   const { openProjectPicker } = useWorkspaceShell()
   const navigate = useNavigate()
   const { data: projects } = useProjects()
@@ -68,40 +70,40 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search threads, projects, and actions"
+            placeholder={t("search.placeholder")}
             className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
           />
           <span className="rounded-md border border-border bg-secondary px-1.5 py-px text-[10px] leading-snug text-muted-foreground">
-            esc
+            <kbd>{"esc"}</kbd>
           </span>
         </div>
 
         <div className="max-h-[560px] overflow-y-auto p-3 text-sm text-foreground">
           {!normalized ? (
             <div className="space-y-2">
-              <SectionLabel>Quick actions</SectionLabel>
+              <SectionLabel>{t("search.quickActions")}</SectionLabel>
               <ActionRow
                 icon={SquarePen}
-                label="New thread"
-                detail="Return to the composer"
+                label={t("search.newThread")}
+                detail={t("search.newThreadDetail")}
                 onClick={() => closeAndNavigate("/")}
               />
               <ActionRow
                 icon={FolderGit2}
-                label="Add repo"
-                detail="Open the host-backed repo picker"
+                label={t("search.addRepo")}
+                detail={t("search.addRepoDetail")}
                 onClick={closeAndOpenProjectPicker}
               />
               <ActionRow
                 icon={Settings}
-                label="Settings"
-                detail="Open workspace settings"
+                label={t("search.settings")}
+                detail={t("search.openSettings")}
                 onClick={() => closeAndNavigate("/settings")}
               />
               <ActionRow
                 icon={Grid2x2}
-                label="Skills & Apps"
-                detail="Open plugins"
+                label={t("search.skillsApps")}
+                detail={t("search.openPlugins")}
                 onClick={() => closeAndNavigate("/plugins")}
               />
             </div>
@@ -109,7 +111,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
           {filtered.sessions.length > 0 ? (
             <div className="mt-3 space-y-2">
-              <SectionLabel>Threads</SectionLabel>
+              <SectionLabel>{t("search.threads")}</SectionLabel>
               {filtered.sessions.map((session) => (
                 <button
                   key={session.id}
@@ -120,7 +122,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   <div className="min-w-0">
                     <div className="truncate font-medium">{session.title}</div>
                     <div className="mt-1 text-muted-foreground">
-                      {session.project?.name || "Local"} ·{" "}
+                      {session.project?.name || t("home.localProject")} ·{" "}
                       {formatSessionStatus(session.status)}
                     </div>
                   </div>
@@ -131,7 +133,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
           {filtered.projects.length > 0 ? (
             <div className="mt-3 space-y-2">
-              <SectionLabel>Projects</SectionLabel>
+              <SectionLabel>{t("search.projects")}</SectionLabel>
               {filtered.projects.map((project) => (
                 <button
                   key={project.id}
@@ -154,7 +156,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           filtered.sessions.length === 0 &&
           filtered.projects.length === 0 ? (
             <div className="px-3 py-6 text-muted-foreground">
-              No matches. Try a thread title, project name, or "settings".
+              {t("search.noMatches")}
             </div>
           ) : null}
         </div>

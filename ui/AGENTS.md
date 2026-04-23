@@ -170,3 +170,17 @@ The intended shell split is:
 - `>= lg` => `wide`
 
 Local control widgets may still use their own breakpoints when justified, but shell behavior must not depend on those local rules.
+
+## UI copy and i18n
+
+Stable UI copy must go through `react-i18next`.
+
+- Add user-facing strings to `ui/src/lib/i18n/messages.ts`.
+- Render stable UI copy with `t("...")` from `useTranslation()`.
+- Keep English and `zh-CN` entries in sync when adding or renaming keys.
+- Do not translate Codex transcript bodies, user prompts, agent output, command output, file paths, model names, skill names, backend diagnostics, brand names, protocol constants, HTTP methods, or keyboard key names.
+- Components that cannot call React hooks should return structured state or codes and let the rendering layer translate them.
+
+Lint enforces this for JSX text in app-layer code with the stock ESLint `no-restricted-syntax` rule. Do not add a custom i18n scanner unless the lint rule proves insufficient.
+
+Generated Buf / Connect TypeScript under `ui/src/gen/**` is not edited or linted by hand. Regenerate from `idl/**` and keep app code using the generated clients/types.

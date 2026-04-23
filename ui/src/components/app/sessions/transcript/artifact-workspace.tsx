@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -17,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import type { ArtifactRef } from "@/gen/proto/hopter/v1/common_pb"
 import { ArtifactKind } from "@/gen/proto/hopter/v1/common_pb"
 import { useSessionArtifacts } from "@/features/sessions/use-sessions"
-import { formatArtifactKind, formatUpdatedAt } from "@/lib/format/proto"
+import { formatUpdatedAt } from "@/lib/format/proto"
 import { cn } from "@/lib/utils"
 
 import { SessionRichText } from "./rich-text"
@@ -33,6 +34,7 @@ export function SessionArtifactWorkspace({
   onOpenReview,
   sessionId,
 }: SessionArtifactWorkspaceProps) {
+  const { t } = useTranslation()
   const artifactsQuery = useSessionArtifacts(sessionId, true)
   const artifactList = useMemo(() => {
     return artifactsQuery.data && artifactsQuery.data.length > 0
@@ -64,14 +66,15 @@ export function SessionArtifactWorkspace({
     <section
       className="space-y-3"
       data-testid="session-artifact-workspace"
-      aria-label="Session artifacts"
+      aria-label={t("artifact.artifacts")}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-medium text-foreground">Artifacts</div>
+          <div className="text-sm font-medium text-foreground">
+            {t("artifact.artifacts")}
+          </div>
           <div className="text-sm text-muted-foreground">
-            Review summaries, screenshots, logs, tests, and changed files without
-            leaving the thread.
+            {t("artifact.description")}
           </div>
         </div>
       </div>
@@ -99,7 +102,7 @@ export function SessionArtifactWorkspace({
                 variant="outline"
                 className="shrink-0 border-border text-[11px] text-muted-foreground"
               >
-                {formatArtifactKind(artifact.kind)}
+                {formatArtifactKind(artifact.kind, t)}
               </Badge>
             </button>
           )
@@ -121,6 +124,7 @@ function ArtifactPreviewPanel({
   artifact: ArtifactRef
   onOpenReview?: () => void
 }) {
+  const { t } = useTranslation()
   const supportsTextPreview = shouldFetchArtifactText(artifact)
   const [imageFailed, setImageFailed] = useState(false)
 
@@ -136,7 +140,9 @@ function ArtifactPreviewPanel({
         credentials: "same-origin",
       })
       if (!response.ok) {
-        throw new Error(`Artifact request failed with status ${response.status}`)
+        throw new Error(
+          `Artifact request failed with status ${response.status}`
+        )
       }
       return {
         contentType:
@@ -149,19 +155,22 @@ function ArtifactPreviewPanel({
 
   const textPreview = textPreviewQuery.data?.text ?? ""
   const parsedChangedFiles = useMemo(
-    () => parseChangedFilesArtifact(textPreview),
-    [textPreview]
+    () => parseChangedFilesArtifact(textPreview, t),
+    [textPreview, t]
   )
 
   return (
-    <div className="rounded-lg border border-border bg-card" data-testid="session-artifact-preview">
+    <div
+      className="rounded-lg border border-border bg-card"
+      data-testid="session-artifact-preview"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <div className="truncate text-base font-medium text-foreground">
             {artifact.label}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{formatArtifactKind(artifact.kind)}</span>
+            <span>{formatArtifactKind(artifact.kind, t)}</span>
             {artifact.createdAt ? (
               <>
                 <span className="text-muted-foreground/60">•</span>
@@ -185,13 +194,13 @@ function ArtifactPreviewPanel({
               size="sm"
               onClick={onOpenReview}
             >
-              Open review
+              {t("artifact.openReview")}
             </Button>
           ) : null}
           {artifact.downloadUrl ? (
             <Button asChild variant="outline" size="sm">
               <a href={artifact.downloadUrl} target="_blank" rel="noreferrer">
-                Open original
+                {t("artifact.openOriginal")}
                 <ExternalLink className="size-3.5" />
               </a>
             </Button>
@@ -210,32 +219,35 @@ function ArtifactPreviewPanel({
             />
           ) : (
             <ArtifactPreviewEmpty
-              title="Screenshot preview unavailable"
-              body="Open the original artifact to inspect the image."
+              title={t("artifact.screenshotUnavailable")}
+              body={t("artifact.screenshotBody")}
             />
           )
         ) : supportsTextPreview ? (
           textPreviewQuery.isLoading ? (
-            <ArtifactPreviewLoading label="Loading artifact preview..." />
+            <ArtifactPreviewLoading label={t("artifact.loadingPreview")} />
           ) : textPreviewQuery.isError ? (
             <ArtifactPreviewEmpty
-              title="Artifact preview unavailable"
+              title={t("artifact.previewUnavailable")}
               body={
                 textPreviewQuery.error instanceof Error
                   ? textPreviewQuery.error.message
-                  : "The artifact could not be loaded."
+                  : t("artifact.couldNotLoad")
               }
             />
-          ) : renderTextArtifactPreview(
+          ) : (
+            renderTextArtifactPreview(
               artifact,
               textPreview,
               parsedChangedFiles,
-              onOpenReview
+              onOpenReview,
+              t
             )
+          )
         ) : (
           <ArtifactPreviewEmpty
-            title="Binary artifact"
-            body="This artifact does not expose an inline preview yet. Open the original file."
+            title={t("artifact.binary")}
+            body={t("artifact.binaryBody")}
           />
         )}
       </div>
@@ -247,13 +259,14 @@ function renderTextArtifactPreview(
   artifact: ArtifactRef,
   text: string,
   changedFiles: ChangedFileArtifactEntry[],
-  onOpenReview?: () => void
+  onOpenReview: (() => void) | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
 ) {
   switch (artifact.kind) {
     case ArtifactKind.SUMMARY:
       return (
         <SessionRichText
-          text={text.trim() || "No summary content available."}
+          text={text.trim() || t("artifact.summaryFallback")}
           className="text-base"
         />
       )
@@ -276,9 +289,13 @@ function renderTextArtifactPreview(
                 </div>
                 {(change.additions || change.deletions) && (
                   <div className="shrink-0 font-mono text-sm">
-                    <span className="text-emerald-600">+{change.additions}</span>
+                    <span className="text-emerald-600">
+                      +{change.additions}
+                    </span>
                     <span className="px-1 text-muted-foreground">/</span>
-                    <span className="text-destructive">-{change.deletions}</span>
+                    <span className="text-destructive">
+                      -{change.deletions}
+                    </span>
                   </div>
                 )}
               </div>
@@ -286,30 +303,33 @@ function renderTextArtifactPreview(
           </div>
           {onOpenReview ? (
             <div className="text-sm text-muted-foreground">
-              Need file-level diff detail? Use <span className="font-medium text-foreground">Open review</span>.
+              {t("artifact.needDiffDetail")}{" "}
+              <span className="font-medium text-foreground">
+                {t("artifact.openReview")}
+              </span>
             </div>
           ) : null}
         </div>
       ) : (
         <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || "No changed files artifact content available."}
+          {text.trim() || t("artifact.changedFilesFallback")}
         </CodeContainer>
       )
     case ArtifactKind.TEST_RESULT:
     case ArtifactKind.LOG:
       return (
         <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || "No artifact content available."}
+          {text.trim() || t("artifact.contentFallback")}
         </CodeContainer>
       )
     case ArtifactKind.OTHER:
     case ArtifactKind.UNSPECIFIED:
     default:
       return looksLikeMarkdown(text) ? (
-        <SessionRichText text={text.trim() || "No artifact content available."} />
+        <SessionRichText text={text.trim() || t("artifact.contentFallback")} />
       ) : (
         <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || "No artifact content available."}
+          {text.trim() || t("artifact.contentFallback")}
         </CodeContainer>
       )
   }
@@ -359,6 +379,29 @@ function artifactKindIcon(kind: ArtifactKind) {
   }
 }
 
+function formatArtifactKind(
+  kind: ArtifactKind,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
+  switch (kind) {
+    case ArtifactKind.SUMMARY:
+      return t("artifact.kind.summary")
+    case ArtifactKind.CHANGED_FILES:
+      return t("artifact.kind.changedFiles")
+    case ArtifactKind.TEST_RESULT:
+      return t("artifact.kind.testResult")
+    case ArtifactKind.SCREENSHOT:
+      return t("artifact.kind.screenshot")
+    case ArtifactKind.LOG:
+      return t("artifact.kind.log")
+    case ArtifactKind.OTHER:
+      return t("artifact.kind.other")
+    case ArtifactKind.UNSPECIFIED:
+    default:
+      return t("artifact.kind.artifact")
+  }
+}
+
 function shouldFetchArtifactText(artifact: ArtifactRef) {
   switch (artifact.kind) {
     case ArtifactKind.SUMMARY:
@@ -401,7 +444,10 @@ type ChangedFileArtifactEntry = {
   path: string
 }
 
-function parseChangedFilesArtifact(text: string): ChangedFileArtifactEntry[] {
+function parseChangedFilesArtifact(
+  text: string,
+  t: ReturnType<typeof useTranslation>["t"]
+): ChangedFileArtifactEntry[] {
   const trimmed = text.trim()
   if (!trimmed) {
     return []
@@ -425,7 +471,7 @@ function parseChangedFilesArtifact(text: string): ChangedFileArtifactEntry[] {
       .map((change) => ({
         additions: change.additions ?? 0,
         deletions: change.deletions ?? 0,
-        kindLabel: describeFileChangeKind(change.kind),
+        kindLabel: describeFileChangeKind(change.kind, t),
         path: change.path!.trim(),
       }))
   } catch {
@@ -436,35 +482,38 @@ function parseChangedFilesArtifact(text: string): ChangedFileArtifactEntry[] {
       .map((line) => ({
         additions: 0,
         deletions: 0,
-        kindLabel: "Edited",
+        kindLabel: t("artifact.status.edited"),
         path: line,
       }))
   }
 }
 
-function describeFileChangeKind(kind: string | undefined) {
+function describeFileChangeKind(
+  kind: string | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch ((kind || "").toLowerCase()) {
     case "add":
     case "added":
     case "create":
     case "created":
-      return "Added"
+      return t("artifact.status.added")
     case "delete":
     case "deleted":
-      return "Deleted"
+      return t("artifact.status.deleted")
     case "move":
     case "rename":
     case "renamed":
-      return "Moved"
+      return t("artifact.status.moved")
     case "update":
     case "updated":
     case "edit":
     case "edited":
     case "modify":
     case "modified":
-      return "Edited"
+      return t("artifact.status.edited")
     default:
-      return "Edited"
+      return t("artifact.status.edited")
   }
 }
 

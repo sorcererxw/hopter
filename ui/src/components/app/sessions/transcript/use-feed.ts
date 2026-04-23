@@ -80,14 +80,9 @@ export function useSessionTranscriptFeed({
   const pendingStickTimerRef = useRef<number | null>(null)
   const stickAnimationFrameRef = useRef<number | null>(null)
   const suppressHistoryFetchRef = useRef(false)
-  const historyFetchEnabledRef = useRef(false)
-  const historyBackfillRunningRef = useRef(false)
-  const historyRetryTimerRef = useRef<number | null>(null)
-  const historyRetryAttemptRef = useRef(0)
   const prependSnapshotRef = useRef<{
     scrollHeight: number
   } | null>(null)
-  const [historyFetchRequested, setHistoryFetchRequested] = useState(false)
   const [transcriptPages, setTranscriptPages] = useState<
     SessionTranscriptPage[]
   >([])
@@ -193,6 +188,13 @@ export function useSessionTranscriptFeed({
     transcriptPages[0]?.hasMoreBefore ?? sessionMeta?.hasMoreBefore ?? false
   const isLoadingInitialTranscript =
     latestTranscriptQuery.isLoading && activityItems.length === 0
+  const latestTranscriptSnapshotKey = transcriptPageSnapshotKey(
+    latestTranscriptQuery.data
+  )
+  const latestTranscriptHasMoreBefore =
+    latestTranscriptQuery.data?.hasMoreBefore ?? false
+  const latestTranscriptBeforeCursor =
+    latestTranscriptQuery.data?.nextBeforeCursor ?? ""
 
   useEffect(() => {
     const latestPage = latestTranscriptQuery.data
@@ -203,7 +205,6 @@ export function useSessionTranscriptFeed({
     const latestSnapshotKey = transcriptPageSnapshotKey(latestPage)
     if (latestTranscriptSnapshotRef.current !== latestSnapshotKey) {
       latestTranscriptSnapshotRef.current = latestSnapshotKey
-      setHistoryFetchRequested(false)
     }
     setTranscriptPages((current) => {
       const sessionChanged = loadedTranscriptSessionRef.current !== sessionId
@@ -215,7 +216,6 @@ export function useSessionTranscriptFeed({
 
       const currentSnapshotKey = transcriptPageSnapshotKey(current.at(-1))
       if (currentSnapshotKey !== latestSnapshotKey) {
-        historyBackfillRunningRef.current = false
         prependSnapshotRef.current = null
         setIsFetchingPreviousPage(false)
         return [latestPage]
@@ -227,16 +227,8 @@ export function useSessionTranscriptFeed({
 
   useEffect(() => {
     setTranscriptAwayFromBottom(false)
-    setHistoryFetchRequested(false)
     latestTranscriptSnapshotRef.current = ""
-    historyFetchEnabledRef.current = false
     loadedTranscriptSessionRef.current = sessionId
-    historyBackfillRunningRef.current = false
-    historyRetryAttemptRef.current = 0
-    if (historyRetryTimerRef.current !== null) {
-      window.clearTimeout(historyRetryTimerRef.current)
-      historyRetryTimerRef.current = null
-    }
     prependSnapshotRef.current = null
   }, [sessionId])
 
@@ -262,7 +254,6 @@ export function useSessionTranscriptFeed({
       return
     }
 
-    historyFetchEnabledRef.current = false
     scheduleTranscriptStickToBottom("instant", true)
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = activityItems.length
@@ -288,17 +279,13 @@ export function useSessionTranscriptFeed({
       nextCount !== lastActivityCountRef.current
 
     if (sessionChanged) {
-      historyFetchEnabledRef.current = false
       scheduleTranscriptStickToBottom("instant", true)
       lastSessionIdRef.current = sessionId
       lastActivityCountRef.current = nextCount
       lastActivitySignatureRef.current = scrollAnchorActivitySignature
       return
     } else if (activityChanged && shouldStickToBottomRef.current) {
-      scheduleTranscriptStickToBottom(
-        historyFetchEnabledRef.current ? "animated" : "instant",
-        !historyFetchEnabledRef.current
-      )
+      scheduleTranscriptStickToBottom("animated")
     }
 
     lastSessionIdRef.current = sessionId
@@ -374,98 +361,73 @@ export function useSessionTranscriptFeed({
     lastScrollHeightRef.current = container.scrollHeight
     updateTranscriptBottomState(container)
     prependSnapshotRef.current = null
-    if (
-      transcriptPages[0]?.hasMoreBefore &&
-      transcriptPages[0]?.nextBeforeCursor &&
-      container.scrollTop < historyFetchThreshold(container)
-    ) {
-      setHistoryFetchRequested(true)
-    }
   }, [transcriptPageCount, transcriptPages])
 
   useEffect(() => {
-    const firstPage = transcriptPages[0]
     if (
-      !historyFetchRequested ||
-      !firstPage?.hasMoreBefore ||
-      !firstPage.nextBeforeCursor ||
-      historyBackfillRunningRef.current
+      !latestTranscriptHasMoreBefore ||
+      !latestTranscriptBeforeCursor ||
+      !latestTranscriptSnapshotKey
     ) {
-      if (!historyBackfillRunningRef.current) {
-        setIsFetchingPreviousPage(false)
-      }
+      setIsFetchingPreviousPage(false)
       return
     }
 
     let cancelled = false
-    historyBackfillRunningRef.current = true
     setIsFetchingPreviousPage(true)
 
     async function loadHistory() {
+      let cursor = latestTranscriptBeforeCursor
+
       try {
-        const page = await fetchSessionTranscriptPage(
-          sessionId,
-          firstPage!.nextBeforeCursor
-        )
-        if (cancelled || !page) {
-          return
-        }
-        if (!sameTranscriptSnapshot(firstPage!, page)) {
-          return
-        }
-
-        const container = transcriptScrollRef.current
-        if (container) {
-          prependSnapshotRef.current = {
-            scrollHeight: container.scrollHeight,
+        while (cursor && !cancelled) {
+          const page = await fetchSessionTranscriptPage(sessionId, cursor)
+          if (cancelled || !page) {
+            return
           }
-        }
-
-        setTranscriptPages((current) => {
-          const currentIds = new Set(
-            current.flatMap((existing) =>
-              (existing.items ?? []).map((item) => item.id)
-            )
-          )
-          const nextItems = (page.items ?? []).filter(
-            (item) => !currentIds.has(item.id)
-          )
-
-          if (nextItems.length === 0) {
-            return current
+          if (transcriptPageSnapshotKey(page) !== latestTranscriptSnapshotKey) {
+            return
           }
 
-          return [
-            {
-              ...page,
-              items: nextItems,
-            } as SessionTranscriptPage,
-            ...current,
-          ]
-        })
-        historyRetryAttemptRef.current = 0
-      } catch {
-        if (!cancelled && shouldRetryHistoryFetch()) {
-          const retryDelayMs = Math.min(
-            2_000,
-            350 * 2 ** Math.min(historyRetryAttemptRef.current, 3)
-          )
-          historyRetryAttemptRef.current += 1
-          setHistoryFetchRequested(false)
-          historyRetryTimerRef.current = window.setTimeout(() => {
-            historyRetryTimerRef.current = null
-            if (shouldRetryHistoryFetch()) {
-              setHistoryFetchRequested(true)
+          const container = transcriptScrollRef.current
+          if (container) {
+            prependSnapshotRef.current = {
+              scrollHeight: container.scrollHeight,
             }
-          }, retryDelayMs)
+          }
+
+          setTranscriptPages((current) => {
+            const currentIds = new Set(
+              current.flatMap((existing) =>
+                (existing.items ?? []).map((item) => item.id)
+              )
+            )
+            const nextItems = (page.items ?? []).filter(
+              (item) => !currentIds.has(item.id)
+            )
+
+            if (nextItems.length === 0) {
+              return current
+            }
+
+            return [
+              {
+                ...page,
+                items: nextItems,
+              } as SessionTranscriptPage,
+              ...current,
+            ]
+          })
+
+          if (!page.hasMoreBefore || !page.nextBeforeCursor) {
+            return
+          }
+
+          cursor = page.nextBeforeCursor
         }
       } finally {
-        historyBackfillRunningRef.current = false
         if (!cancelled) {
           setIsFetchingPreviousPage(false)
-          if (historyRetryTimerRef.current === null) {
-            setHistoryFetchRequested(false)
-          }
         }
       }
     }
@@ -476,10 +438,10 @@ export function useSessionTranscriptFeed({
       cancelled = true
     }
   }, [
-    historyFetchRequested,
+    latestTranscriptBeforeCursor,
+    latestTranscriptHasMoreBefore,
     sessionId,
-    transcriptPages[0]?.hasMoreBefore,
-    transcriptPages[0]?.nextBeforeCursor,
+    latestTranscriptSnapshotKey,
   ])
 
   function handleTranscriptScroll() {
@@ -514,15 +476,6 @@ export function useSessionTranscriptFeed({
       shouldStickToBottomRef.current = distanceFromBottom < 120
     }
     setTranscriptAwayFromBottom(distanceFromBottom > 160)
-    if (
-      !suppressHistoryFetchRef.current &&
-      historyFetchEnabledRef.current &&
-      container.scrollHeight > container.clientHeight + 120 &&
-      container.scrollTop < historyFetchThreshold(container) &&
-      hasUnloadedTranscriptHistory
-    ) {
-      setHistoryFetchRequested(true)
-    }
     lastTranscriptScrollTopRef.current = container.scrollTop
   }
 
@@ -542,10 +495,6 @@ export function useSessionTranscriptFeed({
 
   function cancelScheduledTranscriptStick() {
     cancelPendingTranscriptStick()
-    if (historyRetryTimerRef.current !== null) {
-      window.clearTimeout(historyRetryTimerRef.current)
-      historyRetryTimerRef.current = null
-    }
   }
 
   function cancelPendingTranscriptStick() {
@@ -593,7 +542,6 @@ export function useSessionTranscriptFeed({
         }
 
         suppressHistoryFetchRef.current = false
-        historyFetchEnabledRef.current = true
         autoStickInProgressRef.current = false
         pendingStickFrameRef.current = []
         pendingStickTimerRef.current = null
@@ -673,7 +621,6 @@ export function useSessionTranscriptFeed({
       container.scrollTop = target
       autoStickInProgressRef.current = false
       suppressHistoryFetchRef.current = false
-      historyFetchEnabledRef.current = true
       return
     }
 
@@ -697,7 +644,6 @@ export function useSessionTranscriptFeed({
       }
       autoStickInProgressRef.current = false
       suppressHistoryFetchRef.current = false
-      historyFetchEnabledRef.current = true
       stickAnimationFrameRef.current = null
     }
 
@@ -706,22 +652,6 @@ export function useSessionTranscriptFeed({
 
   function transcriptBottomScrollTop(container: HTMLDivElement) {
     return Math.max(0, container.scrollHeight - container.clientHeight)
-  }
-
-  function historyFetchThreshold(container: HTMLDivElement) {
-    return Math.max(240, Math.min(900, container.clientHeight * 1.5))
-  }
-
-  function shouldRetryHistoryFetch() {
-    const container = transcriptScrollRef.current
-    if (!container) {
-      return false
-    }
-    return (
-      historyFetchEnabledRef.current &&
-      container.scrollHeight > container.clientHeight + 120 &&
-      container.scrollTop < historyFetchThreshold(container)
-    )
   }
 
   return {
@@ -741,13 +671,6 @@ export function useSessionTranscriptFeed({
     transcriptVisible,
     handleTranscriptScroll,
   }
-}
-
-function sameTranscriptSnapshot(
-  left: SessionTranscriptPage,
-  right: SessionTranscriptPage
-) {
-  return transcriptPageSnapshotKey(left) === transcriptPageSnapshotKey(right)
 }
 
 function transcriptPageSnapshotKey(page: SessionTranscriptPage | undefined) {

@@ -28,6 +28,9 @@ func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
 	if cfg.Appearance.Theme != ThemeSystem {
 		t.Fatalf("theme = %q, want %q", cfg.Appearance.Theme, ThemeSystem)
 	}
+	if cfg.Appearance.Locale != LocaleSystem {
+		t.Fatalf("locale = %q, want %q", cfg.Appearance.Locale, LocaleSystem)
+	}
 	if cfg.Agent.DefaultBackend != "codex" {
 		t.Fatalf("default backend = %q, want codex", cfg.Agent.DefaultBackend)
 	}
@@ -96,7 +99,7 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 
 	cfg, err := service.Update(Patch{
-		Appearance: &AppearanceConfig{Theme: ThemeDark},
+		Appearance: &AppearanceConfig{Theme: ThemeDark, Locale: LocaleZhCN},
 	})
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
@@ -104,6 +107,9 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 
 	if cfg.Appearance.Theme != ThemeDark {
 		t.Fatalf("theme = %q, want %q", cfg.Appearance.Theme, ThemeDark)
+	}
+	if cfg.Appearance.Locale != LocaleZhCN {
+		t.Fatalf("locale = %q, want %q", cfg.Appearance.Locale, LocaleZhCN)
 	}
 	if len(sink.events) != 1 || sink.events[0].Kind != core.EventConfigChanged {
 		t.Fatalf("events = %#v, want one config changed event", sink.events)
@@ -127,6 +133,9 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	if appearance["theme"] != string(ThemeDark) {
 		t.Fatalf("stored theme = %v, want %q", appearance["theme"], ThemeDark)
 	}
+	if appearance["locale"] != string(LocaleZhCN) {
+		t.Fatalf("stored locale = %v, want %q", appearance["locale"], LocaleZhCN)
+	}
 
 	schemaData, err := os.ReadFile(filepath.Join(filepath.Dir(path), schemaFileName))
 	if err != nil {
@@ -148,7 +157,7 @@ func TestServiceRejectsRevisionConflict(t *testing.T) {
 	}
 
 	_, err = service.Update(Patch{
-		Appearance:       &AppearanceConfig{Theme: ThemeLight},
+		Appearance:       &AppearanceConfig{Theme: ThemeLight, Locale: LocaleEN},
 		ExpectedRevision: service.Get().Revision + 1,
 	})
 	if err != ErrRevisionConflict {

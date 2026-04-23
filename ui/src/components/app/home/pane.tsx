@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
@@ -15,6 +16,7 @@ function deriveTitle(prompt: string) {
 }
 
 export function HomeWorkspacePane() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { eventStreamState, posture } = useWorkspaceShell()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -71,14 +73,14 @@ export function HomeWorkspacePane() {
       <WorkspacePageToolbar
         forceBack={isPhoneCompose}
         showOverflowMenu={false}
-        title="New Session"
+        title={t("home.newSession")}
       />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-[720px]">
           <div className="mb-8 text-center">
             <h2 className="text-4xl leading-tight font-medium tracking-tight text-foreground">
-              Start a new session
+              {t("home.startNewSession")}
             </h2>
           </div>
 
@@ -87,9 +89,9 @@ export function HomeWorkspacePane() {
             composerTestId="home-session-composer"
             disabled={!selectedProjectId}
             inputTestId="home-session-prompt-input"
-            placeholder="Ask anything"
+            placeholder={t("home.askAnything")}
             placement="inline"
-            projectLabel={selectedProject?.name || "Local"}
+            projectLabel={selectedProject?.name || t("home.localProject")}
             branchLabel="main"
             onValueChange={setPrompt}
             onSubmit={async ({ codexFastMode, model, reasoningEffort }) => {
@@ -148,7 +150,9 @@ export function HomeWorkspacePane() {
                 className="max-w-80 min-w-0 appearance-none truncate bg-transparent pr-5 text-left font-medium text-foreground outline-none"
               >
                 <option value="">
-                  {projectsLoading ? "Loading…" : "Select project"}
+                  {projectsLoading
+                    ? t("app.settings.loading")
+                    : t("home.selectProject")}
                 </option>
                 {projectOptions.map((project) => (
                   <option key={project.id} value={project.id}>

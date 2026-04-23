@@ -18,6 +18,10 @@ const (
 	ThemeDark   Theme = "dark"
 	ThemeLight  Theme = "light"
 
+	LocaleSystem Locale = "system"
+	LocaleEN     Locale = "en"
+	LocaleZhCN   Locale = "zh-CN"
+
 	schemaFileName  = "config.schema.json"
 	schemaReference = "./" + schemaFileName
 )
@@ -26,8 +30,11 @@ var ErrRevisionConflict = errors.New("config revision conflict")
 
 type Theme string
 
+type Locale string
+
 type AppearanceConfig struct {
-	Theme Theme `json:"theme"`
+	Theme  Theme  `json:"theme"`
+	Locale Locale `json:"locale"`
 }
 
 type AgentConfig struct {
@@ -172,7 +179,7 @@ func load(path string) (Config, error) {
 func defaultConfig() Config {
 	return Config{
 		Schema:     schemaReference,
-		Appearance: AppearanceConfig{Theme: ThemeSystem},
+		Appearance: AppearanceConfig{Theme: ThemeSystem, Locale: LocaleSystem},
 		Agent:      AgentConfig{DefaultBackend: core.BackendKeyCodex},
 		Revision:   1,
 		UpdatedAt:  time.Now().UTC(),
@@ -184,6 +191,10 @@ func normalize(cfg Config) Config {
 	cfg.Appearance.Theme = Theme(strings.TrimSpace(string(cfg.Appearance.Theme)))
 	if cfg.Appearance.Theme == "" {
 		cfg.Appearance.Theme = ThemeSystem
+	}
+	cfg.Appearance.Locale = Locale(strings.TrimSpace(string(cfg.Appearance.Locale)))
+	if cfg.Appearance.Locale == "" {
+		cfg.Appearance.Locale = LocaleSystem
 	}
 	cfg.Agent.DefaultBackend = strings.ToLower(strings.TrimSpace(cfg.Agent.DefaultBackend))
 	if cfg.Agent.DefaultBackend == "" {
@@ -199,6 +210,11 @@ func validate(cfg Config) error {
 	case ThemeSystem, ThemeDark, ThemeLight:
 	default:
 		return fmt.Errorf("appearance.theme must be one of system, dark, light")
+	}
+	switch cfg.Appearance.Locale {
+	case LocaleSystem, LocaleEN, LocaleZhCN:
+	default:
+		return fmt.Errorf("appearance.locale must be one of system, en, zh-CN")
 	}
 	if cfg.Agent.DefaultBackend != core.BackendKeyCodex {
 		return fmt.Errorf("agent.defaultBackend must be codex")
@@ -295,9 +311,14 @@ const configSchemaJSON = `{
           "type": "string",
           "enum": ["system", "dark", "light"],
           "default": "system"
+        },
+        "locale": {
+          "type": "string",
+          "enum": ["system", "en", "zh-CN"],
+          "default": "system"
         }
       },
-      "required": ["theme"]
+      "required": ["theme", "locale"]
     },
     "agent": {
       "type": "object",

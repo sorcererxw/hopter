@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import type { Session } from "@/gen/proto/hopter/v1/session_pb"
 import { cn } from "@/lib/utils"
@@ -9,11 +11,12 @@ export function SessionConnectionBlock({
 }: {
   state: SessionEventStreamState
 }) {
+  const { t } = useTranslation()
   if (state === "connected") {
     return null
   }
 
-  const display = getConnectionDisplay(state)
+  const display = getConnectionDisplay(state, t)
 
   return (
     <section
@@ -39,36 +42,36 @@ export function SessionConnectionBlock({
   )
 }
 
-function getConnectionDisplay(state: SessionEventStreamState) {
+function getConnectionDisplay(
+  state: SessionEventStreamState,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch (state) {
     case "connecting":
       return {
-        body: "Connecting to live session updates.",
+        body: t("session.connectingBody"),
         bodyClassName: "text-muted-foreground",
         containerClassName: "border-border bg-card",
-        detail:
-          "The cached session view is visible while the browser opens the event stream.",
-        title: "Connecting",
+        detail: t("session.connectingDetail"),
+        title: t("session.connecting"),
         titleClassName: "text-foreground",
       }
     case "reconnecting":
       return {
-        body: "Live updates are reconnecting.",
+        body: t("session.reconnectingBody"),
         bodyClassName: "text-amber-900 dark:text-amber-50",
         containerClassName: "border-amber-400/20 bg-amber-400/10",
-        detail:
-          "Inspect history and artifacts normally, but wait for reconnection before trusting live control state.",
-        title: "Reconnecting",
+        detail: t("session.reconnectingDetail"),
+        title: t("session.reconnecting"),
         titleClassName: "text-amber-800 dark:text-amber-100",
       }
     case "offline":
       return {
-        body: "The browser is offline.",
+        body: t("session.offlineBody"),
         bodyClassName: "text-destructive",
         containerClassName: "border-destructive/20 bg-destructive/10",
-        detail:
-          "This page is effectively read-only until network connectivity returns.",
-        title: "Offline",
+        detail: t("session.offlineDetail"),
+        title: t("session.offline"),
         titleClassName: "text-destructive",
       }
     case "connected":
@@ -95,7 +98,8 @@ export function SessionAttentionBlock({
   responding: boolean
   session: Session
 }) {
-  const attention = getSessionAttentionDisplay(session)
+  const { t } = useTranslation()
+  const attention = getSessionAttentionDisplay(session, t)
 
   if (!attention) {
     return null
@@ -134,7 +138,7 @@ export function SessionAttentionBlock({
             disabled={responding}
             onClick={onApprove}
           >
-            Approve
+            {t("session.approve")}
           </button>
           <button
             type="button"
@@ -142,7 +146,7 @@ export function SessionAttentionBlock({
             disabled={responding}
             onClick={onReject}
           >
-            Reject
+            {t("session.reject")}
           </button>
         </div>
       ) : null}
@@ -150,7 +154,10 @@ export function SessionAttentionBlock({
   )
 }
 
-function getSessionAttentionDisplay(session: Session) {
+function getSessionAttentionDisplay(
+  session: Session,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   const reason = session.attentionReason.trim()
   const summary = session.summary.trim()
 
@@ -159,60 +166,55 @@ function getSessionAttentionDisplay(session: Session) {
     session.status === SessionStatus.WAITING_APPROVAL
   ) {
     return {
-      body: reason || "Codex needs approval before it can continue.",
+      body: reason || t("session.approvalRequiredBody"),
       bodyClassName: "text-amber-900 dark:text-amber-50",
       containerClassName: "border-amber-400/20 bg-amber-400/10",
-      detail: "Review the request before approving or rejecting the next step.",
-      title: "Approval required",
+      detail: t("session.approvalRequiredDetail"),
+      title: t("session.approvalRequired"),
       titleClassName: "text-amber-800 dark:text-amber-100",
     }
   }
 
   if (session.status === SessionStatus.FAILED) {
     return {
-      body: reason || summary || "This thread failed before it could complete.",
+      body: reason || summary || t("session.turnFailedBody"),
       bodyClassName: "text-destructive",
       containerClassName: "border-destructive/20 bg-destructive/10",
-      detail:
-        "You can send a follow-up with more context or retry from the composer.",
-      title: "Turn failed",
+      detail: t("session.turnFailedDetail"),
+      title: t("session.turnFailed"),
       titleClassName: "text-destructive",
     }
   }
 
   if (session.status === SessionStatus.DEGRADED) {
     return {
-      body:
-        reason ||
-        summary ||
-        "This thread is available, but live state may be incomplete.",
+      body: reason || summary || t("session.degradedBody"),
       bodyClassName: "text-amber-900 dark:text-amber-50",
       containerClassName: "border-amber-400/20 bg-amber-400/10",
-      detail:
-        "Inspect history and artifacts normally, but treat live control state as partially reliable.",
-      title: "Degraded state",
+      detail: t("session.degradedDetail"),
+      title: t("session.degraded"),
       titleClassName: "text-amber-800 dark:text-amber-100",
     }
   }
 
   if (session.status === SessionStatus.WAITING_INPUT) {
     return {
-      body: reason || "Codex is waiting for your next instruction.",
+      body: reason || t("session.inputNeededBody"),
       bodyClassName: "text-amber-900 dark:text-amber-50",
       containerClassName: "border-amber-400/20 bg-amber-400/10",
-      detail: "Use the composer below to steer this thread.",
-      title: "Input needed",
+      detail: t("session.inputNeededDetail"),
+      title: t("session.inputNeeded"),
       titleClassName: "text-amber-800 dark:text-amber-100",
     }
   }
 
   if (session.attentionRequired) {
     return {
-      body: reason || "This session requires user input.",
+      body: reason || t("session.attentionBody"),
       bodyClassName: "text-amber-900 dark:text-amber-50",
       containerClassName: "border-amber-400/20 bg-amber-400/10",
       detail: "",
-      title: "Attention",
+      title: t("session.attention"),
       titleClassName: "text-amber-800 dark:text-amber-100",
     }
   }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { Navigate, useLocation } from "react-router-dom"
 
 import { WorkspacePageToolbar } from "@/components/app/workspace"
@@ -6,24 +7,31 @@ import { useTheme } from "@/components/theme-provider"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { useBackends } from "@/features/host/use-host-backends"
 import { useHostStatus } from "@/features/host/use-host-status"
+import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
 const THEME_OPTIONS = [
-  { label: "System", value: "system" },
-  { label: "Dark", value: "dark" },
-  { label: "Light", value: "light" },
+  { labelKey: "app.settings.themeSystem", value: "system" },
+  { labelKey: "app.settings.themeDark", value: "dark" },
+  { labelKey: "app.settings.themeLight", value: "light" },
 ] as const
 
-function formatHostStatusLabel(status?: number) {
+const LOCALE_OPTIONS = [
+  { labelKey: "app.locale.system", value: "system" },
+  { labelKey: "app.locale.en", value: "en" },
+  { labelKey: "app.locale.zhCN", value: "zh-CN" },
+] as const
+
+function formatHostStatusLabel(status: number | undefined, t: TFunction) {
   switch (status) {
     case 1:
-      return "Healthy"
+      return t("app.status.healthy")
     case 2:
-      return "Degraded"
+      return t("app.status.degraded")
     case 3:
-      return "Unavailable"
+      return t("app.status.unavailable")
     default:
-      return "Unknown"
+      return t("app.status.unknown")
   }
 }
 
@@ -86,8 +94,10 @@ function SettingsRow({
 }
 
 export function SettingsRoute() {
+  const { t } = useTranslation()
   const location = useLocation()
   const { resolvedTheme, theme, setTheme } = useTheme()
+  const { locale, setLocale } = useLocale()
   const { data: hostStatus, isLoading: hostStatusLoading } = useHostStatus()
   const { data: backends, isLoading: backendsLoading } = useBackends()
 
@@ -104,20 +114,23 @@ export function SettingsRoute() {
       className="flex h-full min-h-0 flex-col bg-background text-foreground"
       data-testid="settings-workspace-pane"
     >
-      <WorkspacePageToolbar title="Settings" showOverflowMenu={false} />
+      <WorkspacePageToolbar
+        title={t("app.settings.pageTitle")}
+        showOverflowMenu={false}
+      />
 
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10">
-          <SettingsSection id="general" title="General">
+          <SettingsSection id="general" title={t("app.settings.general")}>
             <div className="divide-y divide-border rounded-lg border border-border">
               <SettingsRow
-                label="Host status"
-                description="Current state reported by the host service"
+                label={t("app.settings.hostStatus")}
+                description={t("app.settings.hostStatusDescription")}
                 action={
                   <div className="flex items-center gap-2 text-sm">
                     {hostStatusLoading ? (
                       <span className="font-normal text-muted-foreground">
-                        Loading...
+                        {t("app.settings.loading")}
                       </span>
                     ) : (
                       <>
@@ -128,7 +141,7 @@ export function SettingsRoute() {
                           )}
                         />
                         <span className="text-foreground">
-                          {formatHostStatusLabel(hostStatus?.status)}
+                          {formatHostStatusLabel(hostStatus?.status, t)}
                         </span>
                       </>
                     )}
@@ -138,18 +151,22 @@ export function SettingsRoute() {
             </div>
           </SettingsSection>
 
-          <SettingsSection id="appearance" title="Appearance">
+          <SettingsSection id="appearance" title={t("app.settings.appearance")}>
             <div className="divide-y divide-border rounded-lg border border-border">
               <SettingsRow
-                label="Theme"
+                label={t("app.settings.theme")}
                 description={
                   theme === "system"
-                    ? `Following ${resolvedTheme}`
-                    : "Workspace theme preference"
+                    ? t("app.settings.themeFollowing", {
+                        theme: t(
+                          `app.settings.theme${capitalizeTheme(resolvedTheme)}`
+                        ),
+                      })
+                    : t("app.settings.themeDescription")
                 }
                 action={
                   <NativeSelect
-                    aria-label="Theme"
+                    aria-label={t("app.settings.theme")}
                     className="min-w-40"
                     value={theme}
                     onChange={(event) =>
@@ -163,7 +180,30 @@ export function SettingsRoute() {
                         key={option.value}
                         value={option.value}
                       >
-                        {option.label}
+                        {t(option.labelKey)}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                }
+              />
+              <SettingsRow
+                label={t("app.settings.language")}
+                description={t("app.settings.languageDescription")}
+                action={
+                  <NativeSelect
+                    aria-label={t("app.settings.language")}
+                    className="min-w-40"
+                    value={locale}
+                    onChange={(event) =>
+                      setLocale(event.target.value as typeof locale)
+                    }
+                  >
+                    {LOCALE_OPTIONS.map((option) => (
+                      <NativeSelectOption
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {t(option.labelKey)}
                       </NativeSelectOption>
                     ))}
                   </NativeSelect>
@@ -172,14 +212,14 @@ export function SettingsRoute() {
             </div>
           </SettingsSection>
 
-          <SettingsSection id="agents" title="Agents">
+          <SettingsSection id="agents" title={t("app.settings.agents")}>
             {backendsLoading ? (
               <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
-                Loading backends...
+                {t("app.settings.loadingBackends")}
               </div>
             ) : !backends || backends.length === 0 ? (
               <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
-                No backends discovered
+                {t("app.settings.noBackends")}
               </div>
             ) : (
               <div className="divide-y divide-border rounded-lg border border-border">
@@ -199,7 +239,9 @@ export function SettingsRoute() {
                         )}
                       />
                       <span className="font-normal text-muted-foreground">
-                        {backend.available ? "Available" : "Unavailable"}
+                        {backend.available
+                          ? t("app.settings.available")
+                          : t("app.settings.unavailable")}
                       </span>
                     </div>
                   </div>
@@ -211,4 +253,10 @@ export function SettingsRoute() {
       </div>
     </div>
   )
+}
+
+type TFunction = ReturnType<typeof useTranslation>["t"]
+
+function capitalizeTheme(theme: "dark" | "light") {
+  return theme === "dark" ? "Dark" : "Light"
 }

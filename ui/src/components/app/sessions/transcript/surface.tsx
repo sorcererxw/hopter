@@ -1,4 +1,5 @@
 import type { RefObject } from "react"
+import { useTranslation } from "react-i18next"
 import { ArrowDown } from "lucide-react"
 
 import { ScrollbarIndicator } from "@/components/app/shared"
@@ -12,10 +13,7 @@ import { cn } from "@/lib/utils"
 
 import { SessionArtifactWorkspace } from "./artifact-workspace"
 import type { ActivityItem } from "./activity"
-import {
-  InitialTranscriptLoader,
-  TranscriptTimeline,
-} from "./timeline"
+import { InitialTranscriptLoader, TranscriptTimeline } from "./timeline"
 
 type SessionTranscriptSurfaceProps = {
   activityItems: ActivityItem[]
@@ -62,6 +60,8 @@ export function SessionTranscriptSurface({
   transcriptScrollRef,
   transcriptVisible,
 }: SessionTranscriptSurfaceProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="relative min-h-0 flex-1">
       <div
@@ -112,7 +112,7 @@ export function SessionTranscriptSurface({
       />
       <button
         type="button"
-        aria-label="Scroll to latest message"
+        aria-label={t("transcript.scrollLatest")}
         aria-hidden={!transcriptVisible || !transcriptAwayFromBottom}
         tabIndex={transcriptVisible && transcriptAwayFromBottom ? 0 : -1}
         className={cn(

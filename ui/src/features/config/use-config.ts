@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { MessageInitShape } from "@bufbuild/protobuf"
 
 import {
+  ConfigLocale,
   ConfigTheme,
   UpdateConfigRequestSchema,
   type UserConfig,
@@ -10,6 +11,7 @@ import { configClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
 export type ThemePreference = "system" | "dark" | "light"
+export type LocalePreference = "system" | "en" | "zh-CN"
 
 export function useConfig() {
   return useQuery({
@@ -42,9 +44,19 @@ export function useUpdateConfig() {
   })
 }
 
-export function themePreferenceFromConfig(config?: UserConfig): ThemePreference {
+export function themePreferenceFromConfig(
+  config?: UserConfig
+): ThemePreference {
   return themePreferenceFromProto(
     config?.appearance?.theme ?? ConfigTheme.SYSTEM
+  )
+}
+
+export function localePreferenceFromConfig(
+  config?: UserConfig
+): LocalePreference {
+  return localePreferenceFromProto(
+    config?.appearance?.locale ?? ConfigLocale.SYSTEM
   )
 }
 
@@ -70,5 +82,34 @@ export function themePreferenceToProto(theme: ThemePreference): ConfigTheme {
     case "system":
     default:
       return ConfigTheme.SYSTEM
+  }
+}
+
+export function localePreferenceFromProto(
+  locale: ConfigLocale
+): LocalePreference {
+  switch (locale) {
+    case ConfigLocale.EN:
+      return "en"
+    case ConfigLocale.ZH_CN:
+      return "zh-CN"
+    case ConfigLocale.SYSTEM:
+    case ConfigLocale.UNSPECIFIED:
+    default:
+      return "system"
+  }
+}
+
+export function localePreferenceToProto(
+  locale: LocalePreference
+): ConfigLocale {
+  switch (locale) {
+    case "en":
+      return ConfigLocale.EN
+    case "zh-CN":
+      return ConfigLocale.ZH_CN
+    case "system":
+    default:
+      return ConfigLocale.SYSTEM
   }
 }

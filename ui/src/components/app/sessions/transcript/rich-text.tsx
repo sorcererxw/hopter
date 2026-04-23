@@ -1,4 +1,5 @@
 import { isValidElement, useCallback, useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import type {
   AnchorHTMLAttributes,
   ComponentPropsWithoutRef,
@@ -166,10 +167,7 @@ export function SessionRichText({
               {children}
             </MarkdownLink>
           ),
-          code: ({
-            children,
-            className: codeClassName,
-          }: MarkdownCodeProps) => {
+          code: ({ children, className: codeClassName }: MarkdownCodeProps) => {
             const code = flattenMarkdownChildren(children)
 
             if (codeClassName?.includes("language-")) {
@@ -261,14 +259,8 @@ function PlainRichText({
 }: {
   className?: string
   isLongForm: boolean
-  skillByReference: Map<
-    string,
-    InlineReferenceMetadata
-  >
-  pluginByReference: Map<
-    string,
-    InlineReferenceMetadata
-  >
+  skillByReference: Map<string, InlineReferenceMetadata>
+  pluginByReference: Map<string, InlineReferenceMetadata>
   text: string
 }) {
   return (
@@ -279,7 +271,7 @@ function PlainRichText({
         className
       )}
     >
-      <div className="whitespace-pre-wrap break-words">
+      <div className="break-words whitespace-pre-wrap">
         {renderInlineHighlightedPlainText(
           text,
           skillByReference,
@@ -399,10 +391,12 @@ function renderReferenceTokens(
             reference={
               tokenPrefix === "@"
                 ? metadata?.name || label
-                : metadata?.reference ?? reference
+                : (metadata?.reference ?? reference)
             }
             source={metadata?.source}
-            variant={tokenPrefix === "@" ? "plugin" : (metadata?.variant ?? "skill")}
+            variant={
+              tokenPrefix === "@" ? "plugin" : (metadata?.variant ?? "skill")
+            }
           />
         )
       }
@@ -505,6 +499,7 @@ function normalizeReference(value: string) {
 }
 
 function CodeBlock({ code, language }: { code: string; language?: string }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const displayCode = formatCodeForDisplay(code, language)
@@ -548,7 +543,9 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           type="button"
           onClick={handleCopy}
           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          aria-label={copied ? "Copied code" : "Copy code"}
+          aria-label={
+            copied ? t("transcript.copied") : t("transcript.copyCode")
+          }
           data-testid="session-code-copy"
         >
           {copied ? (
@@ -556,7 +553,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           ) : (
             <Copy className="size-3.5" />
           )}
-          <span>{copied ? "Copied" : "Copy"}</span>
+          <span>{copied ? t("transcript.copied") : t("transcript.copy")}</span>
         </button>
       </div>
       <ShikiCodeFrame

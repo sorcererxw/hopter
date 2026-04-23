@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ChevronDown,
   Copy,
@@ -212,6 +213,7 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
 }
 
 export function SessionRail({ onNavigate }: SessionRailProps) {
+  const { t } = useTranslation()
   const { eventStreamState, posture } = useWorkspaceShell()
   const navigate = useNavigate()
   const unreadSessionIds = useUnreadSessionIds()
@@ -266,7 +268,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
 
     for (const session of sorted) {
       const pid = session.project?.id || ""
-      const pname = session.project?.name || "Unassigned"
+      const pname = session.project?.name || t("rail.unassigned")
       const rootPath = session.project?.rootPath || ""
       let group = groupMap.get(pid)
       if (!group) {
@@ -286,7 +288,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
     }
 
     return groups
-  }, [sessions])
+  }, [sessions, t])
 
   useEffect(() => {
     if (!reloadTargetVersion || !updateStatus?.currentVersion) {
@@ -323,9 +325,9 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       if (targetVersion) {
         setReloadTargetVersion(targetVersion)
       }
-      toast.success("hopter is applying the update")
+      toast.success(t("rail.upgrading"))
     } catch (error) {
-      toast.error(getErrorMessage(error, "Unable to apply update"))
+      toast.error(getErrorMessage(error, t("rail.upgradeError")))
     }
   }
 
@@ -334,7 +336,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       return
     }
     navigator.clipboard.writeText(command).then(
-      () => toast.success("Upgrade command copied"),
+      () => toast.success(t("rail.upgradeCommandCopied")),
       () => {}
     )
   }
@@ -358,7 +360,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       props: {
         asDivInteractive: true,
         icon: <SquarePen className="size-3.5" />,
-        label: "New chat",
+        label: t("nav.newChat"),
         onClick: () => {
           onNavigate?.()
           navigate("/?compose=1")
@@ -372,7 +374,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       kind: "row",
       props: {
         icon: <ListChecks className="size-3.5" />,
-        label: "Tasks",
+        label: t("nav.tasks"),
         onClick: onNavigate,
         to: "/tasks",
         className:
@@ -386,7 +388,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       kind: "row",
       props: {
         icon: <Settings className="size-3.5" />,
-        label: "Settings",
+        label: t("nav.settings"),
         onClick: onNavigate,
         to: "/settings",
         className:
@@ -405,7 +407,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       kind: "row",
       props: {
         icon: null,
-        label: "Projects",
+        label: t("nav.projects"),
         onClick: () =>
           setRailUiState((current) => ({
             ...current,
@@ -453,7 +455,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
               <li>
                 <RailRow
                   icon={null}
-                  label="Loading threads..."
+                  label={t("nav.loadingThreads")}
                   labelClassName="text-muted-foreground"
                 />
               </li>
@@ -463,7 +465,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
               <li>
                 <RailRow
                   icon={null}
-                  label="The shell is ready. Session data will appear when the backend responds."
+                  label={t("nav.sessionDataPending")}
                   labelClassName="text-muted-foreground"
                 />
               </li>
@@ -473,7 +475,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
               <li>
                 <RailRow
                   icon={null}
-                  label="No threads yet. Open a repo and continue from the same workspace."
+                  label={t("nav.noThreads")}
                   labelClassName="text-muted-foreground"
                 />
               </li>
@@ -515,13 +517,15 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                               }))
                             }
                             labelClassName="truncate whitespace-nowrap tracking-tight text-foreground"
-                            className="pr-10 text-foreground hover:bg-accent/60 hover:text-foreground group-hover:bg-accent/60 group-hover:text-foreground"
+                            className="pr-10 text-foreground group-hover:bg-accent/60 group-hover:text-foreground hover:bg-accent/60 hover:text-foreground"
                             ariaExpanded={!folderClosed}
                           />
                           <button
                             type="button"
-                            title={`New thread in ${group.projectName}`}
-                            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 group-focus-within:opacity-100"
+                            title={t("rail.newThreadInProject", {
+                              project: group.projectName,
+                            })}
+                            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-accent hover:text-foreground"
                             onClick={(event) => {
                               event.stopPropagation()
                               onNavigate?.()
@@ -564,7 +568,9 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                                       <span className="size-1.5 rounded-full bg-sky-400/75" />
                                     ) : null
                                   }
-                                  label={session.title || "Untitled thread"}
+                                  label={
+                                    session.title || t("rail.untitledThread")
+                                  }
                                   onClick={onNavigate}
                                   to={`/sessions/${session.id}`}
                                   labelClassName="truncate"
@@ -587,8 +593,8 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                             icon={null}
                             label={
                               sessionsCollapsed
-                                ? "Show expanded"
-                                : "Show collapsed"
+                                ? t("rail.showMore")
+                                : t("rail.showFewer")
                             }
                             onClick={() =>
                               setRailUiState((current) => ({
@@ -619,18 +625,13 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upgrade on host</DialogTitle>
+            <DialogTitle>{t("rail.upgradeDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Run this command on the machine that is currently running{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
-                hopter
-              </code>
-              .
+              {t("rail.upgradeDialogDescription", { name: "hopter" })}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-border bg-muted/40 p-3 font-mono text-xs text-foreground">
-            {updateStatus?.upgradeCommandHint ||
-              "No package-manager command available."}
+            {updateStatus?.upgradeCommandHint || t("rail.noUpgradeCommand")}
           </div>
           <DialogFooter showCloseButton>
             {updateStatus?.upgradeCommandHint ? (
@@ -641,7 +642,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                 }
               >
                 <Copy className="size-3.5" />
-                Copy command
+                {t("rail.copyCommand")}
               </Button>
             ) : null}
           </DialogFooter>
@@ -662,6 +663,7 @@ function UpdateRailAction({
   onOpenDialog: () => void
   status?: UpdateStatus
 }) {
+  const { t } = useTranslation()
   const busy =
     status?.state === UpdateState.REEXECING ||
     status?.state === UpdateState.DOWNLOADING ||
@@ -675,7 +677,7 @@ function UpdateRailAction({
   if (busy) {
     return (
       <Button disabled size="sm">
-        Upgrading
+        {t("rail.upgrading")}
       </Button>
     )
   }
@@ -692,11 +694,13 @@ function UpdateRailAction({
         }}
         title={
           status.availableUpdate?.version
-            ? `Upgrade to ${status.availableUpdate.version}`
-            : "Upgrade hopter"
+            ? t("rail.upgradeTo", {
+                version: status.availableUpdate.version,
+              })
+            : t("rail.upgradeHopter")
         }
       >
-        Upgrade
+        {t("rail.upgrade")}
       </Button>
     )
   }
@@ -710,9 +714,9 @@ function UpdateRailAction({
         event.stopPropagation()
         onOpenDialog()
       }}
-      title={commandHint || "Show upgrade command"}
+      title={commandHint || t("rail.showUpgradeCommand")}
     >
-      Upgrade
+      {t("rail.upgrade")}
     </Button>
   )
 }

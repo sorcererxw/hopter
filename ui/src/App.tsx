@@ -1,4 +1,11 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react"
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react"
 import {
   BrowserRouter,
   Navigate,
@@ -11,11 +18,15 @@ import { QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider, type Theme } from "@/components/theme-provider"
 import { useAuthStatus } from "@/features/auth/use-auth"
 import {
+  localePreferenceFromConfig,
+  localePreferenceToProto,
   themePreferenceFromConfig,
   themePreferenceToProto,
   useConfig,
   useUpdateConfig,
+  type LocalePreference,
 } from "@/features/config/use-config"
+import { HopterI18nProvider } from "@/lib/i18n/provider"
 import { queryClient } from "@/lib/query/client"
 const HomeRoute = lazy(() =>
   import("@/routes/home-route").then((module) => ({
@@ -89,12 +100,20 @@ function LegacyHashRedirect({
   return <Navigate to={`${to}${location.hash || fallbackHash}`} replace />
 }
 
-function ConfigBackedThemeProvider({ children }: { children: ReactNode }) {
+function ConfigBackedPreferencesProvider({
+  children,
+}: {
+  children: ReactNode
+}) {
   const configQuery = useConfig()
   const updateConfig = useUpdateConfig()
   const configTheme = themePreferenceFromConfig(configQuery.data)
+  const configLocale = localePreferenceFromConfig(configQuery.data)
   const [optimisticTheme, setOptimisticTheme] = useState<Theme | null>(null)
+  const [optimisticLocale, setOptimisticLocale] =
+    useState<LocalePreference | null>(null)
   const theme = optimisticTheme ?? configTheme
+  const locale = optimisticLocale ?? configLocale
 
   useEffect(() => {
     if (optimisticTheme === configTheme) {
@@ -102,11 +121,18 @@ function ConfigBackedThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [configTheme, optimisticTheme])
 
+  useEffect(() => {
+    if (optimisticLocale === configLocale) {
+      setOptimisticLocale(null)
+    }
+  }, [configLocale, optimisticLocale])
+
   function handleThemeChange(nextTheme: Theme) {
     setOptimisticTheme(nextTheme)
     updateConfig.mutate(
       {
         appearance: {
+          locale: localePreferenceToProto(locale),
           theme: themePreferenceToProto(nextTheme),
         },
         expectedRevision: configQuery.data?.revision ?? 0n,
@@ -119,21 +145,44 @@ function ConfigBackedThemeProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const handleLocaleChange = useCallback(
+    (nextLocale: LocalePreference) => {
+      setOptimisticLocale(nextLocale)
+      updateConfig.mutate(
+        {
+          appearance: {
+            locale: localePreferenceToProto(nextLocale),
+            theme: themePreferenceToProto(theme),
+          },
+          expectedRevision: configQuery.data?.revision ?? 0n,
+        },
+        {
+          onError: () => {
+            setOptimisticLocale(null)
+          },
+        }
+      )
+    },
+    [configQuery.data?.revision, theme, updateConfig]
+  )
+
   return (
-    <ThemeProvider
-      defaultTheme="system"
-      onThemeChange={handleThemeChange}
-      theme={theme}
-    >
-      {children}
-    </ThemeProvider>
+    <HopterI18nProvider locale={locale} onLocaleChange={handleLocaleChange}>
+      <ThemeProvider
+        defaultTheme="system"
+        onThemeChange={handleThemeChange}
+        theme={theme}
+      >
+        {children}
+      </ThemeProvider>
+    </HopterI18nProvider>
   )
 }
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigBackedThemeProvider>
+      <ConfigBackedPreferencesProvider>
         <BrowserRouter>
           <Routes>
             <Route path="login" element={renderLazyRoute(<LoginRoute />)} />
@@ -184,7 +233,7 @@ export default function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-      </ConfigBackedThemeProvider>
+      </ConfigBackedPreferencesProvider>
     </QueryClientProvider>
   )
 }

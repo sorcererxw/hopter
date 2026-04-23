@@ -6,6 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
 } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ArrowUp,
   ChevronDown,
@@ -40,15 +41,6 @@ import { SkillReferenceChip } from "@/components/app/shared"
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
 const DEFAULT_REASONING_EFFORT = "xhigh"
-
-const REASONING_LABELS: Record<string, string> = {
-  none: "None",
-  minimal: "Minimal",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  xhigh: "XHigh",
-}
 
 type SessionComposerSubmitOptions = {
   codexFastMode: boolean
@@ -110,6 +102,7 @@ export function SessionComposer({
   submitTestId,
   value,
 }: SessionComposerProps) {
+  const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const composerOverlayRef = useRef<HTMLDivElement | null>(null)
   const canSubmit =
@@ -143,7 +136,7 @@ export function SessionComposer({
     modelOptions[0]
   const supportedReasoningOptions =
     selectedModelOption?.supportedReasoningEfforts.map((effort) => ({
-      label: REASONING_LABELS[effort.reasoningEffort] ?? effort.reasoningEffort,
+      label: formatReasoningEffort(effort.reasoningEffort, t),
       value: effort.reasoningEffort,
     })) ?? []
   const effectiveReasoningEffort =
@@ -442,6 +435,7 @@ export function SessionComposer({
                 onSelectSkill={insertSkillReference}
                 query={activeSkillMatch?.query ?? ""}
                 skills={skillSuggestions}
+                t={t}
               />
             ) : null}
 
@@ -502,14 +496,14 @@ export function SessionComposer({
 
               <div className="flex items-center justify-between px-2 pb-2">
                 <div className="flex items-center gap-1">
-                  <GhostIconButton aria-label="Add context">
+                  <GhostIconButton aria-label={t("composer.addContext")}>
                     <Plus className="size-4" />
                   </GhostIconButton>
                 </div>
 
                 <div className="flex min-w-0 items-center justify-end gap-1">
                   <InlineDropdownMenu
-                    aria-label="Model"
+                    aria-label={t("composer.model")}
                     codexFastMode={codexFastMode}
                     disabled={
                       codexModelsQuery.isLoading || modelOptions.length === 0
@@ -527,19 +521,18 @@ export function SessionComposer({
                       ? selectedModelOption.displayName ||
                         modelValue(selectedModelOption)
                       : codexModelsQuery.isLoading
-                        ? "Loading model"
-                        : "Default model"}
+                        ? t("composer.loadingModel")
+                        : t("composer.defaultModel")}
                   </InlineDropdownMenu>
 
                   <InlineDropdownMenu
-                    aria-label="Reasoning effort"
+                    aria-label={t("composer.reasoningEffort")}
                     disabled={supportedReasoningOptions.length === 0}
                     options={supportedReasoningOptions}
                     value={effectiveReasoningEffort}
                     onValueChange={handleReasoningEffortChange}
                   >
-                    {REASONING_LABELS[effectiveReasoningEffort] ??
-                      effectiveReasoningEffort}
+                    {formatReasoningEffort(effectiveReasoningEffort, t)}
                   </InlineDropdownMenu>
 
                   <Button
@@ -548,9 +541,15 @@ export function SessionComposer({
                     onClick={() => void handleSubmit()}
                     disabled={!canSubmit}
                     aria-label={
-                      interruptMode ? "Interrupt turn" : "Send message"
+                      interruptMode
+                        ? t("composer.interruptTurn")
+                        : t("composer.sendMessage")
                     }
-                    title={interruptMode ? "Interrupt turn" : "Send message"}
+                    title={
+                      interruptMode
+                        ? t("composer.interruptTurn")
+                        : t("composer.sendMessage")
+                    }
                     data-testid={interruptMode ? interruptTestId : submitTestId}
                     className={cn(
                       "size-9 rounded-full transition md:size-8",
@@ -630,12 +629,14 @@ function SkillSuggestionPopover({
   onSelectSkill,
   query,
   skills,
+  t,
 }: {
   highlightedIndex: number
   loading: boolean
   onSelectSkill: (skill: SkillSummary) => void
   query: string
   skills: SkillSummary[]
+  t: ReturnType<typeof useTranslation>["t"]
 }) {
   return (
     <div
@@ -645,22 +646,22 @@ function SkillSuggestionPopover({
       <div className="overflow-hidden rounded-lg border border-border bg-popover text-sm font-medium text-foreground shadow-lg">
         <div className="border-b border-border px-4 py-2 text-xs tracking-wider text-muted-foreground uppercase">
           {loading
-            ? "Loading skills"
+            ? t("composer.loadingSkills")
             : query
-              ? `Skills matching $${query}`
-              : "Skills"}
+              ? t("composer.skillsMatching", { query: `$${query}` })
+              : t("composer.skills")}
         </div>
 
         {loading ? (
           <div className="px-4 py-3 text-muted-foreground">
-            Loading skills...
+            {t("composer.loadingSkills")}
           </div>
         ) : skills.length === 0 ? (
           <div
             className="px-4 py-3 text-muted-foreground"
             data-testid="skill-suggestion-empty"
           >
-            No skills found for{" "}
+            {t("composer.noSkills", { query: `$${query}` })}{" "}
             <span className="font-mono text-foreground">$${query}</span>
           </div>
         ) : (
@@ -693,7 +694,7 @@ function SkillSuggestionPopover({
                       ${skill.reference}
                     </span>
                     <span className="shrink-0 text-xs tracking-wider text-muted-foreground uppercase">
-                      {formatSkillSource(skill.source)}
+                      {formatSkillSource(skill.source, t)}
                     </span>
                   </div>
                   {skill.description ? (
@@ -763,6 +764,8 @@ function InlineDropdownMenu({
   showCodexFastModeToggle?: boolean
   value: string
 } & Omit<React.ComponentProps<typeof Button>, "onChange" | "value">) {
+  const { t } = useTranslation()
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
@@ -788,10 +791,12 @@ function InlineDropdownMenu({
           <>
             <div className="flex items-center justify-between gap-4 px-3 py-2">
               <div className="min-w-0">
-                <div className="text-sm font-medium">Fast mode</div>
+                <div className="text-sm font-medium">
+                  {t("composer.fastMode")}
+                </div>
               </div>
               <Switch
-                aria-label="Codex fast mode"
+                aria-label={t("composer.codexFastMode")}
                 checked={codexFastMode}
                 onCheckedChange={(checked) => {
                   onCodexFastModeChange?.(checked)
@@ -901,15 +906,40 @@ function sourcePriority(source: string) {
   }
 }
 
-function formatSkillSource(source: string) {
+function formatSkillSource(
+  source: string,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch (source) {
     case "project":
-      return "project"
+      return t("composer.skillSource.project")
     case "plugin":
-      return "plugin"
+      return t("composer.skillSource.plugin")
     case "local":
     default:
-      return "local"
+      return t("composer.skillSource.local")
+  }
+}
+
+function formatReasoningEffort(
+  effort: string,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
+  switch (effort) {
+    case "none":
+      return t("composer.reasoning.none")
+    case "minimal":
+      return t("composer.reasoning.minimal")
+    case "low":
+      return t("composer.reasoning.low")
+    case "medium":
+      return t("composer.reasoning.medium")
+    case "high":
+      return t("composer.reasoning.high")
+    case "xhigh":
+      return t("composer.reasoning.xhigh")
+    default:
+      return effort
   }
 }
 

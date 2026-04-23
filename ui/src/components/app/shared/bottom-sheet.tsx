@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,6 +12,8 @@ type BottomSheetProps = {
 }
 
 export function BottomSheet({ children, onClose, open, title }: BottomSheetProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (!open) {
       return undefined
@@ -52,7 +55,7 @@ export function BottomSheet({ children, onClose, open, title }: BottomSheetProps
             onClick={onClose}
             className="text-muted-foreground"
           >
-            Done
+            {t("common.done")}
           </Button>
         </div>
         <div className="py-1">{children}</div>

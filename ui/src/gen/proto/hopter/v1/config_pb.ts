@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hopter/v1/config.proto.
  */
 export const file_hopter_v1_config: GenFile = /*@__PURE__*/
-  fileDesc("ChZob3B0ZXIvdjEvY29uZmlnLnByb3RvEglob3B0ZXIudjEiOQoQQXBwZWFyYW5jZUNvbmZpZxIlCgV0aGVtZRgBIAEoDjIWLmhvcHRlci52MS5Db25maWdUaGVtZSJfCgtBZ2VudENvbmZpZxIXCg9kZWZhdWx0X2JhY2tlbmQYASABKAkSFQoNZGVmYXVsdF9tb2RlbBgCIAEoCRIgChhkZWZhdWx0X3JlYXNvbmluZ19lZmZvcnQYAyABKAkipgEKClVzZXJDb25maWcSLwoKYXBwZWFyYW5jZRgBIAEoCzIbLmhvcHRlci52MS5BcHBlYXJhbmNlQ29uZmlnEiUKBWFnZW50GAIgASgLMhYuaG9wdGVyLnYxLkFnZW50Q29uZmlnEhAKCHJldmlzaW9uGAMgASgEEi4KCnVwZGF0ZWRfYXQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhIKEEdldENvbmZpZ1JlcXVlc3QiOgoRR2V0Q29uZmlnUmVzcG9uc2USJQoGY29uZmlnGAEgASgLMhUuaG9wdGVyLnYxLlVzZXJDb25maWciiAEKE1VwZGF0ZUNvbmZpZ1JlcXVlc3QSLwoKYXBwZWFyYW5jZRgBIAEoCzIbLmhvcHRlci52MS5BcHBlYXJhbmNlQ29uZmlnEiUKBWFnZW50GAIgASgLMhYuaG9wdGVyLnYxLkFnZW50Q29uZmlnEhkKEWV4cGVjdGVkX3JldmlzaW9uGAMgASgEIj0KFFVwZGF0ZUNvbmZpZ1Jlc3BvbnNlEiUKBmNvbmZpZxgBIAEoCzIVLmhvcHRlci52MS5Vc2VyQ29uZmlnKnMKC0NvbmZpZ1RoZW1lEhwKGENPTkZJR19USEVNRV9VTlNQRUNJRklFRBAAEhcKE0NPTkZJR19USEVNRV9TWVNURU0QARIVChFDT05GSUdfVEhFTUVfREFSSxACEhYKEkNPTkZJR19USEVNRV9MSUdIVBADMqgBCg1Db25maWdTZXJ2aWNlEkYKCUdldENvbmZpZxIbLmhvcHRlci52MS5HZXRDb25maWdSZXF1ZXN0GhwuaG9wdGVyLnYxLkdldENvbmZpZ1Jlc3BvbnNlEk8KDFVwZGF0ZUNvbmZpZxIeLmhvcHRlci52MS5VcGRhdGVDb25maWdSZXF1ZXN0Gh8uaG9wdGVyLnYxLlVwZGF0ZUNvbmZpZ1Jlc3BvbnNlQqUBCg1jb20uaG9wdGVyLnYxQgtDb25maWdQcm90b1ABWkJnaXRodWIuY29tL3NvcmNlcmVyeHcvaG9wdGVyL2ludGVybmFsL2dlbi9wcm90by9ob3B0ZXIvdjE7aG9wdGVydjGiAgNIWFiqAglIb3B0ZXIuVjHKAglIb3B0ZXJcVjHiAhVIb3B0ZXJcVjFcR1BCTWV0YWRhdGHqAgpIb3B0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChZob3B0ZXIvdjEvY29uZmlnLnByb3RvEglob3B0ZXIudjEiYgoQQXBwZWFyYW5jZUNvbmZpZxIlCgV0aGVtZRgBIAEoDjIWLmhvcHRlci52MS5Db25maWdUaGVtZRInCgZsb2NhbGUYAiABKA4yFy5ob3B0ZXIudjEuQ29uZmlnTG9jYWxlIl8KC0FnZW50Q29uZmlnEhcKD2RlZmF1bHRfYmFja2VuZBgBIAEoCRIVCg1kZWZhdWx0X21vZGVsGAIgASgJEiAKGGRlZmF1bHRfcmVhc29uaW5nX2VmZm9ydBgDIAEoCSKmAQoKVXNlckNvbmZpZxIvCgphcHBlYXJhbmNlGAEgASgLMhsuaG9wdGVyLnYxLkFwcGVhcmFuY2VDb25maWcSJQoFYWdlbnQYAiABKAsyFi5ob3B0ZXIudjEuQWdlbnRDb25maWcSEAoIcmV2aXNpb24YAyABKAQSLgoKdXBkYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiEgoQR2V0Q29uZmlnUmVxdWVzdCI6ChFHZXRDb25maWdSZXNwb25zZRIlCgZjb25maWcYASABKAsyFS5ob3B0ZXIudjEuVXNlckNvbmZpZyKIAQoTVXBkYXRlQ29uZmlnUmVxdWVzdBIvCgphcHBlYXJhbmNlGAEgASgLMhsuaG9wdGVyLnYxLkFwcGVhcmFuY2VDb25maWcSJQoFYWdlbnQYAiABKAsyFi5ob3B0ZXIudjEuQWdlbnRDb25maWcSGQoRZXhwZWN0ZWRfcmV2aXNpb24YAyABKAQiPQoUVXBkYXRlQ29uZmlnUmVzcG9uc2USJQoGY29uZmlnGAEgASgLMhUuaG9wdGVyLnYxLlVzZXJDb25maWcqcwoLQ29uZmlnVGhlbWUSHAoYQ09ORklHX1RIRU1FX1VOU1BFQ0lGSUVEEAASFwoTQ09ORklHX1RIRU1FX1NZU1RFTRABEhUKEUNPTkZJR19USEVNRV9EQVJLEAISFgoSQ09ORklHX1RIRU1FX0xJR0hUEAMqdgoMQ29uZmlnTG9jYWxlEh0KGUNPTkZJR19MT0NBTEVfVU5TUEVDSUZJRUQQABIYChRDT05GSUdfTE9DQUxFX1NZU1RFTRABEhQKEENPTkZJR19MT0NBTEVfRU4QAhIXChNDT05GSUdfTE9DQUxFX1pIX0NOEAMyqAEKDUNvbmZpZ1NlcnZpY2USRgoJR2V0Q29uZmlnEhsuaG9wdGVyLnYxLkdldENvbmZpZ1JlcXVlc3QaHC5ob3B0ZXIudjEuR2V0Q29uZmlnUmVzcG9uc2USTwoMVXBkYXRlQ29uZmlnEh4uaG9wdGVyLnYxLlVwZGF0ZUNvbmZpZ1JlcXVlc3QaHy5ob3B0ZXIudjEuVXBkYXRlQ29uZmlnUmVzcG9uc2VCpQEKDWNvbS5ob3B0ZXIudjFCC0NvbmZpZ1Byb3RvUAFaQmdpdGh1Yi5jb20vc29yY2VyZXJ4dy9ob3B0ZXIvaW50ZXJuYWwvZ2VuL3Byb3RvL2hvcHRlci92MTtob3B0ZXJ2MaICA0hYWKoCCUhvcHRlci5WMcoCCUhvcHRlclxWMeICFUhvcHRlclxWMVxHUEJNZXRhZGF0YeoCCkhvcHRlcjo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message hopter.v1.AppearanceConfig
@@ -22,6 +22,11 @@ export type AppearanceConfig = Message<"hopter.v1.AppearanceConfig"> & {
    * @generated from field: hopter.v1.ConfigTheme theme = 1;
    */
   theme: ConfigTheme;
+
+  /**
+   * @generated from field: hopter.v1.ConfigLocale locale = 2;
+   */
+  locale: ConfigLocale;
 };
 
 /**
@@ -194,6 +199,37 @@ export enum ConfigTheme {
  */
 export const ConfigThemeSchema: GenEnum<ConfigTheme> = /*@__PURE__*/
   enumDesc(file_hopter_v1_config, 0);
+
+/**
+ * @generated from enum hopter.v1.ConfigLocale
+ */
+export enum ConfigLocale {
+  /**
+   * @generated from enum value: CONFIG_LOCALE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CONFIG_LOCALE_SYSTEM = 1;
+   */
+  SYSTEM = 1,
+
+  /**
+   * @generated from enum value: CONFIG_LOCALE_EN = 2;
+   */
+  EN = 2,
+
+  /**
+   * @generated from enum value: CONFIG_LOCALE_ZH_CN = 3;
+   */
+  ZH_CN = 3,
+}
+
+/**
+ * Describes the enum hopter.v1.ConfigLocale.
+ */
+export const ConfigLocaleSchema: GenEnum<ConfigLocale> = /*@__PURE__*/
+  enumDesc(file_hopter_v1_config, 1);
 
 /**
  * @generated from service hopter.v1.ConfigService

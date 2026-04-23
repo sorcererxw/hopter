@@ -25,10 +25,14 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	if getResp.Msg.GetConfig().GetAppearance().GetTheme() != hopterv1.ConfigTheme_CONFIG_THEME_SYSTEM {
 		t.Fatalf("initial theme = %v, want system", getResp.Msg.GetConfig().GetAppearance().GetTheme())
 	}
+	if getResp.Msg.GetConfig().GetAppearance().GetLocale() != hopterv1.ConfigLocale_CONFIG_LOCALE_SYSTEM {
+		t.Fatalf("initial locale = %v, want system", getResp.Msg.GetConfig().GetAppearance().GetLocale())
+	}
 
 	updateResp, err := service.UpdateConfig(context.Background(), connect.NewRequest(&hopterv1.UpdateConfigRequest{
 		Appearance: &hopterv1.AppearanceConfig{
-			Theme: hopterv1.ConfigTheme_CONFIG_THEME_DARK,
+			Theme:  hopterv1.ConfigTheme_CONFIG_THEME_DARK,
+			Locale: hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN,
 		},
 		ExpectedRevision: getResp.Msg.GetConfig().GetRevision(),
 	}))
@@ -37,6 +41,9 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	}
 	if updateResp.Msg.GetConfig().GetAppearance().GetTheme() != hopterv1.ConfigTheme_CONFIG_THEME_DARK {
 		t.Fatalf("updated theme = %v, want dark", updateResp.Msg.GetConfig().GetAppearance().GetTheme())
+	}
+	if updateResp.Msg.GetConfig().GetAppearance().GetLocale() != hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN {
+		t.Fatalf("updated locale = %v, want zh-CN", updateResp.Msg.GetConfig().GetAppearance().GetLocale())
 	}
 }
 
@@ -49,7 +56,8 @@ func TestConfigServiceRejectsRevisionConflict(t *testing.T) {
 
 	_, err = service.UpdateConfig(context.Background(), connect.NewRequest(&hopterv1.UpdateConfigRequest{
 		Appearance: &hopterv1.AppearanceConfig{
-			Theme: hopterv1.ConfigTheme_CONFIG_THEME_LIGHT,
+			Theme:  hopterv1.ConfigTheme_CONFIG_THEME_LIGHT,
+			Locale: hopterv1.ConfigLocale_CONFIG_LOCALE_EN,
 		},
 		ExpectedRevision: store.Get().Revision + 1,
 	}))

@@ -6,6 +6,16 @@
 - scope: `/settings` information architecture, content scope, and first-pass data requirements
 - source: user-directed scope decisions captured in live product discussion
 
+## Language decision
+
+Language is approved for the Appearance section.
+
+Language remains an Appearance setting, not a broad localization management
+surface. It should persist through the same Go-owned config path as theme and
+should only translate stable workspace UI copy. Do not translate Codex transcript
+bodies, user prompts, agent output, command output, file paths, model names, skill
+names, or backend diagnostics.
+
 ## Why this plan exists
 
 The current settings route mixes real controls with placeholder desktop-app preferences.
@@ -100,11 +110,15 @@ Purpose: hold real visual preferences only.
   - `System`
   - `Dark`
   - `Light`
+- `Language`
+  - `System`
+  - `English`
+  - `Chinese`
 
 ### Rules
 
-- this page contains exactly one real setting in v1
-- do not include font pickers, density, animation, language, or other speculative preferences
+- this page contains only real visual and language preferences in v1
+- do not include font pickers, density, animation, or other speculative preferences
 
 ## 3. Plugins
 
@@ -173,7 +187,6 @@ Each backend row shows:
 These items are explicitly rejected and should not survive the rebuild:
 
 - `Default open target`
-- `Language`
 - `Thread verbosity`
 - `Show in menu bar`
 - `Keep system awake while running`
@@ -278,7 +291,7 @@ Do keep it:
 ### Slice 3: General + Appearance
 
 - build `General` with host status list item
-- build `Appearance` with theme only
+- build `Appearance` with theme and language only
 
 ### Slice 4: Agents
 
@@ -302,7 +315,7 @@ Do keep it:
 Implementation is not complete until these are proven with evidence:
 
 1. `/settings` opens `General` by default
-2. `/settings/appearance` persists and applies theme changes
+2. `/settings/appearance` persists and applies theme and language changes
 3. `/settings/plugins` renders overview counts, search, `Skills`, and real `MCP`
 4. `/settings/plugins` empty search state is explicit
 5. `/settings/agents` renders all supported backends with name + status
@@ -320,7 +333,7 @@ Evidence should include:
 This plan makes settings smaller and more real.
 
 `General` holds the miscellaneous systems stub, but only with real content.
-`Appearance` becomes theme-only.
+`Appearance` holds theme and language only.
 `Plugins` becomes the global capability directory.
 `Agents` becomes the supported backend inventory.
 

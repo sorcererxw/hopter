@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ArrowLeft,
   ChevronDown,
@@ -60,6 +61,7 @@ export function WorkspaceTopbar({
   title,
   toolbarMode = "desktop",
 }: WorkspaceTopbarProps) {
+  const { t } = useTranslation()
   const [commitOpen, setCommitOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copiedItem, setCopiedItem] = useState<
@@ -102,8 +104,8 @@ export function WorkspaceTopbar({
           setCopiedItem(item)
           toast.success(
             item === "resume-command"
-              ? "Codex command copied"
-              : "Session ID copied"
+              ? t("topbar.codexCommandCopied")
+              : t("topbar.sessionIdCopied")
           )
           if (copiedTimerRef.current) {
             clearTimeout(copiedTimerRef.current)
@@ -116,21 +118,24 @@ export function WorkspaceTopbar({
       )
       setOverflowOpen(false)
     },
-    []
+    [t]
   )
+  const sidebarLabel = inspectorOpen
+    ? t("topbar.closeSidebar")
+    : t("topbar.openSidebar")
 
   const leadingButton =
     leadingAction === "back" ? (
       <TopbarLeadingButton
         icon={<ArrowLeft className="size-4" />}
-        label="Back"
+        label={t("nav.back")}
         onClick={onLeadingAction}
         testId="workspace-topbar-back"
       />
     ) : leadingAction === "toggle-rail" ? (
       <TopbarLeadingButton
         icon={<PanelLeft className="size-4" />}
-        label="Toggle navigation"
+        label={t("nav.toggleNavigation")}
         onClick={onLeadingAction}
         testId="workspace-topbar-rail-toggle"
       />
@@ -180,7 +185,7 @@ export function WorkspaceTopbar({
                                 onCommit?.()
                               }}
                             >
-                              Commit All
+                              {t("topbar.commitAll")}
                             </OverflowMenuItem>
                           ) : null}
                           <OverflowMenuItem
@@ -189,7 +194,7 @@ export function WorkspaceTopbar({
                               onOpenReview?.()
                             }}
                           >
-                            Review
+                            {t("topbar.review")}
                           </OverflowMenuItem>
                           {showCommit ? (
                             <OverflowMenuItem
@@ -198,7 +203,7 @@ export function WorkspaceTopbar({
                                 onCommitAndPush?.()
                               }}
                             >
-                              Commit All &amp; Push
+                              {t("topbar.commitAllPush")}
                             </OverflowMenuItem>
                           ) : null}
                           {showTerminal ? (
@@ -209,7 +214,7 @@ export function WorkspaceTopbar({
                                 onOpenTerminal?.()
                               }}
                             >
-                              Terminal
+                              {t("topbar.terminal")}
                             </OverflowMenuItem>
                           ) : null}
                         </>
@@ -222,7 +227,7 @@ export function WorkspaceTopbar({
                             onToggleInspector?.()
                           }}
                         >
-                          {inspectorOpen ? "Close sidebar" : "Open sidebar"}
+                          {sidebarLabel}
                         </OverflowMenuItem>
                       ) : null}
                       {resumeCommand ? (
@@ -233,8 +238,8 @@ export function WorkspaceTopbar({
                           }
                         >
                           {copiedItem === "resume-command"
-                            ? "Codex command copied"
-                            : "Resume in Codex"}
+                            ? t("topbar.codexCommandCopied")
+                            : t("topbar.resumeInCodex")}
                         </OverflowMenuItem>
                       ) : null}
                       {sessionId ? (
@@ -243,8 +248,8 @@ export function WorkspaceTopbar({
                           onClick={() => handleCopy(sessionId, "session-id")}
                         >
                           {copiedItem === "session-id"
-                            ? "Copied!"
-                            : "Copy session ID"}
+                            ? t("topbar.copied")
+                            : t("topbar.copySessionId")}
                         </OverflowMenuItem>
                       ) : null}
                     </div>
@@ -289,8 +294,8 @@ export function WorkspaceTopbar({
                           }
                         >
                           {copiedItem === "resume-command"
-                            ? "Codex command copied"
-                            : "Resume in Codex"}
+                            ? t("topbar.codexCommandCopied")
+                            : t("topbar.resumeInCodex")}
                         </OverflowMenuItem>
                       ) : null}
                       {sessionId ? (
@@ -299,8 +304,8 @@ export function WorkspaceTopbar({
                           onClick={() => handleCopy(sessionId, "session-id")}
                         >
                           {copiedItem === "session-id"
-                            ? "Copied!"
-                            : "Copy session ID"}
+                            ? t("topbar.copied")
+                            : t("topbar.copySessionId")}
                         </OverflowMenuItem>
                       ) : null}
                     </div>
@@ -319,7 +324,7 @@ export function WorkspaceTopbar({
                   onClick={() => setCommitOpen((prev) => !prev)}
                   className="gap-1.5 text-foreground"
                 >
-                  <span>Commit</span>
+                  <span>{t("topbar.commit")}</span>
                   <ChevronDown className="size-3 text-muted-foreground" />
                 </Button>
                 {commitOpen ? (
@@ -336,7 +341,7 @@ export function WorkspaceTopbar({
                           onCommit?.()
                         }}
                       >
-                        Commit All
+                        {t("topbar.commitAll")}
                       </CommitMenuItem>
                       <CommitMenuItem
                         onClick={() => {
@@ -344,7 +349,7 @@ export function WorkspaceTopbar({
                           onCommitAndPush?.()
                         }}
                       >
-                        Commit All &amp; Push
+                        {t("topbar.commitAllPush")}
                       </CommitMenuItem>
                     </div>
                   </>
@@ -361,14 +366,14 @@ export function WorkspaceTopbar({
                   showCommit ? "text-muted-foreground" : "text-foreground"
                 )}
               >
-                Review
+                {t("topbar.review")}
               </Button>
             ) : null}
 
             {showTerminal ? (
               <TopbarIconButton
                 active={terminalActive}
-                label="Terminal"
+                label={t("topbar.terminal")}
                 onClick={onOpenTerminal}
                 testId={terminalButtonTestId}
               >
@@ -382,8 +387,8 @@ export function WorkspaceTopbar({
                 variant={inspectorOpen ? "secondary" : "ghost"}
                 size="icon"
                 onClick={onToggleInspector}
-                aria-label={inspectorOpen ? "Close sidebar" : "Open sidebar"}
-                title={inspectorOpen ? "Close sidebar" : "Open sidebar"}
+                aria-label={sidebarLabel}
+                title={sidebarLabel}
                 className={cn(
                   inspectorOpen ? "text-foreground" : "text-muted-foreground"
                 )}

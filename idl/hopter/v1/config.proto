@@ -18,8 +18,16 @@ enum ConfigTheme {
   CONFIG_THEME_LIGHT = 3;
 }
 
+enum ConfigLocale {
+  CONFIG_LOCALE_UNSPECIFIED = 0;
+  CONFIG_LOCALE_SYSTEM = 1;
+  CONFIG_LOCALE_EN = 2;
+  CONFIG_LOCALE_ZH_CN = 3;
+}
+
 message AppearanceConfig {
   ConfigTheme theme = 1;
+  ConfigLocale locale = 2;
 }
 
 message AgentConfig {

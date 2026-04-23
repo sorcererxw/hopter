@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useTranslation } from "react-i18next"
 import { MoreHorizontal, X } from "lucide-react"
 import { Terminal, useTerminal } from "@wterm/react"
 import "@wterm/react/css"
@@ -28,6 +29,7 @@ export function SessionTerminalDrawer({
   terminal: ReturnType<typeof useTerminalSession>
   uiState: ReturnType<typeof useTerminalUIState>
 }) {
+  const { t } = useTranslation()
   const { ref, focus } = useTerminal()
   const surfaceRef = useRef<HTMLDivElement | null>(null)
   const fitFrameRef = useRef<number | null>(null)
@@ -155,14 +157,14 @@ export function SessionTerminalDrawer({
     setHeader({
       shell: terminal.terminal.shell,
       cwd: shortPath(terminal.terminal.cwd),
-      status: statusLabel(terminal.streamStatus, terminal.terminal.status),
+      status: statusLabel(terminal.streamStatus, terminal.terminal.status, t),
       commandSummary:
         terminal.streamStatus === "starting" ||
         terminal.streamStatus === "reconnecting"
           ? ""
           : terminal.terminal.lastForegroundCommandSummary,
     })
-  }, [setHeader, terminal.streamStatus, terminal.terminal])
+  }, [setHeader, t, terminal.streamStatus, terminal.terminal])
 
   useEffect(() => {
     if (!open) {
@@ -236,11 +238,11 @@ export function SessionTerminalDrawer({
                 {header?.shell || "shell"}
               </span>
               <span className="truncate">{header?.cwd || ""}</span>
-              <span>{header?.status || "Starting terminal..."}</span>
+              <span>{header?.status || t("terminal.starting")}</span>
             </div>
             {showRunningSummary ? (
               <div className="truncate pt-1 text-xs text-muted-foreground">
-                Running: {header?.commandSummary}
+                {t("terminal.running", { command: header?.commandSummary })}
               </div>
             ) : null}
           </div>
@@ -249,14 +251,14 @@ export function SessionTerminalDrawer({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="Terminate terminal"
+              aria-label={t("terminal.terminate")}
               className="text-muted-foreground"
               onClick={() => {
                 const shouldConfirm =
                   isLive && !terminal.terminal?.lastForegroundCommandExited
                 if (
                   shouldConfirm &&
-                  !window.confirm("Terminate running terminal?")
+                  !window.confirm(t("terminal.terminateConfirm"))
                 ) {
                   return
                 }
@@ -273,7 +275,7 @@ export function SessionTerminalDrawer({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="Hide terminal"
+              aria-label={t("terminal.hide")}
               className="text-muted-foreground"
               onClick={() => setOpen(false)}
             >
@@ -285,21 +287,21 @@ export function SessionTerminalDrawer({
           <div className="flex h-full min-h-0 flex-col">
             {terminal.streamStatus === "terminated" ? (
               <InlineBanner
-                actionLabel="Reopen terminal"
-                label="Terminal terminated."
+                actionLabel={t("terminal.reopen")}
+                label={t("terminal.terminatedBanner")}
                 onAction={() => {
                   void terminal.ensureTerminal()
                 }}
               />
             ) : terminal.streamStatus === "exited" ? (
               <InlineBanner
-                actionLabel="Reopen terminal"
+                actionLabel={t("terminal.reopen")}
                 description={
                   terminal.lastExitCode != null
-                    ? `Exit code ${terminal.lastExitCode}`
+                    ? t("terminal.exitCode", { code: terminal.lastExitCode })
                     : undefined
                 }
-                label="Exited"
+                label={t("terminal.exited")}
                 onAction={() => {
                   void terminal.ensureTerminal()
                 }}
@@ -336,16 +338,16 @@ export function SessionTerminalDrawer({
               {terminal.streamStatus === "starting" &&
               !terminal.errorMessage ? (
                 <div className="absolute inset-0 bg-card/90">
-                  <StatePanel label="Starting terminal..." />
+                  <StatePanel label={t("terminal.starting")} />
                 </div>
               ) : null}
 
               {terminal.streamStatus === "error" ? (
                 <div className="absolute inset-0 bg-card/90">
                   <StatePanel
-                    actionLabel="Retry"
+                    actionLabel={t("terminal.retry")}
                     description={terminal.errorMessage}
-                    label="Terminal unavailable"
+                    label={t("terminal.unavailable")}
                     onAction={() => {
                       void terminal.ensureTerminal()
                     }}
@@ -432,27 +434,31 @@ function InlineBanner({
   )
 }
 
-function statusLabel(streamStatus: string, terminalStatus?: TerminalStatus) {
+function statusLabel(
+  streamStatus: string,
+  terminalStatus: TerminalStatus | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch (streamStatus) {
     case "starting":
-      return "Starting terminal..."
+      return t("terminal.starting")
     case "reconnecting":
-      return "Reconnecting..."
+      return t("terminal.reconnecting")
     case "error":
-      return "Terminal unavailable"
+      return t("terminal.unavailable")
   }
 
   switch (terminalStatus) {
     case TerminalStatus.LIVE:
-      return "Live"
+      return t("terminal.live")
     case TerminalStatus.EXITED:
-      return "Exited"
+      return t("terminal.exited")
     case TerminalStatus.TERMINATED:
-      return "Terminated"
+      return t("terminal.terminated")
     case TerminalStatus.DEGRADED:
-      return "Unavailable after restart"
+      return t("terminal.unavailableAfterRestart")
     default:
-      return "Live"
+      return t("terminal.live")
   }
 }
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Search } from "lucide-react"
 import { Navigate, useLocation } from "react-router-dom"
 
@@ -9,6 +10,7 @@ import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkills } from "@/features/host/use-host-skills"
 
 export function PluginsRoute() {
+  const { t } = useTranslation()
   const location = useLocation()
   const { data: skills, isLoading: skillsLoading } = useHostSkills()
   const { data: mcpServers, isLoading: mcpLoading } = useMCPServers()
@@ -58,7 +60,10 @@ export function PluginsRoute() {
       className="flex h-full min-h-0 flex-col bg-background text-foreground"
       data-testid="plugins-workspace-pane"
     >
-      <WorkspacePageToolbar title="Plugins" showOverflowMenu={false} />
+      <WorkspacePageToolbar
+        title={t("plugins.pageTitle")}
+        showOverflowMenu={false}
+      />
 
       <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -66,13 +71,13 @@ export function PluginsRoute() {
             <div className="flex items-baseline gap-2">
               <span className="text-lg text-foreground">{totalSkills}</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {totalSkills === 1 ? "skill" : "skills"}
+                {t("plugins.skillCount", { count: totalSkills })}
               </span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-lg text-foreground">{totalMCP}</span>
               <span className="text-sm font-normal text-muted-foreground">
-                {totalMCP === 1 ? "MCP server" : "MCP servers"}
+                {t("plugins.serverCount", { count: totalMCP })}
               </span>
             </div>
           </div>
@@ -83,24 +88,24 @@ export function PluginsRoute() {
               type="text"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search skills and MCP servers..."
+              placeholder={t("plugins.searchPlaceholder")}
               className="h-10 pl-9"
             />
           </div>
 
           {pluginsLoading ? (
             <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
-              Loading plugins...
+              {t("plugins.loading")}
             </div>
           ) : !hasPluginResults && isSearching ? (
             <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
-              No results for "{search}"
+              {t("plugins.noResults", { query: search })}
             </div>
           ) : (
             <>
               <section id="skills" className="scroll-mt-16">
                 <h2 className="mb-3 text-xs tracking-wider text-muted-foreground uppercase">
-                  Skills
+                  {t("plugins.skills")}
                 </h2>
                 {filteredSkills.length > 0 ? (
                   <div className="divide-y divide-border rounded-lg border border-border">
@@ -122,14 +127,14 @@ export function PluginsRoute() {
                   </div>
                 ) : (
                   <div className="rounded-lg border border-border py-6 text-center text-sm font-normal text-muted-foreground">
-                    No skills discovered
+                    {t("plugins.noSkills")}
                   </div>
                 )}
               </section>
 
               <section id="mcp" className="scroll-mt-16">
                 <h2 className="mb-3 text-xs tracking-wider text-muted-foreground uppercase">
-                  MCP Servers
+                  {t("plugins.mcpServers")}
                 </h2>
                 {filteredMCP.length > 0 ? (
                   <div className="divide-y divide-border rounded-lg border border-border">
@@ -155,7 +160,7 @@ export function PluginsRoute() {
                   </div>
                 ) : (
                   <div className="rounded-lg border border-border py-6 text-center text-sm font-normal text-muted-foreground">
-                    No MCP servers discovered
+                    {t("plugins.noMcpServers")}
                   </div>
                 )}
               </section>

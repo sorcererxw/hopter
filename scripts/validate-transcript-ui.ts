@@ -718,10 +718,10 @@ async function main() {
     }
     runningCommandCompleted = true;
     includeFollowupTranscript = true;
-    const completedCommandGroup = page
-      .getByTestId("session-transcript-command-group")
-      .filter({ hasText: "Executed 3 commands" });
-    await completedCommandGroup.waitFor({ timeout: 15_000 });
+    const completedThoughtGroup = page
+      .getByTestId("session-transcript-thought-group")
+      .filter({ hasText: "Thought process: 1 thought, 3 commands" });
+    await completedThoughtGroup.waitFor({ timeout: 15_000 });
     if (await runningCommandEntry.count()) {
       throw new Error(
         "completed command still rendered as a standalone running command row",
@@ -745,6 +745,15 @@ async function main() {
         "when the transcript was pinned to bottom, a polling refresh with a new message kept the scroll position at the latest content",
     });
 
+    const thoughtGroupButton = completedThoughtGroup.getByRole("button", {
+      name: /Thought process: 1 thought, 3 commands/i,
+    });
+    await thoughtGroupButton.waitFor();
+    await thoughtGroupButton.click();
+    const completedCommandGroup = completedThoughtGroup
+      .getByTestId("session-transcript-command-group")
+      .filter({ hasText: "Executed 3 commands" });
+    await completedCommandGroup.waitFor();
     const commandGroupButton = completedCommandGroup.getByRole("button", {
       name: /Executed 3 commands/i,
     });
@@ -844,7 +853,7 @@ async function main() {
         .count())
     ) {
       throw new Error(
-        "completed commands did not render as a folded Executed commands group",
+        "completed commands did not render as a folded Executed commands group inside the completed thought process",
       );
     }
     if (await page.getByRole("button", { name: /Used \d+ tools/i }).count()) {

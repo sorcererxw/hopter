@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import {
   ChevronRight,
   FileImage,
@@ -61,6 +62,18 @@ type TimelineItem =
       kind: "thought-group"
     }
 
+type ThoughtProcessDisplayItem =
+  | {
+      item: SessionTranscriptItem
+      key: string
+      kind: "transcript"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "command-group"
+    }
+
 function isTranscriptActivityItem(
   item: ActivityItem | undefined
 ): item is Extract<ActivityItem, { kind: "transcript" }> {
@@ -82,6 +95,7 @@ export function TranscriptTimeline({
   isLoadingInitialTranscript: boolean
   onSelectPath: (path: string) => void
 }) {
+  const { t } = useTranslation()
   const timelineItems = buildTimelineItems(items)
 
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
@@ -90,8 +104,7 @@ export function TranscriptTimeline({
         className="rounded-lg border border-border bg-card px-4 py-6 text-sm text-muted-foreground"
         data-testid="session-transcript-empty"
       >
-        No timeline events yet. Messages, tool calls, commands, and file changes
-        will appear here as Codex works.
+        {t("transcript.empty")}
       </div>
     )
   }
@@ -183,7 +196,7 @@ function renderTimelineItem(
 function TranscriptLoadingRow() {
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 -top-10 z-10 flex items-center justify-center"
+      className="pointer-events-none flex items-center justify-center py-3"
       data-testid="session-transcript-loading"
     >
       <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm">
@@ -225,42 +238,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
 
     if (
       isTranscriptActivityItem(current) &&
-      shouldFoldCommandExecution(current.item)
-    ) {
-      const commandItems: SessionTranscriptItem[] = []
-
-      while (cursor < items.length) {
-        const next = items[cursor]
-        if (
-          !isTranscriptActivityItem(next) ||
-          !shouldFoldCommandExecution(next.item)
-        ) {
-          break
-        }
-
-        commandItems.push(next.item)
-        cursor += 1
-      }
-
-      if (commandItems.length > 1) {
-        timelineItems.push({
-          items: commandItems,
-          key: commandExecutionGroupKey(commandItems),
-          kind: "command-group",
-        })
-      } else if (commandItems[0]) {
-        timelineItems.push({
-          item: commandItems[0],
-          key: commandItems[0].id,
-          kind: "transcript",
-        })
-      }
-      continue
-    }
-
-    if (
-      isTranscriptActivityItem(current) &&
-      shouldFoldThoughtItem(current.item)
+      isThoughtProcessItem(current.item)
     ) {
       const thoughtItems: SessionTranscriptItem[] = []
 
@@ -268,7 +246,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
         const next = items[cursor]
         if (
           !isTranscriptActivityItem(next) ||
-          !shouldFoldThoughtItem(next.item)
+          !isThoughtProcessItem(next.item)
         ) {
           break
         }
@@ -279,8 +257,9 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
 
       const nextItem = items[cursor]
       const shouldCollapseThoughts =
-        isFinalAgentActivityItem(nextItem) ||
-        thoughtRunBelongsToCompletedAnswer(items, cursor)
+        !thoughtItems.some(isActiveThoughtProcessItem) &&
+        (isFinalAgentActivityItem(nextItem) ||
+          thoughtRunBelongsToCompletedAnswer(items, cursor))
       if (shouldCollapseThoughts) {
         timelineItems.push({
           items: thoughtItems,
@@ -288,13 +267,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
           kind: "thought-group",
         })
       } else {
-        for (const item of thoughtItems) {
-          timelineItems.push({
-            item,
-            key: item.id,
-            kind: "transcript",
-          })
-        }
+        timelineItems.push(...buildThoughtProcessDisplayItems(thoughtItems))
       }
       continue
     }
@@ -310,6 +283,59 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   }
 
   return timelineItems
+}
+
+function buildThoughtProcessDisplayItems(
+  items: SessionTranscriptItem[]
+): ThoughtProcessDisplayItem[] {
+  const displayItems: ThoughtProcessDisplayItem[] = []
+  let cursor = 0
+
+  while (cursor < items.length) {
+    const current = items[cursor]
+    if (!current) {
+      cursor += 1
+      continue
+    }
+
+    if (shouldGroupCompletedCommandExecution(current)) {
+      const commandItems: SessionTranscriptItem[] = []
+
+      while (cursor < items.length) {
+        const next = items[cursor]
+        if (!next || !shouldGroupCompletedCommandExecution(next)) {
+          break
+        }
+
+        commandItems.push(next)
+        cursor += 1
+      }
+
+      if (commandItems.length > 1) {
+        displayItems.push({
+          items: commandItems,
+          key: commandExecutionGroupKey(commandItems),
+          kind: "command-group",
+        })
+      } else if (commandItems[0]) {
+        displayItems.push({
+          item: commandItems[0],
+          key: commandItems[0].id,
+          kind: "transcript",
+        })
+      }
+      continue
+    }
+
+    displayItems.push({
+      item: current,
+      key: current.id,
+      kind: "transcript",
+    })
+    cursor += 1
+  }
+
+  return displayItems
 }
 
 function thoughtRunBelongsToCompletedAnswer(
@@ -402,17 +428,11 @@ function isCompletedReasoningActivityItem(item: ActivityItem | undefined) {
   )
 }
 
-function shouldFoldThoughtItem(item: SessionTranscriptItem) {
-  if (item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
-    return !isActiveCommandExecutionStatus(commandExecutionStatus(item))
-  }
-  if (isPlainProgressReasoningItem(item)) {
-    return false
-  }
-
+function isThoughtProcessItem(item: SessionTranscriptItem) {
   return (
     item.kind === SessionTranscriptItemKind.REASONING ||
     item.kind === SessionTranscriptItemKind.TOOL_CALL ||
+    item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION ||
     item.kind === SessionTranscriptItemKind.FILE_CHANGE
   )
 }
@@ -423,6 +443,9 @@ function isActiveThoughtProcessItem(item: SessionTranscriptItem) {
   }
   if (item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
     return isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  }
+  if (item.kind === SessionTranscriptItemKind.TOOL_CALL) {
+    return isActiveToolCallStatus(item.status)
   }
   return false
 }
@@ -449,11 +472,13 @@ function PendingInputEntry({
 }
 
 function ThinkingEntry() {
+  const { t } = useTranslation()
+
   return (
     <div className="min-w-0" data-testid="session-transcript-thinking">
       <div className="inline-flex items-center gap-2 text-muted-foreground">
         <LoaderCircle className="size-3.5 animate-spin" />
-        <span>Thinking...</span>
+        <span>{t("transcript.thinking")}</span>
       </div>
     </div>
   )
@@ -570,13 +595,14 @@ function TranscriptAttachmentPill({
   attachment: SessionTranscriptAttachment
   onSelectPath: (path: string) => void
 }) {
+  const { t } = useTranslation()
   const label =
     attachment.label ||
     attachment.path ||
     attachment.url ||
     (attachment.kind === SessionTranscriptAttachmentKind.IMAGE
-      ? "Image"
-      : "File")
+      ? t("transcript.image")
+      : t("transcript.file"))
   const Icon =
     attachment.kind === SessionTranscriptAttachmentKind.IMAGE
       ? FileImage
@@ -641,6 +667,7 @@ function TranscriptImageAttachment({
   icon: React.ReactNode
   label: string
 }) {
+  const { t } = useTranslation()
   const [previewOpen, setPreviewOpen] = useState(false)
   const thumbnail = attachment.url
   const content = thumbnail ? (
@@ -657,7 +684,7 @@ function TranscriptImageAttachment({
         {label}
       </span>
       <span className="max-w-full truncate text-[11px] text-muted-foreground/70">
-        Preview unavailable
+        {t("artifact.previewUnavailable")}
       </span>
     </div>
   )
@@ -706,6 +733,7 @@ function ImagePreviewDialog({
   open: boolean
   src: string
 }) {
+  const { t } = useTranslation()
   const { posture } = useWorkspaceShell()
   const fullscreen = posture === "phone"
 
@@ -729,7 +757,7 @@ function ImagePreviewDialog({
               <button
                 type="button"
                 className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10"
-                aria-label="Close image preview"
+                aria-label={t("transcript.closeImagePreview")}
               >
                 <X className="size-4" />
               </button>
@@ -775,9 +803,12 @@ function ReasoningEntry({
   item: SessionTranscriptItem
   onSelectPath: (path: string) => void
 }) {
+  const { t } = useTranslation()
   const isStreaming = isActiveReasoningStatus(item.status)
-  const [expanded, setExpanded] = useState(isStreaming)
-  const label = item.title || (isStreaming ? "Thinking" : "Reasoning")
+  const [expanded, toggleExpanded] = useActivitySyncedDisclosure(isStreaming)
+  const label =
+    item.title ||
+    (isStreaming ? t("transcript.thinking") : t("transcript.reasoning"))
   const summaryText = isReasoningPlaceholderText(item.body)
     ? ""
     : item.body.trim()
@@ -786,7 +817,7 @@ function ReasoningEntry({
     : item.displayBody.trim()
   const hasRawText = rawText.length > 0 && rawText !== summaryText
   const preview = summaryText.split("\n")[0]?.slice(0, 120) || ""
-  const showContent = expanded || isStreaming
+  const showContent = expanded
   const disclosureLabel =
     !showContent && preview ? `${label}: ${preview}` : label
 
@@ -815,7 +846,7 @@ function ReasoningEntry({
       </div>
       <div className="min-w-0 flex-1">
         <TranscriptDisclosureButton
-          onClick={() => setExpanded((prev) => !prev)}
+          onClick={toggleExpanded}
           expanded={showContent}
           iconClassName="size-3"
           aria-label={disclosureLabel}
@@ -850,20 +881,17 @@ function isPlainProgressReasoning(label: string, isStreaming: boolean) {
   return !isStreaming && label.trim().toLowerCase() === "progress"
 }
 
-function isPlainProgressReasoningItem(item: SessionTranscriptItem) {
-  return (
-    item.kind === SessionTranscriptItemKind.REASONING &&
-    isPlainProgressReasoning(item.title, isActiveReasoningStatus(item.status))
-  )
-}
-
 function RawReasoningBlock({ text }: { text: string }) {
+  const { t } = useTranslation()
+
   return (
     <div
       className="flex flex-col gap-1"
       data-testid="session-transcript-reasoning-raw"
     >
-      <div className="text-xs text-muted-foreground">Raw reasoning</div>
+      <div className="text-xs text-muted-foreground">
+        {t("transcript.rawReasoning")}
+      </div>
       <CodeContainer as="pre" className="whitespace-pre-wrap">
         {text}
       </CodeContainer>
@@ -883,9 +911,25 @@ function isActiveReasoningStatus(status: string) {
   )
 }
 
+function useTranscriptDisclosure(defaultExpanded = false) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+  return [expanded, () => setExpanded((prev) => !prev)] as const
+}
+
+function useActivitySyncedDisclosure(active: boolean) {
+  const [expanded, setExpanded] = useState(active)
+
+  useEffect(() => {
+    setExpanded(active)
+  }, [active])
+
+  return [expanded, () => setExpanded((prev) => !prev)] as const
+}
+
 function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
-  const [expanded, setExpanded] = useState(false)
-  const label = item.title || "Tool call"
+  const { t } = useTranslation()
+  const active = isActiveToolCallStatus(item.status)
+  const label = item.title || t("transcript.toolCall")
 
   return (
     <div className="flex gap-3" data-testid="session-transcript-tool">
@@ -893,22 +937,19 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
         <Wrench className="size-3.5 text-foreground/50" />
       </div>
       <div className="min-w-0 flex-1">
-        <TranscriptDisclosureButton
-          onClick={() => setExpanded((prev) => !prev)}
-          expanded={expanded}
+        <TranscriptDisclosureItem
+          active={active}
+          buttonClassName="gap-1.5 text-foreground/70 hover:text-foreground"
           iconClassName="size-3"
-          className="gap-1.5 text-foreground/70 hover:text-foreground"
+          label={<span className="text-sm">{label}</span>}
         >
-          <span className="text-sm">{label}</span>
-        </TranscriptDisclosureButton>
-        {expanded ? (
           <CodeContainer
             as="pre"
             className="mt-1 break-words whitespace-pre-wrap text-foreground/70"
           >
             {item.body}
           </CodeContainer>
-        ) : null}
+        </TranscriptDisclosureItem>
       </div>
     </div>
   )
@@ -921,15 +962,9 @@ function ThoughtProcessGroupEntry({
   items: SessionTranscriptItem[]
   onSelectPath: (path: string) => void
 }) {
-  const hasActiveThought = items.some((item) =>
-    isActiveReasoningStatus(item.status)
-  )
-  const [expanded, setExpanded] = useState(hasActiveThought)
-  const label = summarizeThoughtProcess(items)
-
-  useEffect(() => {
-    setExpanded(hasActiveThought)
-  }, [hasActiveThought])
+  const { t } = useTranslation()
+  const [expanded, toggleExpanded] = useTranscriptDisclosure()
+  const label = summarizeThoughtProcess(items, t)
 
   return (
     <div
@@ -940,7 +975,7 @@ function ThoughtProcessGroupEntry({
         type="button"
         aria-expanded={expanded}
         className="flex w-full items-center gap-1 border-b border-border pb-1 text-base font-medium text-muted-foreground transition hover:text-foreground"
-        onClick={() => setExpanded((prev) => !prev)}
+        onClick={toggleExpanded}
       >
         <span className="min-w-0 truncate">{label}</span>
         <ChevronRight
@@ -956,17 +991,31 @@ function ThoughtProcessGroupEntry({
           className="mt-4 space-y-4"
           data-testid="session-transcript-thought-group-body"
         >
-          {items.map((item) => (
-            <ThoughtProcessText
-              item={item}
-              key={item.id}
-              onSelectPath={onSelectPath}
-            />
-          ))}
+          {renderThoughtProcessItems(items, onSelectPath)}
         </div>
       ) : null}
     </div>
   )
+}
+
+function renderThoughtProcessItems(
+  items: SessionTranscriptItem[],
+  onSelectPath: (path: string) => void
+) {
+  return buildThoughtProcessDisplayItems(items).map((item) => {
+    switch (item.kind) {
+      case "command-group":
+        return <CommandExecutionGroupEntry items={item.items} key={item.key} />
+      case "transcript":
+        return (
+          <ThoughtProcessText
+            item={item.item}
+            key={item.key}
+            onSelectPath={onSelectPath}
+          />
+        )
+    }
+  })
 }
 
 function ThoughtProcessText({
@@ -1018,49 +1067,53 @@ function CommandExecutionGroupEntry({
 }: {
   items: SessionTranscriptItem[]
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const label = `Executed ${items.length} command${items.length === 1 ? "" : "s"}`
+  const { t } = useTranslation()
+  const [expanded, toggleExpanded] = useTranscriptDisclosure()
+  const label = t("transcript.executedCommands", { count: items.length })
 
   return (
-    <TranscriptBatchEntry
-      expanded={expanded}
-      label={label}
-      onToggle={() => setExpanded((prev) => !prev)}
-      testId="session-transcript-command-group"
-    >
-      <div className="flex flex-col gap-2 border-l border-border pl-4">
-        {items.map((item) => (
-          <CommandEntry key={item.id} item={item} />
-        ))}
-      </div>
-    </TranscriptBatchEntry>
+    <div className="min-w-0" data-testid="session-transcript-command-group">
+      <TranscriptDisclosureButton
+        onClick={toggleExpanded}
+        expanded={expanded}
+        iconClassName="size-3 shrink-0"
+        className="max-w-full gap-2 text-base font-medium text-muted-foreground hover:text-foreground"
+      >
+        <span>{label}</span>
+      </TranscriptDisclosureButton>
+      {expanded ? (
+        <div className="mt-1 flex flex-col gap-2 border-l border-border pl-4">
+          {items.map((item) => (
+            <CommandEntry key={item.id} item={item} />
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
-  const [expanded, setExpanded] = useState(false)
+  const { t } = useTranslation()
+  const active = isActiveCommandExecutionStatus(commandExecutionStatus(item))
   const detail = parseCommandExecutionDetail(item.body)
-  const commandLabel = detail.command || item.title || "Command"
-  const statusPrefix = commandExecutionLabelPrefix(item)
+  const commandLabel = detail.command || item.title || t("transcript.command")
+  const statusPrefix = commandExecutionLabelPrefix(item, t)
 
   return (
     <div className="min-w-0" data-testid="session-transcript-command">
-      <div className="min-w-0">
-        <TranscriptDisclosureButton
-          onClick={() => setExpanded((prev) => !prev)}
-          expanded={expanded}
-          iconClassName="size-3"
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
-        >
+      <TranscriptDisclosureItem
+        active={active}
+        buttonClassName="gap-1.5 text-muted-foreground hover:text-foreground"
+        iconClassName="size-3"
+        label={
           <span className="min-w-0 truncate text-foreground">
             <span className="text-muted-foreground">{statusPrefix}</span>{" "}
             <span className="font-mono">{commandLabel}</span>
           </span>
-        </TranscriptDisclosureButton>
-        {expanded ? (
-          <CommandExecutionDetail className="mt-1" body={item.body} />
-        ) : null}
-      </div>
+        }
+      >
+        <CommandExecutionDetail className="mt-1" body={item.body} />
+      </TranscriptDisclosureItem>
     </div>
   )
 }
@@ -1089,13 +1142,11 @@ function CommandExecutionDetail({
   )
 }
 
-function shouldFoldCommandExecution(item: SessionTranscriptItem) {
-  if (item.kind !== SessionTranscriptItemKind.COMMAND_EXECUTION) {
-    return false
-  }
-
-  const status = commandExecutionStatus(item)
-  return !isActiveCommandExecutionStatus(status)
+function shouldGroupCompletedCommandExecution(item: SessionTranscriptItem) {
+  return (
+    item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION &&
+    !isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  )
 }
 
 function commandExecutionStatus(item: SessionTranscriptItem) {
@@ -1115,10 +1166,28 @@ function isActiveCommandExecutionStatus(status: string) {
   )
 }
 
-function commandExecutionLabelPrefix(item: SessionTranscriptItem) {
+function isActiveToolCallStatus(status: string) {
+  const normalized = status
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+  return (
+    normalized === "inprogress" ||
+    normalized === "running" ||
+    normalized === "pending" ||
+    normalized === "queued" ||
+    normalized === "starting" ||
+    normalized === "streaming"
+  )
+}
+
+function commandExecutionLabelPrefix(
+  item: SessionTranscriptItem,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   return isActiveCommandExecutionStatus(commandExecutionStatus(item))
-    ? "Running"
-    : "Ran"
+    ? t("transcript.running")
+    : t("transcript.ran")
 }
 
 function commandExecutionGroupKey(items: SessionTranscriptItem[]) {
@@ -1134,7 +1203,8 @@ function thoughtProcessGroupKey(items: SessionTranscriptItem[]) {
 }
 
 function FileChangeGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
-  const changes = items.flatMap((item) => parseFileChangeBody(item.body))
+  const { t } = useTranslation()
+  const changes = items.flatMap((item) => parseFileChangeBody(item.body, t))
 
   return (
     <div className="min-w-0" data-testid="session-transcript-file-change">
@@ -1151,48 +1221,45 @@ function FileChangeGroupEntry({ items }: { items: SessionTranscriptItem[] }) {
 }
 
 function FileChangeRow({ change }: { change: ParsedFileChange }) {
-  const [expanded, setExpanded] = useState(false)
-
   return (
     <div className="min-w-0">
-      <TranscriptDisclosureButton
-        expanded={expanded}
+      <TranscriptDisclosureItem
+        buttonClassName="w-full gap-2 py-0.5 text-base text-muted-foreground hover:text-foreground"
         iconClassName="ml-auto size-3"
-        className="w-full gap-2 py-0.5 text-base text-muted-foreground hover:text-foreground"
-        onClick={() => {
-          setExpanded((prev) => !prev)
-        }}
+        label={
+          <>
+            <span className="shrink-0 text-muted-foreground">
+              {change.kindLabel}
+            </span>
+            <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
+              {formatFileChangePath(change.path)}
+            </span>
+            {change.additions || change.deletions ? (
+              <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
+                <span className="text-emerald-600">+{change.additions}</span>
+                <span className="text-destructive">-{change.deletions}</span>
+              </span>
+            ) : null}
+          </>
+        }
         title={change.path}
       >
-        <span className="shrink-0 text-muted-foreground">
-          {change.kindLabel}
-        </span>
-        <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
-          {formatFileChangePath(change.path)}
-        </span>
-        {change.additions || change.deletions ? (
-          <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
-            <span className="text-emerald-600">+{change.additions}</span>
-            <span className="text-destructive">-{change.deletions}</span>
-          </span>
-        ) : null}
-      </TranscriptDisclosureButton>
-      {expanded ? (
         <CodeContainer
           as="pre"
           className="mt-1 max-h-96 break-words whitespace-pre-wrap"
         >
           <DiffCodeBlock diff={change.diff} />
         </CodeContainer>
-      ) : null}
+      </TranscriptDisclosureItem>
     </div>
   )
 }
 
 function DiffCodeBlock({ diff }: { diff?: string }) {
+  const { t } = useTranslation()
   const lines = diff?.trim().split("\n") ?? []
   if (lines.length === 0) {
-    return <>No diff content available.</>
+    return <>{t("artifact.noDiffContent")}</>
   }
 
   return (
@@ -1222,36 +1289,35 @@ function diffLineClassName(line: string) {
   return ""
 }
 
-function TranscriptBatchEntry({
+function TranscriptDisclosureItem({
+  active = false,
+  buttonClassName,
   children,
-  contentClassName,
-  expanded,
+  iconClassName,
   label,
-  onToggle,
-  testId,
+  title,
 }: {
+  active?: boolean
+  buttonClassName?: string
   children: ReactNode
-  contentClassName?: string
-  expanded: boolean
-  label: string
-  onToggle: () => void
-  testId: string
+  iconClassName?: string
+  label: ReactNode
+  title?: string
 }) {
+  const [expanded, toggleExpanded] = useActivitySyncedDisclosure(active)
+
   return (
-    <div className="min-w-0" data-testid={testId}>
-      <div className="min-w-0">
-        <TranscriptDisclosureButton
-          onClick={onToggle}
-          expanded={expanded}
-          iconClassName="size-3 shrink-0"
-          className="max-w-full gap-2 text-base font-medium text-muted-foreground hover:text-foreground"
-        >
-          <span>{label}</span>
-        </TranscriptDisclosureButton>
-        {expanded ? (
-          <div className={cn("mt-1", contentClassName)}>{children}</div>
-        ) : null}
-      </div>
+    <div className="min-w-0">
+      <TranscriptDisclosureButton
+        expanded={expanded}
+        iconClassName={iconClassName}
+        className={buttonClassName}
+        onClick={toggleExpanded}
+        title={title}
+      >
+        {label}
+      </TranscriptDisclosureButton>
+      {expanded ? children : null}
     </div>
   )
 }
@@ -1300,7 +1366,10 @@ type ParsedFileChange = {
   movePath?: string
 }
 
-function parseFileChangeBody(body: string): ParsedFileChange[] {
+function parseFileChangeBody(
+  body: string,
+  t: ReturnType<typeof useTranslation>["t"]
+): ParsedFileChange[] {
   const trimmed = body.trim()
   if (!trimmed) {
     return []
@@ -1327,7 +1396,7 @@ function parseFileChangeBody(body: string): ParsedFileChange[] {
         additions: change.additions ?? 0,
         deletions: change.deletions ?? 0,
         diff: change.diff,
-        kindLabel: describeFileChangeKind(change.kind),
+        kindLabel: describeFileChangeKind(change.kind, t),
         movePath: change.movePath,
         path: change.path!.trim(),
       }))
@@ -1343,36 +1412,39 @@ function parseFileChangeBody(body: string): ParsedFileChange[] {
         return {
           additions: 0,
           deletions: 0,
-          kindLabel: describeFileChangeKind(kind),
+          kindLabel: describeFileChangeKind(kind, t),
           path,
         }
       })
   }
 }
 
-function describeFileChangeKind(kind: string | undefined) {
+function describeFileChangeKind(
+  kind: string | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch ((kind || "").toLowerCase()) {
     case "add":
     case "added":
     case "create":
     case "created":
-      return "Added"
+      return t("artifact.status.added")
     case "delete":
     case "deleted":
-      return "Deleted"
+      return t("artifact.status.deleted")
     case "move":
     case "rename":
     case "renamed":
-      return "Moved"
+      return t("artifact.status.moved")
     case "update":
     case "updated":
     case "edit":
     case "edited":
     case "modify":
     case "modified":
-      return "Edited"
+      return t("artifact.status.edited")
     default:
-      return "Edited"
+      return t("artifact.status.edited")
   }
 }
 
@@ -1531,7 +1603,10 @@ function parseCommandExecutionDetail(body: string) {
   }
 }
 
-function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
+function summarizeThoughtProcess(
+  items: SessionTranscriptItem[],
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   let reasoningCount = 0
   let toolCount = 0
   let commandCount = 0
@@ -1556,20 +1631,20 @@ function summarizeThoughtProcess(items: SessionTranscriptItem[]) {
 
   const parts = [
     reasoningCount > 0
-      ? `${reasoningCount} thought${reasoningCount === 1 ? "" : "s"}`
+      ? t("transcript.thoughtCount", { count: reasoningCount })
       : null,
-    toolCount > 0 ? `${toolCount} tool${toolCount === 1 ? "" : "s"}` : null,
+    toolCount > 0 ? t("transcript.toolCount", { count: toolCount }) : null,
     commandCount > 0
-      ? `${commandCount} command${commandCount === 1 ? "" : "s"}`
+      ? t("transcript.commandCount", { count: commandCount })
       : null,
     fileChangeCount > 0
-      ? `${fileChangeCount} file change${fileChangeCount === 1 ? "" : "s"}`
+      ? t("transcript.fileChangeCount", { count: fileChangeCount })
       : null,
   ].filter(Boolean)
 
   if (parts.length === 0) {
-    return "Thought process"
+    return t("transcript.thoughtProcess")
   }
 
-  return `Thought process: ${parts.join(", ")}`
+  return t("transcript.thoughtProcessSummary", { summary: parts.join(", ") })
 }

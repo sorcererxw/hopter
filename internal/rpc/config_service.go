@@ -64,7 +64,14 @@ func configPatchFromProto(req *hopterv1.UpdateConfigRequest) (userconfig.Patch, 
 		if err != nil {
 			return userconfig.Patch{}, err
 		}
-		patch.Appearance = &userconfig.AppearanceConfig{Theme: theme}
+		locale, err := localeFromProto(appearance.GetLocale())
+		if err != nil {
+			return userconfig.Patch{}, err
+		}
+		patch.Appearance = &userconfig.AppearanceConfig{
+			Theme:  theme,
+			Locale: locale,
+		}
 	}
 	if agent := req.GetAgent(); agent != nil {
 		patch.Agent = &userconfig.AgentConfig{
@@ -79,7 +86,8 @@ func configPatchFromProto(req *hopterv1.UpdateConfigRequest) (userconfig.Patch, 
 func configToProto(cfg userconfig.Config) *hopterv1.UserConfig {
 	return &hopterv1.UserConfig{
 		Appearance: &hopterv1.AppearanceConfig{
-			Theme: themeToProto(cfg.Appearance.Theme),
+			Theme:  themeToProto(cfg.Appearance.Theme),
+			Locale: localeToProto(cfg.Appearance.Locale),
 		},
 		Agent: &hopterv1.AgentConfig{
 			DefaultBackend:         cfg.Agent.DefaultBackend,
@@ -88,6 +96,32 @@ func configToProto(cfg userconfig.Config) *hopterv1.UserConfig {
 		},
 		Revision:  cfg.Revision,
 		UpdatedAt: timestamp(cfg.UpdatedAt),
+	}
+}
+
+func localeToProto(locale userconfig.Locale) hopterv1.ConfigLocale {
+	switch locale {
+	case userconfig.LocaleEN:
+		return hopterv1.ConfigLocale_CONFIG_LOCALE_EN
+	case userconfig.LocaleZhCN:
+		return hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN
+	case userconfig.LocaleSystem:
+		return hopterv1.ConfigLocale_CONFIG_LOCALE_SYSTEM
+	default:
+		return hopterv1.ConfigLocale_CONFIG_LOCALE_SYSTEM
+	}
+}
+
+func localeFromProto(locale hopterv1.ConfigLocale) (userconfig.Locale, error) {
+	switch locale {
+	case hopterv1.ConfigLocale_CONFIG_LOCALE_SYSTEM, hopterv1.ConfigLocale_CONFIG_LOCALE_UNSPECIFIED:
+		return userconfig.LocaleSystem, nil
+	case hopterv1.ConfigLocale_CONFIG_LOCALE_EN:
+		return userconfig.LocaleEN, nil
+	case hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN:
+		return userconfig.LocaleZhCN, nil
+	default:
+		return "", fmt.Errorf("unsupported locale %v", locale)
 	}
 }
 

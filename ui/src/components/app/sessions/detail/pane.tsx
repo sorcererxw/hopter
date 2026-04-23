@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { SessionComposer } from "@/components/app/sessions/composer"
 import {
@@ -22,6 +23,7 @@ import { useSessionReadTarget } from "@/lib/session-unread"
 import { shouldShowThinkingState } from "./model"
 
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation()
   const { eventStreamState } = useWorkspaceShell()
   const sessionMetaQuery = useSessionMeta(sessionId)
   const sendInput = useSendSessionInput()
@@ -54,8 +56,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <WorkspacePageToolbar
-        title={session?.title || "Thread"}
-        projectName={session?.project?.name || "Local"}
+        title={session?.title || t("session.thread")}
+        projectName={session?.project?.name || t("home.localProject")}
         resumeCommand={sessionMetaQuery.data?.resumeCommand}
         sessionId={sessionId}
       />
@@ -65,7 +67,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
       ) : sessionMetaQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
           <div className="rounded-lg border border-border bg-muted px-6 py-4 text-foreground">
-            This thread is temporarily unavailable.
+            {t("session.unavailable")}
           </div>
         </div>
       ) : (
@@ -126,8 +128,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               onInterrupt={async () => {
                 await interruptSession.mutateAsync({ sessionId })
               }}
-              placeholder="Ask anything"
-              projectLabel={session.project?.name || "Local"}
+              placeholder={t("session.askAnything")}
+              projectLabel={session.project?.name || t("home.localProject")}
               branchLabel="main"
               settingsLabel="Custom (config.toml)"
               selectionKey={sessionId}

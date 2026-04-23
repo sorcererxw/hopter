@@ -74,9 +74,62 @@ func (ConfigTheme) EnumDescriptor() ([]byte, []int) {
 	return file_hopter_v1_config_proto_rawDescGZIP(), []int{0}
 }
 
+type ConfigLocale int32
+
+const (
+	ConfigLocale_CONFIG_LOCALE_UNSPECIFIED ConfigLocale = 0
+	ConfigLocale_CONFIG_LOCALE_SYSTEM      ConfigLocale = 1
+	ConfigLocale_CONFIG_LOCALE_EN          ConfigLocale = 2
+	ConfigLocale_CONFIG_LOCALE_ZH_CN       ConfigLocale = 3
+)
+
+// Enum value maps for ConfigLocale.
+var (
+	ConfigLocale_name = map[int32]string{
+		0: "CONFIG_LOCALE_UNSPECIFIED",
+		1: "CONFIG_LOCALE_SYSTEM",
+		2: "CONFIG_LOCALE_EN",
+		3: "CONFIG_LOCALE_ZH_CN",
+	}
+	ConfigLocale_value = map[string]int32{
+		"CONFIG_LOCALE_UNSPECIFIED": 0,
+		"CONFIG_LOCALE_SYSTEM":      1,
+		"CONFIG_LOCALE_EN":          2,
+		"CONFIG_LOCALE_ZH_CN":       3,
+	}
+)
+
+func (x ConfigLocale) Enum() *ConfigLocale {
+	p := new(ConfigLocale)
+	*p = x
+	return p
+}
+
+func (x ConfigLocale) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConfigLocale) Descriptor() protoreflect.EnumDescriptor {
+	return file_hopter_v1_config_proto_enumTypes[1].Descriptor()
+}
+
+func (ConfigLocale) Type() protoreflect.EnumType {
+	return &file_hopter_v1_config_proto_enumTypes[1]
+}
+
+func (x ConfigLocale) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConfigLocale.Descriptor instead.
+func (ConfigLocale) EnumDescriptor() ([]byte, []int) {
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{1}
+}
+
 type AppearanceConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Theme         ConfigTheme            `protobuf:"varint,1,opt,name=theme,proto3,enum=hopter.v1.ConfigTheme" json:"theme,omitempty"`
+	Locale        ConfigLocale           `protobuf:"varint,2,opt,name=locale,proto3,enum=hopter.v1.ConfigLocale" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -116,6 +169,13 @@ func (x *AppearanceConfig) GetTheme() ConfigTheme {
 		return x.Theme
 	}
 	return ConfigTheme_CONFIG_THEME_UNSPECIFIED
+}
+
+func (x *AppearanceConfig) GetLocale() ConfigLocale {
+	if x != nil {
+		return x.Locale
+	}
+	return ConfigLocale_CONFIG_LOCALE_UNSPECIFIED
 }
 
 type AgentConfig struct {
@@ -434,9 +494,10 @@ var File_hopter_v1_config_proto protoreflect.FileDescriptor
 
 const file_hopter_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\x16hopter/v1/config.proto\x12\thopter.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"@\n" +
+	"\x16hopter/v1/config.proto\x12\thopter.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"q\n" +
 	"\x10AppearanceConfig\x12,\n" +
-	"\x05theme\x18\x01 \x01(\x0e2\x16.hopter.v1.ConfigThemeR\x05theme\"\x95\x01\n" +
+	"\x05theme\x18\x01 \x01(\x0e2\x16.hopter.v1.ConfigThemeR\x05theme\x12/\n" +
+	"\x06locale\x18\x02 \x01(\x0e2\x17.hopter.v1.ConfigLocaleR\x06locale\"\x95\x01\n" +
 	"\vAgentConfig\x12'\n" +
 	"\x0fdefault_backend\x18\x01 \x01(\tR\x0edefaultBackend\x12#\n" +
 	"\rdefault_model\x18\x02 \x01(\tR\fdefaultModel\x128\n" +
@@ -465,7 +526,12 @@ const file_hopter_v1_config_proto_rawDesc = "" +
 	"\x18CONFIG_THEME_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13CONFIG_THEME_SYSTEM\x10\x01\x12\x15\n" +
 	"\x11CONFIG_THEME_DARK\x10\x02\x12\x16\n" +
-	"\x12CONFIG_THEME_LIGHT\x10\x032\xa8\x01\n" +
+	"\x12CONFIG_THEME_LIGHT\x10\x03*v\n" +
+	"\fConfigLocale\x12\x1d\n" +
+	"\x19CONFIG_LOCALE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14CONFIG_LOCALE_SYSTEM\x10\x01\x12\x14\n" +
+	"\x10CONFIG_LOCALE_EN\x10\x02\x12\x17\n" +
+	"\x13CONFIG_LOCALE_ZH_CN\x10\x032\xa8\x01\n" +
 	"\rConfigService\x12F\n" +
 	"\tGetConfig\x12\x1b.hopter.v1.GetConfigRequest\x1a\x1c.hopter.v1.GetConfigResponse\x12O\n" +
 	"\fUpdateConfig\x12\x1e.hopter.v1.UpdateConfigRequest\x1a\x1f.hopter.v1.UpdateConfigResponseB\xa5\x01\n" +
@@ -484,37 +550,39 @@ func file_hopter_v1_config_proto_rawDescGZIP() []byte {
 	return file_hopter_v1_config_proto_rawDescData
 }
 
-var file_hopter_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_hopter_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_hopter_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_hopter_v1_config_proto_goTypes = []any{
 	(ConfigTheme)(0),              // 0: hopter.v1.ConfigTheme
-	(*AppearanceConfig)(nil),      // 1: hopter.v1.AppearanceConfig
-	(*AgentConfig)(nil),           // 2: hopter.v1.AgentConfig
-	(*UserConfig)(nil),            // 3: hopter.v1.UserConfig
-	(*GetConfigRequest)(nil),      // 4: hopter.v1.GetConfigRequest
-	(*GetConfigResponse)(nil),     // 5: hopter.v1.GetConfigResponse
-	(*UpdateConfigRequest)(nil),   // 6: hopter.v1.UpdateConfigRequest
-	(*UpdateConfigResponse)(nil),  // 7: hopter.v1.UpdateConfigResponse
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(ConfigLocale)(0),             // 1: hopter.v1.ConfigLocale
+	(*AppearanceConfig)(nil),      // 2: hopter.v1.AppearanceConfig
+	(*AgentConfig)(nil),           // 3: hopter.v1.AgentConfig
+	(*UserConfig)(nil),            // 4: hopter.v1.UserConfig
+	(*GetConfigRequest)(nil),      // 5: hopter.v1.GetConfigRequest
+	(*GetConfigResponse)(nil),     // 6: hopter.v1.GetConfigResponse
+	(*UpdateConfigRequest)(nil),   // 7: hopter.v1.UpdateConfigRequest
+	(*UpdateConfigResponse)(nil),  // 8: hopter.v1.UpdateConfigResponse
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_hopter_v1_config_proto_depIdxs = []int32{
 	0,  // 0: hopter.v1.AppearanceConfig.theme:type_name -> hopter.v1.ConfigTheme
-	1,  // 1: hopter.v1.UserConfig.appearance:type_name -> hopter.v1.AppearanceConfig
-	2,  // 2: hopter.v1.UserConfig.agent:type_name -> hopter.v1.AgentConfig
-	8,  // 3: hopter.v1.UserConfig.updated_at:type_name -> google.protobuf.Timestamp
-	3,  // 4: hopter.v1.GetConfigResponse.config:type_name -> hopter.v1.UserConfig
-	1,  // 5: hopter.v1.UpdateConfigRequest.appearance:type_name -> hopter.v1.AppearanceConfig
-	2,  // 6: hopter.v1.UpdateConfigRequest.agent:type_name -> hopter.v1.AgentConfig
-	3,  // 7: hopter.v1.UpdateConfigResponse.config:type_name -> hopter.v1.UserConfig
-	4,  // 8: hopter.v1.ConfigService.GetConfig:input_type -> hopter.v1.GetConfigRequest
-	6,  // 9: hopter.v1.ConfigService.UpdateConfig:input_type -> hopter.v1.UpdateConfigRequest
-	5,  // 10: hopter.v1.ConfigService.GetConfig:output_type -> hopter.v1.GetConfigResponse
-	7,  // 11: hopter.v1.ConfigService.UpdateConfig:output_type -> hopter.v1.UpdateConfigResponse
-	10, // [10:12] is the sub-list for method output_type
-	8,  // [8:10] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	1,  // 1: hopter.v1.AppearanceConfig.locale:type_name -> hopter.v1.ConfigLocale
+	2,  // 2: hopter.v1.UserConfig.appearance:type_name -> hopter.v1.AppearanceConfig
+	3,  // 3: hopter.v1.UserConfig.agent:type_name -> hopter.v1.AgentConfig
+	9,  // 4: hopter.v1.UserConfig.updated_at:type_name -> google.protobuf.Timestamp
+	4,  // 5: hopter.v1.GetConfigResponse.config:type_name -> hopter.v1.UserConfig
+	2,  // 6: hopter.v1.UpdateConfigRequest.appearance:type_name -> hopter.v1.AppearanceConfig
+	3,  // 7: hopter.v1.UpdateConfigRequest.agent:type_name -> hopter.v1.AgentConfig
+	4,  // 8: hopter.v1.UpdateConfigResponse.config:type_name -> hopter.v1.UserConfig
+	5,  // 9: hopter.v1.ConfigService.GetConfig:input_type -> hopter.v1.GetConfigRequest
+	7,  // 10: hopter.v1.ConfigService.UpdateConfig:input_type -> hopter.v1.UpdateConfigRequest
+	6,  // 11: hopter.v1.ConfigService.GetConfig:output_type -> hopter.v1.GetConfigResponse
+	8,  // 12: hopter.v1.ConfigService.UpdateConfig:output_type -> hopter.v1.UpdateConfigResponse
+	11, // [11:13] is the sub-list for method output_type
+	9,  // [9:11] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_hopter_v1_config_proto_init() }
@@ -527,7 +595,7 @@ func file_hopter_v1_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hopter_v1_config_proto_rawDesc), len(file_hopter_v1_config_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,

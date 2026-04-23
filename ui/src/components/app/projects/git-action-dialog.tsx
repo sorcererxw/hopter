@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { GitBranch, LoaderCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
@@ -38,6 +39,7 @@ export function ProjectGitActionDialog({
   open,
   projectId,
 }: ProjectGitActionDialogProps) {
+  const { t } = useTranslation()
   const [mode, setMode] = useState(initialMode)
   const [message, setMessage] = useState("")
   const statusQuery = useProjectGitStatus(projectId, open && Boolean(projectId))
@@ -59,9 +61,9 @@ export function ProjectGitActionDialog({
     : status?.defaultCommitMessage || ""
   const canCommit = Boolean(
     status?.canCommit &&
-      commitMessage.trim() &&
-      !pending &&
-      status.isGitRepository
+    commitMessage.trim() &&
+    !pending &&
+    status.isGitRepository
   )
   const canCommitAndPush = canCommit && Boolean(status?.canPush)
   const showPushRetry =
@@ -79,17 +81,17 @@ export function ProjectGitActionDialog({
       projectId,
     })
     if (response.outcome === GitActionOutcome.COMMITTED_AND_PUSHED) {
-      toast.success("Committed and pushed")
+      toast.success(t("git.committedAndPushed"))
       onOpenChange(false)
     } else if (response.outcome === GitActionOutcome.COMMITTED) {
-      toast.success("Committed")
+      toast.success(t("git.committed"))
       onOpenChange(false)
     } else if (response.outcome === GitActionOutcome.COMMITTED_PUSH_FAILED) {
-      toast.error("Committed locally, push failed")
+      toast.error(t("git.committedPushFailed"))
     } else if (response.outcome === GitActionOutcome.NO_CHANGES) {
-      toast.message("No changes to commit")
+      toast.message(t("git.noChanges"))
     } else {
-      toast.error(response.summary || "Git action did not complete")
+      toast.error(response.summary || t("git.actionIncomplete"))
     }
   }
 
@@ -109,10 +111,10 @@ export function ProjectGitActionDialog({
       projectId,
     })
     if (response.outcome === GitActionOutcome.PUSHED) {
-      toast.success("Pushed")
+      toast.success(t("git.pushed"))
       onOpenChange(false)
     } else {
-      toast.error("Push did not complete")
+      toast.error(t("git.pushFailed"))
     }
   }
 
@@ -123,37 +125,40 @@ export function ProjectGitActionDialog({
         data-testid="project-git-action-dialog"
       >
         <DialogHeader>
-          <DialogTitle>Commit repository changes</DialogTitle>
-          <DialogDescription>
-            This will stage and commit every uncommitted change in this
-            repository.
-          </DialogDescription>
+          <DialogTitle>{t("git.commitRepositoryChanges")}</DialogTitle>
+          <DialogDescription>{t("git.description")}</DialogDescription>
         </DialogHeader>
 
         {statusQuery.isLoading ? (
           <div className="flex min-h-48 items-center justify-center text-muted-foreground">
             <LoaderCircle className="mr-2 size-4 animate-spin" />
-            Loading git status...
+            {t("git.loadingStatus")}
           </div>
         ) : !status ? (
-          <PanelMessage title="Git unavailable" body="Unable to load git status." />
+          <PanelMessage
+            title={t("git.unavailable")}
+            body={t("git.loadStatusFailed")}
+          />
         ) : (
           <div className="min-h-0 overflow-auto pr-1">
             <RepositorySummary status={status} />
 
             {partialStaging ? (
               <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-                Some files are partially staged. Hopter will commit the full
-                current worktree version.
+                {t("git.partialStaging")}
               </div>
             ) : null}
 
             <Diagnostics
-              diagnostics={[...status.blockers, ...status.warnings, ...diagnostics]}
+              diagnostics={[
+                ...status.blockers,
+                ...status.warnings,
+                ...diagnostics,
+              ]}
             />
 
             <label className="mt-4 block text-sm font-medium text-foreground">
-              Commit message
+              {t("git.commitMessage")}
               <input
                 className="mt-2 h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 disabled={pending}
@@ -164,7 +169,7 @@ export function ProjectGitActionDialog({
 
             <div className="mt-4">
               <div className="mb-2 text-sm font-medium text-foreground">
-                Files to commit
+                {t("git.filesToCommit")}
               </div>
               <FileList files={status.files} />
             </div>
@@ -180,16 +185,18 @@ export function ProjectGitActionDialog({
             className="mr-auto"
           >
             <RotateCcw className="size-3.5" />
-            Refresh
+            {t("git.refresh")}
           </Button>
           {showPushRetry ? (
             <Button type="button" onClick={retryPush} disabled={pending}>
-              Retry push
+              {t("git.retryPush")}
             </Button>
           ) : null}
           <Button
             type="button"
-            variant={mode === GitCommitMode.COMMIT_ONLY ? "default" : "secondary"}
+            variant={
+              mode === GitCommitMode.COMMIT_ONLY ? "default" : "secondary"
+            }
             disabled={!canCommit}
             onClick={() => {
               setMode(GitCommitMode.COMMIT_ONLY)
@@ -199,7 +206,7 @@ export function ProjectGitActionDialog({
             {pending && mode === GitCommitMode.COMMIT_ONLY ? (
               <LoaderCircle className="size-3.5 animate-spin" />
             ) : null}
-            Commit All
+            {t("git.commitAll")}
           </Button>
           <Button
             type="button"
@@ -212,7 +219,7 @@ export function ProjectGitActionDialog({
             {pending && mode === GitCommitMode.COMMIT_AND_PUSH ? (
               <LoaderCircle className="size-3.5 animate-spin" />
             ) : null}
-            Commit All &amp; Push
+            {t("git.commitAllPush")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -221,11 +228,13 @@ export function ProjectGitActionDialog({
 }
 
 function RepositorySummary({ status }: { status: ProjectGitStatus }) {
+  const { t } = useTranslation()
+
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={status.isGitRepository ? "secondary" : "destructive"}>
-          {status.isGitRepository ? "Git repo" : "No .git"}
+          {status.isGitRepository ? t("git.gitRepo") : t("git.noGit")}
         </Badge>
         {status.branch ? (
           <span className="inline-flex items-center gap-1 text-sm text-foreground">
@@ -243,15 +252,18 @@ function RepositorySummary({ status }: { status: ProjectGitStatus }) {
         {status.rootPath}
       </div>
       <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-        <span>{status.files.length} dirty files</span>
+        <span>{t("git.dirtyFiles", { count: status.files.length })}</span>
         {status.upstream ? (
-          <span>upstream {status.upstream}</span>
+          <span>{t("git.upstream", { name: status.upstream })}</span>
         ) : (
-          <span>no upstream</span>
+          <span>{t("git.noUpstream")}</span>
         )}
         {status.ahead || status.behind ? (
           <span>
-            ahead {status.ahead}, behind {status.behind}
+            {t("git.upstreamDiverged", {
+              ahead: status.ahead,
+              behind: status.behind,
+            })}
           </span>
         ) : null}
       </div>
@@ -279,10 +291,12 @@ function Diagnostics({ diagnostics }: { diagnostics: { message: string }[] }) {
 }
 
 function FileList({ files }: { files: ProjectGitStatus["files"] }) {
+  const { t } = useTranslation()
+
   if (files.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
-        No changes to commit.
+        {t("git.noChangesToCommit")}
       </div>
     )
   }
@@ -301,13 +315,13 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
                 : "text-muted-foreground"
             )}
           >
-            {formatFileStatus(file.status)}
+            {formatFileStatus(file.status, t)}
           </span>
           <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
             {file.oldPath ? `${file.oldPath} -> ${file.path}` : file.path}
           </span>
           {file.partiallyStaged ? (
-            <Badge variant="outline">partial</Badge>
+            <Badge variant="outline">{t("git.partial")}</Badge>
           ) : null}
         </div>
       ))}
@@ -324,21 +338,24 @@ function PanelMessage({ body, title }: { body: string; title: string }) {
   )
 }
 
-function formatFileStatus(status: GitFileStatus) {
+function formatFileStatus(
+  status: GitFileStatus,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
   switch (status) {
     case GitFileStatus.ADDED:
-      return "added"
+      return t("git.status.added")
     case GitFileStatus.MODIFIED:
-      return "modified"
+      return t("git.status.modified")
     case GitFileStatus.DELETED:
-      return "deleted"
+      return t("git.status.deleted")
     case GitFileStatus.RENAMED:
-      return "renamed"
+      return t("git.status.renamed")
     case GitFileStatus.UNTRACKED:
-      return "untracked"
+      return t("git.status.untracked")
     case GitFileStatus.CONFLICTED:
-      return "conflict"
+      return t("git.status.conflict")
     default:
-      return "changed"
+      return t("git.status.changed")
   }
 }
