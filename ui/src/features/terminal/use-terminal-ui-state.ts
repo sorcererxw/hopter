@@ -14,6 +14,8 @@ type SessionDrawerState = {
 const defaultHeight = 360
 const bySession = new Map<string, SessionDrawerState>()
 
+// Drawer state is keyed per session and kept outside React Query because it is
+// local presentation state with no backend source of truth.
 function getOrInit(sessionId: string): SessionDrawerState {
   const existing = bySession.get(sessionId)
   if (existing) {
@@ -37,6 +39,8 @@ export function useTerminalUIState(sessionId: string) {
       const current = getOrInit(sessionId)
       mutate(current)
       bySession.set(sessionId, current)
+      // Bump a local version so hooks subscribed to this session re-read the
+      // latest mutable state snapshot.
       setVersion((value) => value + 1)
     },
     [sessionId]

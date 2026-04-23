@@ -8,6 +8,8 @@ function nextID(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2)}`
 }
 
+// Browser instance survives across tabs; tab id is per-tab. Together they let
+// the backend distinguish "same browser, different tab" terminal consumers.
 export function getBrowserInstanceId() {
   const existing = window.localStorage.getItem(browserInstanceStorageKey)
   if (existing) {

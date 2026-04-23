@@ -71,6 +71,9 @@ function loadMarkdownModules() {
   return markdownModulesPromise
 }
 
+// SessionRichText renders assistant output, reviews, and summaries with a lazy
+// markdown path plus a plain-text fallback. It also upgrades inline skill/plugin
+// references into richer chips when those references are known locally.
 export function SessionRichText({
   className,
   markdown = true,
@@ -171,6 +174,7 @@ export function SessionRichText({
             const code = flattenMarkdownChildren(children)
 
             if (codeClassName?.includes("language-")) {
+              // Leave fenced code blocks for the surrounding <pre> renderer.
               return <code className={codeClassName}>{code}</code>
             }
 
@@ -263,6 +267,8 @@ function PlainRichText({
   pluginByReference: Map<string, InlineReferenceMetadata>
   text: string
 }) {
+  // Plain-text rendering still highlights known inline references so non-markdown
+  // content keeps most of the affordances that markdown mode provides.
   return (
     <div
       className={cn(
@@ -471,6 +477,8 @@ function MarkdownLink({
         if (!onLocalPathClick) {
           return
         }
+        // Local file links are preview intents inside the workspace, not full
+        // browser navigations away from the current session.
         event.preventDefault()
         onLocalPathClick(href, label)
       }}

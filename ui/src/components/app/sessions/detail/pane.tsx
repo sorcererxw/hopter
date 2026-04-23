@@ -29,6 +29,8 @@ import { useSessionReadTarget } from "@/lib/session-unread"
 
 import { shouldShowThinkingState } from "./model"
 
+// SessionWorkspacePane composes the session header, transcript surface, and
+// reply composer around a single session id.
 export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const { t } = useTranslation()
   const { eventStreamState } = useWorkspaceShell()
@@ -57,6 +59,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
   const { session } = transcriptFeed
   const initialComposerSelection = useMemo(
     () =>
+      // Composer defaults come from three layers: last explicit choice for this
+      // session, session-level server preference, then global config defaults.
       resolveSessionComposerSelection(
         getSessionComposerSelection(sessionId),
         sessionMetaQuery.data
@@ -185,6 +189,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 const normalizedPrompt = prompt.trim()
                 const pendingInput =
                   normalizedPrompt || attachments[0]?.label || "[image]"
+                // Clear the input optimistically so the UI behaves like chat,
+                // but keep enough local state to restore on submission failure.
                 setPrompt("")
                 setOptimisticPendingInput(pendingInput)
                 rememberSessionComposerSelection(sessionId, {

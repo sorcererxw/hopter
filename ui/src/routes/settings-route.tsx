@@ -43,6 +43,8 @@ const COMPOSER_SEND_SHORTCUT_OPTIONS = [
   { value: "enter" },
 ] as const
 
+// These labels mirror backend enums but stay numeric here to avoid leaking the
+// generated transport layer into the rest of the settings UI.
 function formatHostStatusLabel(status: number | undefined, t: TFunction) {
   switch (status) {
     case 1:
@@ -73,6 +75,8 @@ function availabilityColor(available: boolean) {
   return available ? "bg-emerald-500" : "bg-zinc-500"
 }
 
+// Shared section wrapper keeps the settings page consistent while still letting
+// each category own its own controls and descriptions.
 function SettingsSection({
   children,
   id,
@@ -114,6 +118,8 @@ function SettingsRow({
   )
 }
 
+// SettingsRoute is the control-plane settings page for host health, appearance,
+// defaults, and backend availability. It is not intended to expose raw config.
 export function SettingsRoute() {
   const { t } = useTranslation()
   const location = useLocation()
@@ -147,6 +153,8 @@ export function SettingsRoute() {
   function handleSendShortcutChange(nextShortcut: string) {
     const shortcut = nextShortcut as ComposerSendShortcutPreference
     setOptimisticSendShortcut(shortcut)
+    // Mirror the optimistic UI pattern used for theme/locale so the dropdown
+    // feels instant while the persisted config revision catches up.
     updateConfig.mutate(
       {
         composer: {
@@ -335,8 +343,6 @@ export function SettingsRoute() {
     </div>
   )
 }
-
-type TFunction = ReturnType<typeof useTranslation>["t"]
 
 function capitalizeTheme(theme: "dark" | "light") {
   return theme === "dark" ? "Dark" : "Light"

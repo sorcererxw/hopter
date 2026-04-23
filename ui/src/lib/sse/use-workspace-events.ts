@@ -8,6 +8,8 @@ import {
 import { applySessionUnreadEvent } from "@/lib/session-unread"
 import type { WorkspaceEventStreamState } from "@/components/app/workspace"
 
+// Subscribe to the backend SSE stream once and translate events into query
+// invalidations plus unread markers for the rest of the shell.
 export function useWorkspaceEvents() {
   const queryClient = useQueryClient()
   const [lastEventAt, setLastEventAt] = useState<number | null>(null)
@@ -31,6 +33,7 @@ export function useWorkspaceEvents() {
       try {
         parsed = JSON.parse(event.data) as WorkspaceEventEnvelope
       } catch {
+        // Ignore malformed payloads and fall back to broad invalidation logic.
         parsed = {}
       }
 
@@ -47,6 +50,8 @@ export function useWorkspaceEvents() {
       if (disposed) {
         return
       }
+      // EventSource auto-retries on its own; the hook only exposes a status so
+      // the shell can explain whether the problem is offline vs reconnecting.
       setStatus(navigator.onLine ? "reconnecting" : "offline")
     }
 

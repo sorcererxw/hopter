@@ -14,6 +14,8 @@ type AuthStatus = {
   }
 }
 
+// Auth still uses simple REST endpoints rather than Connect because the flow is
+// browser-session oriented and intentionally minimal for localhost v1.
 async function getAuthStatus(): Promise<AuthStatus> {
   const response = await fetch("/api/auth/me", {
     credentials: "same-origin",
@@ -78,6 +80,8 @@ export function useLogout() {
   return useMutation({
     mutationFn: logoutRequest,
     onSuccess: async () => {
+      // Logout invalidates auth and drops config cache because the next session
+      // may belong to a different local browser identity.
       await queryClient.invalidateQueries({ queryKey: queryKeys.authStatus() })
       queryClient.removeQueries({ queryKey: queryKeys.config() })
     },

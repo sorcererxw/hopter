@@ -1,3 +1,5 @@
+// Shared query key factory so hooks, SSE invalidation, and optimistic cache
+// patches all speak the same cache-addressing language.
 export const queryKeys = {
   authStatus: () => ["auth-status"] as const,
   config: () => ["config"] as const,

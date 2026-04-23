@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { hostClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
+// Update polling uses the host RPC directly because the backend owns update
+// eligibility and any self-reexec workflow.
 export function useHostUpdates(refetchInterval: number | false = 30_000) {
   return useQuery({
     queryKey: queryKeys.hostUpdates(),
@@ -23,6 +25,8 @@ export function useApplyUpdate() {
       return response.updateStatus
     },
     onSuccess: async (status) => {
+      // Seed the latest status immediately so update controls react before the
+      // next poll interval lands.
       queryClient.setQueryData(queryKeys.hostUpdates(), status)
       await queryClient.invalidateQueries({ queryKey: queryKeys.hostUpdates() })
     },

@@ -9,6 +9,8 @@ import { TaskService } from "@/gen/proto/hopter/v1/tasks_pb"
 import { TerminalService } from "@/gen/proto/hopter/v1/terminal_pb"
 import { transport } from "@/lib/connect/transport"
 
+// Centralized Connect clients keep the rest of the app importing service-scoped
+// callers instead of rebuilding transport wiring in each feature hook.
 export const hostClient = createClient(HostService, transport)
 export const configClient = createClient(ConfigService, transport)
 export const gitClient = createClient(GitService, transport)

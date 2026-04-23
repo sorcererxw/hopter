@@ -17,6 +17,8 @@ type PushProjectBranchInput = {
   projectId: string
 }
 
+// Git actions are protected by backend-issued tokens so the UI only retries or
+// refreshes after the server has validated the current repo state.
 export function useProjectGitStatus(projectId?: string, enabled = true) {
   return useQuery({
     enabled: Boolean(projectId) && enabled,
@@ -81,6 +83,8 @@ async function invalidateProjectGitQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   projectId: string
 ) {
+  // A successful commit/push can change project badges, session affordances,
+  // and the detailed git panel, so invalidate all three surfaces together.
   await queryClient.invalidateQueries({ queryKey: queryKeys.projects() })
   await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
   await queryClient.invalidateQueries({

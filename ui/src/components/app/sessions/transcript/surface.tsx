@@ -38,6 +38,8 @@ type SessionTranscriptSurfaceProps = {
   transcriptVisible: boolean
 }
 
+// The transcript surface owns only rendering and local transcript affordances.
+// Data loading, pagination, and scroll state live in the feed hook.
 export function SessionTranscriptSurface({
   activityItems,
   eventStreamState,
@@ -93,6 +95,8 @@ export function SessionTranscriptSurface({
             isLoadingInitialTranscript={isLoadingInitialTranscript}
             onSelectPath={ignoreLocalPathClick}
           />
+          {/* Artifacts stay below the conversational timeline because the product
+          prioritizes status/summary/input over file output browsing. */}
           <SessionArtifactWorkspace
             artifacts={session.artifacts}
             sessionId={sessionId}

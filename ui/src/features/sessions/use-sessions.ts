@@ -50,6 +50,8 @@ type RespondToApprovalInput = {
 
 const defaultTranscriptPageSize = 50
 
+// Session queries are intentionally split by surface: list, meta, artifacts,
+// transcript, and file/review lookups can all refresh on different cadences.
 export function useSessions(
   projectId?: string,
   pollInterval: number | false = false
@@ -184,6 +186,9 @@ export function useSessionTranscript(
   })
 }
 
+// Copy the generated transcript page into a plain object so React Query cache
+// updates can safely replace or patch items without relying on generated class
+// identity semantics.
 function normalizeSessionTranscriptPage(
   page: SessionTranscriptPage | undefined
 ): SessionTranscriptPage | undefined {
@@ -272,6 +277,8 @@ export function useSendSessionInput() {
       })
     },
     onSuccess: async (_response, variables) => {
+      // Sending input changes both the session list metadata and the transcript,
+      // so refresh both even if the server will also stream patches later.
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
       await queryClient.invalidateQueries({
         queryKey: queryKeys.sessionMeta(variables.sessionId),

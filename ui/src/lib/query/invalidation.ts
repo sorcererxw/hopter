@@ -73,6 +73,9 @@ type CachedTranscriptPage = {
   snapshotUpdatedAt?: unknown
 }
 
+// Translate backend workspace events into the narrowest useful React Query
+// invalidations. When possible, patch session caches in place instead of always
+// forcing a full refetch.
 export function applyWorkspaceEventInvalidation(
   client: QueryClient,
   event: WorkspaceEventEnvelope
@@ -174,6 +177,8 @@ function applySessionLivePatch(
     patchKind === SessionLivePatchKind.MESSAGE_FINALIZED ||
     patchKind === SessionLivePatchKind.RECONCILE_REQUIRED
   ) {
+    // Keep the session header responsive as soon as status or summary changes,
+    // even before the next full transcript or session-meta refetch lands.
     client.setQueriesData(
       { queryKey: queryKeys.sessionMeta(sessionId) },
       (current: SessionMeta | undefined) => {
@@ -244,6 +249,8 @@ function applySessionLivePatch(
           const initialBody =
             bodyDelta ||
             (itemKind === 3 && displayBodyDelta ? RAW_REASONING_FALLBACK : "")
+          // Draft deltas can arrive before the full transcript item exists, so
+          // synthesize a placeholder cache row and let later patches reconcile it.
           items.push({
             id: draftItemId,
             orderKey: normalizedPatchItem?.orderKey || fallbackOrderKey,
@@ -365,6 +372,8 @@ function shouldInvalidateForLivePatch(patch: SessionLivePatchEnvelope) {
   }
 }
 
+// The backend can encode enums as numbers or strings depending on the transport
+// path, so normalize everything before routing invalidation behavior.
 function normalizeWorkspaceEventType(value: string | number | undefined) {
   switch (value) {
     case WorkspaceEventType.HOST_STATUS_CHANGED:

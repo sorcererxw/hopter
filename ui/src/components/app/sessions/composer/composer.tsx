@@ -119,6 +119,9 @@ type ComposerTextSegment = {
   text: string
 }
 
+// SessionComposer owns prompt entry plus lightweight agent selection state. It
+// also does local skill-token editing so the backend receives already-formed
+// `$skill` references instead of partial mention syntax.
 export function SessionComposer({
   busy = false,
   contextWindowUsage,
@@ -201,6 +204,8 @@ export function SessionComposer({
     : ""
 
   useEffect(() => {
+    // Reset local selections when the parent swaps session context or supplies
+    // a fresh initial preference set.
     setSelectedModel(initialSelection?.model ?? DEFAULT_MODEL)
     setSelectedReasoningEffort(
       initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
@@ -264,6 +269,8 @@ export function SessionComposer({
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
+      // New mention targets should reopen suggestion state and reset keyboard
+      // focus without fighting the current keystroke.
       setSkillSuggestionsDismissed(false)
       setHighlightedSkillIndex(0)
     })
@@ -311,6 +318,8 @@ export function SessionComposer({
       atomicSkillReferences
     )
     if (selection.changed) {
+      // Known skill references behave like atomic chips: keep the caret from
+      // landing in the middle of a `$skill-name` token.
       textarea.setSelectionRange(selection.start, selection.end)
     }
     setCaretPosition(selection.end)
@@ -360,6 +369,8 @@ export function SessionComposer({
     onValueChange(nextValue)
     setSkillSuggestionsDismissed(true)
     window.requestAnimationFrame(() => {
+      // Move the caret to the end of the inserted token plus trailing space so
+      // the next keystroke continues the prompt naturally.
       const nextCaret = activeSkillMatch.start + skill.reference.length + 2
       textareaRef.current?.focus()
       textareaRef.current?.setSelectionRange(nextCaret, nextCaret)
@@ -413,6 +424,8 @@ export function SessionComposer({
     }
 
     const availableSlots = MAX_IMAGE_ATTACHMENTS - attachments.length
+    // Enforce image-only uploads and a hard attachment cap in the client so the
+    // composer can explain rejection before the request leaves the browser.
     const acceptedFiles = files
       .filter((file) => file.type.startsWith("image/"))
       .filter((file) => file.size <= MAX_IMAGE_ATTACHMENT_BYTES)
@@ -504,6 +517,8 @@ export function SessionComposer({
     )
     if (atomicDeletion) {
       event.preventDefault()
+      // Backspace/delete should remove an entire skill token rather than
+      // corrupting the mention into an unparseable partial reference.
       onValueChange(atomicDeletion.value)
       window.requestAnimationFrame(() => {
         textareaRef.current?.setSelectionRange(
@@ -593,6 +608,9 @@ export function SessionComposer({
                       data-testid="composer-visual-overlay"
                       className="pointer-events-none absolute inset-0 overflow-hidden py-0 text-base leading-relaxed break-words whitespace-pre-wrap text-foreground"
                     >
+                      {/* The overlay mirrors textarea content only for highlighted
+                      skill chips; the real editable value still lives in the
+                      textarea underneath. */}
                       {composerTextSegments.map((segment, index) =>
                         segment.highlighted ? (
                           <ComposerSkillToken

@@ -6,6 +6,9 @@ const REASONING_PLACEHOLDER_TEXT = new Set([
   "Reasoning progress emitted by Codex.",
 ])
 
+// Activity items are the transcript feed's intermediate representation: richer
+// than raw transcript items, but still generic enough for multiple renderers to
+// group and decorate.
 export type ActivityItem =
   | {
       item: SessionTranscriptItem
@@ -70,6 +73,8 @@ export function insertPendingInputActivityItem(
     return [...items, pendingItem]
   }
 
+  // Keep optimistic user input immediately before the live assistant draft so
+  // turn order stays readable while the backend is still streaming.
   return [
     ...items.slice(0, liveDraftIndex),
     pendingItem,
@@ -94,6 +99,8 @@ export function isDisplayableTranscriptItem(item: SessionTranscriptItem) {
     return item.body.trim().length > 0
   }
 
+  // Reasoning items can arrive with placeholder body text while streaming.
+  // Show them only when they contain real content or are still actively live.
   return (
     hasSubstantiveReasoningText(item.body) ||
     hasSubstantiveReasoningText(item.displayBody) ||
@@ -151,6 +158,8 @@ function pendingHintMatchCandidates(value: string) {
   }
 
   const candidates = [normalized]
+  // The server may abbreviate pending hints with an ellipsis while the full
+  // user message appears in transcript history later.
   const prefixWithoutEllipsis = normalized.replace(/[…]+$/u, "").trim()
   if (prefixWithoutEllipsis && prefixWithoutEllipsis !== normalized) {
     candidates.push(prefixWithoutEllipsis)

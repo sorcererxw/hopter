@@ -33,6 +33,8 @@ type ProjectGitActionDialogProps = {
   projectId?: string
 }
 
+// Git dialog is a guarded commit/push surface. The backend supplies a status
+// token so actions only apply to the exact repo snapshot the user reviewed.
 export function ProjectGitActionDialog({
   initialMode,
   onOpenChange,
@@ -80,6 +82,8 @@ export function ProjectGitActionDialog({
       mode: nextMode,
       projectId,
     })
+    // Outcome-specific toasts mirror the backend's guarded git semantics:
+    // commit may succeed even when push fails, and retry then becomes explicit.
     if (response.outcome === GitActionOutcome.COMMITTED_AND_PUSHED) {
       toast.success(t("git.committedAndPushed"))
       onOpenChange(false)

@@ -29,6 +29,8 @@ type ServerEvent =
   | { type: "error"; message?: string }
   | { type: "pong" }
 
+// Terminal sessions are keyed by browser-instance and tab so a single hopter
+// session can keep separate terminal lifecycles across multiple open browsers.
 export function useTerminalSession(sessionId: string, enabled: boolean) {
   const queryClient = useQueryClient()
   const browserInstanceId = useMemo(() => getBrowserInstanceId(), [])
@@ -169,6 +171,8 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
               if (terminalRef.current) {
                 terminalRef.current.write(parsed.data)
               } else {
+                // The websocket can start producing output before the terminal
+                // widget mounts. Buffer chunks until a handle is available.
                 pendingOutputRef.current.push(parsed.data)
               }
             }
@@ -203,6 +207,8 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
         }
         setStreamStatus("reconnecting")
         if (!disposedRef.current) {
+          // Retry the live stream without recreating the server-side terminal so
+          // transient network loss does not discard terminal state.
           reconnectTimerRef.current = window.setTimeout(() => {
             connect(target)
           }, 1000)
@@ -231,6 +237,8 @@ export function useTerminalSession(sessionId: string, enabled: boolean) {
         existing.status === TerminalStatus.EXITED ||
         existing.status === TerminalStatus.TERMINATED
       ) {
+        // Finished terminals are not reusable; create a fresh server-side
+        // session before attaching a new websocket stream.
         const created = await createTerminal.mutateAsync()
         connect(created)
         return created

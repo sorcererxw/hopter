@@ -138,6 +138,8 @@ type SessionRailUiState = {
   projectsCollapsed: boolean
 }
 
+// The rail remembers per-project expansion state locally because it is purely
+// navigational UI state and should not round-trip through the backend.
 function readSessionRailUiState(): SessionRailUiState {
   if (typeof window === "undefined") {
     return {
@@ -218,6 +220,8 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
   }
 }
 
+// SessionRail is the left-hand navigation owner: session polling, grouping, UI
+// persistence, and the host update affordance all live here.
 export function SessionRail({ onNavigate }: SessionRailProps) {
   const { t } = useTranslation()
   const { eventStreamState, posture } = useWorkspaceShell()
@@ -303,6 +307,8 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
     if (updateStatus.currentVersion !== reloadTargetVersion) {
       return
     }
+    // A successful self-update re-execs the binary. Reload only after the host
+    // reports the new version so the browser reconnects to the fresh process.
     setReloadTargetVersion(null)
     window.location.reload()
   }, [reloadTargetVersion, updateStatus?.currentVersion])
@@ -495,6 +501,8 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                     const folderClosed = closedProjectIds[groupKey] ?? false
                     const sessionsCollapsed =
                       collapsedProjectIds[groupKey] ?? false
+                    // Collapsing a long project list still keeps a small preview
+                    // set visible so the rail remains scannable at a glance.
                     const visibleSessions = sessionsCollapsed
                       ? group.sessions.slice(0, 5)
                       : group.sessions

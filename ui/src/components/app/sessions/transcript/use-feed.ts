@@ -36,6 +36,9 @@ type UseSessionTranscriptFeedInput = {
   sessionMeta: SessionMeta | undefined
 }
 
+// useSessionTranscriptFeed is the coordination layer for transcript paging,
+// optimistic pending input, and "stick to bottom unless the user opted out"
+// scroll behavior.
 export function useSessionTranscriptFeed({
   eventStreamState,
   optimisticPendingInput,
@@ -45,6 +48,8 @@ export function useSessionTranscriptFeed({
 }: UseSessionTranscriptFeedInput) {
   const transcriptPollInterval = useMemo(
     () =>
+      // When SSE is healthy we can poll more conservatively. When disconnected,
+      // tighten polling for active sessions so the shell still feels live.
       eventStreamState === "connected"
         ? sessionMeta
           ? shouldPollSessionState(sessionMeta.status)
@@ -144,6 +149,8 @@ export function useSessionTranscriptFeed({
       )
 
     if (transcriptHasPending || serverHasPending) {
+      // Once either the transcript or session metadata reflects the optimistic
+      // input, the local placeholder can be removed.
       onOptimisticPendingInputSettled()
     }
   }, [
@@ -181,6 +188,8 @@ export function useSessionTranscriptFeed({
       shouldShowThinkingState(session.status) &&
       !hasActiveReasoningTranscriptItem
     ) {
+      // Some backends report "thinking" only via status changes, so synthesize
+      // a placeholder row when no explicit reasoning transcript item exists yet.
       items.push({
         kind: "thinking" as const,
         key: "thinking",
@@ -226,6 +235,8 @@ export function useSessionTranscriptFeed({
 
       const currentSnapshotKey = transcriptPageSnapshotKey(current.at(-1))
       if (currentSnapshotKey !== latestSnapshotKey) {
+        // Snapshot drift means the server rebuilt the latest page. Drop local
+        // pagination state and rebuild from the fresh latest snapshot.
         prependSnapshotRef.current = null
         setIsFetchingPreviousPage(false)
         return [latestPage]
@@ -267,6 +278,7 @@ export function useSessionTranscriptFeed({
       return
     }
 
+    // Entering a different session should always start at the newest content.
     scheduleTranscriptStickToBottom("instant", true)
     lastSessionIdRef.current = sessionId
     lastActivityCountRef.current = activityItems.length
@@ -298,6 +310,8 @@ export function useSessionTranscriptFeed({
       lastActivitySignatureRef.current = scrollAnchorActivitySignature
       return
     } else if (activityChanged && shouldStickToBottomRef.current) {
+      // Only auto-follow new output while the user is still effectively pinned
+      // to the bottom. Manual upward scroll disables this until they return.
       scheduleTranscriptStickToBottom("instant")
     }
 
@@ -340,6 +354,8 @@ export function useSessionTranscriptFeed({
         return
       }
 
+      // Streaming output often changes height without a scroll event; force the
+      // viewport to follow it while the user is still "attached" to the bottom.
       scheduleTranscriptStickToBottom("instant")
     })
 
@@ -415,6 +431,8 @@ export function useSessionTranscriptFeed({
                 (existing.items ?? []).map((item) => item.id)
               )
             )
+            // Deduplicate against already loaded pages because history fetches
+            // can overlap with the latest snapshot during server reconciliation.
             const nextItems = (page.items ?? []).filter(
               (item) => !currentIds.has(item.id)
             )
@@ -468,6 +486,8 @@ export function useSessionTranscriptFeed({
       container.scrollTop < lastTranscriptScrollTopRef.current - 24
     if (autoStickInProgressRef.current) {
       if (scrolledUp) {
+        // Any intentional upward gesture cancels pending auto-stick work and
+        // hands control back to the reader immediately.
         cancelPendingTranscriptStick()
         shouldStickToBottomRef.current = false
       } else {

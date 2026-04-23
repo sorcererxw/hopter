@@ -14,6 +14,8 @@ let snapshot = unreadSessionIds
 
 const subscribers = new Set<() => void>()
 
+// Unread state is kept in a tiny in-memory store because it is purely a browser
+// concern derived from visibility plus SSE events, not durable backend state.
 export function useUnreadSessionIds() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
@@ -24,6 +26,8 @@ export function useSessionReadTarget(sessionId: string, readable: boolean) {
       const pageVisible =
         typeof document === "undefined" ||
         document.visibilityState === "visible"
+      // A session only counts as "read" while its transcript is actually on
+      // screen and the document tab itself is visible.
       setSessionReadTarget(sessionId, readable && pageVisible)
     }
 
@@ -47,6 +51,8 @@ export function applySessionUnreadEvent(event: WorkspaceEventEnvelope) {
   }
 
   if (sessionId === activeSessionId && activeSessionReadable) {
+    // If the user is already reading this session, consume the unread signal
+    // immediately instead of briefly flashing a dot in the rail.
     clearSessionUnread(sessionId)
     return
   }

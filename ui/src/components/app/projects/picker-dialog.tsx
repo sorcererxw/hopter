@@ -58,6 +58,8 @@ function entryIcon(entry: DirectoryEntry) {
   return File
 }
 
+// Dialog variant used on compact/wide shells. Phone uses the full-page picker
+// route so back navigation matches the shell contract.
 export function ProjectPickerDialog({ open }: { open: boolean }) {
   const { closeProjectPicker } = useWorkspaceShell()
   const navigate = useNavigate()
@@ -100,6 +102,9 @@ export function ProjectPickerPage() {
   )
 }
 
+// ProjectPickerContent is shared by both the modal and page variants. It only
+// creates projects from visible git repos and leaves non-repo folders as browse
+// targets.
 function ProjectPickerContent({
   onProjectOpened,
   onRequestClose,
@@ -186,6 +191,8 @@ function ProjectPickerContent({
         name: previewMetadata?.basename || t("projectPicker.defaultProject"),
         rootPath: selectedRepoPath,
       })
+      // The selected repo path also acts as the project id in the current Go
+      // backend, so return it to the caller for compose-route navigation.
       onProjectOpened(selectedRepoPath)
     } catch (error) {
       setFormError(errorMessage(error, t("projectPicker.hostError")))
@@ -205,6 +212,8 @@ function ProjectPickerContent({
         onRequestClose()
       }
       if (event.key === "Enter" && canOpenFolder) {
+        // Treat Enter like "open selected repo" to keep the picker keyboardable
+        // without introducing a separate focus model.
         void handleOpen()
       }
     }
@@ -334,6 +343,8 @@ function ListView({
               onClick={() => onSelect(entry)}
               onDoubleClick={() => onDoubleOpen(entry)}
               className={cn(
+                // Single click previews eligibility in the footer; double click
+                // navigates into directories for faster repo discovery.
                 "cursor-pointer transition",
                 selected ? "bg-muted" : "hover:bg-muted"
               )}

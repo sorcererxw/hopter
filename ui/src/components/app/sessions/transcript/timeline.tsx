@@ -80,11 +80,15 @@ function isTranscriptActivityItem(
   return item?.kind === "transcript"
 }
 
+// The feed hook emits low-level activity items. The timeline condenses them
+// into grouped visual rows so command bursts and reasoning runs read as one turn.
 // eslint-disable-next-line react-refresh/only-export-components
 export function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return groupTimelineItems(orderCompletedReasoningBeforeAgentAnswers(items))
 }
 
+// TranscriptTimeline is the rendering adapter between normalized activity items
+// and the final chat-like timeline shown in the workspace pane.
 export function TranscriptTimeline({
   items,
   isFetchingPreviousPage,
@@ -138,6 +142,8 @@ export function TranscriptTimeline({
             key={item.key}
             data-index={index}
             className={cn(
+              // Add breathing room when an assistant turn starts after a user
+              // prompt so conversational turn boundaries stay readable.
               "min-w-0",
               index > 0 &&
                 isAssistantReplyAfterUserMessage(previousItem, item) &&
@@ -218,6 +224,8 @@ function shouldAttachFileChangesToCompletedMessage(
   item: TimelineItem,
   next: TimelineItem | undefined
 ) {
+  // File-change entries often belong semantically to the following completed
+  // assistant message, so render them together when possible.
   return (
     isCompletedAgentTimelineItem(next) &&
     fileChangeItemsFromTimelineItem(item).length > 0

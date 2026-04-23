@@ -1,3 +1,5 @@
+// Pull likely file references out of review text so the inspector can label the
+// associated artifact view with something more specific than "summary.md".
 export function parseReferencedFiles(text: string) {
   const matches = text.match(/`([^`]+\.(?:ts|tsx|js|jsx|go|proto|md)(?:#[^`]+)?)`/g) ?? []
   const values = matches

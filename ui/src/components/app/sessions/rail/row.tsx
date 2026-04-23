@@ -23,6 +23,8 @@ export type RailRowProps = {
   to?: string
 }
 
+// RailRow is the shared primitive for navigation rows, expandable section
+// headers, and passive labels inside the session rail.
 export function RailRow({
   activeClassName,
   ariaExpanded,
@@ -113,6 +115,8 @@ export function RailRow({
         onClick={onClick}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
+            // Keep div-backed rows keyboard-accessible when button semantics are
+            // not usable because of surrounding layout constraints.
             event.preventDefault()
             onClick()
           }

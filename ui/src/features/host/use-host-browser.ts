@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query"
 import { hostClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
+// Host browser queries back the project picker and other local-filesystem UI.
+// They intentionally stay read-only: project creation happens elsewhere.
 export function useDirectoryRoots() {
   return useQuery({
     queryKey: queryKeys.hostRoots(),

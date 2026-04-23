@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkills } from "@/features/host/use-host-skills"
 
+// PluginsRoute surfaces host-discovered skills and MCP servers in one searchable
+// pane. It intentionally excludes project-local skills so this page reads as a
+// machine capability inventory.
 export function PluginsRoute() {
   const { t } = useTranslation()
   const location = useLocation()
@@ -52,6 +55,8 @@ export function PluginsRoute() {
   const hasPluginResults = filteredSkills.length > 0 || filteredMCP.length > 0
 
   if (location.hash) {
+    // Historical settings hashes used to deep-link into this screen. Normalize
+    // them so the page owns a single canonical URL.
     return <Navigate to="/plugins" replace />
   }
 

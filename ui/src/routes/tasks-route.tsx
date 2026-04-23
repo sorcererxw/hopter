@@ -50,6 +50,8 @@ function formatUpdatedAt(value: Timestamp | undefined, locale: string) {
   }).format(date)
 }
 
+// TasksRoute is intentionally lightweight: create task at the top, recent task
+// list below, no secondary panels or nested route state.
 export function TasksRoute() {
   const { t } = useTranslation()
   const { resolvedLocale } = useLocale()
@@ -94,6 +96,8 @@ export function TasksRoute() {
                 className="min-h-28 border-0 bg-transparent focus-visible:ring-0"
               />
               <div className="hidden items-center justify-between gap-2 border-t border-border px-3 py-2 group-focus-within:flex">
+                {/* Keep project selection close to submit so the form stays
+                focused on "create from prompt" rather than project management. */}
                 <NativeSelect
                   aria-label={t("tasks.project")}
                   className="min-w-40"

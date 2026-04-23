@@ -6,6 +6,8 @@ function getBaseUrl() {
     return explicit
   }
 
+  // In local dev and the packaged app, the browser talks to the same origin and
+  // the Go server serves Connect under `/rpc`.
   return `${window.location.origin}/rpc`
 }
 

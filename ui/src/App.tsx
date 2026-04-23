@@ -28,6 +28,7 @@ import {
 } from "@/features/config/use-config"
 import { HopterI18nProvider } from "@/lib/i18n/provider"
 import { queryClient } from "@/lib/query/client"
+
 const HomeRoute = lazy(() =>
   import("@/routes/home-route").then((module) => ({
     default: module.HomeRoute,
@@ -73,6 +74,8 @@ function renderLazyRoute(element: ReactNode) {
   return <Suspense fallback={null}>{element}</Suspense>
 }
 
+// App-level route guard. The browser shell stays mounted only after the
+// backend confirms the local host session is authenticated.
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation()
   const auth = useAuthStatus()
@@ -100,6 +103,8 @@ function LegacyHashRedirect({
   return <Navigate to={`${to}${location.hash || fallbackHash}`} replace />
 }
 
+// Theme and locale both come from persisted config, but the UI keeps a short
+// optimistic value so the shell reacts immediately before the mutation settles.
 function ConfigBackedPreferencesProvider({
   children,
 }: {

@@ -9,6 +9,7 @@ type CreateTaskInput = {
   title?: string
 }
 
+// Task hooks mirror the current v1 surface: a flat list plus task creation.
 export function useTasks(projectId?: string) {
   return useQuery({
     queryKey: queryKeys.tasks(projectId),

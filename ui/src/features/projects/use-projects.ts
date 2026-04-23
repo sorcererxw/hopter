@@ -9,6 +9,8 @@ type CreateProjectInput = {
   defaultBackend: string
 }
 
+// Project queries stay intentionally small: list for navigation, create for the
+// picker flow. Richer project state is fetched from other domain-specific hooks.
 export function useProjects() {
   return useQuery({
     queryKey: queryKeys.projects(),

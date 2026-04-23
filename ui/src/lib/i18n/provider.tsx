@@ -39,6 +39,8 @@ if (!i18n.isInitialized) {
   })
 }
 
+// Locale resolution is intentionally binary in v1: explicit English/Chinese, or
+// follow the browser when config says "system".
 function getSystemLocale(): ResolvedLocale {
   if (typeof navigator === "undefined") {
     return "en"
@@ -72,6 +74,8 @@ export function HopterI18nProvider({
   const resolvedLocale = resolveLocale(locale)
 
   useEffect(() => {
+    // Keep the DOM language attribute aligned so browser accessibility tooling
+    // and selection heuristics see the same locale React is rendering.
     void i18n.changeLanguage(resolvedLocale)
     document.documentElement.lang = resolvedLocale
     document.documentElement.dir = "ltr"

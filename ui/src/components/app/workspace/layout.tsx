@@ -32,6 +32,9 @@ const SearchDialog = lazy(() =>
   }))
 )
 
+// WorkspaceLayout is the single owner of shell posture, rail visibility, and
+// global dialogs. Child routes render inside the shell but do not invent their
+// own breakpoint truth.
 export function WorkspaceLayout({ children }: PropsWithChildren) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -82,6 +85,8 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
   const toolbarMode = getToolbarMode(posture, railVisible)
 
   useEffect(() => {
+    // Keyboard search is global to the workspace shell, so register once here
+    // instead of duplicating handlers in route-level panes.
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault()
@@ -109,11 +114,15 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (posture === "phone") {
+      // Phone posture never renders the rail inline, so force it closed even if
+      // the user previously preferred the rail open on larger screens.
       setRailVisible(false)
       return
     }
 
     if (explicitRailPreferenceRef.current) {
+      // Once the user has explicitly toggled the rail, preserve that preference
+      // across posture changes until the page is reloaded.
       return
     }
 
@@ -131,6 +140,8 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
       lastEventAt: eventStream.lastEventAt,
       openProjectPicker: () => {
         if (posture === "phone") {
+          // On phone, the project picker is a dedicated route rather than an
+          // overlay so back navigation returns to the list page predictably.
           navigate("/projects/new")
           return
         }
@@ -194,6 +205,8 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
                 <div
                   aria-hidden={!railVisible}
                   className={cn(
+                    // Compact and wide both use an inline rail pane. Hiding it
+                    // collapses width instead of switching to a drawer model.
                     "h-full min-h-0 shrink-0 overflow-hidden transition-all duration-200 ease-out",
                     railVisible
                       ? "w-[248px] translate-x-0 opacity-100"

@@ -6,6 +6,8 @@ export type AgentSelectionPreference = {
   reasoningEffort: string
 }
 
+// These helpers isolate how session/home composers map between UI selections
+// and the persisted config shape.
 export function agentSelectionPreferenceFromConfig(
   config?: UserConfig
 ): AgentSelectionPreference | undefined {

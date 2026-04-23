@@ -20,6 +20,8 @@ export type ThemePreference = "system" | "dark" | "light"
 export type LocalePreference = "system" | "en" | "zh-CN"
 export type ComposerSendShortcutPreference = "cmd-enter" | "enter"
 
+// Config is treated as slowly changing workspace state, so the query stays warm
+// and reconnect/window-focus refreshes keep local preferences in sync.
 export function useConfig() {
   return useQuery({
     queryKey: queryKeys.config(),
@@ -186,6 +188,8 @@ export function isComposerSendShortcutEvent(
     return true
   }
 
+  // Platform-aware modifier handling keeps the visible shortcut label and the
+  // actual composer behavior aligned.
   return isApplePlatform(platform) ? event.metaKey : event.ctrlKey
 }
 

@@ -36,6 +36,8 @@ function deriveTitle(prompt: string) {
   return normalized.slice(0, 72)
 }
 
+// HomeWorkspacePane is the "new session" surface. It reuses the same composer
+// as session detail, but with project selection and initial session creation.
 export function HomeWorkspacePane() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -74,6 +76,8 @@ export function HomeWorkspacePane() {
     }
   }, [selectedProjectId, sessions])
   const projectOptions = useMemo(() => {
+    // Preserve a selected project that only exists in recent session metadata
+    // while the canonical project list is still loading or catching up.
     if (!fallbackProject) {
       return projects ?? []
     }
@@ -223,6 +227,8 @@ export function HomeWorkspacePane() {
               setPrompt("")
 
               if (session?.id) {
+                // Persist the chosen agent controls against the new session id
+                // so the follow-up composer opens with the same selection.
                 rememberSessionComposerSelection(session.id, {
                   codexFastMode,
                   model,

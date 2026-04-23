@@ -16,6 +16,8 @@ type ScrollbarMetrics = {
   visible: boolean
 }
 
+// Lightweight custom scrollbar state for app-level panes that need a subtle
+// indicator without relying on the platform scrollbar remaining visible.
 export function useAutoHideScrollbar(
   containerRef: RefObject<HTMLElement | null>,
   options: UseAutoHideScrollbarOptions = {}
@@ -84,6 +86,7 @@ export function useAutoHideScrollbar(
       return
     }
 
+    // Batch repeated layout work into one frame while scrolling or resizing.
     syncFrameRef.current = window.requestAnimationFrame(() => {
       syncFrameRef.current = null
       syncScrollbarNow()

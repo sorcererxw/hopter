@@ -5,6 +5,8 @@ import type {
   WorkspaceToolbarMode,
 } from "./posture"
 
+// Shared shell state that route panes read instead of re-deriving their own
+// breakpoint, rail, or event-stream truth.
 export type WorkspaceShellContextValue = {
   closeProjectPicker: () => void
   eventStreamState: WorkspaceEventStreamState
@@ -34,6 +36,8 @@ export function useWorkspaceShell() {
   const context = useContext(WorkspaceShellContext)
 
   if (!context) {
+    // The shell contract is required for any route pane rendered under
+    // WorkspaceLayout, so fail loudly when wiring is broken.
     throw new Error("useWorkspaceShell must be used within WorkspaceLayout")
   }
 
