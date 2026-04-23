@@ -7,6 +7,7 @@ import { queryKeys } from "@/lib/query/keys"
 
 type CreateSessionInput = {
   backendKey?: string
+  codexFastMode?: boolean
   model?: string
   projectId: string
   prompt: string
@@ -15,6 +16,7 @@ type CreateSessionInput = {
 }
 
 type SendSessionInput = {
+  codexFastMode?: boolean
   input: string
   model?: string
   reasoningEffort?: string
@@ -204,6 +206,7 @@ export function useCreateSession() {
   return useMutation({
     mutationFn: async ({
       backendKey,
+      codexFastMode,
       model,
       projectId,
       prompt,
@@ -212,6 +215,7 @@ export function useCreateSession() {
     }: CreateSessionInput) => {
       const response = await sessionClient.createSession({
         backendKey,
+        codexFastMode,
         model,
         projectId,
         prompt,
@@ -242,12 +246,14 @@ export function useSendSessionInput() {
   return useMutation({
     mutationFn: async ({
       input,
+      codexFastMode,
       model,
       reasoningEffort,
       sessionId,
     }: SendSessionInput) => {
       return sessionClient.sendSessionInput({
         input,
+        codexFastMode,
         model,
         reasoningEffort,
         sessionId,

@@ -12,10 +12,19 @@ import {
   LoaderCircle,
   Plus,
   Square,
+  Zap,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { buttonVariants } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
 import { useCodexModels } from "@/features/host/use-host-models"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
@@ -42,6 +51,7 @@ const REASONING_LABELS: Record<string, string> = {
 }
 
 type SessionComposerSubmitOptions = {
+  codexFastMode: boolean
   model: string
   reasoningEffort: string
 }
@@ -118,8 +128,12 @@ export function SessionComposer({
   const [selectedModel, setSelectedModel] = useState(
     initialSelection?.model ?? DEFAULT_MODEL
   )
-  const [selectedReasoningEffort, setSelectedReasoningEffort] =
-    useState(initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT)
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState(
+    initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
+  )
+  const [codexFastMode, setCodexFastMode] = useState(
+    initialSelection?.codexFastMode ?? false
+  )
   const hostSkillsQuery = useHostSkills()
   const codexModelsQuery = useCodexModels()
   const modelOptions = codexModelsQuery.data ?? []
@@ -148,7 +162,9 @@ export function SessionComposer({
     setSelectedReasoningEffort(
       initialSelection?.reasoningEffort ?? DEFAULT_REASONING_EFFORT
     )
+    setCodexFastMode(initialSelection?.codexFastMode ?? false)
   }, [
+    initialSelection?.codexFastMode,
     initialSelection?.model,
     initialSelection?.reasoningEffort,
     selectionKey,
@@ -298,6 +314,7 @@ export function SessionComposer({
     }
 
     await onSubmit({
+      codexFastMode,
       model: effectiveModel,
       reasoningEffort: effectiveReasoningEffort,
     })
@@ -321,6 +338,7 @@ export function SessionComposer({
       setSelectedReasoningEffort(nextReasoningEffort)
     }
     onSelectionChange?.({
+      codexFastMode,
       model: nextModelValue,
       reasoningEffort: nextReasoningEffort,
     })
@@ -329,8 +347,18 @@ export function SessionComposer({
   function handleReasoningEffortChange(reasoningEffort: string) {
     setSelectedReasoningEffort(reasoningEffort)
     onSelectionChange?.({
+      codexFastMode,
       model: effectiveModel,
       reasoningEffort,
+    })
+  }
+
+  function handleCodexFastModeChange(checked: boolean) {
+    setCodexFastMode(checked)
+    onSelectionChange?.({
+      codexFastMode: checked,
+      model: effectiveModel,
+      reasoningEffort: effectiveReasoningEffort,
     })
   }
 
@@ -480,15 +508,18 @@ export function SessionComposer({
                 </div>
 
                 <div className="flex min-w-0 items-center justify-end gap-1">
-                  <InlineSelect
+                  <InlineDropdownMenu
                     aria-label="Model"
+                    codexFastMode={codexFastMode}
                     disabled={
                       codexModelsQuery.isLoading || modelOptions.length === 0
                     }
+                    onCodexFastModeChange={handleCodexFastModeChange}
                     options={modelOptions.map((model) => ({
                       label: model.displayName || modelValue(model),
                       value: modelValue(model),
                     }))}
+                    showCodexFastModeToggle
                     value={effectiveModel}
                     onValueChange={handleModelChange}
                   >
@@ -498,9 +529,9 @@ export function SessionComposer({
                       : codexModelsQuery.isLoading
                         ? "Loading model"
                         : "Default model"}
-                  </InlineSelect>
+                  </InlineDropdownMenu>
 
-                  <InlineSelect
+                  <InlineDropdownMenu
                     aria-label="Reasoning effort"
                     disabled={supportedReasoningOptions.length === 0}
                     options={supportedReasoningOptions}
@@ -509,7 +540,7 @@ export function SessionComposer({
                   >
                     {REASONING_LABELS[effectiveReasoningEffort] ??
                       effectiveReasoningEffort}
-                  </InlineSelect>
+                  </InlineDropdownMenu>
 
                   <Button
                     type="button"
@@ -566,10 +597,14 @@ function ComposerSkillToken({
         className="relative inline-block text-accent-foreground"
       >
         <span aria-hidden="true" className="invisible inline-flex">
-          <SkillReferenceChip reference={reference || text.replace(/^\$/, "")} />
+          <SkillReferenceChip
+            reference={reference || text.replace(/^\$/, "")}
+          />
         </span>
         <span className="absolute inset-y-0 left-0 inline-flex items-center">
-          <SkillReferenceChip reference={reference || text.replace(/^\$/, "")} />
+          <SkillReferenceChip
+            reference={reference || text.replace(/^\$/, "")}
+          />
         </span>
       </span>
     )
@@ -582,7 +617,7 @@ function ComposerSkillToken({
     >
       <span
         aria-hidden="true"
-        className="absolute inset-y-0 -inset-x-1 rounded-md bg-accent"
+        className="absolute -inset-x-1 inset-y-0 rounded-md bg-accent"
       />
       <span className="relative">{text}</span>
     </span>
@@ -708,49 +743,73 @@ function resolveReasoningEffort(model: AgentModel, requested: string) {
   return model.defaultReasoningEffort || efforts[0] || ""
 }
 
-function InlineSelect({
+function InlineDropdownMenu({
   children,
+  codexFastMode = false,
   disabled = false,
+  onCodexFastModeChange,
   onValueChange,
   options,
+  showCodexFastModeToggle = false,
   value,
   ...props
 }: {
   children: string
+  codexFastMode?: boolean
   disabled?: boolean
+  onCodexFastModeChange?: (checked: boolean) => void
   onValueChange: (value: string) => void
   options: readonly { label: string; value: string }[]
+  showCodexFastModeToggle?: boolean
   value: string
-} & Omit<React.ComponentProps<"select">, "onChange" | "value">) {
+} & Omit<React.ComponentProps<typeof Button>, "onChange" | "value">) {
   return (
-    <label
-      className={cn(
-        buttonVariants({ variant: "ghost", size: "default" }),
-        "relative gap-2 rounded-full pr-8 text-muted-foreground hover:text-foreground",
-        disabled && "pointer-events-none opacity-60"
-      )}
-    >
-      <span aria-hidden="true">{children}</span>
-      <select
-        disabled={disabled}
-        value={value}
-        onChange={(event) => onValueChange(event.target.value)}
-        className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
-        {...props}
-      >
-        {options.length === 0 ? (
-          <option value="">{children}</option>
-        ) : (
-          options.map((option) => (
-            <option key={option.value} value={option.value}>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="rounded-full text-muted-foreground hover:text-foreground"
+          disabled={disabled}
+          {...props}
+        >
+          {codexFastMode ? (
+            <Zap
+              className="size-3.5 fill-current"
+              data-testid="composer-fast-mode-icon"
+            />
+          ) : null}
+          <span>{children}</span>
+          <ChevronDown className="size-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-40">
+        {showCodexFastModeToggle ? (
+          <>
+            <div className="flex items-center justify-between gap-4 px-3 py-2">
+              <div className="min-w-0">
+                <div className="text-sm font-medium">Fast mode</div>
+              </div>
+              <Switch
+                aria-label="Codex fast mode"
+                checked={codexFastMode}
+                onCheckedChange={(checked) => {
+                  onCodexFastModeChange?.(checked)
+                }}
+              />
+            </div>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
+        <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
               {option.label}
-            </option>
-          ))
-        )}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 size-3" />
-      <span className="sr-only">{children}</span>
-    </label>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -904,7 +963,8 @@ function buildComposerTextSegments(
         known,
         reference,
         selected:
-          known && selectedRange.start === tokenStart &&
+          known &&
+          selectedRange.start === tokenStart &&
           selectedRange.end === tokenEnd,
         text: token,
       })

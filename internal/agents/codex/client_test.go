@@ -3,6 +3,9 @@ package codex
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/pmenglund/codex-sdk-go/protocol"
+	"github.com/sorcererxw/hopter/internal/core"
 )
 
 func TestTraceLineClassifiesAppServerRequestWithoutJSONRPC(t *testing.T) {
@@ -27,6 +30,28 @@ func TestTraceLineClassifiesAppServerRequestWithoutJSONRPC(t *testing.T) {
 	}
 	if _, ok := payload["jsonrpc"]; ok {
 		t.Fatalf("payload included jsonrpc field: %s", traces[0].Payload)
+	}
+}
+
+func TestApplyServiceTierUsesFastWhenRequested(t *testing.T) {
+	var serviceTier interface{}
+
+	applyServiceTier(&serviceTier, core.SessionTurnOptions{
+		CodexFastMode: true,
+	})
+
+	if serviceTier != protocol.ServiceTierFast {
+		t.Fatalf("service tier = %#v, want fast", serviceTier)
+	}
+}
+
+func TestApplyServiceTierLeavesDefaultWhenFastModeDisabled(t *testing.T) {
+	var serviceTier interface{}
+
+	applyServiceTier(&serviceTier, core.SessionTurnOptions{})
+
+	if serviceTier != nil {
+		t.Fatalf("service tier = %#v, want nil", serviceTier)
 	}
 }
 

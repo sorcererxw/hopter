@@ -26,6 +26,7 @@ type fakeSessionRuntime struct {
 		decision   core.ApprovalDecision
 	}
 	interruptSessionID string
+	createInput        core.CreateSessionInput
 	sendCall           struct {
 		sessionID string
 		input     string
@@ -49,7 +50,14 @@ func (f *fakeSessionRuntime) GetSession(sessionID string) (core.Session, core.Pr
 }
 
 func (f *fakeSessionRuntime) CreateSession(input core.CreateSessionInput) (core.Session, error) {
-	return core.Session{}, nil
+	f.createInput = input
+	return core.Session{
+		ID:        "sess_created",
+		ProjectID: input.ProjectID,
+		Title:     input.Title,
+		Status:    core.SessionStateRunning,
+		UpdatedAt: time.Now().UTC(),
+	}, nil
 }
 
 func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
@@ -88,6 +96,10 @@ func (f *fakeSessionDetailReader) GetSessionFile(input core.GetSessionFileInput)
 
 func (f *fakeSessionDetailReader) ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error) {
 	return f.page, nil
+}
+
+func ptrString(value string) *string {
+	return &value
 }
 
 func TestGetSessionIncludesTranscriptItemsInRPCResponse(t *testing.T) {
@@ -426,6 +438,86 @@ func TestListSessionsSkipsLocalAliasWhenRuntimeReturnsBackendThread(t *testing.T
 	}
 	if resp.Msg.GetSessions()[0].GetId() != threadID {
 		t.Fatalf("session id = %q, want backend thread id", resp.Msg.GetSessions()[0].GetId())
+	}
+}
+
+func TestCreateSessionPassesCodexFastModeToRuntime(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatalf("mkdir repo .git: %v", err)
+	}
+	project, err := workspace.CreateProject(core.CreateProjectInput{
+		Name:           "probe",
+		RootPath:       root,
+		DefaultBackend: "codex",
+	})
+	if err != nil {
+		t.Fatalf("CreateProject: %v", err)
+	}
+	runtime := &fakeSessionRuntime{}
+	service := NewSessionService(workspace, runtime, &fakeSessionDetailReader{})
+	fast := true
+
+	_, err = service.CreateSession(context.Background(), connect.NewRequest(&hopterv1.CreateSessionRequest{
+		ProjectId:       project.ID,
+		Title:           ptrString("probe"),
+		Prompt:          "build",
+		BackendKey:      ptrString("codex"),
+		Model:           ptrString("gpt-5.4"),
+		ReasoningEffort: ptrString("xhigh"),
+		CodexFastMode:   &fast,
+	}))
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	if !runtime.createInput.CodexFastMode {
+		t.Fatal("create input fast mode = false, want true")
+	}
+	if runtime.createInput.Model != "gpt-5.4" {
+		t.Fatalf("create input model = %q, want gpt-5.4", runtime.createInput.Model)
+	}
+	if runtime.createInput.ReasoningEffort != "xhigh" {
+		t.Fatalf("create input reasoning effort = %q, want xhigh", runtime.createInput.ReasoningEffort)
+	}
+}
+
+func TestSendSessionInputPassesCodexFastModeToRuntime(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	runtime := &fakeSessionRuntime{}
+	service := NewSessionService(workspace, runtime, &fakeSessionDetailReader{})
+	fast := true
+
+	_, err := service.SendSessionInput(context.Background(), connect.NewRequest(&hopterv1.SendSessionInputRequest{
+		SessionId:       "sess_1",
+		Input:           "follow up",
+		Model:           ptrString("gpt-5.4"),
+		ReasoningEffort: ptrString("xhigh"),
+		CodexFastMode:   &fast,
+	}))
+	if err != nil {
+		t.Fatalf("SendSessionInput: %v", err)
+	}
+
+	if runtime.sendCall.sessionID != "sess_1" {
+		t.Fatalf("send session id = %q, want sess_1", runtime.sendCall.sessionID)
+	}
+	if runtime.sendCall.input != "follow up" {
+		t.Fatalf("send input = %q, want follow up", runtime.sendCall.input)
+	}
+	if len(runtime.sendCall.options) != 1 {
+		t.Fatalf("send options count = %d, want 1", len(runtime.sendCall.options))
+	}
+	options := runtime.sendCall.options[0]
+	if !options.CodexFastMode {
+		t.Fatal("send options fast mode = false, want true")
+	}
+	if options.Model != "gpt-5.4" {
+		t.Fatalf("send options model = %q, want gpt-5.4", options.Model)
+	}
+	if options.ReasoningEffort != "xhigh" {
+		t.Fatalf("send options reasoning effort = %q, want xhigh", options.ReasoningEffort)
 	}
 }
 

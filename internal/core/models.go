@@ -420,11 +420,13 @@ type CreateSessionInput struct {
 	Prompt          string
 	Model           string
 	ReasoningEffort string
+	CodexFastMode   bool
 }
 
 type SessionTurnOptions struct {
 	Model           string
 	ReasoningEffort string
+	CodexFastMode   bool
 }
 
 type SessionPatch struct {

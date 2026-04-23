@@ -1696,6 +1696,7 @@ type CreateSessionRequest struct {
 	BackendKey      *string                `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
 	Model           *string                `protobuf:"bytes,5,opt,name=model,proto3,oneof" json:"model,omitempty"`
 	ReasoningEffort *string                `protobuf:"bytes,6,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	CodexFastMode   *bool                  `protobuf:"varint,7,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1772,6 +1773,13 @@ func (x *CreateSessionRequest) GetReasoningEffort() string {
 	return ""
 }
 
+func (x *CreateSessionRequest) GetCodexFastMode() bool {
+	if x != nil && x.CodexFastMode != nil {
+		return *x.CodexFastMode
+	}
+	return false
+}
+
 type CreateSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
@@ -1822,6 +1830,7 @@ type SendSessionInputRequest struct {
 	Input           string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
 	Model           *string                `protobuf:"bytes,3,opt,name=model,proto3,oneof" json:"model,omitempty"`
 	ReasoningEffort *string                `protobuf:"bytes,4,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	CodexFastMode   *bool                  `protobuf:"varint,5,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1882,6 +1891,13 @@ func (x *SendSessionInputRequest) GetReasoningEffort() string {
 		return *x.ReasoningEffort
 	}
 	return ""
+}
+
+func (x *SendSessionInputRequest) GetCodexFastMode() bool {
+	if x != nil && x.CodexFastMode != nil {
+		return *x.CodexFastMode
+	}
+	return false
 }
 
 type SendSessionInputResponse struct {
@@ -2421,7 +2437,7 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\x13snapshot_updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x11snapshotUpdatedAtB\x15\n" +
 	"\x13_next_before_cursor\"U\n" +
 	"\x1dListSessionTranscriptResponse\x124\n" +
-	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\x92\x02\n" +
+	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\xd3\x02\n" +
 	"\x14CreateSessionRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x19\n" +
@@ -2430,21 +2446,25 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\vbackend_key\x18\x04 \x01(\tH\x01R\n" +
 	"backendKey\x88\x01\x01\x12\x19\n" +
 	"\x05model\x18\x05 \x01(\tH\x02R\x05model\x88\x01\x01\x12.\n" +
-	"\x10reasoning_effort\x18\x06 \x01(\tH\x03R\x0freasoningEffort\x88\x01\x01B\b\n" +
+	"\x10reasoning_effort\x18\x06 \x01(\tH\x03R\x0freasoningEffort\x88\x01\x01\x12+\n" +
+	"\x0fcodex_fast_mode\x18\a \x01(\bH\x04R\rcodexFastMode\x88\x01\x01B\b\n" +
 	"\x06_titleB\x0e\n" +
 	"\f_backend_keyB\b\n" +
 	"\x06_modelB\x13\n" +
-	"\x11_reasoning_effort\"E\n" +
+	"\x11_reasoning_effortB\x12\n" +
+	"\x10_codex_fast_mode\"E\n" +
 	"\x15CreateSessionResponse\x12,\n" +
-	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"\xb8\x01\n" +
+	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"\xf9\x01\n" +
 	"\x17SendSessionInputRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
 	"\x05input\x18\x02 \x01(\tR\x05input\x12\x19\n" +
 	"\x05model\x18\x03 \x01(\tH\x00R\x05model\x88\x01\x01\x12.\n" +
-	"\x10reasoning_effort\x18\x04 \x01(\tH\x01R\x0freasoningEffort\x88\x01\x01B\b\n" +
+	"\x10reasoning_effort\x18\x04 \x01(\tH\x01R\x0freasoningEffort\x88\x01\x01\x12+\n" +
+	"\x0fcodex_fast_mode\x18\x05 \x01(\bH\x02R\rcodexFastMode\x88\x01\x01B\b\n" +
 	"\x06_modelB\x13\n" +
-	"\x11_reasoning_effort\"\x90\x01\n" +
+	"\x11_reasoning_effortB\x12\n" +
+	"\x10_codex_fast_mode\"\x90\x01\n" +
 	"\x18SendSessionInputResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x1d\n" +
 	"\n" +

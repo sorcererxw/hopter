@@ -207,6 +207,7 @@ message CreateSessionRequest {
   optional string backend_key = 4;
   optional string model = 5;
   optional string reasoning_effort = 6;
+  optional bool codex_fast_mode = 7;
 }
 
 message CreateSessionResponse {
@@ -218,6 +219,7 @@ message SendSessionInputRequest {
   string input = 2;
   optional string model = 3;
   optional string reasoning_effort = 4;
+  optional bool codex_fast_mode = 5;
 }
 
 message SendSessionInputResponse {

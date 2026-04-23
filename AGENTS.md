@@ -164,6 +164,11 @@ Do not make timeline the default focus.
 
 The agent must not conclude \"done\" based only on implementation.
 
+Validation should be proportional to the change. Do not run broad or slow suites
+after every small edit. During active iteration, prefer the cheapest relevant
+check: targeted unit test, typecheck for touched package, focused lint, grep,
+or a live smoke check when the dev loop is already running.
+
 Completion requires:
 
 - requirement mapped
@@ -172,6 +177,17 @@ Completion requires:
 - evidence path recorded
 
 No evidence, no pass.
+
+For ordinary implementation work, use this cadence:
+
+1. While editing: no automatic full-suite reruns.
+2. After a coherent slice: run the smallest command that can catch likely
+   regressions for the touched surface.
+3. Before claiming completion: run one focused validation lane and record its
+   evidence path.
+4. Reserve `make validate-all`, full `go test ./...`, full UI builds, and
+   browser E2E runs for cross-cutting changes, release/PR readiness, or when the
+   user explicitly asks for exhaustive validation.
 
 ## Agent team workflow
 

@@ -370,6 +370,7 @@ func TestCreateSessionPassesModelAndReasoningToAppServer(t *testing.T) {
 		Prompt:          "build something",
 		Model:           "gpt-5.4",
 		ReasoningEffort: "xhigh",
+		CodexFastMode:   true,
 	})
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
@@ -385,6 +386,9 @@ func TestCreateSessionPassesModelAndReasoningToAppServer(t *testing.T) {
 	if client.startThreadOptions[0].Model != "gpt-5.4" {
 		t.Fatalf("start thread model = %q, want gpt-5.4", client.startThreadOptions[0].Model)
 	}
+	if !client.startThreadOptions[0].CodexFastMode {
+		t.Fatal("start thread fast mode = false, want true")
+	}
 	if len(client.startTurnOptions) != 1 {
 		t.Fatalf("start turn options count = %d, want 1", len(client.startTurnOptions))
 	}
@@ -393,6 +397,9 @@ func TestCreateSessionPassesModelAndReasoningToAppServer(t *testing.T) {
 	}
 	if client.startTurnOptions[0].ReasoningEffort != "xhigh" {
 		t.Fatalf("start turn reasoning effort = %q, want xhigh", client.startTurnOptions[0].ReasoningEffort)
+	}
+	if !client.startTurnOptions[0].CodexFastMode {
+		t.Fatal("start turn fast mode = false, want true")
 	}
 }
 

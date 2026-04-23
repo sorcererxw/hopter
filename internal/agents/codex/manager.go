@@ -291,6 +291,7 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 	options := core.SessionTurnOptions{
 		Model:           input.Model,
 		ReasoningEffort: input.ReasoningEffort,
+		CodexFastMode:   input.CodexFastMode,
 	}
 	live, err := m.startNewLiveSession(project, options)
 	if err != nil {

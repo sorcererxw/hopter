@@ -92,7 +92,7 @@ export function HomeWorkspacePane() {
             projectLabel={selectedProject?.name || "Local"}
             branchLabel="main"
             onValueChange={setPrompt}
-            onSubmit={async ({ model, reasoningEffort }) => {
+            onSubmit={async ({ codexFastMode, model, reasoningEffort }) => {
               if (!selectedProjectId || !prompt.trim()) {
                 return
               }
@@ -100,6 +100,7 @@ export function HomeWorkspacePane() {
               const normalizedPrompt = prompt.trim()
               const session = await createSession.mutateAsync({
                 backendKey: "codex",
+                codexFastMode,
                 model,
                 projectId: selectedProjectId,
                 prompt: normalizedPrompt,
@@ -111,6 +112,7 @@ export function HomeWorkspacePane() {
 
               if (session?.id) {
                 rememberSessionComposerSelection(session.id, {
+                  codexFastMode,
                   model,
                   reasoningEffort,
                 })

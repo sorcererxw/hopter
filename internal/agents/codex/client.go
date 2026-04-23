@@ -266,6 +266,7 @@ func (c *Client) StartThread(cwd string, options core.SessionTurnOptions) (*Star
 	if model := strings.TrimSpace(options.Model); model != "" {
 		params.Model = &model
 	}
+	applyServiceTier(&params.ServiceTier, options)
 
 	var out StartThreadResult
 	if err := c.call(protocolMethodThreadStart, params, &out); err != nil {
@@ -323,6 +324,7 @@ func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOpti
 	if model := strings.TrimSpace(options.Model); model != "" {
 		params.Model = &model
 	}
+	applyServiceTier(&params.ServiceTier, options)
 
 	var out ResumeThreadResult
 	if err := c.call(protocolMethodThreadResume, params, &out); err != nil {
@@ -343,12 +345,20 @@ func (c *Client) StartTurn(threadID string, text string, options core.SessionTur
 	if effort := strings.TrimSpace(options.ReasoningEffort); effort != "" {
 		params.Effort = protocol.ReasoningEffort(effort)
 	}
+	applyServiceTier(&params.ServiceTier, options)
 
 	var out StartTurnResult
 	if err := c.call(protocolMethodTurnStart, params, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
+}
+
+func applyServiceTier(target *interface{}, options core.SessionTurnOptions) {
+	if !options.CodexFastMode || target == nil {
+		return
+	}
+	*target = protocol.ServiceTierFast
 }
 
 func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error) {

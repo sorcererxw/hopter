@@ -22,6 +22,36 @@ let includeFollowupTranscript = false;
 let runningCommandCompleted = false;
 let olderTranscriptAttempts = 0;
 
+function buildListModelsResponse() {
+  return {
+    models: [
+      {
+        id: "gpt-5.4",
+        model: "gpt-5.4",
+        displayName: "gpt-5.4",
+        isDefault: true,
+        defaultReasoningEffort: "xhigh",
+        supportedReasoningEfforts: [
+          { reasoningEffort: "low" },
+          { reasoningEffort: "medium" },
+          { reasoningEffort: "high" },
+          { reasoningEffort: "xhigh" },
+        ],
+      },
+      {
+        id: "gpt-5.3-codex",
+        model: "gpt-5.3-codex",
+        displayName: "gpt-5.3-codex",
+        defaultReasoningEffort: "high",
+        supportedReasoningEfforts: [
+          { reasoningEffort: "medium" },
+          { reasoningEffort: "high" },
+        ],
+      },
+    ],
+  };
+}
+
 function buildFileChangeBody() {
   return JSON.stringify({
     version: 1,
@@ -113,6 +143,14 @@ function buildLatestTranscriptPage() {
             runningCommandCompleted ? "completed" : "inProgress"
           }\n\noutput:\n${runningCommandCompleted ? "Build completed" : "Building production bundle..."}`,
           status: runningCommandCompleted ? "completed" : "inProgress",
+        },
+        {
+          id: "progress-1",
+          orderKey: "000000000001:000000000003:progress-1",
+          kind: "SESSION_TRANSCRIPT_ITEM_KIND_REASONING",
+          title: "Progress",
+          body: "本地 review-log 命令没有正常执行，先不强行重试写 gstack 元数据。",
+          status: "completed",
         },
         ...Array.from({ length: 14 }, (_, index) => ({
           id: `agent-filler-${index}`,
@@ -302,6 +340,45 @@ async function assertVerticalOrder(
   }
 }
 
+async function assertDisclosureChevronFollowsLabel(
+  button: Locator,
+  label: string,
+) {
+  const labelBox = await button.locator(":scope > span").first().boundingBox();
+  const iconBox = await button.locator("svg").first().boundingBox();
+
+  if (!labelBox || !iconBox) {
+    throw new Error(`could not measure disclosure geometry for ${label}`);
+  }
+
+  const gap = iconBox.x - (labelBox.x + labelBox.width);
+  if (gap < 0 || gap > 12) {
+    throw new Error(
+      `${label} disclosure arrow is not aligned next to the text; gap=${gap}`,
+    );
+  }
+}
+
+async function assertCommandStatusPrefixMuted(
+  button: Locator,
+  expectedText: string,
+) {
+  const prefix = button.locator(":scope > span > span").first();
+  await prefix.waitFor();
+
+  const text = (await prefix.textContent())?.trim();
+  if (text !== expectedText) {
+    throw new Error(
+      `expected command prefix ${expectedText}, received ${text}`,
+    );
+  }
+
+  const className = (await prefix.getAttribute("class")) ?? "";
+  if (!className.includes("text-muted-foreground")) {
+    throw new Error(`${expectedText} command prefix does not use muted color`);
+  }
+}
+
 async function setTranscriptScrollPosition(
   page: Page,
   position: "top" | "bottom",
@@ -362,6 +439,10 @@ async function waitForTranscriptDistanceFromBottom(
 }
 
 async function wireMockRPC(page: Page) {
+  await page.route("**/rpc/hopter.v1.HostService/ListModels", async (route) => {
+    await fulfillJSON(route, buildListModelsResponse());
+  });
+
   await page.route(
     "**/rpc/hopter.v1.ProjectService/ListProjects",
     async (route) => {
@@ -507,6 +588,35 @@ async function main() {
       path: path.join(run.rootDir, "session-initial.png"),
     });
 
+    const modelMenuButton = page.getByRole("button", { name: "Model" });
+    await modelMenuButton.waitFor();
+    await modelMenuButton.getByText("gpt-5.4").waitFor();
+    await modelMenuButton.click();
+    const fastModeSwitch = page.getByRole("switch", {
+      name: "Codex fast mode",
+    });
+    await fastModeSwitch.waitFor();
+    await fastModeSwitch.click();
+    await page.getByTestId("composer-fast-mode-icon").waitFor();
+    await page.getByRole("menuitemradio", { name: "gpt-5.3-codex" }).click();
+    await modelMenuButton.getByText("gpt-5.3-codex").waitFor();
+
+    const reasoningMenuButton = page.getByRole("button", {
+      name: "Reasoning effort",
+    });
+    await reasoningMenuButton.waitFor();
+    await reasoningMenuButton.getByText("High").waitFor();
+    await reasoningMenuButton.click();
+    await page.getByRole("menuitemradio", { name: "Medium" }).click();
+    await reasoningMenuButton.getByText("Medium").waitFor();
+
+    checks.push({
+      name: "composer shadcn selection menus",
+      status: "pass",
+      detail:
+        "composer model and reasoning controls opened as shadcn dropdown radio menus, fast mode toggled the model trigger icon, and selected values updated",
+    });
+
     await page.getByTestId("session-transcript").waitFor();
     const latestAgentEntry = page
       .getByTestId("session-transcript-agent")
@@ -522,16 +632,38 @@ async function main() {
     const runningCommandEntry = page
       .getByTestId("session-transcript-command")
       .filter({ hasText: "pnpm --dir ui build" });
+    const progressEntry = page
+      .getByTestId("session-transcript-reasoning")
+      .filter({ hasText: "本地 review-log 命令没有正常执行" });
     await latestAgentEntry.waitFor();
     await latestUserEntry.waitFor();
     await commandGroup.waitFor();
+    await progressEntry.waitFor();
     await runningCommandEntry.waitFor();
     await assertVerticalOrder([
       { label: "latest user", locator: latestUserEntry },
       { label: "completed command group", locator: commandGroup },
       { label: "running command", locator: runningCommandEntry },
+      { label: "progress note", locator: progressEntry },
       { label: "latest agent", locator: latestAgentEntry },
     ]);
+    if (await progressEntry.getByRole("button").count()) {
+      throw new Error("progress reasoning note still renders as a disclosure");
+    }
+    if (await progressEntry.getByText(/^Progress —/).count()) {
+      throw new Error(
+        "progress reasoning note still renders the Progress prefix",
+      );
+    }
+    const runningCommandButton = runningCommandEntry.getByRole("button", {
+      name: /^Running pnpm --dir ui build/i,
+    });
+    await runningCommandButton.waitFor();
+    await assertCommandStatusPrefixMuted(runningCommandButton, "Running");
+    await assertDisclosureChevronFollowsLabel(
+      runningCommandButton,
+      "running command",
+    );
     const olderMessage = page
       .getByTestId("session-transcript-user")
       .filter({ hasText: "Build a transcript-aware validation flow." });
@@ -622,9 +754,14 @@ async function main() {
       .getByTestId("session-transcript-command")
       .filter({ hasText: "git status" });
     const commandButton = commandEntry.getByRole("button", {
-      name: /git status/i,
+      name: /^Ran git status/i,
     });
     await commandButton.waitFor();
+    await assertCommandStatusPrefixMuted(commandButton, "Ran");
+    await assertDisclosureChevronFollowsLabel(
+      commandButton,
+      "completed command",
+    );
     await commandButton.click();
     await commandEntry.locator("pre").getByText("git status").waitFor();
     if ((await commandEntry.locator(".rounded-full").count()) > 0) {

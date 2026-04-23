@@ -67,7 +67,7 @@ function isTranscriptActivityItem(
   return item?.kind === "transcript"
 }
 
-export function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
+function buildTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return groupTimelineItems(orderCompletedReasoningBeforeAgentAnswers(items))
 }
 
@@ -109,7 +109,10 @@ export function TranscriptTimeline({
           className={cn(
             "min-w-0",
             index > 0 &&
-              isAssistantReplyAfterUserMessage(timelineItems[index - 1], item) &&
+              isAssistantReplyAfterUserMessage(
+                timelineItems[index - 1],
+                item
+              ) &&
               "mt-4"
           )}
         >
@@ -255,7 +258,10 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
       continue
     }
 
-    if (isTranscriptActivityItem(current) && shouldFoldThoughtItem(current.item)) {
+    if (
+      isTranscriptActivityItem(current) &&
+      shouldFoldThoughtItem(current.item)
+    ) {
       const thoughtItems: SessionTranscriptItem[] = []
 
       while (cursor < items.length) {
@@ -306,7 +312,10 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return timelineItems
 }
 
-function thoughtRunBelongsToCompletedAnswer(items: ActivityItem[], from: number) {
+function thoughtRunBelongsToCompletedAnswer(
+  items: ActivityItem[],
+  from: number
+) {
   for (let index = from; index < items.length; index += 1) {
     const item = items[index]
     if (!isTranscriptActivityItem(item)) {
@@ -396,6 +405,9 @@ function isCompletedReasoningActivityItem(item: ActivityItem | undefined) {
 function shouldFoldThoughtItem(item: SessionTranscriptItem) {
   if (item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION) {
     return !isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  }
+  if (isPlainProgressReasoningItem(item)) {
+    return false
   }
 
   return (
@@ -507,7 +519,10 @@ function UserMessageEntry({
     item.displayBody.trim() || formatUserMessageForDisplay(item.body)
 
   return (
-    <div className="my-4 flex justify-end" data-testid="session-transcript-user">
+    <div
+      className="my-4 flex justify-end"
+      data-testid="session-transcript-user"
+    >
       <div className="max-w-[85%]">
         <SessionRichText
           text={displayText}
@@ -775,6 +790,20 @@ function ReasoningEntry({
   const disclosureLabel =
     !showContent && preview ? `${label}: ${preview}` : label
 
+  if (isPlainProgressReasoning(label, isStreaming)) {
+    const text = summaryText || rawText
+
+    if (!text) {
+      return null
+    }
+
+    return (
+      <div className="min-w-0" data-testid="session-transcript-reasoning">
+        <SessionRichText text={text} onLocalPathClick={onSelectPath} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex gap-3" data-testid="session-transcript-reasoning">
       <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -814,6 +843,17 @@ function ReasoningEntry({
         ) : null}
       </div>
     </div>
+  )
+}
+
+function isPlainProgressReasoning(label: string, isStreaming: boolean) {
+  return !isStreaming && label.trim().toLowerCase() === "progress"
+}
+
+function isPlainProgressReasoningItem(item: SessionTranscriptItem) {
+  return (
+    item.kind === SessionTranscriptItemKind.REASONING &&
+    isPlainProgressReasoning(item.title, isActiveReasoningStatus(item.status))
   )
 }
 
@@ -1000,7 +1040,8 @@ function CommandExecutionGroupEntry({
 function CommandEntry({ item }: { item: SessionTranscriptItem }) {
   const [expanded, setExpanded] = useState(false)
   const detail = parseCommandExecutionDetail(item.body)
-  const label = detail.command || item.title || "Command"
+  const commandLabel = detail.command || item.title || "Command"
+  const statusPrefix = commandExecutionLabelPrefix(item)
 
   return (
     <div className="min-w-0" data-testid="session-transcript-command">
@@ -1008,11 +1049,12 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
         <TranscriptDisclosureButton
           onClick={() => setExpanded((prev) => !prev)}
           expanded={expanded}
-          iconClassName="ml-auto size-3"
-          className="w-full gap-1.5 text-muted-foreground hover:text-foreground"
+          iconClassName="size-3"
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
         >
-          <span className="min-w-0 truncate font-mono text-foreground">
-            {label}
+          <span className="min-w-0 truncate text-foreground">
+            <span className="text-muted-foreground">{statusPrefix}</span>{" "}
+            <span className="font-mono">{commandLabel}</span>
           </span>
         </TranscriptDisclosureButton>
         {expanded ? (
@@ -1071,6 +1113,12 @@ function isActiveCommandExecutionStatus(status: string) {
     normalized === "queued" ||
     normalized === "starting"
   )
+}
+
+function commandExecutionLabelPrefix(item: SessionTranscriptItem) {
+  return isActiveCommandExecutionStatus(commandExecutionStatus(item))
+    ? "Running"
+    : "Ran"
 }
 
 function commandExecutionGroupKey(items: SessionTranscriptItem[]) {

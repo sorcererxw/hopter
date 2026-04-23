@@ -135,7 +135,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 rememberSessionComposerSelection(sessionId, selection)
               }}
               onValueChange={setPrompt}
-              onSubmit={async ({ model, reasoningEffort }) => {
+              onSubmit={async ({ codexFastMode, model, reasoningEffort }) => {
                 if (!prompt.trim()) {
                   return
                 }
@@ -144,11 +144,13 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 setPrompt("")
                 setOptimisticPendingInput(normalizedPrompt)
                 rememberSessionComposerSelection(sessionId, {
+                  codexFastMode,
                   model,
                   reasoningEffort,
                 })
                 try {
                   await sendInput.mutateAsync({
+                    codexFastMode,
                     input: normalizedPrompt,
                     model,
                     reasoningEffort,

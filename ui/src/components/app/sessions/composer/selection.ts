@@ -1,4 +1,5 @@
 export type SessionComposerSelection = {
+  codexFastMode: boolean
   model: string
   reasoningEffort: string
 }

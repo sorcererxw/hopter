@@ -203,6 +203,7 @@ func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[h
 		Prompt:          req.Msg.GetPrompt(),
 		Model:           req.Msg.GetModel(),
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
+		CodexFastMode:   req.Msg.GetCodexFastMode(),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -217,6 +218,7 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 	session, err := s.codex.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput(), core.SessionTurnOptions{
 		Model:           req.Msg.GetModel(),
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
+		CodexFastMode:   req.Msg.GetCodexFastMode(),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
