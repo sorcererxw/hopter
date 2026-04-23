@@ -38,7 +38,7 @@ func normalizeReadThreadItemsForPage(read *ReadThreadResult) []core.SessionTrans
 		itemLimit:          0,
 		reasoningLimit:     600,
 		commandOutputLimit: 900,
-		includeFileDiff:    false,
+		includeFileDiff:    true,
 	})
 }
 
@@ -54,7 +54,7 @@ func normalizeLatestReadThreadItemsForPage(
 		itemLimit:          0,
 		reasoningLimit:     600,
 		commandOutputLimit: 900,
-		includeFileDiff:    false,
+		includeFileDiff:    true,
 	}
 
 	items := make([]core.SessionTranscriptItem, 0, limit)
@@ -338,7 +338,7 @@ func imageAttachmentURL(rawURL string) string {
 		return ""
 	}
 	if strings.HasPrefix(strings.ToLower(normalized), "data:image/") {
-		return ""
+		return normalized
 	}
 	return imageProxyRemoteURL(normalized)
 }

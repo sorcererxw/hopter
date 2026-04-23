@@ -3,6 +3,7 @@ package codex
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/sorcererxw/hopter/internal/core"
@@ -141,8 +142,8 @@ func TestNormalizeUserMessageRedactsSyncedDataImageURL(t *testing.T) {
 	if len(item.Attachments) != 1 {
 		t.Fatalf("attachments = %d, want 1", len(item.Attachments))
 	}
-	if item.Attachments[0].URL != "" {
-		t.Fatalf("attachment url leaked data URL: %q", item.Attachments[0].URL)
+	if item.Attachments[0].URL != "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" {
+		t.Fatalf("attachment url = %q", item.Attachments[0].URL)
 	}
 }
 
@@ -162,6 +163,42 @@ func TestNormalizeUserMessageRedactsDataImageURLInsideTextPart(t *testing.T) {
 	}
 	if item.DisplayBody != "before [image data omitted] after" {
 		t.Fatalf("display body = %q", item.DisplayBody)
+	}
+}
+
+func TestNormalizeReadThreadItemsForPagePreservesFileChangeDiff(t *testing.T) {
+	read := readThreadResultWithTurns(
+		ReadThreadTurn{
+			ID:     "turn-1",
+			Status: "completed",
+			Items: []ReadThreadItem{
+				{
+					Type: "fileChange",
+					ID:   "file-change-1",
+					Changes: []ReadThreadFileChange{
+						{
+							Path: "/repo/ui/src/components/app/sessions/composer/composer.tsx",
+							Diff: "@@ -1,2 +1,2 @@\n-old\n+new",
+							Kind: struct {
+								Type     string  `json:"type"`
+								MovePath *string `json:"move_path"`
+							}{Type: "update"},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	items := normalizeReadThreadItemsForPage(read)
+	if len(items) != 1 {
+		t.Fatalf("items = %d, want 1", len(items))
+	}
+	if items[0].Kind != core.SessionTranscriptItemKindFileChange {
+		t.Fatalf("item kind = %q, want file change", items[0].Kind)
+	}
+	if !strings.Contains(items[0].Body, "@@ -1,2 +1,2 @@") {
+		t.Fatalf("file change body omitted diff: %s", items[0].Body)
 	}
 }
 

@@ -109,7 +109,10 @@ export function TranscriptTimeline({
           className={cn(
             "min-w-0",
             index > 0 &&
-              isAssistantReplyAfterUserMessage(timelineItems[index - 1], item) &&
+              isAssistantReplyAfterUserMessage(
+                timelineItems[index - 1],
+                item
+              ) &&
               "mt-4"
           )}
         >
@@ -255,7 +258,10 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
       continue
     }
 
-    if (isTranscriptActivityItem(current) && shouldFoldThoughtItem(current.item)) {
+    if (
+      isTranscriptActivityItem(current) &&
+      shouldFoldThoughtItem(current.item)
+    ) {
       const thoughtItems: SessionTranscriptItem[] = []
 
       while (cursor < items.length) {
@@ -306,7 +312,10 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return timelineItems
 }
 
-function thoughtRunBelongsToCompletedAnswer(items: ActivityItem[], from: number) {
+function thoughtRunBelongsToCompletedAnswer(
+  items: ActivityItem[],
+  from: number
+) {
   for (let index = from; index < items.length; index += 1) {
     const item = items[index]
     if (!isTranscriptActivityItem(item)) {
@@ -507,7 +516,10 @@ function UserMessageEntry({
     item.displayBody.trim() || formatUserMessageForDisplay(item.body)
 
   return (
-    <div className="my-4 flex justify-end" data-testid="session-transcript-user">
+    <div
+      className="my-4 flex justify-end"
+      data-testid="session-transcript-user"
+    >
       <div className="max-w-[85%]">
         <SessionRichText
           text={displayText}
@@ -1134,11 +1146,44 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
           as="pre"
           className="mt-1 max-h-96 break-words whitespace-pre-wrap"
         >
-          {change.diff?.trim() || "No diff content available."}
+          <DiffCodeBlock diff={change.diff} />
         </CodeContainer>
       ) : null}
     </div>
   )
+}
+
+function DiffCodeBlock({ diff }: { diff?: string }) {
+  const lines = diff?.trim().split("\n") ?? []
+  if (lines.length === 0) {
+    return <>No diff content available.</>
+  }
+
+  return (
+    <>
+      {lines.map((line, index) => (
+        <span
+          className={cn("-mx-4 block min-w-full px-4", diffLineClassName(line))}
+          key={`${index}-${line}`}
+        >
+          {line || " "}
+        </span>
+      ))}
+    </>
+  )
+}
+
+function diffLineClassName(line: string) {
+  if (line.startsWith("+") && !line.startsWith("+++")) {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+  }
+  if (line.startsWith("-") && !line.startsWith("---")) {
+    return "bg-destructive/10 text-destructive"
+  }
+  if (line.startsWith("@@")) {
+    return "bg-accent text-muted-foreground"
+  }
+  return ""
 }
 
 function TranscriptBatchEntry({

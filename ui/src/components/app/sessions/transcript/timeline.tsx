@@ -1182,11 +1182,44 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
           as="pre"
           className="mt-1 max-h-96 break-words whitespace-pre-wrap"
         >
-          {change.diff?.trim() || "No diff content available."}
+          <DiffCodeBlock diff={change.diff} />
         </CodeContainer>
       ) : null}
     </div>
   )
+}
+
+function DiffCodeBlock({ diff }: { diff?: string }) {
+  const lines = diff?.trim().split("\n") ?? []
+  if (lines.length === 0) {
+    return <>No diff content available.</>
+  }
+
+  return (
+    <>
+      {lines.map((line, index) => (
+        <span
+          className={cn("-mx-4 block min-w-full px-4", diffLineClassName(line))}
+          key={`${index}-${line}`}
+        >
+          {line || " "}
+        </span>
+      ))}
+    </>
+  )
+}
+
+function diffLineClassName(line: string) {
+  if (line.startsWith("+") && !line.startsWith("+++")) {
+    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+  }
+  if (line.startsWith("-") && !line.startsWith("---")) {
+    return "bg-destructive/10 text-destructive"
+  }
+  if (line.startsWith("@@")) {
+    return "bg-accent text-muted-foreground"
+  }
+  return ""
 }
 
 function TranscriptBatchEntry({
