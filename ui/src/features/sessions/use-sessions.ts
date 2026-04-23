@@ -6,6 +6,7 @@ import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
 type CreateSessionInput = {
+  attachments?: SessionInputAttachment[]
   backendKey?: string
   codexFastMode?: boolean
   model?: string
@@ -16,11 +17,18 @@ type CreateSessionInput = {
 }
 
 type SendSessionInput = {
+  attachments?: SessionInputAttachment[]
   codexFastMode?: boolean
   input: string
   model?: string
   reasoningEffort?: string
   sessionId: string
+}
+
+type SessionInputAttachment = {
+  contentType?: string
+  label: string
+  url: string
 }
 
 type GetSessionFileInput = {
@@ -206,6 +214,7 @@ export function useCreateSession() {
   return useMutation({
     mutationFn: async ({
       backendKey,
+      attachments,
       codexFastMode,
       model,
       projectId,
@@ -215,6 +224,7 @@ export function useCreateSession() {
     }: CreateSessionInput) => {
       const response = await sessionClient.createSession({
         backendKey,
+        attachments,
         codexFastMode,
         model,
         projectId,
@@ -246,6 +256,7 @@ export function useSendSessionInput() {
   return useMutation({
     mutationFn: async ({
       input,
+      attachments,
       codexFastMode,
       model,
       reasoningEffort,
@@ -253,6 +264,7 @@ export function useSendSessionInput() {
     }: SendSessionInput) => {
       return sessionClient.sendSessionInput({
         input,
+        attachments,
         codexFastMode,
         model,
         reasoningEffort,

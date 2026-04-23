@@ -1689,14 +1689,15 @@ func (x *ListSessionTranscriptResponse) GetPage() *SessionTranscriptPage {
 }
 
 type CreateSessionRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	ProjectId       string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
-	Title           *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
-	Prompt          string                 `protobuf:"bytes,3,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	BackendKey      *string                `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
-	Model           *string                `protobuf:"bytes,5,opt,name=model,proto3,oneof" json:"model,omitempty"`
-	ReasoningEffort *string                `protobuf:"bytes,6,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
-	CodexFastMode   *bool                  `protobuf:"varint,7,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
+	state           protoimpl.MessageState    `protogen:"open.v1"`
+	ProjectId       string                    `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Title           *string                   `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Prompt          string                    `protobuf:"bytes,3,opt,name=prompt,proto3" json:"prompt,omitempty"`
+	BackendKey      *string                   `protobuf:"bytes,4,opt,name=backend_key,json=backendKey,proto3,oneof" json:"backend_key,omitempty"`
+	Model           *string                   `protobuf:"bytes,5,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	ReasoningEffort *string                   `protobuf:"bytes,6,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	CodexFastMode   *bool                     `protobuf:"varint,7,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
+	Attachments     []*SessionInputAttachment `protobuf:"bytes,8,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1780,6 +1781,13 @@ func (x *CreateSessionRequest) GetCodexFastMode() bool {
 	return false
 }
 
+func (x *CreateSessionRequest) GetAttachments() []*SessionInputAttachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
 type CreateSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
@@ -1825,12 +1833,13 @@ func (x *CreateSessionResponse) GetSession() *Session {
 }
 
 type SendSessionInputRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	Input           string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
-	Model           *string                `protobuf:"bytes,3,opt,name=model,proto3,oneof" json:"model,omitempty"`
-	ReasoningEffort *string                `protobuf:"bytes,4,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
-	CodexFastMode   *bool                  `protobuf:"varint,5,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
+	state           protoimpl.MessageState    `protogen:"open.v1"`
+	SessionId       string                    `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Input           string                    `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
+	Model           *string                   `protobuf:"bytes,3,opt,name=model,proto3,oneof" json:"model,omitempty"`
+	ReasoningEffort *string                   `protobuf:"bytes,4,opt,name=reasoning_effort,json=reasoningEffort,proto3,oneof" json:"reasoning_effort,omitempty"`
+	CodexFastMode   *bool                     `protobuf:"varint,5,opt,name=codex_fast_mode,json=codexFastMode,proto3,oneof" json:"codex_fast_mode,omitempty"`
+	Attachments     []*SessionInputAttachment `protobuf:"bytes,6,rep,name=attachments,proto3" json:"attachments,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1900,6 +1909,13 @@ func (x *SendSessionInputRequest) GetCodexFastMode() bool {
 	return false
 }
 
+func (x *SendSessionInputRequest) GetAttachments() []*SessionInputAttachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
 type SendSessionInputResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
@@ -1960,6 +1976,66 @@ func (x *SendSessionInputResponse) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+type SessionInputAttachment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Label         string                 `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SessionInputAttachment) Reset() {
+	*x = SessionInputAttachment{}
+	mi := &file_hopter_v1_session_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionInputAttachment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionInputAttachment) ProtoMessage() {}
+
+func (x *SessionInputAttachment) ProtoReflect() protoreflect.Message {
+	mi := &file_hopter_v1_session_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SessionInputAttachment.ProtoReflect.Descriptor instead.
+func (*SessionInputAttachment) Descriptor() ([]byte, []int) {
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *SessionInputAttachment) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *SessionInputAttachment) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *SessionInputAttachment) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
 type InterruptSessionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -1969,7 +2045,7 @@ type InterruptSessionRequest struct {
 
 func (x *InterruptSessionRequest) Reset() {
 	*x = InterruptSessionRequest{}
-	mi := &file_hopter_v1_session_proto_msgTypes[25]
+	mi := &file_hopter_v1_session_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1981,7 +2057,7 @@ func (x *InterruptSessionRequest) String() string {
 func (*InterruptSessionRequest) ProtoMessage() {}
 
 func (x *InterruptSessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[25]
+	mi := &file_hopter_v1_session_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1994,7 +2070,7 @@ func (x *InterruptSessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterruptSessionRequest.ProtoReflect.Descriptor instead.
 func (*InterruptSessionRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{25}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *InterruptSessionRequest) GetSessionId() string {
@@ -2015,7 +2091,7 @@ type InterruptSessionResponse struct {
 
 func (x *InterruptSessionResponse) Reset() {
 	*x = InterruptSessionResponse{}
-	mi := &file_hopter_v1_session_proto_msgTypes[26]
+	mi := &file_hopter_v1_session_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2027,7 +2103,7 @@ func (x *InterruptSessionResponse) String() string {
 func (*InterruptSessionResponse) ProtoMessage() {}
 
 func (x *InterruptSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[26]
+	mi := &file_hopter_v1_session_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2040,7 +2116,7 @@ func (x *InterruptSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterruptSessionResponse.ProtoReflect.Descriptor instead.
 func (*InterruptSessionResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{26}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *InterruptSessionResponse) GetAccepted() bool {
@@ -2076,7 +2152,7 @@ type RespondToSessionApprovalRequest struct {
 
 func (x *RespondToSessionApprovalRequest) Reset() {
 	*x = RespondToSessionApprovalRequest{}
-	mi := &file_hopter_v1_session_proto_msgTypes[27]
+	mi := &file_hopter_v1_session_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2088,7 +2164,7 @@ func (x *RespondToSessionApprovalRequest) String() string {
 func (*RespondToSessionApprovalRequest) ProtoMessage() {}
 
 func (x *RespondToSessionApprovalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[27]
+	mi := &file_hopter_v1_session_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2101,7 +2177,7 @@ func (x *RespondToSessionApprovalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespondToSessionApprovalRequest.ProtoReflect.Descriptor instead.
 func (*RespondToSessionApprovalRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{27}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RespondToSessionApprovalRequest) GetSessionId() string {
@@ -2143,7 +2219,7 @@ type RespondToSessionApprovalResponse struct {
 
 func (x *RespondToSessionApprovalResponse) Reset() {
 	*x = RespondToSessionApprovalResponse{}
-	mi := &file_hopter_v1_session_proto_msgTypes[28]
+	mi := &file_hopter_v1_session_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2155,7 +2231,7 @@ func (x *RespondToSessionApprovalResponse) String() string {
 func (*RespondToSessionApprovalResponse) ProtoMessage() {}
 
 func (x *RespondToSessionApprovalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[28]
+	mi := &file_hopter_v1_session_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2168,7 +2244,7 @@ func (x *RespondToSessionApprovalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RespondToSessionApprovalResponse.ProtoReflect.Descriptor instead.
 func (*RespondToSessionApprovalResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{28}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *RespondToSessionApprovalResponse) GetAccepted() bool {
@@ -2201,7 +2277,7 @@ type ListSessionArtifactsRequest struct {
 
 func (x *ListSessionArtifactsRequest) Reset() {
 	*x = ListSessionArtifactsRequest{}
-	mi := &file_hopter_v1_session_proto_msgTypes[29]
+	mi := &file_hopter_v1_session_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2213,7 +2289,7 @@ func (x *ListSessionArtifactsRequest) String() string {
 func (*ListSessionArtifactsRequest) ProtoMessage() {}
 
 func (x *ListSessionArtifactsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[29]
+	mi := &file_hopter_v1_session_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2226,7 +2302,7 @@ func (x *ListSessionArtifactsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionArtifactsRequest.ProtoReflect.Descriptor instead.
 func (*ListSessionArtifactsRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{29}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListSessionArtifactsRequest) GetSessionId() string {
@@ -2245,7 +2321,7 @@ type ListSessionArtifactsResponse struct {
 
 func (x *ListSessionArtifactsResponse) Reset() {
 	*x = ListSessionArtifactsResponse{}
-	mi := &file_hopter_v1_session_proto_msgTypes[30]
+	mi := &file_hopter_v1_session_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2257,7 +2333,7 @@ func (x *ListSessionArtifactsResponse) String() string {
 func (*ListSessionArtifactsResponse) ProtoMessage() {}
 
 func (x *ListSessionArtifactsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_session_proto_msgTypes[30]
+	mi := &file_hopter_v1_session_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2270,7 +2346,7 @@ func (x *ListSessionArtifactsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSessionArtifactsResponse.ProtoReflect.Descriptor instead.
 func (*ListSessionArtifactsResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_session_proto_rawDescGZIP(), []int{30}
+	return file_hopter_v1_session_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListSessionArtifactsResponse) GetArtifacts() []*ArtifactRef {
@@ -2437,7 +2513,7 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\x13snapshot_updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x11snapshotUpdatedAtB\x15\n" +
 	"\x13_next_before_cursor\"U\n" +
 	"\x1dListSessionTranscriptResponse\x124\n" +
-	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\xd3\x02\n" +
+	"\x04page\x18\x01 \x01(\v2 .hopter.v1.SessionTranscriptPageR\x04page\"\x98\x03\n" +
 	"\x14CreateSessionRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x19\n" +
@@ -2447,21 +2523,23 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"backendKey\x88\x01\x01\x12\x19\n" +
 	"\x05model\x18\x05 \x01(\tH\x02R\x05model\x88\x01\x01\x12.\n" +
 	"\x10reasoning_effort\x18\x06 \x01(\tH\x03R\x0freasoningEffort\x88\x01\x01\x12+\n" +
-	"\x0fcodex_fast_mode\x18\a \x01(\bH\x04R\rcodexFastMode\x88\x01\x01B\b\n" +
+	"\x0fcodex_fast_mode\x18\a \x01(\bH\x04R\rcodexFastMode\x88\x01\x01\x12C\n" +
+	"\vattachments\x18\b \x03(\v2!.hopter.v1.SessionInputAttachmentR\vattachmentsB\b\n" +
 	"\x06_titleB\x0e\n" +
 	"\f_backend_keyB\b\n" +
 	"\x06_modelB\x13\n" +
 	"\x11_reasoning_effortB\x12\n" +
 	"\x10_codex_fast_mode\"E\n" +
 	"\x15CreateSessionResponse\x12,\n" +
-	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"\xf9\x01\n" +
+	"\asession\x18\x01 \x01(\v2\x12.hopter.v1.SessionR\asession\"\xbe\x02\n" +
 	"\x17SendSessionInputRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
 	"\x05input\x18\x02 \x01(\tR\x05input\x12\x19\n" +
 	"\x05model\x18\x03 \x01(\tH\x00R\x05model\x88\x01\x01\x12.\n" +
 	"\x10reasoning_effort\x18\x04 \x01(\tH\x01R\x0freasoningEffort\x88\x01\x01\x12+\n" +
-	"\x0fcodex_fast_mode\x18\x05 \x01(\bH\x02R\rcodexFastMode\x88\x01\x01B\b\n" +
+	"\x0fcodex_fast_mode\x18\x05 \x01(\bH\x02R\rcodexFastMode\x88\x01\x01\x12C\n" +
+	"\vattachments\x18\x06 \x03(\v2!.hopter.v1.SessionInputAttachmentR\vattachmentsB\b\n" +
 	"\x06_modelB\x13\n" +
 	"\x11_reasoning_effortB\x12\n" +
 	"\x10_codex_fast_mode\"\x90\x01\n" +
@@ -2470,7 +2548,11 @@ const file_hopter_v1_session_proto_rawDesc = "" +
 	"\n" +
 	"session_id\x18\x02 \x01(\tR\tsessionId\x129\n" +
 	"\n" +
-	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"8\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"c\n" +
+	"\x16SessionInputAttachment\x12\x14\n" +
+	"\x05label\x18\x01 \x01(\tR\x05label\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\"8\n" +
 	"\x17InterruptSessionRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"\x90\x01\n" +
@@ -2541,7 +2623,7 @@ func file_hopter_v1_session_proto_rawDescGZIP() []byte {
 }
 
 var file_hopter_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hopter_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_hopter_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_hopter_v1_session_proto_goTypes = []any{
 	(SessionTranscriptItemKind)(0),           // 0: hopter.v1.SessionTranscriptItemKind
 	(SessionTranscriptAttachmentKind)(0),     // 1: hopter.v1.SessionTranscriptAttachmentKind
@@ -2570,77 +2652,80 @@ var file_hopter_v1_session_proto_goTypes = []any{
 	(*CreateSessionResponse)(nil),            // 24: hopter.v1.CreateSessionResponse
 	(*SendSessionInputRequest)(nil),          // 25: hopter.v1.SendSessionInputRequest
 	(*SendSessionInputResponse)(nil),         // 26: hopter.v1.SendSessionInputResponse
-	(*InterruptSessionRequest)(nil),          // 27: hopter.v1.InterruptSessionRequest
-	(*InterruptSessionResponse)(nil),         // 28: hopter.v1.InterruptSessionResponse
-	(*RespondToSessionApprovalRequest)(nil),  // 29: hopter.v1.RespondToSessionApprovalRequest
-	(*RespondToSessionApprovalResponse)(nil), // 30: hopter.v1.RespondToSessionApprovalResponse
-	(*ListSessionArtifactsRequest)(nil),      // 31: hopter.v1.ListSessionArtifactsRequest
-	(*ListSessionArtifactsResponse)(nil),     // 32: hopter.v1.ListSessionArtifactsResponse
-	(*ProjectRef)(nil),                       // 33: hopter.v1.ProjectRef
-	(SessionStatus)(0),                       // 34: hopter.v1.SessionStatus
-	(*timestamppb.Timestamp)(nil),            // 35: google.protobuf.Timestamp
-	(*ArtifactRef)(nil),                      // 36: hopter.v1.ArtifactRef
-	(ApprovalDecision)(0),                    // 37: hopter.v1.ApprovalDecision
+	(*SessionInputAttachment)(nil),           // 27: hopter.v1.SessionInputAttachment
+	(*InterruptSessionRequest)(nil),          // 28: hopter.v1.InterruptSessionRequest
+	(*InterruptSessionResponse)(nil),         // 29: hopter.v1.InterruptSessionResponse
+	(*RespondToSessionApprovalRequest)(nil),  // 30: hopter.v1.RespondToSessionApprovalRequest
+	(*RespondToSessionApprovalResponse)(nil), // 31: hopter.v1.RespondToSessionApprovalResponse
+	(*ListSessionArtifactsRequest)(nil),      // 32: hopter.v1.ListSessionArtifactsRequest
+	(*ListSessionArtifactsResponse)(nil),     // 33: hopter.v1.ListSessionArtifactsResponse
+	(*ProjectRef)(nil),                       // 34: hopter.v1.ProjectRef
+	(SessionStatus)(0),                       // 35: hopter.v1.SessionStatus
+	(*timestamppb.Timestamp)(nil),            // 36: google.protobuf.Timestamp
+	(*ArtifactRef)(nil),                      // 37: hopter.v1.ArtifactRef
+	(ApprovalDecision)(0),                    // 38: hopter.v1.ApprovalDecision
 }
 var file_hopter_v1_session_proto_depIdxs = []int32{
-	33, // 0: hopter.v1.Session.project:type_name -> hopter.v1.ProjectRef
-	34, // 1: hopter.v1.Session.status:type_name -> hopter.v1.SessionStatus
-	35, // 2: hopter.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
-	36, // 3: hopter.v1.Session.artifacts:type_name -> hopter.v1.ArtifactRef
+	34, // 0: hopter.v1.Session.project:type_name -> hopter.v1.ProjectRef
+	35, // 1: hopter.v1.Session.status:type_name -> hopter.v1.SessionStatus
+	36, // 2: hopter.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
+	37, // 3: hopter.v1.Session.artifacts:type_name -> hopter.v1.ArtifactRef
 	5,  // 4: hopter.v1.Session.transcript_items:type_name -> hopter.v1.SessionTranscriptItem
-	33, // 5: hopter.v1.SessionMeta.project:type_name -> hopter.v1.ProjectRef
-	34, // 6: hopter.v1.SessionMeta.status:type_name -> hopter.v1.SessionStatus
-	35, // 7: hopter.v1.SessionMeta.updated_at:type_name -> google.protobuf.Timestamp
-	36, // 8: hopter.v1.SessionMeta.artifacts:type_name -> hopter.v1.ArtifactRef
+	34, // 5: hopter.v1.SessionMeta.project:type_name -> hopter.v1.ProjectRef
+	35, // 6: hopter.v1.SessionMeta.status:type_name -> hopter.v1.SessionStatus
+	36, // 7: hopter.v1.SessionMeta.updated_at:type_name -> google.protobuf.Timestamp
+	37, // 8: hopter.v1.SessionMeta.artifacts:type_name -> hopter.v1.ArtifactRef
 	1,  // 9: hopter.v1.SessionTranscriptAttachment.kind:type_name -> hopter.v1.SessionTranscriptAttachmentKind
 	0,  // 10: hopter.v1.SessionTranscriptItem.kind:type_name -> hopter.v1.SessionTranscriptItemKind
 	4,  // 11: hopter.v1.SessionTranscriptItem.attachments:type_name -> hopter.v1.SessionTranscriptAttachment
-	33, // 12: hopter.v1.SessionListItem.project:type_name -> hopter.v1.ProjectRef
-	34, // 13: hopter.v1.SessionListItem.status:type_name -> hopter.v1.SessionStatus
-	35, // 14: hopter.v1.SessionListItem.updated_at:type_name -> google.protobuf.Timestamp
+	34, // 12: hopter.v1.SessionListItem.project:type_name -> hopter.v1.ProjectRef
+	35, // 13: hopter.v1.SessionListItem.status:type_name -> hopter.v1.SessionStatus
+	36, // 14: hopter.v1.SessionListItem.updated_at:type_name -> google.protobuf.Timestamp
 	6,  // 15: hopter.v1.ListSessionsResponse.sessions:type_name -> hopter.v1.SessionListItem
 	2,  // 16: hopter.v1.GetSessionResponse.session:type_name -> hopter.v1.Session
 	3,  // 17: hopter.v1.GetSessionMetaResponse.session:type_name -> hopter.v1.SessionMeta
 	13, // 18: hopter.v1.SessionReview.files:type_name -> hopter.v1.SessionReviewFile
-	35, // 19: hopter.v1.SessionReview.generated_at:type_name -> google.protobuf.Timestamp
+	36, // 19: hopter.v1.SessionReview.generated_at:type_name -> google.protobuf.Timestamp
 	14, // 20: hopter.v1.GetSessionReviewResponse.review:type_name -> hopter.v1.SessionReview
 	17, // 21: hopter.v1.GetSessionFileResponse.file:type_name -> hopter.v1.SessionFile
 	5,  // 22: hopter.v1.SessionTranscriptPage.items:type_name -> hopter.v1.SessionTranscriptItem
-	35, // 23: hopter.v1.SessionTranscriptPage.snapshot_updated_at:type_name -> google.protobuf.Timestamp
+	36, // 23: hopter.v1.SessionTranscriptPage.snapshot_updated_at:type_name -> google.protobuf.Timestamp
 	21, // 24: hopter.v1.ListSessionTranscriptResponse.page:type_name -> hopter.v1.SessionTranscriptPage
-	2,  // 25: hopter.v1.CreateSessionResponse.session:type_name -> hopter.v1.Session
-	35, // 26: hopter.v1.SendSessionInputResponse.updated_at:type_name -> google.protobuf.Timestamp
-	35, // 27: hopter.v1.InterruptSessionResponse.updated_at:type_name -> google.protobuf.Timestamp
-	37, // 28: hopter.v1.RespondToSessionApprovalRequest.decision:type_name -> hopter.v1.ApprovalDecision
-	35, // 29: hopter.v1.RespondToSessionApprovalResponse.updated_at:type_name -> google.protobuf.Timestamp
-	36, // 30: hopter.v1.ListSessionArtifactsResponse.artifacts:type_name -> hopter.v1.ArtifactRef
-	7,  // 31: hopter.v1.SessionService.ListSessions:input_type -> hopter.v1.ListSessionsRequest
-	9,  // 32: hopter.v1.SessionService.GetSession:input_type -> hopter.v1.GetSessionRequest
-	11, // 33: hopter.v1.SessionService.GetSessionMeta:input_type -> hopter.v1.GetSessionMetaRequest
-	15, // 34: hopter.v1.SessionService.GetSessionReview:input_type -> hopter.v1.GetSessionReviewRequest
-	18, // 35: hopter.v1.SessionService.GetSessionFile:input_type -> hopter.v1.GetSessionFileRequest
-	20, // 36: hopter.v1.SessionService.ListSessionTranscript:input_type -> hopter.v1.ListSessionTranscriptRequest
-	23, // 37: hopter.v1.SessionService.CreateSession:input_type -> hopter.v1.CreateSessionRequest
-	25, // 38: hopter.v1.SessionService.SendSessionInput:input_type -> hopter.v1.SendSessionInputRequest
-	27, // 39: hopter.v1.SessionService.InterruptSession:input_type -> hopter.v1.InterruptSessionRequest
-	29, // 40: hopter.v1.SessionService.RespondToSessionApproval:input_type -> hopter.v1.RespondToSessionApprovalRequest
-	31, // 41: hopter.v1.SessionService.ListSessionArtifacts:input_type -> hopter.v1.ListSessionArtifactsRequest
-	8,  // 42: hopter.v1.SessionService.ListSessions:output_type -> hopter.v1.ListSessionsResponse
-	10, // 43: hopter.v1.SessionService.GetSession:output_type -> hopter.v1.GetSessionResponse
-	12, // 44: hopter.v1.SessionService.GetSessionMeta:output_type -> hopter.v1.GetSessionMetaResponse
-	16, // 45: hopter.v1.SessionService.GetSessionReview:output_type -> hopter.v1.GetSessionReviewResponse
-	19, // 46: hopter.v1.SessionService.GetSessionFile:output_type -> hopter.v1.GetSessionFileResponse
-	22, // 47: hopter.v1.SessionService.ListSessionTranscript:output_type -> hopter.v1.ListSessionTranscriptResponse
-	24, // 48: hopter.v1.SessionService.CreateSession:output_type -> hopter.v1.CreateSessionResponse
-	26, // 49: hopter.v1.SessionService.SendSessionInput:output_type -> hopter.v1.SendSessionInputResponse
-	28, // 50: hopter.v1.SessionService.InterruptSession:output_type -> hopter.v1.InterruptSessionResponse
-	30, // 51: hopter.v1.SessionService.RespondToSessionApproval:output_type -> hopter.v1.RespondToSessionApprovalResponse
-	32, // 52: hopter.v1.SessionService.ListSessionArtifacts:output_type -> hopter.v1.ListSessionArtifactsResponse
-	42, // [42:53] is the sub-list for method output_type
-	31, // [31:42] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	27, // 25: hopter.v1.CreateSessionRequest.attachments:type_name -> hopter.v1.SessionInputAttachment
+	2,  // 26: hopter.v1.CreateSessionResponse.session:type_name -> hopter.v1.Session
+	27, // 27: hopter.v1.SendSessionInputRequest.attachments:type_name -> hopter.v1.SessionInputAttachment
+	36, // 28: hopter.v1.SendSessionInputResponse.updated_at:type_name -> google.protobuf.Timestamp
+	36, // 29: hopter.v1.InterruptSessionResponse.updated_at:type_name -> google.protobuf.Timestamp
+	38, // 30: hopter.v1.RespondToSessionApprovalRequest.decision:type_name -> hopter.v1.ApprovalDecision
+	36, // 31: hopter.v1.RespondToSessionApprovalResponse.updated_at:type_name -> google.protobuf.Timestamp
+	37, // 32: hopter.v1.ListSessionArtifactsResponse.artifacts:type_name -> hopter.v1.ArtifactRef
+	7,  // 33: hopter.v1.SessionService.ListSessions:input_type -> hopter.v1.ListSessionsRequest
+	9,  // 34: hopter.v1.SessionService.GetSession:input_type -> hopter.v1.GetSessionRequest
+	11, // 35: hopter.v1.SessionService.GetSessionMeta:input_type -> hopter.v1.GetSessionMetaRequest
+	15, // 36: hopter.v1.SessionService.GetSessionReview:input_type -> hopter.v1.GetSessionReviewRequest
+	18, // 37: hopter.v1.SessionService.GetSessionFile:input_type -> hopter.v1.GetSessionFileRequest
+	20, // 38: hopter.v1.SessionService.ListSessionTranscript:input_type -> hopter.v1.ListSessionTranscriptRequest
+	23, // 39: hopter.v1.SessionService.CreateSession:input_type -> hopter.v1.CreateSessionRequest
+	25, // 40: hopter.v1.SessionService.SendSessionInput:input_type -> hopter.v1.SendSessionInputRequest
+	28, // 41: hopter.v1.SessionService.InterruptSession:input_type -> hopter.v1.InterruptSessionRequest
+	30, // 42: hopter.v1.SessionService.RespondToSessionApproval:input_type -> hopter.v1.RespondToSessionApprovalRequest
+	32, // 43: hopter.v1.SessionService.ListSessionArtifacts:input_type -> hopter.v1.ListSessionArtifactsRequest
+	8,  // 44: hopter.v1.SessionService.ListSessions:output_type -> hopter.v1.ListSessionsResponse
+	10, // 45: hopter.v1.SessionService.GetSession:output_type -> hopter.v1.GetSessionResponse
+	12, // 46: hopter.v1.SessionService.GetSessionMeta:output_type -> hopter.v1.GetSessionMetaResponse
+	16, // 47: hopter.v1.SessionService.GetSessionReview:output_type -> hopter.v1.GetSessionReviewResponse
+	19, // 48: hopter.v1.SessionService.GetSessionFile:output_type -> hopter.v1.GetSessionFileResponse
+	22, // 49: hopter.v1.SessionService.ListSessionTranscript:output_type -> hopter.v1.ListSessionTranscriptResponse
+	24, // 50: hopter.v1.SessionService.CreateSession:output_type -> hopter.v1.CreateSessionResponse
+	26, // 51: hopter.v1.SessionService.SendSessionInput:output_type -> hopter.v1.SendSessionInputResponse
+	29, // 52: hopter.v1.SessionService.InterruptSession:output_type -> hopter.v1.InterruptSessionResponse
+	31, // 53: hopter.v1.SessionService.RespondToSessionApproval:output_type -> hopter.v1.RespondToSessionApprovalResponse
+	33, // 54: hopter.v1.SessionService.ListSessionArtifacts:output_type -> hopter.v1.ListSessionArtifactsResponse
+	44, // [44:55] is the sub-list for method output_type
+	33, // [33:44] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_hopter_v1_session_proto_init() }
@@ -2658,14 +2743,14 @@ func file_hopter_v1_session_proto_init() {
 	file_hopter_v1_session_proto_msgTypes[19].OneofWrappers = []any{}
 	file_hopter_v1_session_proto_msgTypes[21].OneofWrappers = []any{}
 	file_hopter_v1_session_proto_msgTypes[23].OneofWrappers = []any{}
-	file_hopter_v1_session_proto_msgTypes[27].OneofWrappers = []any{}
+	file_hopter_v1_session_proto_msgTypes[28].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hopter_v1_session_proto_rawDesc), len(file_hopter_v1_session_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   31,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

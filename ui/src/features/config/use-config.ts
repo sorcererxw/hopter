@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { MessageInitShape } from "@bufbuild/protobuf"
 
 import {
+  ConfigComposerSendShortcut,
   ConfigLocale,
   ConfigTheme,
   UpdateConfigRequestSchema,
@@ -12,6 +13,7 @@ import { queryKeys } from "@/lib/query/keys"
 
 export type ThemePreference = "system" | "dark" | "light"
 export type LocalePreference = "system" | "en" | "zh-CN"
+export type ComposerSendShortcutPreference = "cmd-enter" | "enter"
 
 export function useConfig() {
   return useQuery({
@@ -57,6 +59,14 @@ export function localePreferenceFromConfig(
 ): LocalePreference {
   return localePreferenceFromProto(
     config?.appearance?.locale ?? ConfigLocale.SYSTEM
+  )
+}
+
+export function composerSendShortcutPreferenceFromConfig(
+  config?: UserConfig
+): ComposerSendShortcutPreference {
+  return composerSendShortcutPreferenceFromProto(
+    config?.composer?.sendShortcut ?? ConfigComposerSendShortcut.CMD_ENTER
   )
 }
 
@@ -112,4 +122,72 @@ export function localePreferenceToProto(
     default:
       return ConfigLocale.SYSTEM
   }
+}
+
+export function composerSendShortcutPreferenceFromProto(
+  shortcut: ConfigComposerSendShortcut
+): ComposerSendShortcutPreference {
+  switch (shortcut) {
+    case ConfigComposerSendShortcut.ENTER:
+      return "enter"
+    case ConfigComposerSendShortcut.CMD_ENTER:
+    case ConfigComposerSendShortcut.UNSPECIFIED:
+    default:
+      return "cmd-enter"
+  }
+}
+
+export function composerSendShortcutPreferenceToProto(
+  shortcut: ComposerSendShortcutPreference
+): ConfigComposerSendShortcut {
+  switch (shortcut) {
+    case "enter":
+      return ConfigComposerSendShortcut.ENTER
+    case "cmd-enter":
+    default:
+      return ConfigComposerSendShortcut.CMD_ENTER
+  }
+}
+
+export function formatComposerSendShortcutPreference(
+  shortcut: ComposerSendShortcutPreference,
+  platform = getNavigatorPlatform()
+) {
+  switch (shortcut) {
+    case "enter":
+      return "Enter"
+    case "cmd-enter":
+    default:
+      return isApplePlatform(platform) ? "⌘Enter" : "Ctrl+Enter"
+  }
+}
+
+export function isComposerSendShortcutEvent(
+  event: Pick<KeyboardEvent, "ctrlKey" | "key" | "metaKey" | "shiftKey"> & {
+    nativeEvent?: Pick<KeyboardEvent, "isComposing">
+  },
+  shortcut: ComposerSendShortcutPreference,
+  platform = getNavigatorPlatform()
+) {
+  if (
+    event.key !== "Enter" ||
+    event.shiftKey ||
+    event.nativeEvent?.isComposing
+  ) {
+    return false
+  }
+
+  if (shortcut === "enter") {
+    return true
+  }
+
+  return isApplePlatform(platform) ? event.metaKey : event.ctrlKey
+}
+
+function getNavigatorPlatform() {
+  return typeof navigator === "undefined" ? "" : navigator.platform
+}
+
+function isApplePlatform(platform: string) {
+  return /Mac|iPhone|iPad|iPod/.test(platform)
 }

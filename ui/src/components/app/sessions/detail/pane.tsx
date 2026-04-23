@@ -137,14 +137,21 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 rememberSessionComposerSelection(sessionId, selection)
               }}
               onValueChange={setPrompt}
-              onSubmit={async ({ codexFastMode, model, reasoningEffort }) => {
-                if (!prompt.trim()) {
+              onSubmit={async ({
+                attachments,
+                codexFastMode,
+                model,
+                reasoningEffort,
+              }) => {
+                if (!prompt.trim() && attachments.length === 0) {
                   return
                 }
 
                 const normalizedPrompt = prompt.trim()
+                const pendingInput =
+                  normalizedPrompt || attachments[0]?.label || "[image]"
                 setPrompt("")
-                setOptimisticPendingInput(normalizedPrompt)
+                setOptimisticPendingInput(pendingInput)
                 rememberSessionComposerSelection(sessionId, {
                   codexFastMode,
                   model,
@@ -152,6 +159,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                 })
                 try {
                   await sendInput.mutateAsync({
+                    attachments,
                     codexFastMode,
                     input: normalizedPrompt,
                     model,

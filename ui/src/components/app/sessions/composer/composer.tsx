@@ -4,6 +4,8 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type ChangeEvent,
+  type ClipboardEvent,
   type KeyboardEvent,
 } from "react"
 import { useTranslation } from "react-i18next"
@@ -11,12 +13,19 @@ import {
   ArrowUp,
   ChevronDown,
   LoaderCircle,
-  Plus,
+  Paperclip,
   Square,
+  X,
   Zap,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +35,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
+import {
+  composerSendShortcutPreferenceFromConfig,
+  formatComposerSendShortcutPreference,
+  isComposerSendShortcutEvent,
+  useConfig,
+} from "@/features/config/use-config"
 import { useCodexModels } from "@/features/host/use-host-models"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
@@ -41,8 +56,19 @@ import { SkillReferenceChip } from "@/components/app/shared"
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
 const DEFAULT_REASONING_EFFORT = "xhigh"
+const MAX_IMAGE_ATTACHMENTS = 4
+const MAX_IMAGE_ATTACHMENT_BYTES = 10 * 1024 * 1024
+
+export type SessionComposerAttachment = {
+  contentType: string
+  id: string
+  label: string
+  size: number
+  url: string
+}
 
 type SessionComposerSubmitOptions = {
+  attachments: SessionComposerAttachment[]
   codexFastMode: boolean
   model: string
   reasoningEffort: string
@@ -104,9 +130,14 @@ export function SessionComposer({
 }: SessionComposerProps) {
   const { t } = useTranslation()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
   const composerOverlayRef = useRef<HTMLDivElement | null>(null)
+  const [attachments, setAttachments] = useState<SessionComposerAttachment[]>(
+    []
+  )
+  const [attachmentError, setAttachmentError] = useState("")
   const canSubmit =
-    ((value.trim().length > 0 && !interruptMode) ||
+    (((value.trim().length > 0 || attachments.length > 0) && !interruptMode) ||
       (interruptMode && value.trim().length === 0)) &&
     !busy &&
     !disabled
@@ -129,6 +160,14 @@ export function SessionComposer({
   )
   const hostSkillsQuery = useHostSkills()
   const codexModelsQuery = useCodexModels()
+  const configQuery = useConfig()
+  const sendShortcut = composerSendShortcutPreferenceFromConfig(
+    configQuery.data
+  )
+  const sendShortcutLabel = formatComposerSendShortcutPreference(sendShortcut)
+  const sendButtonTooltip = interruptMode
+    ? t("composer.interruptTurnShortcut")
+    : t("composer.sendMessageShortcut", { shortcut: sendShortcutLabel })
   const modelOptions = codexModelsQuery.data ?? []
   const selectedModelOption =
     modelOptions.find((option) => modelValue(option) === selectedModel) ??
@@ -194,6 +233,9 @@ export function SessionComposer({
       buildComposerTextSegments(value, atomicSkillReferences, selectionRange),
     [atomicSkillReferences, selectionRange, value]
   )
+  const hasComposerTextOverlay = composerTextSegments.some(
+    (segment) => segment.highlighted
+  )
   const showSkillSuggestions =
     Boolean(activeSkillMatch) &&
     !interruptMode &&
@@ -226,6 +268,24 @@ export function SessionComposer({
     })
     return () => window.cancelAnimationFrame(frame)
   }, [highlightedSkillIndex, skillSuggestions.length])
+
+  useEffect(() => {
+    if (!interruptMode || !canSubmit) {
+      return
+    }
+
+    function handleWindowKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key !== "Escape" || event.repeat || event.defaultPrevented) {
+        return
+      }
+
+      event.preventDefault()
+      void onInterrupt?.()
+    }
+
+    window.addEventListener("keydown", handleWindowKeyDown)
+    return () => window.removeEventListener("keydown", handleWindowKeyDown)
+  }, [canSubmit, interruptMode, onInterrupt])
 
   function syncCaretPosition() {
     if (!textareaRef.current) {
@@ -307,10 +367,78 @@ export function SessionComposer({
     }
 
     await onSubmit({
+      attachments,
       codexFastMode,
       model: effectiveModel,
       reasoningEffort: effectiveReasoningEffort,
     })
+    setAttachments([])
+    setAttachmentError("")
+  }
+
+  async function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? [])
+    event.currentTarget.value = ""
+    await attachImageFiles(files)
+  }
+
+  async function handleTextareaPaste(
+    event: ClipboardEvent<HTMLTextAreaElement>
+  ) {
+    const imageFiles = Array.from(event.clipboardData.files).filter((file) =>
+      file.type.startsWith("image/")
+    )
+    if (imageFiles.length === 0) {
+      return
+    }
+
+    event.preventDefault()
+    await attachImageFiles(imageFiles)
+  }
+
+  async function attachImageFiles(files: File[]) {
+    if (files.length === 0) {
+      return
+    }
+
+    const availableSlots = MAX_IMAGE_ATTACHMENTS - attachments.length
+    const acceptedFiles = files
+      .filter((file) => file.type.startsWith("image/"))
+      .filter((file) => file.size <= MAX_IMAGE_ATTACHMENT_BYTES)
+      .slice(0, Math.max(0, availableSlots))
+
+    if (acceptedFiles.length !== files.length) {
+      setAttachmentError(
+        t("composer.imageAttachLimit", {
+          count: MAX_IMAGE_ATTACHMENTS,
+          size: formatBytes(MAX_IMAGE_ATTACHMENT_BYTES),
+        })
+      )
+    } else {
+      setAttachmentError("")
+    }
+
+    let nextAttachments: SessionComposerAttachment[]
+    try {
+      nextAttachments = await Promise.all(
+        acceptedFiles.map(readImageAttachment)
+      )
+    } catch {
+      setAttachmentError(t("composer.imageAttachFailed"))
+      return
+    }
+    if (nextAttachments.length > 0) {
+      setAttachments((current) =>
+        [...current, ...nextAttachments].slice(0, MAX_IMAGE_ATTACHMENTS)
+      )
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((current) =>
+      current.filter((attachment) => attachment.id !== id)
+    )
+    setAttachmentError("")
   }
 
   function handleModelChange(model: string) {
@@ -377,6 +505,16 @@ export function SessionComposer({
       return
     }
 
+    if (event.key === "Enter" && event.shiftKey) {
+      return
+    }
+
+    if (isComposerSendShortcutEvent(event, sendShortcut)) {
+      event.preventDefault()
+      void handleSubmit()
+      return
+    }
+
     if (showSkillSuggestions) {
       if (event.key === "ArrowDown") {
         event.preventDefault()
@@ -394,7 +532,7 @@ export function SessionComposer({
         return
       }
 
-      if (event.key === "Enter" || event.key === "Tab") {
+      if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") {
         event.preventDefault()
         const selectedSkill = skillSuggestions[highlightedSkillIndex]
         if (selectedSkill) {
@@ -408,11 +546,6 @@ export function SessionComposer({
       event.preventDefault()
       setSkillSuggestionsDismissed(true)
       return
-    }
-
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault()
-      void handleSubmit()
     }
   }
 
@@ -442,7 +575,7 @@ export function SessionComposer({
             <div className="overflow-hidden rounded-2xl border border-border bg-popover">
               <div className="px-3 pt-3 pb-2">
                 <div className="relative min-h-14">
-                  {value.length > 0 ? (
+                  {hasComposerTextOverlay ? (
                     <div
                       ref={composerOverlayRef}
                       aria-hidden="true"
@@ -480,13 +613,14 @@ export function SessionComposer({
                     onKeyDown={handleTextareaKeyDown}
                     onKeyUp={syncCaretPosition}
                     onMouseUp={syncCaretPosition}
+                    onPaste={(event) => void handleTextareaPaste(event)}
                     onScroll={syncComposerOverlayScroll}
                     onSelect={syncCaretPosition}
                     onTouchEnd={syncCaretPosition}
                     placeholder={placeholder}
                     className={cn(
                       "scrollbar-native-hidden relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground",
-                      value.length > 0
+                      hasComposerTextOverlay
                         ? "text-transparent caret-foreground selection:bg-transparent selection:text-transparent"
                         : "text-foreground"
                     )}
@@ -494,80 +628,152 @@ export function SessionComposer({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-2 pb-2">
-                <div className="flex items-center gap-1">
-                  <GhostIconButton aria-label={t("composer.addContext")}>
-                    <Plus className="size-4" />
-                  </GhostIconButton>
+              {attachments.length > 0 || attachmentError ? (
+                <div className="px-3 pb-2">
+                  {attachments.length > 0 ? (
+                    <div
+                      className="flex flex-wrap gap-2"
+                      data-testid="composer-image-attachments"
+                    >
+                      {attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground"
+                        >
+                          <img
+                            alt=""
+                            src={attachment.url}
+                            className="size-6 rounded-md object-cover"
+                          />
+                          <span className="max-w-40 truncate">
+                            {attachment.label}
+                          </span>
+                          <GhostIconButton
+                            aria-label={t("composer.removeAttachment", {
+                              label: attachment.label,
+                            })}
+                            className="size-5 md:size-5"
+                            onClick={() => removeAttachment(attachment.id)}
+                          >
+                            <X className="size-3" />
+                          </GhostIconButton>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {attachmentError ? (
+                    <div className="mt-2 text-xs text-amber-400">
+                      {attachmentError}
+                    </div>
+                  ) : null}
                 </div>
+              ) : null}
 
-                <div className="flex min-w-0 items-center justify-end gap-1">
-                  <InlineDropdownMenu
-                    aria-label={t("composer.model")}
-                    codexFastMode={codexFastMode}
-                    disabled={
-                      codexModelsQuery.isLoading || modelOptions.length === 0
-                    }
-                    onCodexFastModeChange={handleCodexFastModeChange}
-                    options={modelOptions.map((model) => ({
-                      label: model.displayName || modelValue(model),
-                      value: modelValue(model),
-                    }))}
-                    showCodexFastModeToggle
-                    value={effectiveModel}
-                    onValueChange={handleModelChange}
-                  >
-                    {selectedModelOption
-                      ? selectedModelOption.displayName ||
-                        modelValue(selectedModelOption)
-                      : codexModelsQuery.isLoading
-                        ? t("composer.loadingModel")
-                        : t("composer.defaultModel")}
-                  </InlineDropdownMenu>
+              <TooltipProvider>
+                <div className="flex items-center justify-between px-2 pb-2">
+                  <div className="flex items-center gap-1">
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(event) => void handleImageSelection(event)}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex rounded-full">
+                          <GhostIconButton
+                            aria-label={t("composer.attachImages")}
+                            disabled={disabled || busy || interruptMode}
+                            onClick={() => imageInputRef.current?.click()}
+                          >
+                            <Paperclip className="size-4" />
+                          </GhostIconButton>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {t("composer.attachImages")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
 
-                  <InlineDropdownMenu
-                    aria-label={t("composer.reasoningEffort")}
-                    disabled={supportedReasoningOptions.length === 0}
-                    options={supportedReasoningOptions}
-                    value={effectiveReasoningEffort}
-                    onValueChange={handleReasoningEffortChange}
-                  >
-                    {formatReasoningEffort(effectiveReasoningEffort, t)}
-                  </InlineDropdownMenu>
+                  <div className="flex min-w-0 items-center justify-end gap-1">
+                    <InlineDropdownMenu
+                      aria-label={t("composer.model")}
+                      codexFastMode={codexFastMode}
+                      disabled={
+                        codexModelsQuery.isLoading || modelOptions.length === 0
+                      }
+                      onCodexFastModeChange={handleCodexFastModeChange}
+                      options={modelOptions.map((model) => ({
+                        label: model.displayName || modelValue(model),
+                        value: modelValue(model),
+                      }))}
+                      showCodexFastModeToggle
+                      tooltip={t("composer.selectModel")}
+                      value={effectiveModel}
+                      onValueChange={handleModelChange}
+                    >
+                      {selectedModelOption
+                        ? selectedModelOption.displayName ||
+                          modelValue(selectedModelOption)
+                        : codexModelsQuery.isLoading
+                          ? t("composer.loadingModel")
+                          : t("composer.defaultModel")}
+                    </InlineDropdownMenu>
 
-                  <Button
-                    type="button"
-                    size="icon-lg"
-                    onClick={() => void handleSubmit()}
-                    disabled={!canSubmit}
-                    aria-label={
-                      interruptMode
-                        ? t("composer.interruptTurn")
-                        : t("composer.sendMessage")
-                    }
-                    title={
-                      interruptMode
-                        ? t("composer.interruptTurn")
-                        : t("composer.sendMessage")
-                    }
-                    data-testid={interruptMode ? interruptTestId : submitTestId}
-                    className={cn(
-                      "size-9 rounded-full transition md:size-8",
-                      canSubmit
-                        ? "bg-primary text-primary-foreground hover:brightness-110"
-                        : "bg-accent text-muted-foreground"
-                    )}
-                  >
-                    {busy ? (
-                      <LoaderCircle className="size-4 animate-spin" />
-                    ) : interruptMode ? (
-                      <Square className="size-3.5 fill-current" />
-                    ) : (
-                      <ArrowUp className="size-4" />
-                    )}
-                  </Button>
+                    <InlineDropdownMenu
+                      aria-label={t("composer.reasoningEffort")}
+                      disabled={supportedReasoningOptions.length === 0}
+                      options={supportedReasoningOptions}
+                      tooltip={t("composer.selectReasoningEffort")}
+                      value={effectiveReasoningEffort}
+                      onValueChange={handleReasoningEffortChange}
+                    >
+                      {formatReasoningEffort(effectiveReasoningEffort, t)}
+                    </InlineDropdownMenu>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex rounded-full">
+                          <Button
+                            type="button"
+                            size="icon-lg"
+                            onClick={() => void handleSubmit()}
+                            disabled={!canSubmit}
+                            aria-label={
+                              interruptMode
+                                ? t("composer.interruptTurn")
+                                : t("composer.sendMessage")
+                            }
+                            data-testid={
+                              interruptMode ? interruptTestId : submitTestId
+                            }
+                            className={cn(
+                              "size-9 rounded-full transition md:size-8",
+                              canSubmit
+                                ? "bg-primary text-primary-foreground hover:brightness-110"
+                                : "bg-accent text-muted-foreground"
+                            )}
+                          >
+                            {busy ? (
+                              <LoaderCircle className="size-4 animate-spin" />
+                            ) : interruptMode ? (
+                              <Square className="size-3.5 fill-current" />
+                            ) : (
+                              <ArrowUp className="size-4" />
+                            )}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        {sendButtonTooltip}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -730,6 +936,35 @@ function GhostIconButton({
   )
 }
 
+function readImageAttachment(file: File): Promise<SessionComposerAttachment> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      resolve({
+        contentType: file.type || "image/*",
+        id: createAttachmentId(),
+        label: file.name || "Image",
+        size: file.size,
+        url: String(reader.result ?? ""),
+      })
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function createAttachmentId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID()
+  }
+  return `attachment-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function formatBytes(bytes: number) {
+  const megabytes = bytes / (1024 * 1024)
+  return `${Math.round(megabytes)} MB`
+}
+
 function modelValue(model: AgentModel) {
   return model.model || model.id
 }
@@ -752,6 +987,7 @@ function InlineDropdownMenu({
   onValueChange,
   options,
   showCodexFastModeToggle = false,
+  tooltip,
   value,
   ...props
 }: {
@@ -762,30 +998,38 @@ function InlineDropdownMenu({
   onValueChange: (value: string) => void
   options: readonly { label: string; value: string }[]
   showCodexFastModeToggle?: boolean
+  tooltip: string
   value: string
 } & Omit<React.ComponentProps<typeof Button>, "onChange" | "value">) {
   const { t } = useTranslation()
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button
-          type="button"
-          variant="ghost"
-          className="rounded-full text-muted-foreground hover:text-foreground"
-          disabled={disabled}
-          {...props}
-        >
-          {codexFastMode ? (
-            <Zap
-              className="size-3.5 fill-current"
-              data-testid="composer-fast-mode-icon"
-            />
-          ) : null}
-          <span>{children}</span>
-          <ChevronDown className="size-3" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex rounded-full">
+            <DropdownMenuTrigger asChild disabled={disabled}>
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-full text-muted-foreground hover:text-foreground"
+                disabled={disabled}
+                {...props}
+              >
+                {codexFastMode ? (
+                  <Zap
+                    className="size-3.5 fill-current"
+                    data-testid="composer-fast-mode-icon"
+                  />
+                ) : null}
+                <span>{children}</span>
+                <ChevronDown className="size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">{tooltip}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end" className="min-w-40">
         {showCodexFastModeToggle ? (
           <>

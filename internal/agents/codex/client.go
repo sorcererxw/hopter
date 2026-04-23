@@ -338,7 +338,7 @@ func (c *Client) StartTurn(threadID string, text string, options core.SessionTur
 	params := protocol.TurnStartParams{
 		ThreadID:       threadID,
 		ApprovalPolicy: codexsdk.ApprovalPolicyOnRequest,
-		Input:          []protocol.TurnStartParamsInputElem{codexsdk.TextInput(text)},
+		Input:          buildTurnStartInput(text, options.Attachments),
 	}
 	if model := strings.TrimSpace(options.Model); model != "" {
 		params.Model = &model
@@ -362,11 +362,11 @@ func applyServiceTier(target *interface{}, options core.SessionTurnOptions) {
 	*target = protocol.ServiceTierFast
 }
 
-func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error) {
+func (c *Client) SteerTurn(threadID, expectedTurnID, text string, options core.SessionTurnOptions) (*StartTurnResult, error) {
 	params := protocol.TurnSteerParams{
 		ThreadID:       threadID,
 		ExpectedTurnID: expectedTurnID,
-		Input:          []protocol.TurnSteerParamsInputElem{codexsdk.TextInput(text)},
+		Input:          buildTurnSteerInput(text, options.Attachments),
 	}
 
 	var out StartTurnResult
@@ -377,6 +377,43 @@ func (c *Client) SteerTurn(threadID, expectedTurnID, text string) (*StartTurnRes
 		out.Turn.ID = expectedTurnID
 	}
 	return &out, nil
+}
+
+func buildTurnStartInput(text string, attachments []core.SessionInputAttachment) []protocol.TurnStartParamsInputElem {
+	parts := buildCodexInput(text, attachments)
+	input := make([]protocol.TurnStartParamsInputElem, 0, len(parts))
+	for _, part := range parts {
+		input = append(input, part)
+	}
+	return input
+}
+
+func buildTurnSteerInput(text string, attachments []core.SessionInputAttachment) []protocol.TurnSteerParamsInputElem {
+	parts := buildCodexInput(text, attachments)
+	input := make([]protocol.TurnSteerParamsInputElem, 0, len(parts))
+	for _, part := range parts {
+		input = append(input, part)
+	}
+	return input
+}
+
+func buildCodexInput(text string, attachments []core.SessionInputAttachment) []codexsdk.Input {
+	input := make([]codexsdk.Input, 0, 1+len(attachments))
+	if strings.TrimSpace(text) != "" {
+		input = append(input, codexsdk.TextInput(text))
+	}
+	for _, attachment := range attachments {
+		url := strings.TrimSpace(attachment.URL)
+		if url == "" {
+			continue
+		}
+		image := codexsdk.ImageInput(url)
+		if label := strings.TrimSpace(attachment.Label); label != "" {
+			image.Name = label
+		}
+		input = append(input, image)
+	}
+	return input
 }
 
 func (c *Client) InterruptTurn(threadID, turnID string) error {

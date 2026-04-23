@@ -208,6 +208,7 @@ message CreateSessionRequest {
   optional string model = 5;
   optional string reasoning_effort = 6;
   optional bool codex_fast_mode = 7;
+  repeated SessionInputAttachment attachments = 8;
 }
 
 message CreateSessionResponse {
@@ -220,12 +221,19 @@ message SendSessionInputRequest {
   optional string model = 3;
   optional string reasoning_effort = 4;
   optional bool codex_fast_mode = 5;
+  repeated SessionInputAttachment attachments = 6;
 }
 
 message SendSessionInputResponse {
   bool accepted = 1;
   string session_id = 2;
   google.protobuf.Timestamp updated_at = 3;
+}
+
+message SessionInputAttachment {
+  string label = 1;
+  string url = 2;
+  string content_type = 3;
 }
 
 message InterruptSessionRequest {

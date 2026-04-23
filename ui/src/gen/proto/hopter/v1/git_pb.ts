@@ -573,3 +573,4 @@ export const GitService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_hopter_v1_git, 0);
+

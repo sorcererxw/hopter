@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronDown } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
 import { SessionComposer } from "@/components/app/sessions/composer"
 import { rememberSessionComposerSelection } from "@/components/app/sessions/composer"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useProjects } from "@/features/projects/use-projects"
 import { useCreateSession, useSessions } from "@/features/sessions/use-sessions"
 
@@ -94,20 +101,32 @@ export function HomeWorkspacePane() {
             projectLabel={selectedProject?.name || t("home.localProject")}
             branchLabel="main"
             onValueChange={setPrompt}
-            onSubmit={async ({ codexFastMode, model, reasoningEffort }) => {
-              if (!selectedProjectId || !prompt.trim()) {
+            onSubmit={async ({
+              attachments,
+              codexFastMode,
+              model,
+              reasoningEffort,
+            }) => {
+              if (
+                !selectedProjectId ||
+                (!prompt.trim() && attachments.length === 0)
+              ) {
                 return
               }
 
               const normalizedPrompt = prompt.trim()
               const session = await createSession.mutateAsync({
+                attachments,
                 backendKey: "codex",
                 codexFastMode,
                 model,
                 projectId: selectedProjectId,
                 prompt: normalizedPrompt,
                 reasoningEffort,
-                title: deriveTitle(normalizedPrompt),
+                title:
+                  deriveTitle(normalizedPrompt) ||
+                  attachments[0]?.label ||
+                  undefined,
               })
 
               setPrompt("")
@@ -131,37 +150,44 @@ export function HomeWorkspacePane() {
             value={prompt}
           />
 
-          <div className="mt-4 flex items-center justify-start text-base text-muted-foreground">
-            <label className="relative flex max-w-80 min-w-0 items-center">
-              <select
-                value={selectedProjectId}
-                onChange={(event) => {
-                  const nextProjectId = event.target.value
-                  setSearchParams((current) => {
-                    const next = new URLSearchParams(current)
-                    if (nextProjectId) {
-                      next.set("projectId", nextProjectId)
-                    } else {
-                      next.delete("projectId")
-                    }
-                    return next
-                  })
-                }}
-                className="max-w-80 min-w-0 appearance-none truncate bg-transparent pr-5 text-left font-medium text-foreground outline-none"
+          <div className="mt-4 flex items-center justify-start">
+            <Select
+              value={selectedProjectId}
+              disabled={projectsLoading && projectOptions.length === 0}
+              onValueChange={(nextProjectId) => {
+                setSearchParams((current) => {
+                  const next = new URLSearchParams(current)
+                  if (nextProjectId) {
+                    next.set("projectId", nextProjectId)
+                  } else {
+                    next.delete("projectId")
+                  }
+                  return next
+                })
+              }}
+            >
+              <SelectTrigger
+                aria-label={t("home.selectProject")}
+                className="min-w-40 max-w-80"
               >
-                <option value="">
-                  {projectsLoading
-                    ? t("app.settings.loading")
-                    : t("home.selectProject")}
-                </option>
-                {projectOptions.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-0 size-3 text-muted-foreground" />
-            </label>
+                <SelectValue
+                  placeholder={
+                    projectsLoading
+                      ? t("app.settings.loading")
+                      : t("home.selectProject")
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {projectOptions.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>

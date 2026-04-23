@@ -123,6 +123,59 @@ func TestApplyServiceTierLeavesDefaultWhenFastModeDisabled(t *testing.T) {
 	}
 }
 
+func TestBuildCodexInputIncludesImageAttachments(t *testing.T) {
+	input := buildCodexInput("inspect this", []core.SessionInputAttachment{
+		{
+			Label:       "screen.png",
+			URL:         "data:image/png;base64,abc123",
+			ContentType: "image/png",
+		},
+		{
+			Label: "ignored",
+		},
+	})
+
+	if len(input) != 2 {
+		t.Fatalf("input count = %d, want 2", len(input))
+	}
+	if input[0].Type != "text" || input[0].Text != "inspect this" {
+		t.Fatalf("text input = %#v", input[0])
+	}
+	if input[1].Type != "image" {
+		t.Fatalf("image input type = %q, want image", input[1].Type)
+	}
+	if input[1].URL != "data:image/png;base64,abc123" {
+		t.Fatalf("image url = %q", input[1].URL)
+	}
+	if input[1].Name != "screen.png" {
+		t.Fatalf("image name = %q, want screen.png", input[1].Name)
+	}
+}
+
+func TestBuildCodexInputPreservesTextOnlyTurn(t *testing.T) {
+	input := buildCodexInput("plain follow up", nil)
+
+	if len(input) != 1 {
+		t.Fatalf("input count = %d, want 1", len(input))
+	}
+	if input[0].Type != "text" || input[0].Text != "plain follow up" {
+		t.Fatalf("text-only input = %#v", input[0])
+	}
+}
+
+func TestBuildCodexInputAllowsImageOnlyTurn(t *testing.T) {
+	input := buildCodexInput("", []core.SessionInputAttachment{
+		{URL: "data:image/jpeg;base64,xyz"},
+	})
+
+	if len(input) != 1 {
+		t.Fatalf("input count = %d, want 1", len(input))
+	}
+	if input[0].Type != "image" || input[0].URL != "data:image/jpeg;base64,xyz" {
+		t.Fatalf("image-only input = %#v", input[0])
+	}
+}
+
 func TestTraceLineClassifiesInitializedNotification(t *testing.T) {
 	var traces []TraceEntry
 	transport := &tracedTransport{

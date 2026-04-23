@@ -94,7 +94,7 @@ type codexClient interface {
 	RespondToApproval(rawID json.RawMessage, result any) error
 	StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error)
 	StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error)
-	SteerTurn(threadID, expectedTurnID, text string) (*StartTurnResult, error)
+	SteerTurn(threadID, expectedTurnID, text string, options core.SessionTurnOptions) (*StartTurnResult, error)
 }
 
 type clientStarter func(
@@ -349,6 +349,7 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 		Model:           input.Model,
 		ReasoningEffort: input.ReasoningEffort,
 		CodexFastMode:   input.CodexFastMode,
+		Attachments:     input.Attachments,
 	}
 	live, err := m.startNewLiveSession(project, options)
 	if err != nil {
@@ -581,7 +582,7 @@ func firstTurnOptions(options ...core.SessionTurnOptions) core.SessionTurnOption
 }
 
 func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string, options core.SessionTurnOptions) {
-	userItem := userTranscriptItem(input)
+	userItem := userTranscriptItem(input, options.Attachments)
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
 		AppendTranscriptItems: &[]core.SessionTranscriptItem{userItem},
 	})
@@ -612,7 +613,7 @@ func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, 
 	if expectedTurnID == "" {
 		turn, err = live.client.StartTurn(resolvedThreadID, input, options)
 	} else {
-		turn, err = live.client.SteerTurn(resolvedThreadID, expectedTurnID, input)
+		turn, err = live.client.SteerTurn(resolvedThreadID, expectedTurnID, input, options)
 	}
 	if err != nil {
 		m.failSession(sessionID, fmt.Errorf("start app-server turn: %w", err))

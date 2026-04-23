@@ -31,7 +31,9 @@ type fakeCodexClient struct {
 	respondApprovalCalls []string
 	startThreadOptions   []core.SessionTurnOptions
 	startTurnOptions     []core.SessionTurnOptions
+	startTurnInputs      []string
 	resumeOptions        []core.SessionTurnOptions
+	steerTurnOptions     []core.SessionTurnOptions
 }
 
 type fakeEventSink struct {
@@ -106,16 +108,18 @@ func (f *fakeCodexClient) StartThread(cwd string, options core.SessionTurnOption
 	return out, nil
 }
 
-func (f *fakeCodexClient) StartTurn(_ string, _ string, options core.SessionTurnOptions) (*StartTurnResult, error) {
+func (f *fakeCodexClient) StartTurn(_ string, text string, options core.SessionTurnOptions) (*StartTurnResult, error) {
 	f.startTurnCalls++
 	f.startTurnOptions = append(f.startTurnOptions, options)
+	f.startTurnInputs = append(f.startTurnInputs, text)
 	out := &StartTurnResult{}
 	out.Turn.ID = "turn-started"
 	return out, nil
 }
 
-func (f *fakeCodexClient) SteerTurn(_, _, _ string) (*StartTurnResult, error) {
+func (f *fakeCodexClient) SteerTurn(_, _, _ string, options core.SessionTurnOptions) (*StartTurnResult, error) {
 	f.steerTurnCalls++
+	f.steerTurnOptions = append(f.steerTurnOptions, options)
 	out := &StartTurnResult{}
 	out.Turn.ID = "turn-steered"
 	return out, nil
@@ -469,7 +473,15 @@ func TestSendSessionInputRunsThroughAppServerWithExistingThread(t *testing.T) {
 		return client, nil
 	}
 
-	updated, err := manager.SendSessionInput(session.ID, "follow up")
+	updated, err := manager.SendSessionInput(session.ID, "follow up", core.SessionTurnOptions{
+		Attachments: []core.SessionInputAttachment{
+			{
+				Label:       "screen.png",
+				URL:         "data:image/png;base64,abc123",
+				ContentType: "image/png",
+			},
+		},
+	})
 	if err != nil {
 		t.Fatalf("SendSessionInput: %v", err)
 	}
@@ -505,6 +517,15 @@ func TestSendSessionInputRunsThroughAppServerWithExistingThread(t *testing.T) {
 	}
 	if client.startTurnCalls != 1 {
 		t.Fatalf("StartTurn calls = %d, want 1", client.startTurnCalls)
+	}
+	if len(client.startTurnOptions) != 1 {
+		t.Fatalf("start turn options = %d, want 1", len(client.startTurnOptions))
+	}
+	if len(client.startTurnOptions[0].Attachments) != 1 {
+		t.Fatalf("start turn attachments = %d, want 1", len(client.startTurnOptions[0].Attachments))
+	}
+	if client.startTurnOptions[0].Attachments[0].URL != "data:image/png;base64,abc123" {
+		t.Fatalf("start turn attachment url = %q", client.startTurnOptions[0].Attachments[0].URL)
 	}
 }
 

@@ -22,6 +22,9 @@ const (
 	LocaleEN     Locale = "en"
 	LocaleZhCN   Locale = "zh-CN"
 
+	ComposerSendShortcutCmdEnter ComposerSendShortcut = "cmd-enter"
+	ComposerSendShortcutEnter    ComposerSendShortcut = "enter"
+
 	schemaFileName  = "config.schema.json"
 	schemaReference = "./" + schemaFileName
 )
@@ -31,6 +34,8 @@ var ErrRevisionConflict = errors.New("config revision conflict")
 type Theme string
 
 type Locale string
+
+type ComposerSendShortcut string
 
 type AppearanceConfig struct {
 	Theme  Theme  `json:"theme"`
@@ -43,10 +48,15 @@ type AgentConfig struct {
 	DefaultReasoningEffort string `json:"defaultReasoningEffort,omitempty"`
 }
 
+type ComposerConfig struct {
+	SendShortcut ComposerSendShortcut `json:"sendShortcut"`
+}
+
 type Config struct {
 	Schema     string           `json:"$schema,omitempty"`
 	Appearance AppearanceConfig `json:"appearance"`
 	Agent      AgentConfig      `json:"agent"`
+	Composer   ComposerConfig   `json:"composer"`
 	Revision   uint64           `json:"-"`
 	UpdatedAt  time.Time        `json:"-"`
 }
@@ -54,6 +64,7 @@ type Config struct {
 type Patch struct {
 	Appearance       *AppearanceConfig
 	Agent            *AgentConfig
+	Composer         *ComposerConfig
 	ExpectedRevision uint64
 }
 
@@ -128,6 +139,9 @@ func (s *Service) Update(patch Patch) (Config, error) {
 	if patch.Agent != nil {
 		next.Agent = *patch.Agent
 	}
+	if patch.Composer != nil {
+		next.Composer = *patch.Composer
+	}
 	next = normalize(next)
 	if err := validate(next); err != nil {
 		return Config{}, err
@@ -181,6 +195,7 @@ func defaultConfig() Config {
 		Schema:     schemaReference,
 		Appearance: AppearanceConfig{Theme: ThemeSystem, Locale: LocaleSystem},
 		Agent:      AgentConfig{DefaultBackend: core.BackendKeyCodex},
+		Composer:   ComposerConfig{SendShortcut: ComposerSendShortcutCmdEnter},
 		Revision:   1,
 		UpdatedAt:  time.Now().UTC(),
 	}
@@ -202,6 +217,10 @@ func normalize(cfg Config) Config {
 	}
 	cfg.Agent.DefaultModel = strings.TrimSpace(cfg.Agent.DefaultModel)
 	cfg.Agent.DefaultReasoningEffort = strings.TrimSpace(cfg.Agent.DefaultReasoningEffort)
+	cfg.Composer.SendShortcut = ComposerSendShortcut(strings.TrimSpace(string(cfg.Composer.SendShortcut)))
+	if cfg.Composer.SendShortcut == "" {
+		cfg.Composer.SendShortcut = ComposerSendShortcutCmdEnter
+	}
 	return cfg
 }
 
@@ -218,6 +237,11 @@ func validate(cfg Config) error {
 	}
 	if cfg.Agent.DefaultBackend != core.BackendKeyCodex {
 		return fmt.Errorf("agent.defaultBackend must be codex")
+	}
+	switch cfg.Composer.SendShortcut {
+	case ComposerSendShortcutCmdEnter, ComposerSendShortcutEnter:
+	default:
+		return fmt.Errorf("composer.sendShortcut must be one of cmd-enter, enter")
 	}
 	return nil
 }
@@ -338,8 +362,20 @@ const configSchemaJSON = `{
         }
       },
       "required": ["defaultBackend"]
+    },
+    "composer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sendShortcut": {
+          "type": "string",
+          "enum": ["cmd-enter", "enter"],
+          "default": "cmd-enter"
+        }
+      },
+      "required": ["sendShortcut"]
     }
   },
-  "required": ["appearance", "agent"]
+  "required": ["appearance", "agent", "composer"]
 }
 `

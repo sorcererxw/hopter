@@ -126,6 +126,55 @@ func (ConfigLocale) EnumDescriptor() ([]byte, []int) {
 	return file_hopter_v1_config_proto_rawDescGZIP(), []int{1}
 }
 
+type ConfigComposerSendShortcut int32
+
+const (
+	ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED ConfigComposerSendShortcut = 0
+	ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER   ConfigComposerSendShortcut = 1
+	ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER       ConfigComposerSendShortcut = 2
+)
+
+// Enum value maps for ConfigComposerSendShortcut.
+var (
+	ConfigComposerSendShortcut_name = map[int32]string{
+		0: "CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED",
+		1: "CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER",
+		2: "CONFIG_COMPOSER_SEND_SHORTCUT_ENTER",
+	}
+	ConfigComposerSendShortcut_value = map[string]int32{
+		"CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED": 0,
+		"CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER":   1,
+		"CONFIG_COMPOSER_SEND_SHORTCUT_ENTER":       2,
+	}
+)
+
+func (x ConfigComposerSendShortcut) Enum() *ConfigComposerSendShortcut {
+	p := new(ConfigComposerSendShortcut)
+	*p = x
+	return p
+}
+
+func (x ConfigComposerSendShortcut) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConfigComposerSendShortcut) Descriptor() protoreflect.EnumDescriptor {
+	return file_hopter_v1_config_proto_enumTypes[2].Descriptor()
+}
+
+func (ConfigComposerSendShortcut) Type() protoreflect.EnumType {
+	return &file_hopter_v1_config_proto_enumTypes[2]
+}
+
+func (x ConfigComposerSendShortcut) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConfigComposerSendShortcut.Descriptor instead.
+func (ConfigComposerSendShortcut) EnumDescriptor() ([]byte, []int) {
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{2}
+}
+
 type AppearanceConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Theme         ConfigTheme            `protobuf:"varint,1,opt,name=theme,proto3,enum=hopter.v1.ConfigTheme" json:"theme,omitempty"`
@@ -238,19 +287,64 @@ func (x *AgentConfig) GetDefaultReasoningEffort() string {
 	return ""
 }
 
+type ComposerConfig struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	SendShortcut  ConfigComposerSendShortcut `protobuf:"varint,1,opt,name=send_shortcut,json=sendShortcut,proto3,enum=hopter.v1.ConfigComposerSendShortcut" json:"send_shortcut,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ComposerConfig) Reset() {
+	*x = ComposerConfig{}
+	mi := &file_hopter_v1_config_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ComposerConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ComposerConfig) ProtoMessage() {}
+
+func (x *ComposerConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_hopter_v1_config_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ComposerConfig.ProtoReflect.Descriptor instead.
+func (*ComposerConfig) Descriptor() ([]byte, []int) {
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ComposerConfig) GetSendShortcut() ConfigComposerSendShortcut {
+	if x != nil {
+		return x.SendShortcut
+	}
+	return ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED
+}
+
 type UserConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Appearance    *AppearanceConfig      `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
 	Agent         *AgentConfig           `protobuf:"bytes,2,opt,name=agent,proto3" json:"agent,omitempty"`
 	Revision      uint64                 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Composer      *ComposerConfig        `protobuf:"bytes,5,opt,name=composer,proto3" json:"composer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UserConfig) Reset() {
 	*x = UserConfig{}
-	mi := &file_hopter_v1_config_proto_msgTypes[2]
+	mi := &file_hopter_v1_config_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -262,7 +356,7 @@ func (x *UserConfig) String() string {
 func (*UserConfig) ProtoMessage() {}
 
 func (x *UserConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_config_proto_msgTypes[2]
+	mi := &file_hopter_v1_config_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -275,7 +369,7 @@ func (x *UserConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserConfig.ProtoReflect.Descriptor instead.
 func (*UserConfig) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_config_proto_rawDescGZIP(), []int{2}
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *UserConfig) GetAppearance() *AppearanceConfig {
@@ -306,6 +400,13 @@ func (x *UserConfig) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *UserConfig) GetComposer() *ComposerConfig {
+	if x != nil {
+		return x.Composer
+	}
+	return nil
+}
+
 type GetConfigRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -314,7 +415,7 @@ type GetConfigRequest struct {
 
 func (x *GetConfigRequest) Reset() {
 	*x = GetConfigRequest{}
-	mi := &file_hopter_v1_config_proto_msgTypes[3]
+	mi := &file_hopter_v1_config_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +427,7 @@ func (x *GetConfigRequest) String() string {
 func (*GetConfigRequest) ProtoMessage() {}
 
 func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_config_proto_msgTypes[3]
+	mi := &file_hopter_v1_config_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +440,7 @@ func (x *GetConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigRequest.ProtoReflect.Descriptor instead.
 func (*GetConfigRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_config_proto_rawDescGZIP(), []int{3}
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{4}
 }
 
 type GetConfigResponse struct {
@@ -351,7 +452,7 @@ type GetConfigResponse struct {
 
 func (x *GetConfigResponse) Reset() {
 	*x = GetConfigResponse{}
-	mi := &file_hopter_v1_config_proto_msgTypes[4]
+	mi := &file_hopter_v1_config_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -363,7 +464,7 @@ func (x *GetConfigResponse) String() string {
 func (*GetConfigResponse) ProtoMessage() {}
 
 func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_config_proto_msgTypes[4]
+	mi := &file_hopter_v1_config_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -376,7 +477,7 @@ func (x *GetConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigResponse.ProtoReflect.Descriptor instead.
 func (*GetConfigResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_config_proto_rawDescGZIP(), []int{4}
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetConfigResponse) GetConfig() *UserConfig {
@@ -391,13 +492,14 @@ type UpdateConfigRequest struct {
 	Appearance       *AppearanceConfig      `protobuf:"bytes,1,opt,name=appearance,proto3" json:"appearance,omitempty"`
 	Agent            *AgentConfig           `protobuf:"bytes,2,opt,name=agent,proto3" json:"agent,omitempty"`
 	ExpectedRevision uint64                 `protobuf:"varint,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	Composer         *ComposerConfig        `protobuf:"bytes,4,opt,name=composer,proto3" json:"composer,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *UpdateConfigRequest) Reset() {
 	*x = UpdateConfigRequest{}
-	mi := &file_hopter_v1_config_proto_msgTypes[5]
+	mi := &file_hopter_v1_config_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +511,7 @@ func (x *UpdateConfigRequest) String() string {
 func (*UpdateConfigRequest) ProtoMessage() {}
 
 func (x *UpdateConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_config_proto_msgTypes[5]
+	mi := &file_hopter_v1_config_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +524,7 @@ func (x *UpdateConfigRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConfigRequest.ProtoReflect.Descriptor instead.
 func (*UpdateConfigRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_config_proto_rawDescGZIP(), []int{5}
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateConfigRequest) GetAppearance() *AppearanceConfig {
@@ -446,6 +548,13 @@ func (x *UpdateConfigRequest) GetExpectedRevision() uint64 {
 	return 0
 }
 
+func (x *UpdateConfigRequest) GetComposer() *ComposerConfig {
+	if x != nil {
+		return x.Composer
+	}
+	return nil
+}
+
 type UpdateConfigResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Config        *UserConfig            `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
@@ -455,7 +564,7 @@ type UpdateConfigResponse struct {
 
 func (x *UpdateConfigResponse) Reset() {
 	*x = UpdateConfigResponse{}
-	mi := &file_hopter_v1_config_proto_msgTypes[6]
+	mi := &file_hopter_v1_config_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -467,7 +576,7 @@ func (x *UpdateConfigResponse) String() string {
 func (*UpdateConfigResponse) ProtoMessage() {}
 
 func (x *UpdateConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_config_proto_msgTypes[6]
+	mi := &file_hopter_v1_config_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,7 +589,7 @@ func (x *UpdateConfigResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConfigResponse.ProtoReflect.Descriptor instead.
 func (*UpdateConfigResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_config_proto_rawDescGZIP(), []int{6}
+	return file_hopter_v1_config_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateConfigResponse) GetConfig() *UserConfig {
@@ -501,7 +610,9 @@ const file_hopter_v1_config_proto_rawDesc = "" +
 	"\vAgentConfig\x12'\n" +
 	"\x0fdefault_backend\x18\x01 \x01(\tR\x0edefaultBackend\x12#\n" +
 	"\rdefault_model\x18\x02 \x01(\tR\fdefaultModel\x128\n" +
-	"\x18default_reasoning_effort\x18\x03 \x01(\tR\x16defaultReasoningEffort\"\xce\x01\n" +
+	"\x18default_reasoning_effort\x18\x03 \x01(\tR\x16defaultReasoningEffort\"\\\n" +
+	"\x0eComposerConfig\x12J\n" +
+	"\rsend_shortcut\x18\x01 \x01(\x0e2%.hopter.v1.ConfigComposerSendShortcutR\fsendShortcut\"\x85\x02\n" +
 	"\n" +
 	"UserConfig\x12;\n" +
 	"\n" +
@@ -510,16 +621,18 @@ const file_hopter_v1_config_proto_rawDesc = "" +
 	"\x05agent\x18\x02 \x01(\v2\x16.hopter.v1.AgentConfigR\x05agent\x12\x1a\n" +
 	"\brevision\x18\x03 \x01(\x04R\brevision\x129\n" +
 	"\n" +
-	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x12\n" +
+	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x125\n" +
+	"\bcomposer\x18\x05 \x01(\v2\x19.hopter.v1.ComposerConfigR\bcomposer\"\x12\n" +
 	"\x10GetConfigRequest\"B\n" +
 	"\x11GetConfigResponse\x12-\n" +
-	"\x06config\x18\x01 \x01(\v2\x15.hopter.v1.UserConfigR\x06config\"\xad\x01\n" +
+	"\x06config\x18\x01 \x01(\v2\x15.hopter.v1.UserConfigR\x06config\"\xe4\x01\n" +
 	"\x13UpdateConfigRequest\x12;\n" +
 	"\n" +
 	"appearance\x18\x01 \x01(\v2\x1b.hopter.v1.AppearanceConfigR\n" +
 	"appearance\x12,\n" +
 	"\x05agent\x18\x02 \x01(\v2\x16.hopter.v1.AgentConfigR\x05agent\x12+\n" +
-	"\x11expected_revision\x18\x03 \x01(\x04R\x10expectedRevision\"E\n" +
+	"\x11expected_revision\x18\x03 \x01(\x04R\x10expectedRevision\x125\n" +
+	"\bcomposer\x18\x04 \x01(\v2\x19.hopter.v1.ComposerConfigR\bcomposer\"E\n" +
 	"\x14UpdateConfigResponse\x12-\n" +
 	"\x06config\x18\x01 \x01(\v2\x15.hopter.v1.UserConfigR\x06config*s\n" +
 	"\vConfigTheme\x12\x1c\n" +
@@ -531,7 +644,11 @@ const file_hopter_v1_config_proto_rawDesc = "" +
 	"\x19CONFIG_LOCALE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14CONFIG_LOCALE_SYSTEM\x10\x01\x12\x14\n" +
 	"\x10CONFIG_LOCALE_EN\x10\x02\x12\x17\n" +
-	"\x13CONFIG_LOCALE_ZH_CN\x10\x032\xa8\x01\n" +
+	"\x13CONFIG_LOCALE_ZH_CN\x10\x03*\xa1\x01\n" +
+	"\x1aConfigComposerSendShortcut\x12-\n" +
+	")CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED\x10\x00\x12+\n" +
+	"'CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER\x10\x01\x12'\n" +
+	"#CONFIG_COMPOSER_SEND_SHORTCUT_ENTER\x10\x022\xa8\x01\n" +
 	"\rConfigService\x12F\n" +
 	"\tGetConfig\x12\x1b.hopter.v1.GetConfigRequest\x1a\x1c.hopter.v1.GetConfigResponse\x12O\n" +
 	"\fUpdateConfig\x12\x1e.hopter.v1.UpdateConfigRequest\x1a\x1f.hopter.v1.UpdateConfigResponseB\xa5\x01\n" +
@@ -550,39 +667,44 @@ func file_hopter_v1_config_proto_rawDescGZIP() []byte {
 	return file_hopter_v1_config_proto_rawDescData
 }
 
-var file_hopter_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_hopter_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_hopter_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_hopter_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_hopter_v1_config_proto_goTypes = []any{
-	(ConfigTheme)(0),              // 0: hopter.v1.ConfigTheme
-	(ConfigLocale)(0),             // 1: hopter.v1.ConfigLocale
-	(*AppearanceConfig)(nil),      // 2: hopter.v1.AppearanceConfig
-	(*AgentConfig)(nil),           // 3: hopter.v1.AgentConfig
-	(*UserConfig)(nil),            // 4: hopter.v1.UserConfig
-	(*GetConfigRequest)(nil),      // 5: hopter.v1.GetConfigRequest
-	(*GetConfigResponse)(nil),     // 6: hopter.v1.GetConfigResponse
-	(*UpdateConfigRequest)(nil),   // 7: hopter.v1.UpdateConfigRequest
-	(*UpdateConfigResponse)(nil),  // 8: hopter.v1.UpdateConfigResponse
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(ConfigTheme)(0),                // 0: hopter.v1.ConfigTheme
+	(ConfigLocale)(0),               // 1: hopter.v1.ConfigLocale
+	(ConfigComposerSendShortcut)(0), // 2: hopter.v1.ConfigComposerSendShortcut
+	(*AppearanceConfig)(nil),        // 3: hopter.v1.AppearanceConfig
+	(*AgentConfig)(nil),             // 4: hopter.v1.AgentConfig
+	(*ComposerConfig)(nil),          // 5: hopter.v1.ComposerConfig
+	(*UserConfig)(nil),              // 6: hopter.v1.UserConfig
+	(*GetConfigRequest)(nil),        // 7: hopter.v1.GetConfigRequest
+	(*GetConfigResponse)(nil),       // 8: hopter.v1.GetConfigResponse
+	(*UpdateConfigRequest)(nil),     // 9: hopter.v1.UpdateConfigRequest
+	(*UpdateConfigResponse)(nil),    // 10: hopter.v1.UpdateConfigResponse
+	(*timestamppb.Timestamp)(nil),   // 11: google.protobuf.Timestamp
 }
 var file_hopter_v1_config_proto_depIdxs = []int32{
 	0,  // 0: hopter.v1.AppearanceConfig.theme:type_name -> hopter.v1.ConfigTheme
 	1,  // 1: hopter.v1.AppearanceConfig.locale:type_name -> hopter.v1.ConfigLocale
-	2,  // 2: hopter.v1.UserConfig.appearance:type_name -> hopter.v1.AppearanceConfig
-	3,  // 3: hopter.v1.UserConfig.agent:type_name -> hopter.v1.AgentConfig
-	9,  // 4: hopter.v1.UserConfig.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 5: hopter.v1.GetConfigResponse.config:type_name -> hopter.v1.UserConfig
-	2,  // 6: hopter.v1.UpdateConfigRequest.appearance:type_name -> hopter.v1.AppearanceConfig
-	3,  // 7: hopter.v1.UpdateConfigRequest.agent:type_name -> hopter.v1.AgentConfig
-	4,  // 8: hopter.v1.UpdateConfigResponse.config:type_name -> hopter.v1.UserConfig
-	5,  // 9: hopter.v1.ConfigService.GetConfig:input_type -> hopter.v1.GetConfigRequest
-	7,  // 10: hopter.v1.ConfigService.UpdateConfig:input_type -> hopter.v1.UpdateConfigRequest
-	6,  // 11: hopter.v1.ConfigService.GetConfig:output_type -> hopter.v1.GetConfigResponse
-	8,  // 12: hopter.v1.ConfigService.UpdateConfig:output_type -> hopter.v1.UpdateConfigResponse
-	11, // [11:13] is the sub-list for method output_type
-	9,  // [9:11] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	2,  // 2: hopter.v1.ComposerConfig.send_shortcut:type_name -> hopter.v1.ConfigComposerSendShortcut
+	3,  // 3: hopter.v1.UserConfig.appearance:type_name -> hopter.v1.AppearanceConfig
+	4,  // 4: hopter.v1.UserConfig.agent:type_name -> hopter.v1.AgentConfig
+	11, // 5: hopter.v1.UserConfig.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 6: hopter.v1.UserConfig.composer:type_name -> hopter.v1.ComposerConfig
+	6,  // 7: hopter.v1.GetConfigResponse.config:type_name -> hopter.v1.UserConfig
+	3,  // 8: hopter.v1.UpdateConfigRequest.appearance:type_name -> hopter.v1.AppearanceConfig
+	4,  // 9: hopter.v1.UpdateConfigRequest.agent:type_name -> hopter.v1.AgentConfig
+	5,  // 10: hopter.v1.UpdateConfigRequest.composer:type_name -> hopter.v1.ComposerConfig
+	6,  // 11: hopter.v1.UpdateConfigResponse.config:type_name -> hopter.v1.UserConfig
+	7,  // 12: hopter.v1.ConfigService.GetConfig:input_type -> hopter.v1.GetConfigRequest
+	9,  // 13: hopter.v1.ConfigService.UpdateConfig:input_type -> hopter.v1.UpdateConfigRequest
+	8,  // 14: hopter.v1.ConfigService.GetConfig:output_type -> hopter.v1.GetConfigResponse
+	10, // 15: hopter.v1.ConfigService.UpdateConfig:output_type -> hopter.v1.UpdateConfigResponse
+	14, // [14:16] is the sub-list for method output_type
+	12, // [12:14] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_hopter_v1_config_proto_init() }
@@ -595,8 +717,8 @@ func file_hopter_v1_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hopter_v1_config_proto_rawDesc), len(file_hopter_v1_config_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   7,
+			NumEnums:      3,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

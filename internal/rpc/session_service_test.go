@@ -467,6 +467,13 @@ func TestCreateSessionPassesCodexFastModeToRuntime(t *testing.T) {
 		Model:           ptrString("gpt-5.4"),
 		ReasoningEffort: ptrString("xhigh"),
 		CodexFastMode:   &fast,
+		Attachments: []*hopterv1.SessionInputAttachment{
+			{
+				Label:       "screen.png",
+				Url:         "data:image/png;base64,abc123",
+				ContentType: "image/png",
+			},
+		},
 	}))
 	if err != nil {
 		t.Fatalf("CreateSession: %v", err)
@@ -480,6 +487,12 @@ func TestCreateSessionPassesCodexFastModeToRuntime(t *testing.T) {
 	}
 	if runtime.createInput.ReasoningEffort != "xhigh" {
 		t.Fatalf("create input reasoning effort = %q, want xhigh", runtime.createInput.ReasoningEffort)
+	}
+	if len(runtime.createInput.Attachments) != 1 {
+		t.Fatalf("create input attachments = %d, want 1", len(runtime.createInput.Attachments))
+	}
+	if runtime.createInput.Attachments[0].URL != "data:image/png;base64,abc123" {
+		t.Fatalf("create input attachment url = %q", runtime.createInput.Attachments[0].URL)
 	}
 }
 
@@ -495,6 +508,13 @@ func TestSendSessionInputPassesCodexFastModeToRuntime(t *testing.T) {
 		Model:           ptrString("gpt-5.4"),
 		ReasoningEffort: ptrString("xhigh"),
 		CodexFastMode:   &fast,
+		Attachments: []*hopterv1.SessionInputAttachment{
+			{
+				Label:       "screen.png",
+				Url:         "data:image/png;base64,abc123",
+				ContentType: "image/png",
+			},
+		},
 	}))
 	if err != nil {
 		t.Fatalf("SendSessionInput: %v", err)
@@ -518,6 +538,15 @@ func TestSendSessionInputPassesCodexFastModeToRuntime(t *testing.T) {
 	}
 	if options.ReasoningEffort != "xhigh" {
 		t.Fatalf("send options reasoning effort = %q, want xhigh", options.ReasoningEffort)
+	}
+	if len(options.Attachments) != 1 {
+		t.Fatalf("send options attachments = %d, want 1", len(options.Attachments))
+	}
+	if options.Attachments[0].Label != "screen.png" {
+		t.Fatalf("send options attachment label = %q, want screen.png", options.Attachments[0].Label)
+	}
+	if options.Attachments[0].URL != "data:image/png;base64,abc123" {
+		t.Fatalf("send options attachment url = %q", options.Attachments[0].URL)
 	}
 }
 

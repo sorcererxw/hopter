@@ -80,6 +80,15 @@ func configPatchFromProto(req *hopterv1.UpdateConfigRequest) (userconfig.Patch, 
 			DefaultReasoningEffort: agent.GetDefaultReasoningEffort(),
 		}
 	}
+	if composer := req.GetComposer(); composer != nil {
+		sendShortcut, err := composerSendShortcutFromProto(composer.GetSendShortcut())
+		if err != nil {
+			return userconfig.Patch{}, err
+		}
+		patch.Composer = &userconfig.ComposerConfig{
+			SendShortcut: sendShortcut,
+		}
+	}
 	return patch, nil
 }
 
@@ -94,8 +103,33 @@ func configToProto(cfg userconfig.Config) *hopterv1.UserConfig {
 			DefaultModel:           cfg.Agent.DefaultModel,
 			DefaultReasoningEffort: cfg.Agent.DefaultReasoningEffort,
 		},
+		Composer: &hopterv1.ComposerConfig{
+			SendShortcut: composerSendShortcutToProto(cfg.Composer.SendShortcut),
+		},
 		Revision:  cfg.Revision,
 		UpdatedAt: timestamp(cfg.UpdatedAt),
+	}
+}
+
+func composerSendShortcutToProto(shortcut userconfig.ComposerSendShortcut) hopterv1.ConfigComposerSendShortcut {
+	switch shortcut {
+	case userconfig.ComposerSendShortcutEnter:
+		return hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER
+	case userconfig.ComposerSendShortcutCmdEnter:
+		return hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER
+	default:
+		return hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER
+	}
+}
+
+func composerSendShortcutFromProto(shortcut hopterv1.ConfigComposerSendShortcut) (userconfig.ComposerSendShortcut, error) {
+	switch shortcut {
+	case hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER, hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED:
+		return userconfig.ComposerSendShortcutCmdEnter, nil
+	case hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER:
+		return userconfig.ComposerSendShortcutEnter, nil
+	default:
+		return "", fmt.Errorf("unsupported composer send shortcut %v", shortcut)
 	}
 }
 

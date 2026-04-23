@@ -34,6 +34,9 @@ func TestServiceDefaultsWhenConfigMissing(t *testing.T) {
 	if cfg.Agent.DefaultBackend != "codex" {
 		t.Fatalf("default backend = %q, want codex", cfg.Agent.DefaultBackend)
 	}
+	if cfg.Composer.SendShortcut != ComposerSendShortcutCmdEnter {
+		t.Fatalf("composer send shortcut = %q, want %q", cfg.Composer.SendShortcut, ComposerSendShortcutCmdEnter)
+	}
 	if cfg.Revision == 0 {
 		t.Fatal("revision should be initialized")
 	}
@@ -100,6 +103,7 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 
 	cfg, err := service.Update(Patch{
 		Appearance: &AppearanceConfig{Theme: ThemeDark, Locale: LocaleZhCN},
+		Composer:   &ComposerConfig{SendShortcut: ComposerSendShortcutEnter},
 	})
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
@@ -110,6 +114,9 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 	if cfg.Appearance.Locale != LocaleZhCN {
 		t.Fatalf("locale = %q, want %q", cfg.Appearance.Locale, LocaleZhCN)
+	}
+	if cfg.Composer.SendShortcut != ComposerSendShortcutEnter {
+		t.Fatalf("composer send shortcut = %q, want %q", cfg.Composer.SendShortcut, ComposerSendShortcutEnter)
 	}
 	if len(sink.events) != 1 || sink.events[0].Kind != core.EventConfigChanged {
 		t.Fatalf("events = %#v, want one config changed event", sink.events)
@@ -135,6 +142,10 @@ func TestServiceUpdateWritesConfigAndPublishesEvent(t *testing.T) {
 	}
 	if appearance["locale"] != string(LocaleZhCN) {
 		t.Fatalf("stored locale = %v, want %q", appearance["locale"], LocaleZhCN)
+	}
+	composer := stored["composer"].(map[string]any)
+	if composer["sendShortcut"] != string(ComposerSendShortcutEnter) {
+		t.Fatalf("stored composer send shortcut = %v, want %q", composer["sendShortcut"], ComposerSendShortcutEnter)
 	}
 
 	schemaData, err := os.ReadFile(filepath.Join(filepath.Dir(path), schemaFileName))

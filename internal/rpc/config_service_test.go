@@ -28,11 +28,17 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	if getResp.Msg.GetConfig().GetAppearance().GetLocale() != hopterv1.ConfigLocale_CONFIG_LOCALE_SYSTEM {
 		t.Fatalf("initial locale = %v, want system", getResp.Msg.GetConfig().GetAppearance().GetLocale())
 	}
+	if getResp.Msg.GetConfig().GetComposer().GetSendShortcut() != hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER {
+		t.Fatalf("initial composer shortcut = %v, want cmd-enter", getResp.Msg.GetConfig().GetComposer().GetSendShortcut())
+	}
 
 	updateResp, err := service.UpdateConfig(context.Background(), connect.NewRequest(&hopterv1.UpdateConfigRequest{
 		Appearance: &hopterv1.AppearanceConfig{
 			Theme:  hopterv1.ConfigTheme_CONFIG_THEME_DARK,
 			Locale: hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN,
+		},
+		Composer: &hopterv1.ComposerConfig{
+			SendShortcut: hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER,
 		},
 		ExpectedRevision: getResp.Msg.GetConfig().GetRevision(),
 	}))
@@ -44,6 +50,9 @@ func TestConfigServiceGetAndUpdateConfig(t *testing.T) {
 	}
 	if updateResp.Msg.GetConfig().GetAppearance().GetLocale() != hopterv1.ConfigLocale_CONFIG_LOCALE_ZH_CN {
 		t.Fatalf("updated locale = %v, want zh-CN", updateResp.Msg.GetConfig().GetAppearance().GetLocale())
+	}
+	if updateResp.Msg.GetConfig().GetComposer().GetSendShortcut() != hopterv1.ConfigComposerSendShortcut_CONFIG_COMPOSER_SEND_SHORTCUT_ENTER {
+		t.Fatalf("updated composer shortcut = %v, want enter", updateResp.Msg.GetConfig().GetComposer().GetSendShortcut())
 	}
 }
 

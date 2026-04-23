@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hopter/v1/config.proto.
  */
 export const file_hopter_v1_config: GenFile = /*@__PURE__*/
-  fileDesc("ChZob3B0ZXIvdjEvY29uZmlnLnByb3RvEglob3B0ZXIudjEiYgoQQXBwZWFyYW5jZUNvbmZpZxIlCgV0aGVtZRgBIAEoDjIWLmhvcHRlci52MS5Db25maWdUaGVtZRInCgZsb2NhbGUYAiABKA4yFy5ob3B0ZXIudjEuQ29uZmlnTG9jYWxlIl8KC0FnZW50Q29uZmlnEhcKD2RlZmF1bHRfYmFja2VuZBgBIAEoCRIVCg1kZWZhdWx0X21vZGVsGAIgASgJEiAKGGRlZmF1bHRfcmVhc29uaW5nX2VmZm9ydBgDIAEoCSKmAQoKVXNlckNvbmZpZxIvCgphcHBlYXJhbmNlGAEgASgLMhsuaG9wdGVyLnYxLkFwcGVhcmFuY2VDb25maWcSJQoFYWdlbnQYAiABKAsyFi5ob3B0ZXIudjEuQWdlbnRDb25maWcSEAoIcmV2aXNpb24YAyABKAQSLgoKdXBkYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiEgoQR2V0Q29uZmlnUmVxdWVzdCI6ChFHZXRDb25maWdSZXNwb25zZRIlCgZjb25maWcYASABKAsyFS5ob3B0ZXIudjEuVXNlckNvbmZpZyKIAQoTVXBkYXRlQ29uZmlnUmVxdWVzdBIvCgphcHBlYXJhbmNlGAEgASgLMhsuaG9wdGVyLnYxLkFwcGVhcmFuY2VDb25maWcSJQoFYWdlbnQYAiABKAsyFi5ob3B0ZXIudjEuQWdlbnRDb25maWcSGQoRZXhwZWN0ZWRfcmV2aXNpb24YAyABKAQiPQoUVXBkYXRlQ29uZmlnUmVzcG9uc2USJQoGY29uZmlnGAEgASgLMhUuaG9wdGVyLnYxLlVzZXJDb25maWcqcwoLQ29uZmlnVGhlbWUSHAoYQ09ORklHX1RIRU1FX1VOU1BFQ0lGSUVEEAASFwoTQ09ORklHX1RIRU1FX1NZU1RFTRABEhUKEUNPTkZJR19USEVNRV9EQVJLEAISFgoSQ09ORklHX1RIRU1FX0xJR0hUEAMqdgoMQ29uZmlnTG9jYWxlEh0KGUNPTkZJR19MT0NBTEVfVU5TUEVDSUZJRUQQABIYChRDT05GSUdfTE9DQUxFX1NZU1RFTRABEhQKEENPTkZJR19MT0NBTEVfRU4QAhIXChNDT05GSUdfTE9DQUxFX1pIX0NOEAMyqAEKDUNvbmZpZ1NlcnZpY2USRgoJR2V0Q29uZmlnEhsuaG9wdGVyLnYxLkdldENvbmZpZ1JlcXVlc3QaHC5ob3B0ZXIudjEuR2V0Q29uZmlnUmVzcG9uc2USTwoMVXBkYXRlQ29uZmlnEh4uaG9wdGVyLnYxLlVwZGF0ZUNvbmZpZ1JlcXVlc3QaHy5ob3B0ZXIudjEuVXBkYXRlQ29uZmlnUmVzcG9uc2VCpQEKDWNvbS5ob3B0ZXIudjFCC0NvbmZpZ1Byb3RvUAFaQmdpdGh1Yi5jb20vc29yY2VyZXJ4dy9ob3B0ZXIvaW50ZXJuYWwvZ2VuL3Byb3RvL2hvcHRlci92MTtob3B0ZXJ2MaICA0hYWKoCCUhvcHRlci5WMcoCCUhvcHRlclxWMeICFUhvcHRlclxWMVxHUEJNZXRhZGF0YeoCCkhvcHRlcjo6VjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("ChZob3B0ZXIvdjEvY29uZmlnLnByb3RvEglob3B0ZXIudjEiYgoQQXBwZWFyYW5jZUNvbmZpZxIlCgV0aGVtZRgBIAEoDjIWLmhvcHRlci52MS5Db25maWdUaGVtZRInCgZsb2NhbGUYAiABKA4yFy5ob3B0ZXIudjEuQ29uZmlnTG9jYWxlIl8KC0FnZW50Q29uZmlnEhcKD2RlZmF1bHRfYmFja2VuZBgBIAEoCRIVCg1kZWZhdWx0X21vZGVsGAIgASgJEiAKGGRlZmF1bHRfcmVhc29uaW5nX2VmZm9ydBgDIAEoCSJOCg5Db21wb3NlckNvbmZpZxI8Cg1zZW5kX3Nob3J0Y3V0GAEgASgOMiUuaG9wdGVyLnYxLkNvbmZpZ0NvbXBvc2VyU2VuZFNob3J0Y3V0ItMBCgpVc2VyQ29uZmlnEi8KCmFwcGVhcmFuY2UYASABKAsyGy5ob3B0ZXIudjEuQXBwZWFyYW5jZUNvbmZpZxIlCgVhZ2VudBgCIAEoCzIWLmhvcHRlci52MS5BZ2VudENvbmZpZxIQCghyZXZpc2lvbhgDIAEoBBIuCgp1cGRhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIrCghjb21wb3NlchgFIAEoCzIZLmhvcHRlci52MS5Db21wb3NlckNvbmZpZyISChBHZXRDb25maWdSZXF1ZXN0IjoKEUdldENvbmZpZ1Jlc3BvbnNlEiUKBmNvbmZpZxgBIAEoCzIVLmhvcHRlci52MS5Vc2VyQ29uZmlnIrUBChNVcGRhdGVDb25maWdSZXF1ZXN0Ei8KCmFwcGVhcmFuY2UYASABKAsyGy5ob3B0ZXIudjEuQXBwZWFyYW5jZUNvbmZpZxIlCgVhZ2VudBgCIAEoCzIWLmhvcHRlci52MS5BZ2VudENvbmZpZxIZChFleHBlY3RlZF9yZXZpc2lvbhgDIAEoBBIrCghjb21wb3NlchgEIAEoCzIZLmhvcHRlci52MS5Db21wb3NlckNvbmZpZyI9ChRVcGRhdGVDb25maWdSZXNwb25zZRIlCgZjb25maWcYASABKAsyFS5ob3B0ZXIudjEuVXNlckNvbmZpZypzCgtDb25maWdUaGVtZRIcChhDT05GSUdfVEhFTUVfVU5TUEVDSUZJRUQQABIXChNDT05GSUdfVEhFTUVfU1lTVEVNEAESFQoRQ09ORklHX1RIRU1FX0RBUksQAhIWChJDT05GSUdfVEhFTUVfTElHSFQQAyp2CgxDb25maWdMb2NhbGUSHQoZQ09ORklHX0xPQ0FMRV9VTlNQRUNJRklFRBAAEhgKFENPTkZJR19MT0NBTEVfU1lTVEVNEAESFAoQQ09ORklHX0xPQ0FMRV9FThACEhcKE0NPTkZJR19MT0NBTEVfWkhfQ04QAyqhAQoaQ29uZmlnQ29tcG9zZXJTZW5kU2hvcnRjdXQSLQopQ09ORklHX0NPTVBPU0VSX1NFTkRfU0hPUlRDVVRfVU5TUEVDSUZJRUQQABIrCidDT05GSUdfQ09NUE9TRVJfU0VORF9TSE9SVENVVF9DTURfRU5URVIQARInCiNDT05GSUdfQ09NUE9TRVJfU0VORF9TSE9SVENVVF9FTlRFUhACMqgBCg1Db25maWdTZXJ2aWNlEkYKCUdldENvbmZpZxIbLmhvcHRlci52MS5HZXRDb25maWdSZXF1ZXN0GhwuaG9wdGVyLnYxLkdldENvbmZpZ1Jlc3BvbnNlEk8KDFVwZGF0ZUNvbmZpZxIeLmhvcHRlci52MS5VcGRhdGVDb25maWdSZXF1ZXN0Gh8uaG9wdGVyLnYxLlVwZGF0ZUNvbmZpZ1Jlc3BvbnNlQqUBCg1jb20uaG9wdGVyLnYxQgtDb25maWdQcm90b1ABWkJnaXRodWIuY29tL3NvcmNlcmVyeHcvaG9wdGVyL2ludGVybmFsL2dlbi9wcm90by9ob3B0ZXIvdjE7aG9wdGVydjGiAgNIWFiqAglIb3B0ZXIuVjHKAglIb3B0ZXJcVjHiAhVIb3B0ZXJcVjFcR1BCTWV0YWRhdGHqAgpIb3B0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message hopter.v1.AppearanceConfig
@@ -64,6 +64,23 @@ export const AgentConfigSchema: GenMessage<AgentConfig> = /*@__PURE__*/
   messageDesc(file_hopter_v1_config, 1);
 
 /**
+ * @generated from message hopter.v1.ComposerConfig
+ */
+export type ComposerConfig = Message<"hopter.v1.ComposerConfig"> & {
+  /**
+   * @generated from field: hopter.v1.ConfigComposerSendShortcut send_shortcut = 1;
+   */
+  sendShortcut: ConfigComposerSendShortcut;
+};
+
+/**
+ * Describes the message hopter.v1.ComposerConfig.
+ * Use `create(ComposerConfigSchema)` to create a new message.
+ */
+export const ComposerConfigSchema: GenMessage<ComposerConfig> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_config, 2);
+
+/**
  * @generated from message hopter.v1.UserConfig
  */
 export type UserConfig = Message<"hopter.v1.UserConfig"> & {
@@ -86,6 +103,11 @@ export type UserConfig = Message<"hopter.v1.UserConfig"> & {
    * @generated from field: google.protobuf.Timestamp updated_at = 4;
    */
   updatedAt?: Timestamp;
+
+  /**
+   * @generated from field: hopter.v1.ComposerConfig composer = 5;
+   */
+  composer?: ComposerConfig;
 };
 
 /**
@@ -93,7 +115,7 @@ export type UserConfig = Message<"hopter.v1.UserConfig"> & {
  * Use `create(UserConfigSchema)` to create a new message.
  */
 export const UserConfigSchema: GenMessage<UserConfig> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_config, 2);
+  messageDesc(file_hopter_v1_config, 3);
 
 /**
  * @generated from message hopter.v1.GetConfigRequest
@@ -106,7 +128,7 @@ export type GetConfigRequest = Message<"hopter.v1.GetConfigRequest"> & {
  * Use `create(GetConfigRequestSchema)` to create a new message.
  */
 export const GetConfigRequestSchema: GenMessage<GetConfigRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_config, 3);
+  messageDesc(file_hopter_v1_config, 4);
 
 /**
  * @generated from message hopter.v1.GetConfigResponse
@@ -123,7 +145,7 @@ export type GetConfigResponse = Message<"hopter.v1.GetConfigResponse"> & {
  * Use `create(GetConfigResponseSchema)` to create a new message.
  */
 export const GetConfigResponseSchema: GenMessage<GetConfigResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_config, 4);
+  messageDesc(file_hopter_v1_config, 5);
 
 /**
  * @generated from message hopter.v1.UpdateConfigRequest
@@ -143,6 +165,11 @@ export type UpdateConfigRequest = Message<"hopter.v1.UpdateConfigRequest"> & {
    * @generated from field: uint64 expected_revision = 3;
    */
   expectedRevision: bigint;
+
+  /**
+   * @generated from field: hopter.v1.ComposerConfig composer = 4;
+   */
+  composer?: ComposerConfig;
 };
 
 /**
@@ -150,7 +177,7 @@ export type UpdateConfigRequest = Message<"hopter.v1.UpdateConfigRequest"> & {
  * Use `create(UpdateConfigRequestSchema)` to create a new message.
  */
 export const UpdateConfigRequestSchema: GenMessage<UpdateConfigRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_config, 5);
+  messageDesc(file_hopter_v1_config, 6);
 
 /**
  * @generated from message hopter.v1.UpdateConfigResponse
@@ -167,7 +194,7 @@ export type UpdateConfigResponse = Message<"hopter.v1.UpdateConfigResponse"> & {
  * Use `create(UpdateConfigResponseSchema)` to create a new message.
  */
 export const UpdateConfigResponseSchema: GenMessage<UpdateConfigResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_config, 6);
+  messageDesc(file_hopter_v1_config, 7);
 
 /**
  * @generated from enum hopter.v1.ConfigTheme
@@ -232,6 +259,32 @@ export const ConfigLocaleSchema: GenEnum<ConfigLocale> = /*@__PURE__*/
   enumDesc(file_hopter_v1_config, 1);
 
 /**
+ * @generated from enum hopter.v1.ConfigComposerSendShortcut
+ */
+export enum ConfigComposerSendShortcut {
+  /**
+   * @generated from enum value: CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER = 1;
+   */
+  CMD_ENTER = 1,
+
+  /**
+   * @generated from enum value: CONFIG_COMPOSER_SEND_SHORTCUT_ENTER = 2;
+   */
+  ENTER = 2,
+}
+
+/**
+ * Describes the enum hopter.v1.ConfigComposerSendShortcut.
+ */
+export const ConfigComposerSendShortcutSchema: GenEnum<ConfigComposerSendShortcut> = /*@__PURE__*/
+  enumDesc(file_hopter_v1_config, 2);
+
+/**
  * @generated from service hopter.v1.ConfigService
  */
 export const ConfigService: GenService<{
@@ -253,3 +306,4 @@ export const ConfigService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_hopter_v1_config, 0);
+

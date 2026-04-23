@@ -1,12 +1,28 @@
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
+import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation } from "react-router-dom"
 
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useTheme } from "@/components/theme-provider"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useBackends } from "@/features/host/use-host-backends"
 import { useHostStatus } from "@/features/host/use-host-status"
+import {
+  composerSendShortcutPreferenceFromConfig,
+  composerSendShortcutPreferenceToProto,
+  formatComposerSendShortcutPreference,
+  useConfig,
+  useUpdateConfig,
+  type ComposerSendShortcutPreference,
+} from "@/features/config/use-config"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +36,11 @@ const LOCALE_OPTIONS = [
   { labelKey: "app.locale.system", value: "system" },
   { labelKey: "app.locale.en", value: "en" },
   { labelKey: "app.locale.zhCN", value: "zh-CN" },
+] as const
+
+const COMPOSER_SEND_SHORTCUT_OPTIONS = [
+  { value: "cmd-enter" },
+  { value: "enter" },
 ] as const
 
 function formatHostStatusLabel(status: number | undefined, t: TFunction) {
@@ -98,8 +119,22 @@ export function SettingsRoute() {
   const location = useLocation()
   const { resolvedTheme, theme, setTheme } = useTheme()
   const { locale, setLocale } = useLocale()
+  const configQuery = useConfig()
+  const updateConfig = useUpdateConfig()
   const { data: hostStatus, isLoading: hostStatusLoading } = useHostStatus()
   const { data: backends, isLoading: backendsLoading } = useBackends()
+  const configSendShortcut = composerSendShortcutPreferenceFromConfig(
+    configQuery.data
+  )
+  const [optimisticSendShortcut, setOptimisticSendShortcut] =
+    useState<ComposerSendShortcutPreference | null>(null)
+  const sendShortcut = optimisticSendShortcut ?? configSendShortcut
+
+  useEffect(() => {
+    if (optimisticSendShortcut === configSendShortcut) {
+      setOptimisticSendShortcut(null)
+    }
+  }, [configSendShortcut, optimisticSendShortcut])
 
   if (
     location.hash === "#plugins" ||
@@ -107,6 +142,24 @@ export function SettingsRoute() {
     location.hash === "#mcp"
   ) {
     return <Navigate to="/plugins" replace />
+  }
+
+  function handleSendShortcutChange(nextShortcut: string) {
+    const shortcut = nextShortcut as ComposerSendShortcutPreference
+    setOptimisticSendShortcut(shortcut)
+    updateConfig.mutate(
+      {
+        composer: {
+          sendShortcut: composerSendShortcutPreferenceToProto(shortcut),
+        },
+        expectedRevision: configQuery.data?.revision ?? 0n,
+      },
+      {
+        onError: () => {
+          setOptimisticSendShortcut(null)
+        },
+      }
+    )
   }
 
   return (
@@ -148,11 +201,6 @@ export function SettingsRoute() {
                   </div>
                 }
               />
-            </div>
-          </SettingsSection>
-
-          <SettingsSection id="appearance" title={t("app.settings.appearance")}>
-            <div className="divide-y divide-border rounded-lg border border-border">
               <SettingsRow
                 label={t("app.settings.theme")}
                 description={
@@ -165,48 +213,81 @@ export function SettingsRoute() {
                     : t("app.settings.themeDescription")
                 }
                 action={
-                  <NativeSelect
-                    aria-label={t("app.settings.theme")}
-                    className="min-w-40"
+                  <Select
                     value={theme}
-                    onChange={(event) =>
-                      setTheme(
-                        event.target.value as "dark" | "light" | "system"
-                      )
+                    onValueChange={(value) =>
+                      setTheme(value as "dark" | "light" | "system")
                     }
                   >
-                    {THEME_OPTIONS.map((option) => (
-                      <NativeSelectOption
-                        key={option.value}
-                        value={option.value}
-                      >
-                        {t(option.labelKey)}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
+                    <SelectTrigger
+                      aria-label={t("app.settings.theme")}
+                      className="min-w-40"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {THEME_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(option.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 }
               />
               <SettingsRow
                 label={t("app.settings.language")}
                 description={t("app.settings.languageDescription")}
                 action={
-                  <NativeSelect
-                    aria-label={t("app.settings.language")}
-                    className="min-w-40"
+                  <Select
                     value={locale}
-                    onChange={(event) =>
-                      setLocale(event.target.value as typeof locale)
-                    }
+                    onValueChange={(value) => setLocale(value as typeof locale)}
                   >
-                    {LOCALE_OPTIONS.map((option) => (
-                      <NativeSelectOption
-                        key={option.value}
-                        value={option.value}
-                      >
-                        {t(option.labelKey)}
-                      </NativeSelectOption>
-                    ))}
-                  </NativeSelect>
+                    <SelectTrigger
+                      aria-label={t("app.settings.language")}
+                      className="min-w-40"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {LOCALE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {t(option.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                }
+              />
+              <SettingsRow
+                label={t("app.settings.sendShortcut")}
+                description={t("app.settings.sendShortcutDescription")}
+                action={
+                  <Select
+                    value={sendShortcut}
+                    onValueChange={handleSendShortcutChange}
+                    disabled={configQuery.isLoading || updateConfig.isPending}
+                  >
+                    <SelectTrigger
+                      aria-label={t("app.settings.sendShortcut")}
+                      className="min-w-40"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {COMPOSER_SEND_SHORTCUT_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {formatComposerSendShortcutPreference(option.value)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 }
               />
             </div>

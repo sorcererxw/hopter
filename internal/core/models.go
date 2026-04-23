@@ -421,12 +421,20 @@ type CreateSessionInput struct {
 	Model           string
 	ReasoningEffort string
 	CodexFastMode   bool
+	Attachments     []SessionInputAttachment
+}
+
+type SessionInputAttachment struct {
+	Label       string
+	URL         string
+	ContentType string
 }
 
 type SessionTurnOptions struct {
 	Model           string
 	ReasoningEffort string
 	CodexFastMode   bool
+	Attachments     []SessionInputAttachment
 }
 
 type SessionPatch struct {

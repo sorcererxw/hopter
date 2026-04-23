@@ -25,6 +25,12 @@ enum ConfigLocale {
   CONFIG_LOCALE_ZH_CN = 3;
 }
 
+enum ConfigComposerSendShortcut {
+  CONFIG_COMPOSER_SEND_SHORTCUT_UNSPECIFIED = 0;
+  CONFIG_COMPOSER_SEND_SHORTCUT_CMD_ENTER = 1;
+  CONFIG_COMPOSER_SEND_SHORTCUT_ENTER = 2;
+}
+
 message AppearanceConfig {
   ConfigTheme theme = 1;
   ConfigLocale locale = 2;
@@ -36,11 +42,16 @@ message AgentConfig {
   string default_reasoning_effort = 3;
 }
 
+message ComposerConfig {
+  ConfigComposerSendShortcut send_shortcut = 1;
+}
+
 message UserConfig {
   AppearanceConfig appearance = 1;
   AgentConfig agent = 2;
   uint64 revision = 3;
   google.protobuf.Timestamp updated_at = 4;
+  ComposerConfig composer = 5;
 }
 
 message GetConfigRequest {}
@@ -53,6 +64,7 @@ message UpdateConfigRequest {
   AppearanceConfig appearance = 1;
   AgentConfig agent = 2;
   uint64 expected_revision = 3;
+  ComposerConfig composer = 4;
 }
 
 message UpdateConfigResponse {

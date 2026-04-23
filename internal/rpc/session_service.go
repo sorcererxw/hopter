@@ -204,6 +204,7 @@ func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[h
 		Model:           req.Msg.GetModel(),
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
 		CodexFastMode:   req.Msg.GetCodexFastMode(),
+		Attachments:     sessionInputAttachmentsFromProto(req.Msg.GetAttachments()),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -219,6 +220,7 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 		Model:           req.Msg.GetModel(),
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
 		CodexFastMode:   req.Msg.GetCodexFastMode(),
+		Attachments:     sessionInputAttachmentsFromProto(req.Msg.GetAttachments()),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -228,6 +230,24 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),
 	}), nil
+}
+
+func sessionInputAttachmentsFromProto(attachments []*hopterv1.SessionInputAttachment) []core.SessionInputAttachment {
+	if len(attachments) == 0 {
+		return nil
+	}
+	result := make([]core.SessionInputAttachment, 0, len(attachments))
+	for _, attachment := range attachments {
+		if attachment == nil || strings.TrimSpace(attachment.GetUrl()) == "" {
+			continue
+		}
+		result = append(result, core.SessionInputAttachment{
+			Label:       strings.TrimSpace(attachment.GetLabel()),
+			URL:         strings.TrimSpace(attachment.GetUrl()),
+			ContentType: strings.TrimSpace(attachment.GetContentType()),
+		})
+	}
+	return result
 }
 
 func (s *SessionService) InterruptSession(_ context.Context, req *connect.Request[hopterv1.InterruptSessionRequest]) (*connect.Response[hopterv1.InterruptSessionResponse], error) {
