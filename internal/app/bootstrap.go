@@ -58,6 +58,12 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
 		TerminalStreamHandler:  terminalManager,
 		Workspace:              workspace,
+		Relay: serverhttp.RelayOptions{
+			TokenPath:    cfg.Relay.TokenPath,
+			ExchangeURL:  cfg.Relay.ExchangeURL,
+			HostID:       cfg.HostID,
+			BrokerSecret: cfg.Relay.BrokerSecret,
+		},
 	})
 	if err != nil {
 		_ = taskStore.Close()

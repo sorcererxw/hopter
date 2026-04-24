@@ -24,6 +24,7 @@ type RouterOptions struct {
 	TerminalServiceHandler hopterv1connect.TerminalServiceHandler
 	TerminalStreamHandler  TerminalStreamHandler
 	Workspace              core.WorkspaceService
+	Relay                  RelayOptions
 }
 
 func NewRouter(opts RouterOptions) (http.Handler, error) {
@@ -38,6 +39,7 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 	mux.HandleFunc("GET /version", versionHandler(opts.Version, opts.UI.Mode()))
 	mux.Handle("GET /events", authGate(NewSSEHandler(opts.EventHub)))
 	mux.Handle("GET /api/image-proxy", authGate(NewImageProxyHandler(opts.Workspace)))
+	mux.Handle("GET /api/relay/callback", NewRelayCallbackHandler(opts.Relay))
 	mux.Handle("GET /terminals/{terminalId}/stream", authGate(NewTerminalWSHandler(opts.TerminalStreamHandler)))
 	registerAuthHandlers(mux, opts.TerminalStreamHandler)
 
@@ -66,7 +68,24 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 	mux.Handle("/rpc/", authGate(http.StripPrefix("/rpc", connectMux)))
 	mux.Handle("/", uiHandler)
 
-	return mux, nil
+	return relayBrokerGate(opts.Relay, mux), nil
+}
+
+func relayBrokerGate(opts RelayOptions, next http.Handler) http.Handler {
+	secret := strings.TrimSpace(opts.BrokerSecret)
+	if secret == "" {
+		return next
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("x-hopter-broker") == "hopter-broker" &&
+			r.Header.Get("x-hopter-broker-secret") != secret {
+			http.Error(w, "invalid broker secret", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func registerConnectHandlers(mux *http.ServeMux, constructors ...func() (string, http.Handler)) {
