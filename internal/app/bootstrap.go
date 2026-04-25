@@ -59,10 +59,16 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		TerminalStreamHandler:  terminalManager,
 		Workspace:              workspace,
 		Relay: serverhttp.RelayOptions{
-			TokenPath:    cfg.Relay.TokenPath,
-			ExchangeURL:  cfg.Relay.ExchangeURL,
-			HostID:       cfg.HostID,
-			BrokerSecret: cfg.Relay.BrokerSecret,
+			AuthPath:          cfg.Relay.AuthPath,
+			AuthStoreName:     cfg.Relay.AuthStore,
+			TokenPath:         cfg.Relay.TokenPath,
+			ExchangeURL:       cfg.Relay.ExchangeURL,
+			OAuthAuthorizeURL: cfg.Relay.OAuthAuthorizeURL,
+			OAuthTokenURL:     cfg.Relay.OAuthTokenURL,
+			OAuthClientID:     cfg.Relay.OAuthClientID,
+			OAuthAudience:     cfg.Relay.OAuthAudience,
+			HostID:            cfg.HostID,
+			BrokerSecret:      cfg.Relay.BrokerSecret,
 		},
 	})
 	if err != nil {

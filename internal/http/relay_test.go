@@ -4,14 +4,140 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
+func TestBeginRelayOAuthLoginBuildsPKCEAuthorizeURL(t *testing.T) {
+	loginURL, err := BeginRelayOAuthLogin("http://127.0.0.1:18787/api/relay/callback", RelayOptions{
+		OAuthAuthorizeURL: "https://auth.hopter.dev/api/auth/oauth2/authorize",
+		OAuthTokenURL:     "https://auth.hopter.dev/api/auth/oauth2/token",
+		OAuthClientID:     "hopter-cli",
+		OAuthAudience:     "hopter",
+	})
+	if err != nil {
+		t.Fatalf("begin login: %v", err)
+	}
+
+	parsed, err := url.Parse(loginURL)
+	if err != nil {
+		t.Fatalf("parse login URL: %v", err)
+	}
+	query := parsed.Query()
+	if parsed.Scheme != "https" || parsed.Host != "auth.hopter.dev" || parsed.Path != "/api/auth/oauth2/authorize" {
+		t.Fatalf("authorize URL = %s", loginURL)
+	}
+	for key, want := range map[string]string{
+		"response_type":         "code",
+		"client_id":             "hopter-cli",
+		"redirect_uri":          "http://127.0.0.1:18787/api/relay/callback",
+		"scope":                 "openid offline_access",
+		"code_challenge_method": "S256",
+		"resource":              "hopter",
+	} {
+		if got := query.Get(key); got != want {
+			t.Fatalf("%s = %q, want %q in %s", key, got, want, loginURL)
+		}
+	}
+	if query.Get("state") == "" {
+		t.Fatalf("authorize URL missing state: %s", loginURL)
+	}
+	if query.Get("code_challenge") == "" {
+		t.Fatalf("authorize URL missing code_challenge: %s", loginURL)
+	}
+}
+
+func TestRelayCallbackExchangesOAuthCodeAndStoresRefreshToken(t *testing.T) {
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("method = %s, want POST", r.Method)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("parse form: %v", err)
+		}
+		for key, want := range map[string]string{
+			"grant_type":            "authorization_code",
+			"client_id":             "hopter-cli",
+			"code":                  "oauth-code",
+			"redirect_uri":          "http://127.0.0.1:18787/api/relay/callback",
+			"resource":              "hopter",
+			"code_challenge_method": "",
+		} {
+			if key == "code_challenge_method" {
+				continue
+			}
+			if got := r.Form.Get(key); got != want {
+				t.Fatalf("%s = %q, want %q", key, got, want)
+			}
+		}
+		if r.Form.Get("code_verifier") == "" {
+			t.Fatal("token exchange missing PKCE verifier")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"access_token": "jwt-access-token",
+			"refresh_token": "refresh-token",
+			"token_type": "Bearer",
+			"scope": "openid offline_access",
+			"expires_in": 3600
+		}`))
+	}))
+	t.Cleanup(tokenServer.Close)
+
+	loginURL, err := BeginRelayOAuthLogin("http://127.0.0.1:18787/api/relay/callback", RelayOptions{
+		OAuthAuthorizeURL: "https://auth.hopter.dev/api/auth/oauth2/authorize",
+		OAuthTokenURL:     tokenServer.URL,
+		OAuthClientID:     "hopter-cli",
+		OAuthAudience:     "hopter",
+	})
+	if err != nil {
+		t.Fatalf("begin login: %v", err)
+	}
+	parsed, err := url.Parse(loginURL)
+	if err != nil {
+		t.Fatalf("parse login URL: %v", err)
+	}
+
+	handler := NewRelayCallbackHandler(RelayOptions{
+		AuthPath:      authPath,
+		OAuthTokenURL: tokenServer.URL,
+		OAuthClientID: "hopter-cli",
+		OAuthAudience: "hopter",
+		HostID:        "host_local",
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/relay/callback?code=oauth-code&state="+url.QueryEscape(parsed.Query().Get("state")), nil)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	stored, err := NewFileRelayAuthStore(authPath).Load()
+	if err != nil {
+		t.Fatalf("load auth: %v", err)
+	}
+	if stored.OAuthAccessToken != "jwt-access-token" {
+		t.Fatalf("access token = %q", stored.OAuthAccessToken)
+	}
+	if stored.OAuthRefreshToken != "refresh-token" {
+		t.Fatalf("refresh token = %q", stored.OAuthRefreshToken)
+	}
+	if stored.RelayToken != "" || stored.ConnectorToken != "" {
+		t.Fatalf("oauth callback should not allocate relay token yet: %+v", stored)
+	}
+	if stored.OAuthAccessTokenExpiresAt.IsZero() {
+		t.Fatal("missing access token expiry")
+	}
+}
+
 func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
-	tokenPath := filepath.Join(t.TempDir(), "relay", "token")
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
 	exchangeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("method = %s, want POST", r.Method)
@@ -26,13 +152,14 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 			"tunnelTarget": "https://host_local.hosts.hopter.run",
 			"relayToken": "relay-token",
 			"brokerSecret": "broker-secret",
-			"cloudflareTunnelToken": "cf-token",
+			"connectorProvider": "managed",
+			"connectorToken": "connector-token",
 			"expiresAt": "2026-05-01T00:00:00Z"
 		}`))
 	}))
 	t.Cleanup(exchangeServer.Close)
 	handler := NewRelayCallbackHandler(RelayOptions{
-		TokenPath:   tokenPath,
+		AuthPath:    authPath,
 		ExchangeURL: exchangeServer.URL,
 		HostID:      "host_local",
 	})
@@ -48,10 +175,16 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 		t.Fatalf("response did not include success page:\n%s", recorder.Body.String())
 	}
 
-	var stored RelayCredential
-	readJSONFile(t, tokenPath, &stored)
+	store := NewFileRelayAuthStore(authPath)
+	stored, err := store.Load()
+	if err != nil {
+		t.Fatalf("load auth: %v", err)
+	}
 	if stored.RelayToken != "relay-token" {
 		t.Fatalf("stored relay token = %q, want relay-token", stored.RelayToken)
+	}
+	if stored.ConnectorToken != "connector-token" {
+		t.Fatalf("stored connector token = %q, want connector-token", stored.ConnectorToken)
 	}
 	if stored.TunnelTarget != "https://host_local.hosts.hopter.run" {
 		t.Fatalf("stored tunnel target = %q", stored.TunnelTarget)
@@ -59,7 +192,17 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 	if stored.UpdatedAt.IsZero() {
 		t.Fatal("stored token missing UpdatedAt")
 	}
-	info, err := os.Stat(tokenPath)
+	data, err := os.ReadFile(authPath)
+	if err != nil {
+		t.Fatalf("read auth: %v", err)
+	}
+	if strings.Contains(string(data), "cloudflare") {
+		t.Fatalf("stored auth should not use provider-specific token fields:\n%s", string(data))
+	}
+	if strings.Contains(string(data), "connector-token") {
+		t.Fatalf("connector token should only be kept in process memory:\n%s", string(data))
+	}
+	info, err := os.Stat(authPath)
 	if err != nil {
 		t.Fatalf("stat token: %v", err)
 	}
@@ -69,9 +212,9 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 }
 
 func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
-	tokenPath := filepath.Join(t.TempDir(), "relay", "token")
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
 	handler := NewRelayCallbackHandler(RelayOptions{
-		TokenPath:    tokenPath,
+		AuthPath:     authPath,
 		HostID:       "host_local",
 		BrokerSecret: "configured-secret",
 	})
@@ -87,8 +230,10 @@ func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
 	}
-	var stored RelayCredential
-	readJSONFile(t, tokenPath, &stored)
+	stored, err := NewFileRelayAuthStore(authPath).Load()
+	if err != nil {
+		t.Fatalf("load auth: %v", err)
+	}
 	if stored.RelayToken != "relay-token" {
 		t.Fatalf("stored relay token = %q, want relay-token", stored.RelayToken)
 	}
@@ -98,13 +243,113 @@ func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 }
 
 func TestRelayCallbackRejectsMissingCredential(t *testing.T) {
-	handler := NewRelayCallbackHandler(RelayOptions{TokenPath: filepath.Join(t.TempDir(), "token")})
+	handler := NewRelayCallbackHandler(RelayOptions{AuthPath: filepath.Join(t.TempDir(), "auth.json")})
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/relay/callback", nil))
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestRelayCallbackAcceptsLegacyProviderTokenNameWithoutPersistingIt(t *testing.T) {
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
+	handler := NewRelayCallbackHandler(RelayOptions{
+		AuthPath: authPath,
+		HostID:   "host_local",
+	})
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/api/relay/callback?relayToken=relay-token&workspaceURL=https%3A%2F%2Falice.hopter.dev&cloudflareTunnelToken=legacy-token",
+		nil,
+	)
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	stored, err := NewFileRelayAuthStore(authPath).Load()
+	if err != nil {
+		t.Fatalf("load auth: %v", err)
+	}
+	if stored.ConnectorToken != "legacy-token" {
+		t.Fatalf("stored connector token = %q, want legacy-token", stored.ConnectorToken)
+	}
+	data, err := os.ReadFile(authPath)
+	if err != nil {
+		t.Fatalf("read auth: %v", err)
+	}
+	if strings.Contains(string(data), "cloudflare") {
+		t.Fatalf("stored auth should not include legacy field:\n%s", string(data))
+	}
+	if strings.Contains(string(data), "legacy-token") {
+		t.Fatalf("connector token should only be kept in process memory:\n%s", string(data))
+	}
+}
+
+func TestConfiguredRelayAuthStoreDefaultsToKeyring(t *testing.T) {
+	store := NewConfiguredRelayAuthStore("", "")
+
+	if _, ok := store.(KeyringRelayAuthStore); !ok {
+		t.Fatalf("store type = %T, want KeyringRelayAuthStore", store)
+	}
+}
+
+func TestRelayOptionsWithOnlyAuthPathUsesFileStoreCompatibility(t *testing.T) {
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
+	store := (RelayOptions{AuthPath: authPath}).authStore()
+
+	fileStore, ok := store.(FileRelayAuthStore)
+	if !ok {
+		t.Fatalf("store type = %T, want FileRelayAuthStore", store)
+	}
+	if fileStore.Path != authPath {
+		t.Fatalf("file store path = %q, want %q", fileStore.Path, authPath)
+	}
+}
+
+func TestFileRelayAuthStoreDoesNotCacheOnWriteFailure(t *testing.T) {
+	path := t.TempDir()
+	store := NewFileRelayAuthStore(path)
+
+	err := store.Store(RelayCredential{
+		RelayToken:     "relay-token",
+		ConnectorToken: "connector-token",
+		ExpiresAt:      time.Now().Add(time.Hour),
+	})
+	if err == nil {
+		t.Fatal("expected store to fail when path is a directory")
+	}
+	if _, loadErr := store.Load(); loadErr == nil {
+		t.Fatal("expected failed store not to populate process memory")
+	}
+}
+
+func TestFileRelayAuthStoreResetClearsPersistedAndInMemoryCredential(t *testing.T) {
+	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
+	store := NewFileRelayAuthStore(authPath)
+
+	if err := store.Store(RelayCredential{
+		RelayToken:     "relay-token",
+		ConnectorToken: "connector-token",
+		ExpiresAt:      time.Now().Add(time.Hour),
+	}); err != nil {
+		t.Fatalf("store auth: %v", err)
+	}
+	if _, err := store.Load(); err != nil {
+		t.Fatalf("load auth before reset: %v", err)
+	}
+	if err := store.Reset(); err != nil {
+		t.Fatalf("reset auth: %v", err)
+	}
+	if _, err := os.Stat(authPath); !os.IsNotExist(err) {
+		t.Fatalf("auth file still exists after reset: %v", err)
+	}
+	if _, err := store.Load(); err == nil {
+		t.Fatal("expected reset to clear process memory credential")
 	}
 }
 

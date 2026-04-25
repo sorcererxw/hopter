@@ -44,6 +44,19 @@ func TestLoadConfigUsesReleaseDefaultPort(t *testing.T) {
 	}
 }
 
+func TestLoadConfigUsesKeyringRelayAuthStoreByDefault(t *testing.T) {
+	clearConfigEnv(t)
+
+	cfg, err := LoadConfig("dev", "direct")
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	if cfg.Relay.AuthStore != "keyring" {
+		t.Fatalf("Relay.AuthStore = %q, want keyring", cfg.Relay.AuthStore)
+	}
+}
+
 func TestLoadConfigPortOverrideWinsForReleaseBuild(t *testing.T) {
 	clearConfigEnv(t)
 
@@ -93,4 +106,23 @@ func TestLoadConfigUsesIsolatedTaskStateHomeForDevProxy(t *testing.T) {
 
 func clearConfigEnv(t *testing.T) {
 	t.Helper()
+
+	for _, key := range []string{
+		"HOPTER_RELAY_AUTH_STORE",
+		"HOPTER_RELAY_AUTH_PATH",
+		"HOPTER_RELAY_TOKEN_PATH",
+		"HOPTER_RELAY_AUTH_URL",
+		"HOPTER_RELAY_EXCHANGE_URL",
+		"HOPTER_RELAY_ALLOCATE_URL",
+		"HOPTER_RELAY_OAUTH_AUTHORIZE_URL",
+		"HOPTER_RELAY_OAUTH_TOKEN_URL",
+		"HOPTER_RELAY_OAUTH_CLIENT_ID",
+		"HOPTER_RELAY_OAUTH_AUDIENCE",
+		"HOPTER_RELAY_DOMAIN",
+		"HOPTER_RELAY_CONNECTOR_BIN",
+		"HOPTER_CLOUDFLARED_BIN",
+		"HOPTER_RELAY_BROKER_SECRET",
+	} {
+		t.Setenv(key, "")
+	}
 }

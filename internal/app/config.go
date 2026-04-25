@@ -63,17 +63,27 @@ type LoadOptions struct {
 	Port        int
 	DevProxyURL string
 	Relay       bool
+	ResetAuth   bool
 }
 
 type RelayConfig struct {
-	Enabled        bool
-	AuthURL        string
-	ExchangeURL    string
-	Domain         string
-	TokenPath      string
-	Cloudflared    string
-	BrokerSecret   string
-	HeartbeatEvery time.Duration
+	Enabled           bool
+	ResetAuth         bool
+	AuthURL           string
+	ExchangeURL       string
+	AllocateURL       string
+	OAuthAuthorizeURL string
+	OAuthTokenURL     string
+	OAuthClientID     string
+	OAuthAudience     string
+	Domain            string
+	AuthPath          string
+	AuthStore         string
+	ConnectorBin      string
+	TokenPath         string
+	Cloudflared       string
+	BrokerSecret      string
+	HeartbeatEvery    time.Duration
 }
 
 func LoadConfig(version string, installSource string) (Config, error) {
@@ -99,15 +109,24 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 		},
 	}
 	cfg.Relay = RelayConfig{
-		Enabled:        opts.Relay,
-		AuthURL:        firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://auth.hopter.dev/login"),
-		ExchangeURL:    firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_EXCHANGE_URL")), "https://api.hopter.dev/api/relay/exchange"),
-		Domain:         strings.TrimSpace(os.Getenv("HOPTER_RELAY_DOMAIN")),
-		TokenPath:      firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_TOKEN_PATH")), filepath.Join(defaultStateHome(), "relay", "token")),
-		Cloudflared:    firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_CLOUDFLARED_BIN")), "cloudflared"),
-		BrokerSecret:   strings.TrimSpace(os.Getenv("HOPTER_RELAY_BROKER_SECRET")),
-		HeartbeatEvery: 30 * time.Second,
+		Enabled:           opts.Relay,
+		ResetAuth:         opts.ResetAuth,
+		AuthURL:           firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://auth.hopter.dev/api/auth/oauth2/authorize"),
+		ExchangeURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_EXCHANGE_URL")), "https://api.hopter.dev/api/relay/exchange"),
+		AllocateURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_ALLOCATE_URL")), "https://api.hopter.dev/api/relay/allocate"),
+		OAuthAuthorizeURL: firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_AUTHORIZE_URL")), strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://auth.hopter.dev/api/auth/oauth2/authorize"),
+		OAuthTokenURL:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_TOKEN_URL")), "https://auth.hopter.dev/api/auth/oauth2/token"),
+		OAuthClientID:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_CLIENT_ID")), "hopter-cli"),
+		OAuthAudience:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_AUDIENCE")), "hopter"),
+		Domain:            strings.TrimSpace(os.Getenv("HOPTER_RELAY_DOMAIN")),
+		AuthPath:          defaultRelayAuthPath(),
+		AuthStore:         firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_STORE")), "keyring"),
+		ConnectorBin:      firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_CONNECTOR_BIN")), strings.TrimSpace(os.Getenv("HOPTER_CLOUDFLARED_BIN")), "cloudflared"),
+		BrokerSecret:      strings.TrimSpace(os.Getenv("HOPTER_RELAY_BROKER_SECRET")),
+		HeartbeatEvery:    30 * time.Second,
 	}
+	cfg.Relay.TokenPath = cfg.Relay.AuthPath
+	cfg.Relay.Cloudflared = cfg.Relay.ConnectorBin
 
 	if opts.Port != 0 {
 		cfg.HTTP.Port = opts.Port
@@ -144,6 +163,14 @@ func defaultStateHome() string {
 		return ".hopter"
 	}
 	return filepath.Join(home, ".hopter")
+}
+
+func defaultRelayAuthPath() string {
+	return firstNonEmpty(
+		strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_PATH")),
+		strings.TrimSpace(os.Getenv("HOPTER_RELAY_TOKEN_PATH")),
+		filepath.Join(defaultStateHome(), "relay", "auth.json"),
+	)
 }
 
 func defaultTaskStateHome(devProxyURL string) string {

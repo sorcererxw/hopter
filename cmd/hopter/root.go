@@ -20,10 +20,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 
 	"github.com/sorcererxw/hopter/internal/app"
 	serverhttp "github.com/sorcererxw/hopter/internal/http"
+	"github.com/sorcererxw/hopter/internal/relayconnector/cloudflaredrunner"
 )
 
 type serveOptions struct {
@@ -31,60 +32,82 @@ type serveOptions struct {
 	port        int
 	devProxyURL string
 	relay       bool
+	resetAuth   bool
 }
 
-func newRootCmd(version string, installSource string) *cobra.Command {
-	opts := serveOptions{}
-	cmd := &cobra.Command{
-		Use:           "hopter",
-		Short:         "Local control plane for coding agents",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(version, installSource, opts, cmd.OutOrStdout())
+func newRootApp(version string, installSource string) *cli.App {
+	app := cli.NewApp()
+	app.Name = "hopter"
+	app.Usage = "Local control plane for coding agents"
+	app.HideVersion = true
+	app.Flags = serveFlags()
+	app.Action = func(c *cli.Context) error {
+		return runServe(version, installSource, serveOptionsFromContext(c), c.App.Writer)
+	}
+	app.Commands = []*cli.Command{
+		newServeCmd(version, installSource),
+		newDoctorCmd(version, installSource),
+		newVersionCmd(version),
+	}
+	return app
+}
+
+func newServeCmd(version string, installSource string) *cli.Command {
+	return &cli.Command{
+		Name:  "serve",
+		Usage: "Start the hopter HTTP server",
+		Flags: serveFlags(),
+		Action: func(c *cli.Context) error {
+			return runServe(version, installSource, serveOptionsFromContext(c), c.App.Writer)
 		},
 	}
-	addServeFlags(cmd, &opts)
-
-	cmd.AddCommand(newServeCmd(version, installSource))
-	cmd.AddCommand(newDoctorCmd(version, installSource))
-	cmd.AddCommand(newVersionCmd(version))
-
-	return cmd
 }
 
-func newServeCmd(version string, installSource string) *cobra.Command {
-	opts := serveOptions{}
-	cmd := &cobra.Command{
-		Use:           "serve",
-		Short:         "Start the hopter HTTP server",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(version, installSource, opts, cmd.OutOrStdout())
-		},
+func serveFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{Name: "host", Usage: "HTTP bind host"},
+		&cli.IntFlag{Name: "port", Usage: "HTTP bind port"},
+		&cli.StringFlag{Name: "dev-proxy-url", Usage: "Vite dev server URL to reverse proxy"},
+		&cli.BoolFlag{Name: "relay", Usage: "Start relay mode and connect this host through the hosted relay"},
+		&cli.BoolFlag{Name: "reset-auth", Usage: "Reset stored relay auth before starting; valid only with --relay"},
 	}
-	addServeFlags(cmd, &opts)
-	return cmd
 }
 
-func addServeFlags(cmd *cobra.Command, opts *serveOptions) {
-	cmd.Flags().StringVar(&opts.host, "host", "", "HTTP bind host")
-	cmd.Flags().IntVar(&opts.port, "port", 0, "HTTP bind port")
-	cmd.Flags().StringVar(&opts.devProxyURL, "dev-proxy-url", "", "Vite dev server URL to reverse proxy")
-	cmd.Flags().BoolVar(&opts.relay, "relay", false, "Start relay mode and connect this host through Cloudflare Tunnel")
+func serveOptionsFromContext(c *cli.Context) serveOptions {
+	return serveOptions{
+		host:        c.String("host"),
+		port:        c.Int("port"),
+		devProxyURL: c.String("dev-proxy-url"),
+		relay:       c.Bool("relay"),
+		resetAuth:   c.Bool("reset-auth"),
+	}
 }
 
 func runServe(version string, installSource string, opts serveOptions, out io.Writer) error {
+	if opts.resetAuth && !opts.relay {
+		return fmt.Errorf("--reset-auth requires --relay")
+	}
+
 	cfg, err := app.LoadConfigWithOptions(version, installSource, app.LoadOptions{
 		Host:        opts.host,
 		Port:        opts.port,
 		DevProxyURL: opts.devProxyURL,
 		Relay:       opts.relay,
+		ResetAuth:   opts.resetAuth,
 	})
 	if err != nil {
 		slog.Error("load config", "error", err)
 		return err
+	}
+
+	if cfg.Relay.ResetAuth {
+		store := newRelayAuthStore(cfg)
+		if err := store.Reset(); err != nil {
+			return fmt.Errorf("reset relay auth: %w", err)
+		}
+		if out != nil {
+			fmt.Fprintf(out, "relay auth reset\n\n")
+		}
 	}
 
 	runtime, err := app.NewRuntime(cfg)
@@ -122,6 +145,62 @@ var lookPath = exec.LookPath
 var startCommand = func(ctx context.Context, name string, args ...string) error {
 	return exec.CommandContext(ctx, name, args...).Start()
 }
+var newRelayAuthStore = func(cfg app.Config) serverhttp.RelayAuthStore {
+	return serverhttp.NewConfiguredRelayAuthStore(cfg.Relay.AuthStore, cfg.Relay.AuthPath)
+}
+var relayConnector = relayConnectorRunner(managedRelayConnectorRunner{})
+
+type relayConnectorRunner interface {
+	Start(context.Context, app.Config, serverhttp.RelayCredential) error
+	CommandPreview(app.Config, serverhttp.RelayCredential) string
+}
+
+type externalRelayConnectorRunner struct{}
+
+type managedRelayConnectorRunner struct {
+	embedded cloudflaredrunner.Runner
+	external externalRelayConnectorRunner
+}
+
+func (runner managedRelayConnectorRunner) Start(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
+	if useExternalRelayConnector(cfg) {
+		return runner.external.Start(ctx, cfg, credential)
+	}
+	return runner.embedded.Start(ctx, credential.ConnectorToken)
+}
+
+func (runner managedRelayConnectorRunner) CommandPreview(cfg app.Config, credential serverhttp.RelayCredential) string {
+	if useExternalRelayConnector(cfg) {
+		return runner.external.CommandPreview(cfg, credential)
+	}
+	return "embedded relay connector"
+}
+
+func useExternalRelayConnector(cfg app.Config) bool {
+	connectorBin := strings.TrimSpace(cfg.Relay.ConnectorBin)
+	if connectorBin == "" {
+		return false
+	}
+	return connectorBin != "cloudflared"
+}
+
+func (externalRelayConnectorRunner) Start(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
+	command, args := relayConnectorCommand(cfg, credential)
+	if _, err := lookPath(command); err != nil {
+		slog.Debug("relay connector binary not found", "command", command, "error", err)
+		return fmt.Errorf("relay connector not found")
+	}
+	if err := startCommand(ctx, command, args...); err != nil {
+		slog.Debug("relay connector start failed", "command", command, "error", err)
+		return fmt.Errorf("start relay connector")
+	}
+	return nil
+}
+
+func (externalRelayConnectorRunner) CommandPreview(cfg app.Config, credential serverhttp.RelayCredential) string {
+	command, args := relayConnectorCommand(cfg, credential)
+	return strings.TrimSpace(command + " " + strings.Join(args, " "))
+}
 
 func maybeStartRelay(ctx context.Context, cfg app.Config, out io.Writer) error {
 	if !cfg.Relay.Enabled {
@@ -132,23 +211,36 @@ func maybeStartRelay(ctx context.Context, cfg app.Config, out io.Writer) error {
 		fmt.Fprintf(out, "relay requested\n\n")
 	}
 
-	if !relayTokenExists(cfg.Relay.TokenPath) {
+	store := newRelayAuthStore(cfg)
+	if !store.Exists() {
 		loginURL := relayLoginURL(cfg)
 		if out != nil {
 			fmt.Fprintf(out, "  Login required: %s\n", loginURL)
 			fmt.Fprintf(out, "  Waiting for browser login to complete, then relay will continue automatically.\n\n")
 		}
-		go waitForRelayCredentialAndStart(ctx, cfg, out)
-		if err := openBrowser(loginURL); err != nil {
-			return fmt.Errorf("open relay login URL: %w", err)
-		}
+		go waitForRelayAuthAndStart(ctx, cfg, store, out)
+		go openRelayLoginAfterServerStarts(ctx, loginURL)
 		return nil
 	}
 
-	return startRelayWithStoredCredential(ctx, cfg, out)
+	return startRelayWithStoredAuth(ctx, cfg, store, out)
 }
 
-func waitForRelayCredentialAndStart(ctx context.Context, cfg app.Config, out io.Writer) {
+func openRelayLoginAfterServerStarts(ctx context.Context, loginURL string) {
+	timer := time.NewTimer(500 * time.Millisecond)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-timer.C:
+		if err := openBrowser(loginURL); err != nil {
+			slog.Warn("open relay login URL failed", "error", err)
+		}
+	}
+}
+
+func waitForRelayAuthAndStart(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, out io.Writer) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -157,10 +249,10 @@ func waitForRelayCredentialAndStart(ctx context.Context, cfg app.Config, out io.
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if !relayTokenExists(cfg.Relay.TokenPath) {
+			if !store.Exists() {
 				continue
 			}
-			if err := startRelayWithStoredCredential(ctx, cfg, out); err != nil {
+			if err := startRelayWithStoredAuth(ctx, cfg, store, out); err != nil {
 				slog.Warn("relay startup after login failed", "error", err)
 				if out != nil {
 					fmt.Fprintf(out, "  Relay startup after login failed: %v\n\n", err)
@@ -171,17 +263,17 @@ func waitForRelayCredentialAndStart(ctx context.Context, cfg app.Config, out io.
 	}
 }
 
-func startRelayWithStoredCredential(ctx context.Context, cfg app.Config, out io.Writer) error {
-	credential, err := serverhttp.ReadRelayCredentialFile(cfg.Relay.TokenPath)
+func startRelayWithStoredAuth(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, out io.Writer) error {
+	credential, err := store.Load()
 	if err != nil {
-		return fmt.Errorf("read relay credential: %w", err)
+		return fmt.Errorf("read relay auth: %w", err)
 	}
 
-	if _, err := lookPath(cfg.Relay.Cloudflared); err != nil {
-		if out != nil {
-			fmt.Fprintf(out, "  Cloudflare Tunnel is not ready: install cloudflared or set HOPTER_CLOUDFLARED_BIN.\n\n")
+	if strings.TrimSpace(credential.ConnectorToken) == "" {
+		credential, err = prepareRelayConnectorCredential(ctx, cfg, store, credential)
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("cloudflared not found: %w", err)
 	}
 
 	domain := strings.TrimSpace(cfg.Relay.Domain)
@@ -189,25 +281,41 @@ func startRelayWithStoredCredential(ctx context.Context, cfg app.Config, out io.
 		domain = strings.TrimPrefix(credential.WorkspaceURL, "https://")
 	}
 
-	command, args := cloudflaredCommand(cfg, credential)
-	if strings.TrimSpace(credential.CloudflareTunnelToken) == "" {
+	if strings.TrimSpace(credential.ConnectorToken) == "" {
 		if out != nil {
-			fmt.Fprintf(out, "  Cloudflare Tunnel token is not configured by the hosted platform yet.\n")
-			fmt.Fprintf(out, "  Command to run when configured: %s %s\n\n", command, strings.Join(args, " "))
+			fmt.Fprintf(out, "  Relay connector is not ready yet; sign-in completed, but the hosted relay has not issued a connector token.\n")
+			if preview := relayConnector.CommandPreview(cfg, credential); preview != "" {
+				fmt.Fprintf(out, "  Connector command will be prepared automatically once auth is ready.\n")
+			}
+			fmt.Fprintf(out, "\n")
 		}
 		return nil
 	}
-	if err := startCommand(ctx, command, args...); err != nil {
-		return fmt.Errorf("start cloudflared: %w", err)
-	}
 
-	if err := enrollRelayHost(ctx, cfg, credential); err != nil {
-		if out != nil {
-			fmt.Fprintf(out, "  Host enrollment failed: %v\n\n", err)
+	if err := relayConnector.Start(ctx, cfg, credential); err != nil {
+		if out != nil && strings.Contains(err.Error(), "not found") {
+			fmt.Fprintf(out, "  Relay connector is not installed yet. Set HOPTER_RELAY_CONNECTOR_BIN to a connector binary.\n\n")
 		}
 		return err
 	}
-	startRelayHeartbeat(ctx, cfg, credential)
+
+	if err := markRelayReady(ctx, cfg, store, credential); err != nil {
+		if out != nil {
+			fmt.Fprintf(out, "  Relay readiness check failed: %v\n\n", err)
+		}
+		return err
+	}
+
+	if strings.TrimSpace(credential.RelayToken) != "" {
+		if err := enrollRelayHost(ctx, cfg, credential); err != nil {
+			if out != nil {
+				fmt.Fprintf(out, "  Host enrollment failed: %v\n\n", err)
+			}
+			return err
+		}
+	}
+	startRelayHeartbeat(ctx, cfg, store, credential)
+	startRelayReleaseOnShutdown(ctx, cfg, store, credential)
 
 	if out != nil {
 		fmt.Fprintf(out, "  Relay ready: https://%s\n\n", domain)
@@ -215,20 +323,121 @@ func startRelayWithStoredCredential(ctx context.Context, cfg app.Config, out io.
 	return nil
 }
 
-func relayTokenExists(path string) bool {
-	if strings.TrimSpace(path) == "" {
-		return false
+func prepareRelayConnectorCredential(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
+	if strings.TrimSpace(credential.OAuthAccessToken) == "" && strings.TrimSpace(credential.OAuthRefreshToken) == "" {
+		return credential, nil
 	}
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir() && info.Size() > 0
+	if serverhttp.RelayOAuthTokenNeedsRefresh(credential, time.Now()) {
+		refreshed, err := serverhttp.RefreshRelayOAuthToken(ctx, relayHTTPOptions(cfg), credential)
+		if err != nil {
+			return credential, fmt.Errorf("refresh relay auth: %w", err)
+		}
+		credential = refreshed
+		if err := store.Store(credential); err != nil {
+			return credential, fmt.Errorf("store refreshed relay auth: %w", err)
+		}
+	}
+	allocated, err := allocateRelayTunnel(ctx, cfg, credential)
+	if err != nil {
+		return credential, err
+	}
+	if err := store.Store(allocated); err != nil {
+		return allocated, fmt.Errorf("store relay allocation: %w", err)
+	}
+	return allocated, nil
 }
 
-func cloudflaredCommand(cfg app.Config, credential serverhttp.RelayCredential) (string, []string) {
-	token := credential.CloudflareTunnelToken
-	if token == "" {
-		token = "<cloudflare-tunnel-token>"
+type relayAllocateResponse struct {
+	AuthUserID            string `json:"authUserId,omitempty"`
+	LeaseID               string `json:"leaseId,omitempty"`
+	LeaseVersion          int    `json:"leaseVersion,omitempty"`
+	WorkspaceSlug         string `json:"workspaceSlug,omitempty"`
+	WorkspaceURL          string `json:"workspaceURL,omitempty"`
+	BrokerBaseURL         string `json:"brokerBaseURL,omitempty"`
+	PrivateHostname       string `json:"privateHostname,omitempty"`
+	TunnelTarget          string `json:"tunnelTarget,omitempty"`
+	RelayToken            string `json:"relayToken,omitempty"`
+	BrokerSecret          string `json:"brokerSecret,omitempty"`
+	ConnectorProvider     string `json:"connectorProvider,omitempty"`
+	ConnectorToken        string `json:"connectorToken,omitempty"`
+	CloudflareTunnelToken string `json:"cloudflareTunnelToken,omitempty"`
+	TunnelToken           string `json:"tunnelToken,omitempty"`
+}
+
+func allocateRelayTunnel(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
+	allocateURL := strings.TrimSpace(cfg.Relay.AllocateURL)
+	if allocateURL == "" {
+		allocateURL = "https://api.hopter.dev/api/relay/allocate"
 	}
-	return cfg.Relay.Cloudflared, []string{"tunnel", "--no-autoupdate", "run", "--token", token}
+	payload := map[string]string{}
+	if strings.TrimSpace(credential.WorkspaceSlug) != "" {
+		payload["workspaceSlug"] = credential.WorkspaceSlug
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return credential, err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, allocateURL, bytes.NewReader(body))
+	if err != nil {
+		return credential, err
+	}
+	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return credential, err
+	}
+	defer response.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return credential, err
+	}
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return credential, fmt.Errorf("relay allocation returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
+	}
+
+	var decoded relayAllocateResponse
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return credential, err
+	}
+	connectorToken := firstNonEmpty(decoded.ConnectorToken, decoded.TunnelToken, decoded.CloudflareTunnelToken)
+	if strings.TrimSpace(connectorToken) == "" {
+		return credential, fmt.Errorf("relay allocation response missing connector token")
+	}
+
+	allocated := credential
+	allocated.AuthUserID = firstNonEmpty(decoded.AuthUserID, allocated.AuthUserID)
+	allocated.HostID = firstNonEmpty(allocated.HostID, cfg.HostID)
+	allocated.WorkspaceSlug = firstNonEmpty(decoded.WorkspaceSlug, allocated.WorkspaceSlug)
+	allocated.WorkspaceURL = firstNonEmpty(decoded.WorkspaceURL, allocated.WorkspaceURL)
+	allocated.BrokerBaseURL = firstNonEmpty(decoded.BrokerBaseURL, allocated.BrokerBaseURL)
+	allocated.TunnelTarget = firstNonEmpty(decoded.TunnelTarget, allocated.TunnelTarget)
+	allocated.PrivateHostname = firstNonEmpty(decoded.PrivateHostname, allocated.PrivateHostname)
+	allocated.RelayLeaseID = firstNonEmpty(decoded.LeaseID, allocated.RelayLeaseID)
+	if decoded.LeaseVersion > 0 {
+		allocated.RelayLeaseVersion = decoded.LeaseVersion
+	}
+	allocated.RelayToken = firstNonEmpty(decoded.RelayToken, allocated.RelayToken)
+	allocated.BrokerSecret = firstNonEmpty(decoded.BrokerSecret, allocated.BrokerSecret, cfg.Relay.BrokerSecret)
+	allocated.ConnectorProvider = firstNonEmpty(decoded.ConnectorProvider, "managed")
+	allocated.ConnectorToken = connectorToken
+	allocated.UpdatedAt = time.Now().UTC()
+	return allocated, nil
+}
+
+func relayTokenExists(path string) bool {
+	return serverhttp.NewFileRelayAuthStore(path).Exists()
+}
+
+func relayConnectorCommand(cfg app.Config, credential serverhttp.RelayCredential) (string, []string) {
+	command := firstNonEmpty(strings.TrimSpace(cfg.Relay.ConnectorBin), strings.TrimSpace(cfg.Relay.Cloudflared), "cloudflared")
+	token := credential.ConnectorToken
+	if token == "" {
+		token = "<relay-connector-token>"
+	}
+	return command, []string{"tunnel", "--no-autoupdate", "run", "--token", token}
 }
 
 func enrollRelayHost(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
@@ -266,7 +475,52 @@ func enrollRelayHost(ctx context.Context, cfg app.Config, credential serverhttp.
 	return nil
 }
 
-func startRelayHeartbeat(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) {
+func markRelayReady(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
+	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
+		return nil
+	}
+	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
+	if err != nil {
+		return err
+	}
+	credential = updated
+
+	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "ready")
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(map[string]int{
+		"leaseVersion": credential.RelayLeaseVersion,
+	})
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return err
+	}
+	if response.StatusCode == http.StatusAccepted {
+		return nil
+	}
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return fmt.Errorf("relay ready returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
+	}
+	return nil
+}
+
+func startRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) {
 	interval := cfg.Relay.HeartbeatEvery
 	if interval <= 0 {
 		interval = 30 * time.Second
@@ -281,7 +535,7 @@ func startRelayHeartbeat(ctx context.Context, cfg app.Config, credential serverh
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if err := sendRelayHeartbeat(ctx, cfg, credential); err != nil {
+				if err := sendRelayHeartbeat(ctx, cfg, store, credential); err != nil {
 					slog.Warn("relay heartbeat failed", "error", err)
 				}
 			}
@@ -289,7 +543,11 @@ func startRelayHeartbeat(ctx context.Context, cfg app.Config, credential serverh
 	}()
 }
 
-func sendRelayHeartbeat(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
+func sendRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
+	if strings.TrimSpace(credential.RelayLeaseID) != "" && credential.RelayLeaseVersion > 0 {
+		return sendRelayAPIHeartbeat(ctx, cfg, store, credential)
+	}
+
 	endpoint, err := relayBrokerURL(credential, "/api/relay/hosts/"+url.PathEscape(cfg.HostID)+"/heartbeat")
 	if err != nil {
 		return err
@@ -310,6 +568,120 @@ func sendRelayHeartbeat(ctx context.Context, cfg app.Config, credential serverht
 	return nil
 }
 
+func sendRelayAPIHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
+	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
+	if err != nil {
+		return err
+	}
+	credential = updated
+
+	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "heartbeat")
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(map[string]int{
+		"leaseVersion": credential.RelayLeaseVersion,
+	})
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return fmt.Errorf("relay heartbeat returned %d", response.StatusCode)
+	}
+	return nil
+}
+
+func startRelayReleaseOnShutdown(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) {
+	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
+		return
+	}
+
+	go func() {
+		<-ctx.Done()
+		releaseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := sendRelayAPIRelease(releaseCtx, cfg, store, credential); err != nil {
+			slog.Warn("relay release failed", "error", err)
+		}
+	}()
+}
+
+func sendRelayAPIRelease(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
+	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
+	if err != nil {
+		return err
+	}
+	credential = updated
+
+	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "release")
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(map[string]int{
+		"leaseVersion": credential.RelayLeaseVersion,
+	})
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
+	request.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		return fmt.Errorf("relay release returned %d", response.StatusCode)
+	}
+	return nil
+}
+
+func ensureRelayOAuthAccessToken(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
+	if !serverhttp.RelayOAuthTokenNeedsRefresh(credential, time.Now()) {
+		return credential, nil
+	}
+	refreshed, err := serverhttp.RefreshRelayOAuthToken(ctx, relayHTTPOptions(cfg), credential)
+	if err != nil {
+		return credential, fmt.Errorf("refresh relay auth: %w", err)
+	}
+	if err := store.Store(refreshed); err != nil {
+		return refreshed, fmt.Errorf("store refreshed relay auth: %w", err)
+	}
+	return refreshed, nil
+}
+
+func relayAPILeaseURL(cfg app.Config, leaseID string, action string) (string, error) {
+	baseURL := strings.TrimSpace(cfg.Relay.AllocateURL)
+	if baseURL == "" {
+		baseURL = "https://api.hopter.dev/api/relay/allocate"
+	}
+	target, err := url.Parse(baseURL)
+	if err != nil {
+		return "", err
+	}
+	if target.Scheme == "" || target.Host == "" {
+		return "", fmt.Errorf("relay API URL must include scheme and host")
+	}
+	target.Path = "/api/relay/leases/" + url.PathEscape(leaseID) + "/" + strings.TrimLeft(action, "/")
+	target.RawQuery = ""
+	return target.String(), nil
+}
+
 func relayBrokerURL(credential serverhttp.RelayCredential, path string) (string, error) {
 	base := strings.TrimSpace(credential.BrokerBaseURL)
 	if base == "" {
@@ -328,6 +700,12 @@ func relayBrokerURL(credential serverhttp.RelayCredential, path string) (string,
 }
 
 func relayLoginURL(cfg app.Config) string {
+	callbackURL := localBrowserURL(cfg.HTTP) + "/api/relay/callback"
+	loginURL, err := serverhttp.BeginRelayOAuthLogin(callbackURL, relayHTTPOptions(cfg))
+	if err == nil {
+		return loginURL
+	}
+
 	target, err := urlWithFallback(cfg.Relay.AuthURL)
 	if err != nil {
 		target, _ = urlWithFallback("https://auth.hopter.dev/login")
@@ -336,11 +714,26 @@ func relayLoginURL(cfg app.Config) string {
 	query := target.Query()
 	query.Set("mode", "cli-relay")
 	query.Set("hostId", cfg.HostID)
-	query.Set("callbackURL", localBrowserURL(cfg.HTTP)+"/api/relay/callback")
+	query.Set("callbackURL", callbackURL)
 	query.Set("exchangeURL", cfg.Relay.ExchangeURL)
 	target.RawQuery = query.Encode()
 
 	return target.String()
+}
+
+func relayHTTPOptions(cfg app.Config) serverhttp.RelayOptions {
+	return serverhttp.RelayOptions{
+		AuthPath:          cfg.Relay.AuthPath,
+		AuthStoreName:     cfg.Relay.AuthStore,
+		TokenPath:         cfg.Relay.TokenPath,
+		ExchangeURL:       cfg.Relay.ExchangeURL,
+		OAuthAuthorizeURL: firstNonEmpty(cfg.Relay.OAuthAuthorizeURL, cfg.Relay.AuthURL),
+		OAuthTokenURL:     cfg.Relay.OAuthTokenURL,
+		OAuthClientID:     cfg.Relay.OAuthClientID,
+		OAuthAudience:     cfg.Relay.OAuthAudience,
+		HostID:            cfg.HostID,
+		BrokerSecret:      cfg.Relay.BrokerSecret,
+	}
 }
 
 func urlWithFallback(raw string) (*url.URL, error) {
@@ -352,6 +745,15 @@ func urlWithFallback(raw string) (*url.URL, error) {
 		return nil, fmt.Errorf("URL must include scheme and host")
 	}
 	return target, nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func openBrowserURL(rawURL string) error {
