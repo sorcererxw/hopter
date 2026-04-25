@@ -35,7 +35,7 @@ export function SessionConnectionBlock({
       >
         {display.body}
       </p>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+      <p className="mt-2 text-sm leading-6 text-muted">
         {display.detail}
       </p>
     </section>
@@ -50,8 +50,8 @@ function getConnectionDisplay(
     case "connecting":
       return {
         body: t("session.connectingBody"),
-        bodyClassName: "text-muted-foreground",
-        containerClassName: "border-border bg-card",
+        bodyClassName: "text-muted",
+        containerClassName: "border-border bg-surface",
         detail: t("session.connectingDetail"),
         title: t("session.connecting"),
         titleClassName: "text-foreground",
@@ -68,11 +68,11 @@ function getConnectionDisplay(
     case "offline":
       return {
         body: t("session.offlineBody"),
-        bodyClassName: "text-destructive",
-        containerClassName: "border-destructive/20 bg-destructive/10",
+        bodyClassName: "text-danger",
+        containerClassName: "border-danger/20 bg-danger/10",
         detail: t("session.offlineDetail"),
         title: t("session.offline"),
-        titleClassName: "text-destructive",
+        titleClassName: "text-danger",
       }
     case "connected":
     default:
@@ -126,7 +126,7 @@ export function SessionAttentionBlock({
         {attention.body}
       </p>
       {attention.detail ? (
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        <p className="mt-2 text-sm leading-6 text-muted">
           {attention.detail}
         </p>
       ) : null}
@@ -142,7 +142,7 @@ export function SessionAttentionBlock({
           </button>
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-transparent px-3 font-medium text-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-transparent px-3 font-medium text-foreground transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={responding}
             onClick={onReject}
           >
@@ -178,11 +178,11 @@ function getSessionAttentionDisplay(
   if (session.status === SessionStatus.FAILED) {
     return {
       body: reason || summary || t("session.turnFailedBody"),
-      bodyClassName: "text-destructive",
-      containerClassName: "border-destructive/20 bg-destructive/10",
+      bodyClassName: "text-danger",
+      containerClassName: "border-danger/20 bg-danger/10",
       detail: t("session.turnFailedDetail"),
       title: t("session.turnFailed"),
-      titleClassName: "text-destructive",
+      titleClassName: "text-danger",
     }
   }
 

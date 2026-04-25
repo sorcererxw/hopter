@@ -2,7 +2,10 @@ import type { RefObject } from "react"
 import { useTranslation } from "react-i18next"
 import { ArrowDown } from "lucide-react"
 
-import { ScrollbarIndicator } from "@/components/app/shared"
+import {
+  hiddenScrollbarClassName,
+  ScrollbarIndicator,
+} from "@/components/app/shared"
 import {
   SessionAttentionBlock,
   SessionConnectionBlock,
@@ -69,7 +72,10 @@ export function SessionTranscriptSurface({
       <div
         ref={transcriptScrollRef}
         onScroll={onTranscriptScroll}
-        className="scrollbar-native-hidden relative h-full overflow-y-auto px-6 py-0"
+        className={cn(
+          hiddenScrollbarClassName,
+          "relative h-full overflow-y-auto px-6 py-0"
+        )}
       >
         <div
           ref={transcriptContentRef}
@@ -120,7 +126,7 @@ export function SessionTranscriptSurface({
         aria-hidden={!transcriptVisible || !transcriptAwayFromBottom}
         tabIndex={transcriptVisible && transcriptAwayFromBottom ? 0 : -1}
         className={cn(
-          "absolute bottom-4 left-1/2 z-10 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition-[opacity,background-color] duration-200 ease-out hover:bg-card",
+          "absolute bottom-4 left-1/2 z-10 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-lg transition-[opacity,background-color] duration-200 ease-out hover:bg-surface",
           transcriptVisible && transcriptAwayFromBottom
             ? "opacity-100"
             : "pointer-events-none opacity-0"

@@ -23,7 +23,7 @@ Included:
 - TanStack Query integration
 - Connect-Web client integration
 - SSE integration
-- Tailwind + shadcn/ui setup
+- Tailwind + HeroUI-backed primitive setup
 
 Excluded:
 
@@ -140,11 +140,12 @@ Do not build a second browser-side event architecture.
 
 ## UI system rules
 
-### Tailwind and shadcn
+### Tailwind and HeroUI
 
 - Tailwind remains the styling baseline
-- shadcn/ui remains the primitive baseline
-- all rebuilt or added primitives must come from the official CLI
+- HeroUI v3 is the primitive implementation baseline
+- `ui/src/components/app/shared/heroui-adapter.tsx` is a temporary compatibility layer for callsites that still use older prop names
+- new app-layer work should prefer direct HeroUI compound APIs when practical
 
 ### Design intent
 
@@ -162,7 +163,7 @@ Deliverables:
 - `/ui/package.json`
 - `/ui/vite.config.*`
 - `/ui/src/main.tsx`
-- Tailwind + shadcn baseline
+- Tailwind + HeroUI-backed primitive baseline
 
 Acceptance criteria:
 
@@ -235,12 +236,13 @@ Mitigation:
 - keep SSE handling as cache refresh signals first
 - only add fine-grained client patching when clearly valuable
 
-### Risk: UI primitives diverge from shadcn baseline
+### Risk: UI primitives diverge into parallel systems
 
 Mitigation:
 
-- enforce CLI-generated primitive policy
-- put hopter-specific semantics above, not inside, the primitive layer
+- keep compatibility imports pointed at `heroui-adapter.tsx` until callsites are simplified
+- prefer direct HeroUI compound APIs for new or touched UI surfaces
+- put hopter-specific semantics above, not inside, primitive wrappers
 
 ## Verification
 

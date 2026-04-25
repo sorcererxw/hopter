@@ -185,13 +185,13 @@ The dev launcher keeps the Go server aligned with the UI bind host, so both Vite
 The frontend keeps:
 
 - Tailwind CSS
-- shadcn/ui primitives
+- HeroUI v3 components
 
 Rules:
 
-1. New primitives must come from the official shadcn CLI.
+1. Do not restore the shadcn registry workflow or generated primitive tree.
 2. Do not hand-roll a second primitive layer.
-3. Keep app-specific meaning in `ui/src/components/app` or feature components, not inside primitive files.
+3. Keep app-specific meaning in `ui/src/components/app` or feature components, not inside primitive wrappers.
 
 ## Repository shape
 

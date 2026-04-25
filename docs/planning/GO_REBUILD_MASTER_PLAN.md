@@ -47,8 +47,8 @@ Rebuild `hopter` as:
 - pnpm
 - TanStack Query for server state
 - React state/context/reducer for UI state
-- Tailwind CSS + shadcn/ui
-- any rebuilt or new primitive must come from the official shadcn CLI
+- Tailwind CSS + HeroUI v3
+- do not restore the old shadcn registry or generated primitive tree
 
 ### Repository shape
 

@@ -10,8 +10,8 @@ import {
   Terminal,
 } from "lucide-react"
 import { toast } from "sonner"
+import { Button } from "@heroui/react"
 
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 import type { WorkspaceToolbarMode } from "./posture"
@@ -94,29 +94,28 @@ export function WorkspaceTopbar({
   }, [overflowOpen, commitOpen])
 
   const handleCopy = useCallback(
-    (text: string, item: "resume-command" | "session-id") => {
+    async (text: string, item: "resume-command" | "session-id") => {
       if (!text) {
         return
       }
 
-      navigator.clipboard.writeText(text).then(
-        () => {
-          setCopiedItem(item)
-          toast.success(
-            item === "resume-command"
-              ? t("topbar.codexCommandCopied")
-              : t("topbar.sessionIdCopied")
-          )
-          if (copiedTimerRef.current) {
-            clearTimeout(copiedTimerRef.current)
-          }
-          copiedTimerRef.current = setTimeout(() => setCopiedItem(null), 1500)
-        },
-        () => {
-          // Clipboard write failed; silently ignore
-        }
-      )
       setOverflowOpen(false)
+      const copied = await writeClipboardText(text)
+      if (!copied) {
+        toast.error(t("topbar.copyFailed"))
+        return
+      }
+
+      setCopiedItem(item)
+      toast.success(
+        item === "resume-command"
+          ? t("topbar.codexCommandCopied")
+          : t("topbar.sessionIdCopied")
+      )
+      if (copiedTimerRef.current) {
+        clearTimeout(copiedTimerRef.current)
+      }
+      copiedTimerRef.current = setTimeout(() => setCopiedItem(null), 1500)
     },
     [t]
   )
@@ -154,7 +153,7 @@ export function WorkspaceTopbar({
             <div className="min-w-0">
               <p className="truncate text-base text-foreground">{title}</p>
               {projectName ? (
-                <p className="truncate text-muted-foreground">{projectName}</p>
+                <p className="truncate text-muted">{projectName}</p>
               ) : null}
             </div>
           </div>
@@ -164,7 +163,7 @@ export function WorkspaceTopbar({
                 <button
                   type="button"
                   onClick={() => setOverflowOpen((prev) => !prev)}
-                  className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-accent"
+                  className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-surface-tertiary"
                 >
                   <MoreHorizontal className="size-4.5" />
                 </button>
@@ -175,7 +174,7 @@ export function WorkspaceTopbar({
                       className="fixed inset-0 z-40"
                       onClick={() => setOverflowOpen(false)}
                     />
-                    <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-overlay py-1 shadow-lg">
                       {showCommit || showReview ? (
                         <>
                           {showCommit ? (
@@ -265,16 +264,14 @@ export function WorkspaceTopbar({
             {leadingButton}
             <h1 className="truncate text-base text-foreground">{title}</h1>
             {projectName ? (
-              <span className="truncate text-muted-foreground">
-                {projectName}
-              </span>
+              <span className="truncate text-muted">{projectName}</span>
             ) : null}
             {showOverflowMenu ? (
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setOverflowOpen((prev) => !prev)}
-                  className="flex size-6 items-center justify-center rounded text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                  className="flex size-6 items-center justify-center rounded text-muted transition hover:bg-surface-tertiary hover:text-foreground"
                 >
                   <MoreHorizontal className="size-4" />
                 </button>
@@ -285,7 +282,7 @@ export function WorkspaceTopbar({
                       className="fixed inset-0 z-40"
                       onClick={() => setOverflowOpen(false)}
                     />
-                    <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-overlay py-1 shadow-lg">
                       {resumeCommand ? (
                         <OverflowMenuItem
                           icon={<Terminal className="size-3.5" />}
@@ -321,11 +318,11 @@ export function WorkspaceTopbar({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setCommitOpen((prev) => !prev)}
+                  onPress={() => setCommitOpen((prev) => !prev)}
                   className="gap-1.5 text-foreground"
                 >
                   <span>{t("topbar.commit")}</span>
-                  <ChevronDown className="size-3 text-muted-foreground" />
+                  <ChevronDown className="size-3 text-muted" />
                 </Button>
                 {commitOpen ? (
                   <>
@@ -334,7 +331,7 @@ export function WorkspaceTopbar({
                       className="fixed inset-0 z-40"
                       onClick={() => setCommitOpen(false)}
                     />
-                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-popover py-1 shadow-lg">
+                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-overlay py-1 shadow-lg">
                       <CommitMenuItem
                         onClick={() => {
                           setCommitOpen(false)
@@ -361,10 +358,8 @@ export function WorkspaceTopbar({
               <Button
                 type="button"
                 variant={showCommit ? "ghost" : "secondary"}
-                onClick={onOpenReview}
-                className={cn(
-                  showCommit ? "text-muted-foreground" : "text-foreground"
-                )}
+                onPress={onOpenReview}
+                className={cn(showCommit ? "text-muted" : "text-foreground")}
               >
                 {t("topbar.review")}
               </Button>
@@ -385,13 +380,10 @@ export function WorkspaceTopbar({
               <Button
                 type="button"
                 variant={inspectorOpen ? "secondary" : "ghost"}
-                size="icon"
-                onClick={onToggleInspector}
+                isIconOnly
+                onPress={onToggleInspector}
                 aria-label={sidebarLabel}
-                title={sidebarLabel}
-                className={cn(
-                  inspectorOpen ? "text-foreground" : "text-muted-foreground"
-                )}
+                className={cn(inspectorOpen ? "text-foreground" : "text-muted")}
               >
                 <PanelRight className="size-3.5" />
               </Button>
@@ -401,6 +393,46 @@ export function WorkspaceTopbar({
       )}
     </div>
   )
+}
+
+async function writeClipboardText(text: string) {
+  if (!navigator.clipboard?.writeText) {
+    return copyTextWithSelectionFallback(text)
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return copyTextWithSelectionFallback(text)
+  }
+}
+
+function copyTextWithSelectionFallback(text: string) {
+  const textArea = document.createElement("textarea")
+  const activeElement = document.activeElement
+
+  textArea.value = text
+  textArea.setAttribute("readonly", "")
+  textArea.style.position = "fixed"
+  textArea.style.top = "0"
+  textArea.style.left = "0"
+  textArea.style.opacity = "0"
+
+  document.body.appendChild(textArea)
+  textArea.select()
+  textArea.setSelectionRange(0, text.length)
+
+  try {
+    return document.execCommand("copy")
+  } catch {
+    return false
+  } finally {
+    document.body.removeChild(textArea)
+    if (activeElement instanceof HTMLElement) {
+      activeElement.focus()
+    }
+  }
 }
 
 function TopbarLeadingButton({
@@ -418,11 +450,11 @@ function TopbarLeadingButton({
     <Button
       type="button"
       aria-label={label}
-      title={label}
       data-testid={testId}
-      onClick={onClick}
+      onPress={onClick}
       variant="ghost"
-      size="icon-sm"
+      size="sm"
+      isIconOnly
       className="text-foreground"
     >
       {icon}
@@ -442,7 +474,7 @@ function OverflowMenuItem({
   return (
     <Button
       type="button"
-      onClick={onClick}
+      onPress={onClick}
       variant="ghost"
       className="flex h-auto w-full items-center justify-start gap-2.5 rounded-none px-3 py-2.5 text-foreground"
     >
@@ -462,7 +494,7 @@ function CommitMenuItem({
   return (
     <Button
       type="button"
-      onClick={onClick}
+      onPress={onClick}
       variant="ghost"
       className="flex h-auto w-full items-center justify-start rounded-none px-3 py-2 text-foreground"
     >
@@ -488,12 +520,11 @@ function TopbarIconButton({
     <Button
       type="button"
       aria-label={label}
-      title={label}
       data-testid={testId}
-      onClick={onClick}
+      onPress={onClick}
       variant={active ? "secondary" : "ghost"}
-      size="icon"
-      className={cn(active ? "text-foreground" : "text-muted-foreground")}
+      isIconOnly
+      className={cn(active ? "text-foreground" : "text-muted")}
     >
       {children}
     </Button>

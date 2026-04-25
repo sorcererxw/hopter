@@ -46,8 +46,8 @@ const checks: Check[] = [
   {
     file: "docs/operations/UI_SYSTEM_RULES.md",
     includes: [
-      "ui/src/components/ui",
-      "official shadcn CLI",
+      "HeroUI v3",
+      "heroui-adapter.tsx",
       "workspace shell",
     ],
   },

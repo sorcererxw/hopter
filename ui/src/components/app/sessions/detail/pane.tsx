@@ -93,7 +93,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         <CenteredTranscriptLoader />
       ) : sessionMetaQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
-          <div className="rounded-lg border border-border bg-muted px-6 py-4 text-foreground">
+          <div className="rounded-lg border border-border bg-surface-tertiary px-6 py-4 text-foreground">
             {t("session.unavailable")}
           </div>
         </div>

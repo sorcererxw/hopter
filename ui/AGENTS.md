@@ -108,7 +108,7 @@ The evidence should include screenshots and at least one interaction proof for:
 
 ## Typography rules
 
-These rules apply to `ui/**` outside `ui/src/components/ui/*` primitives unless a file has a clear, local semantic reason to differ.
+These rules apply to `ui/**` unless a file has a clear, local semantic reason to differ.
 
 ### Font families
 

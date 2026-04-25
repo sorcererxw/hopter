@@ -1,11 +1,9 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { CheckCircle2, Circle, ListChecks, LoaderCircle } from "lucide-react"
+import { Button, TextArea } from "@heroui/react"
 
 import { WorkspacePageToolbar } from "@/components/app/workspace"
-import { Button } from "@/components/ui/button"
-import { NativeSelect } from "@/components/ui/native-select"
-import { Textarea } from "@/components/ui/textarea"
 import { useProjects } from "@/features/projects/use-projects"
 import { useCreateTask, useTasks } from "@/features/tasks/use-tasks"
 import { TaskLifecycleStatus } from "@/gen/proto/hopter/v1/tasks_pb"
@@ -88,20 +86,21 @@ export function TasksRoute() {
       <div className="min-h-0 flex-1 overflow-hidden">
         <section className="min-h-0 max-w-3xl overflow-y-auto p-4">
           <form className="group mb-5" onSubmit={handleSubmit}>
-            <div className="rounded-lg border border-input bg-input/30 transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
-              <Textarea
+            <div className="rounded-lg border border-field-border bg-field/30 transition-colors focus-within:border-focus focus-within:ring-[3px] focus-within:ring-focus/50">
+              <TextArea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder={t("tasks.placeholder")}
                 className="min-h-28 border-0 bg-transparent focus-visible:ring-0"
+                fullWidth
+                variant="secondary"
               />
               <div className="hidden items-center justify-between gap-2 border-t border-border px-3 py-2 group-focus-within:flex">
                 {/* Keep project selection close to submit so the form stays
                 focused on "create from prompt" rather than project management. */}
-                <NativeSelect
+                <select
                   aria-label={t("tasks.project")}
-                  className="min-w-40"
-                  size="sm"
+                  className="h-8 min-w-40 rounded-full border border-field-border bg-field/30 px-3 text-sm text-foreground outline-none focus-visible:border-focus focus-visible:ring-3 focus-visible:ring-focus/50 disabled:cursor-not-allowed disabled:opacity-50"
                   value={selectedProjectId}
                   onChange={(event) => setProjectId(event.target.value)}
                 >
@@ -110,11 +109,11 @@ export function TasksRoute() {
                       {project.name}
                     </option>
                   ))}
-                </NativeSelect>
+                </select>
                 <Button
                   type="submit"
                   size="sm"
-                  disabled={
+                  isDisabled={
                     createTask.isPending || !selectedProjectId || !prompt.trim()
                   }
                 >
@@ -131,12 +130,12 @@ export function TasksRoute() {
 
           <div className="space-y-1">
             {tasksQuery.isLoading ? (
-              <p className="px-2 py-3 text-sm text-muted-foreground">
+              <p className="px-2 py-3 text-sm text-muted">
                 {t("tasks.loading")}
               </p>
             ) : null}
             {tasksQuery.isError ? (
-              <p className="px-2 py-3 text-sm text-muted-foreground">
+              <p className="px-2 py-3 text-sm text-muted">
                 {t("tasks.backendPending")}
               </p>
             ) : null}
@@ -144,13 +143,13 @@ export function TasksRoute() {
             !tasksQuery.isError &&
             (tasksQuery.data?.length ?? 0) === 0 ? (
               <div className="flex min-h-64 flex-col items-center justify-center rounded-lg px-6 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-surface-secondary text-muted">
                   <ListChecks className="size-5" />
                 </div>
                 <p className="text-sm font-medium text-foreground">
                   {t("tasks.emptyTitle")}
                 </p>
-                <p className="mt-1 max-w-60 text-sm text-muted-foreground">
+                <p className="mt-1 max-w-60 text-sm text-muted">
                   {t("tasks.emptyBody")}
                 </p>
               </div>
@@ -160,13 +159,13 @@ export function TasksRoute() {
               return (
                 <article
                   key={task.id}
-                  className="rounded-lg border border-border bg-card p-3"
+                  className="rounded-lg border border-border bg-surface p-3"
                 >
                   <div className="flex items-start gap-3">
                     {done ? (
                       <CheckCircle2 className="mt-0.5 size-4 text-emerald-400" />
                     ) : (
-                      <Circle className="mt-0.5 size-4 text-muted-foreground" />
+                      <Circle className="mt-0.5 size-4 text-muted" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -175,7 +174,7 @@ export function TasksRoute() {
                         </h2>
                         <span
                           className={cn(
-                            "rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground",
+                            "rounded-md border border-border px-1.5 py-0.5 text-xs text-muted",
                             task.lifecycleStatus ===
                               TaskLifecycleStatus.BLOCKED && "text-amber-400"
                           )}
@@ -183,12 +182,12 @@ export function TasksRoute() {
                           {formatTaskStatus(task.lifecycleStatus, t)}
                         </span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                      <p className="mt-1 truncate text-xs text-muted">
                         {task.project?.name || t("tasks.project")} ·{" "}
                         {formatUpdatedAt(task.updatedAt, resolvedLocale)}
                       </p>
                       {task.diagnostics.length > 0 ? (
-                        <p className="mt-2 text-xs text-muted-foreground">
+                        <p className="mt-2 text-xs text-muted">
                           {task.diagnostics[0]?.message}
                         </p>
                       ) : null}

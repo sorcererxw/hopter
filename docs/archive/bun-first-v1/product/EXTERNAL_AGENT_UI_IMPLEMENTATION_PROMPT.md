@@ -105,7 +105,7 @@ Implement these approved decisions:
 - Keep `Geist Variable + JetBrains Mono`.
 - Raise the global readable body baseline toward `text-base`.
 - Primary reading surfaces should default to at least `font-medium`.
-- Sharply reduce misuse of `text-muted-foreground`.
+- Sharply reduce misuse of `text-muted`.
 - Use muted only for truly secondary metadata.
 - Improve `SessionRichText` so it becomes reading-first, not just a minimal markdown renderer.
 - Do not rely only on markdown `**strong**` for hierarchy.

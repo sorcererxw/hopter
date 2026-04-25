@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
+import { Check, ChevronDown } from "lucide-react"
+import { Label, ListBox, Select, Tooltip } from "@heroui/react"
 
 import { SessionComposer } from "@/components/app/sessions/composer"
 import {
@@ -9,19 +11,6 @@ import {
 } from "@/components/app/sessions/composer"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useProjects } from "@/features/projects/use-projects"
 import {
   agentSelectionPreferenceFromConfig,
@@ -121,58 +110,71 @@ export function HomeWorkspacePane() {
             disabled={!selectedProjectId}
             footerStart={
               <div className="min-w-0">
-                <Tooltip open={projectSelectOpen ? false : undefined}>
-                  <TooltipTrigger asChild>
-                    <div className="min-w-0">
-                      <Select
-                        value={selectedProjectId}
-                        disabled={projectsLoading && projectOptions.length === 0}
-                        onOpenChange={setProjectSelectOpen}
-                        onValueChange={(nextProjectId) => {
-                          setSearchParams((current) => {
-                            const next = new URLSearchParams(current)
-                            if (nextProjectId) {
-                              next.set("projectId", nextProjectId)
-                            } else {
-                              next.delete("projectId")
-                            }
-                            return next
-                          })
-                        }}
+                <Tooltip isOpen={projectSelectOpen ? false : undefined}>
+                  <Tooltip.Trigger className="min-w-0">
+                    <Select
+                      isDisabled={
+                        projectsLoading && projectOptions.length === 0
+                      }
+                      onOpenChange={setProjectSelectOpen}
+                      onSelectionChange={(key) => {
+                        if (key == null) {
+                          return
+                        }
+                        const nextProjectId = String(key)
+                        setSearchParams((current) => {
+                          const next = new URLSearchParams(current)
+                          if (nextProjectId) {
+                            next.set("projectId", nextProjectId)
+                          } else {
+                            next.delete("projectId")
+                          }
+                          return next
+                        })
+                      }}
+                      selectedKey={selectedProjectId || null}
+                      variant="secondary"
+                    >
+                      <Select.Trigger
+                        aria-label={t("home.selectProject")}
+                        className="h-8 w-auto max-w-44 min-w-0 justify-start gap-1 rounded-full border-0 bg-transparent px-2.5 text-muted shadow-none hover:bg-surface-tertiary hover:text-foreground focus-visible:border-transparent focus-visible:ring-0"
                       >
-                        <SelectTrigger
-                          aria-label={t("home.selectProject")}
-                          className="h-8 w-auto max-w-44 min-w-0 justify-start gap-1 rounded-full border-0 bg-transparent px-2.5 text-muted-foreground shadow-none hover:bg-accent hover:text-foreground focus-visible:border-transparent focus-visible:ring-0"
-                          size="sm"
-                        >
-                          <SelectValue asChild>
-                            <span className="min-w-0 truncate">
-                              {selectedProject?.name ||
-                                (projectsLoading
-                                  ? t("app.settings.loading")
-                                  : t("home.selectProject"))}
-                            </span>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent
-                          align="start"
-                          position="popper"
-                          className="min-w-40"
-                        >
-                          <SelectGroup>
-                            {projectOptions.map((project) => (
-                              <SelectItem key={project.id} value={project.id}>
-                                {project.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
+                        <Select.Value>
+                          <span className="min-w-0 truncate">
+                            {selectedProject?.name ||
+                              (projectsLoading
+                                ? t("app.settings.loading")
+                                : t("home.selectProject"))}
+                          </span>
+                        </Select.Value>
+                        <Select.Indicator>
+                          <ChevronDown className="size-3 text-muted" />
+                        </Select.Indicator>
+                      </Select.Trigger>
+                      <Select.Popover
+                        placement="bottom start"
+                        className="min-w-40 rounded-2xl bg-overlay p-1 shadow-2xl"
+                      >
+                        <ListBox>
+                          {projectOptions.map((project) => (
+                            <ListBox.Item
+                              key={project.id}
+                              id={project.id}
+                              textValue={project.name}
+                            >
+                              <Label>{project.name}</Label>
+                              <ListBox.ItemIndicator>
+                                <Check className="size-3.5" />
+                              </ListBox.ItemIndicator>
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content placement="top" showArrow>
                     {t("home.selectProject")}
-                  </TooltipContent>
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             }

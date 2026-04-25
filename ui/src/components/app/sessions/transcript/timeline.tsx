@@ -40,7 +40,7 @@ export function TranscriptTimeline({
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return (
       <div
-        className="rounded-lg border border-border bg-card px-4 py-6 text-sm text-muted-foreground"
+        className="rounded-lg border border-border bg-surface px-4 py-6 text-sm text-muted"
         data-testid="session-transcript-empty"
       >
         {t("transcript.empty")}
@@ -153,7 +153,7 @@ function TranscriptLoadingRow() {
       className="pointer-events-none flex items-center justify-center py-3"
       data-testid="session-transcript-loading"
     >
-      <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm">
+      <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-surface/90 text-muted shadow-sm">
         <LoaderCircle className="size-4 animate-spin" />
       </div>
     </div>
@@ -164,7 +164,7 @@ function TranscriptLoadingRow() {
 export function InitialTranscriptLoader() {
   return (
     <div
-      className="inline-flex size-12 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm"
+      className="inline-flex size-12 items-center justify-center rounded-full border border-border bg-surface/90 text-muted shadow-sm"
       data-testid="session-transcript-loading-initial"
     >
       <LoaderCircle className="size-5 animate-spin" />
@@ -196,7 +196,7 @@ function PendingInputEntry({
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
-          className="rounded-lg bg-muted px-3 py-2.5 leading-6"
+          className="rounded-lg bg-surface-tertiary px-3 py-2.5 leading-6"
           markdown={false}
           onLocalPathClick={onSelectPath}
         />
@@ -211,7 +211,7 @@ function ThinkingEntry() {
 
   return (
     <div className="min-w-0" data-testid="session-transcript-thinking">
-      <div className="inline-flex items-center gap-2 text-muted-foreground">
+      <div className="inline-flex items-center gap-2 text-muted">
         <LoaderCircle className="size-3.5 animate-spin" />
         <span>{t("transcript.thinking")}</span>
       </div>
@@ -232,7 +232,7 @@ function RoundStatusEntry({
   // pretending to be agent/user messages.
   return (
     <div className="min-w-0" data-testid="session-transcript-round-status">
-      <div className="min-w-0 rounded-lg border border-border bg-card px-4 py-3 text-muted-foreground">
+      <div className="min-w-0 rounded-lg border border-border bg-surface px-4 py-3 text-muted">
         <div className="flex items-center gap-2">
           <span
             className={cn(

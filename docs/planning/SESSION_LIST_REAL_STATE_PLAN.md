@@ -289,9 +289,9 @@ and `status_source`.
    - reasoning: optional spinner tooltip/detail with `text-sky-400`
    - running: spinner with `text-emerald-400`
    - finished unread: filled `bg-sky-400`
-   - finished read: muted `bg-muted-foreground/50`
+   - finished read: muted `bg-surface-tertiary`
    - attention: `bg-amber-300`
-   - failed unread: `bg-destructive`
+   - failed unread: `bg-danger`
 10. Keep desktop row text dense. Rail rows show icon, title, and relative time; project
    remains in grouping/header/tooltip, not the row body.
 11. Add a visible non-color cue for compact and phone views:

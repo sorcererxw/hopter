@@ -11,10 +11,9 @@ import {
   LoaderCircle,
   TestTube2,
 } from "lucide-react"
+import { Button, Chip, Link } from "@heroui/react"
 
 import { CodeContainer } from "@/components/app/shared"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import type { ArtifactRef } from "@/gen/proto/hopter/v1/common_pb"
 import { ArtifactKind } from "@/gen/proto/hopter/v1/common_pb"
 import { useSessionArtifacts } from "@/features/sessions/use-sessions"
@@ -73,9 +72,7 @@ export function SessionArtifactWorkspace({
           <div className="text-sm font-medium text-foreground">
             {t("artifact.artifacts")}
           </div>
-          <div className="text-sm text-muted-foreground">
-            {t("artifact.description")}
-          </div>
+          <div className="text-sm text-muted">{t("artifact.description")}</div>
         </div>
       </div>
 
@@ -91,19 +88,20 @@ export function SessionArtifactWorkspace({
               className={cn(
                 "inline-flex max-w-full items-center gap-2 rounded-md border px-3 py-2 text-left transition",
                 active
-                  ? "border-border bg-card text-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "border-border bg-surface text-foreground"
+                  : "border-border bg-background text-muted hover:bg-surface-tertiary hover:text-foreground"
               )}
               onClick={() => setSelectedArtifactId(artifact.id)}
             >
               <Icon className="size-3.5 shrink-0" />
               <span className="truncate">{artifact.label}</span>
-              <Badge
-                variant="outline"
-                className="shrink-0 border-border text-[11px] text-muted-foreground"
+              <Chip
+                size="sm"
+                variant="secondary"
+                className="shrink-0 border-border text-[11px] text-muted"
               >
                 {formatArtifactKind(artifact.kind, t)}
-              </Badge>
+              </Chip>
             </button>
           )
         })}
@@ -161,7 +159,7 @@ function ArtifactPreviewPanel({
 
   return (
     <div
-      className="rounded-lg border border-border bg-card"
+      className="rounded-lg border border-border bg-surface"
       data-testid="session-artifact-preview"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -169,17 +167,17 @@ function ArtifactPreviewPanel({
           <div className="truncate text-base font-medium text-foreground">
             {artifact.label}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             <span>{formatArtifactKind(artifact.kind, t)}</span>
             {artifact.createdAt ? (
               <>
-                <span className="text-muted-foreground/60">•</span>
+                <span className="text-muted/60">•</span>
                 <span>{formatUpdatedAt(artifact.createdAt)}</span>
               </>
             ) : null}
             {artifact.contentType ? (
               <>
-                <span className="text-muted-foreground/60">•</span>
+                <span className="text-muted/60">•</span>
                 <span>{artifact.contentType}</span>
               </>
             ) : null}
@@ -192,18 +190,21 @@ function ArtifactPreviewPanel({
               type="button"
               variant="secondary"
               size="sm"
-              onClick={onOpenReview}
+              onPress={onOpenReview}
             >
               {t("artifact.openReview")}
             </Button>
           ) : null}
           {artifact.downloadUrl ? (
-            <Button asChild variant="outline" size="sm">
-              <a href={artifact.downloadUrl} target="_blank" rel="noreferrer">
-                {t("artifact.openOriginal")}
-                <ExternalLink className="size-3.5" />
-              </a>
-            </Button>
+            <Link
+              href={artifact.downloadUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-full border border-border bg-field/30 px-3 text-sm text-foreground transition hover:bg-field/50"
+            >
+              {t("artifact.openOriginal")}
+              <ExternalLink className="size-3.5" />
+            </Link>
           ) : null}
         </div>
       </div>
@@ -283,7 +284,7 @@ function renderTextArtifactPreview(
                   <div className="truncate font-mono text-sm text-foreground">
                     {change.path}
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">
+                  <div className="mt-1 text-sm text-muted">
                     {change.kindLabel}
                   </div>
                 </div>
@@ -292,17 +293,15 @@ function renderTextArtifactPreview(
                     <span className="text-emerald-600">
                       +{change.additions}
                     </span>
-                    <span className="px-1 text-muted-foreground">/</span>
-                    <span className="text-destructive">
-                      -{change.deletions}
-                    </span>
+                    <span className="px-1 text-muted">/</span>
+                    <span className="text-danger">-{change.deletions}</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
           {onOpenReview ? (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted">
               {t("artifact.needDiffDetail")}{" "}
               <span className="font-medium text-foreground">
                 {t("artifact.openReview")}
@@ -337,7 +336,7 @@ function renderTextArtifactPreview(
 
 function ArtifactPreviewLoading({ label }: { label: string }) {
   return (
-    <div className="flex min-h-[180px] items-center justify-center gap-2 text-sm text-muted-foreground">
+    <div className="flex min-h-[180px] items-center justify-center gap-2 text-sm text-muted">
       <LoaderCircle className="size-4 animate-spin" />
       <span>{label}</span>
     </div>
@@ -354,9 +353,7 @@ function ArtifactPreviewEmpty({
   return (
     <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
       <div className="text-base font-medium text-foreground">{title}</div>
-      <div className="mt-2 max-w-[480px] text-sm text-muted-foreground">
-        {body}
-      </div>
+      <div className="mt-2 max-w-[480px] text-sm text-muted">{body}</div>
     </div>
   )
 }

@@ -1,18 +1,9 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { GitBranch, LoaderCircle, RotateCcw } from "lucide-react"
+import { GitBranch, LoaderCircle, RotateCcw, X } from "lucide-react"
 import { toast } from "sonner"
+import { Button, Chip, Description, Modal } from "@heroui/react"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   GitActionOutcome,
   GitCommitMode,
@@ -123,111 +114,125 @@ export function ProjectGitActionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-h-[min(720px,calc(100vh-2rem))] gap-4 overflow-hidden sm:max-w-2xl"
-        data-testid="project-git-action-dialog"
-      >
-        <DialogHeader>
-          <DialogTitle>{t("git.commitRepositoryChanges")}</DialogTitle>
-          <DialogDescription>{t("git.description")}</DialogDescription>
-        </DialogHeader>
+    <Modal isOpen={open} onOpenChange={onOpenChange}>
+      <Modal.Backdrop variant="opaque">
+        <Modal.Container size="cover">
+          <Modal.Dialog
+            className="relative grid max-h-[min(720px,calc(100vh-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-hidden rounded-3xl bg-overlay p-6 text-sm text-overlay-foreground ring-1 ring-foreground/5 outline-none sm:max-w-2xl"
+            data-testid="project-git-action-dialog"
+          >
+            <Modal.Header className="flex flex-col gap-2">
+              <Modal.Heading className="font-heading text-base leading-none font-medium">
+                {t("git.commitRepositoryChanges")}
+              </Modal.Heading>
+              <Description className="text-sm text-muted">
+                {t("git.description")}
+              </Description>
+            </Modal.Header>
+            <Modal.CloseTrigger
+              aria-label="Close"
+              className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-tertiary hover:text-foreground"
+            >
+              <X className="size-4" />
+            </Modal.CloseTrigger>
 
-        {statusQuery.isLoading ? (
-          <div className="flex min-h-48 items-center justify-center text-muted-foreground">
-            <LoaderCircle className="mr-2 size-4 animate-spin" />
-            {t("git.loadingStatus")}
-          </div>
-        ) : !status ? (
-          <PanelMessage
-            title={t("git.unavailable")}
-            body={t("git.loadStatusFailed")}
-          />
-        ) : (
-          <div className="min-h-0 overflow-auto pr-1">
-            <RepositorySummary status={status} />
-
-            {partialStaging ? (
-              <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-                {t("git.partialStaging")}
+            {statusQuery.isLoading ? (
+              <div className="flex min-h-48 items-center justify-center text-muted">
+                <LoaderCircle className="mr-2 size-4 animate-spin" />
+                {t("git.loadingStatus")}
               </div>
-            ) : null}
-
-            <Diagnostics
-              diagnostics={[
-                ...status.blockers,
-                ...status.warnings,
-                ...diagnostics,
-              ]}
-            />
-
-            <label className="mt-4 block text-sm font-medium text-foreground">
-              {t("git.commitMessage")}
-              <input
-                className="mt-2 h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                disabled={pending}
-                onChange={(event) => setMessage(event.target.value)}
-                value={commitMessage}
+            ) : !status ? (
+              <PanelMessage
+                title={t("git.unavailable")}
+                body={t("git.loadStatusFailed")}
               />
-            </label>
+            ) : (
+              <div className="min-h-0 overflow-auto pr-1">
+                <RepositorySummary status={status} />
 
-            <div className="mt-4">
-              <div className="mb-2 text-sm font-medium text-foreground">
-                {t("git.filesToCommit")}
+                {partialStaging ? (
+                  <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+                    {t("git.partialStaging")}
+                  </div>
+                ) : null}
+
+                <Diagnostics
+                  diagnostics={[
+                    ...status.blockers,
+                    ...status.warnings,
+                    ...diagnostics,
+                  ]}
+                />
+
+                <label className="mt-4 block text-sm font-medium text-foreground">
+                  {t("git.commitMessage")}
+                  <input
+                    className="mt-2 h-9 w-full rounded-lg border border-field-border bg-transparent px-3 text-sm outline-none focus-visible:border-focus focus-visible:ring-3 focus-visible:ring-focus/50"
+                    disabled={pending}
+                    onChange={(event) => setMessage(event.target.value)}
+                    value={commitMessage}
+                  />
+                </label>
+
+                <div className="mt-4">
+                  <div className="mb-2 text-sm font-medium text-foreground">
+                    {t("git.filesToCommit")}
+                  </div>
+                  <FileList files={status.files} />
+                </div>
               </div>
-              <FileList files={status.files} />
-            </div>
-          </div>
-        )}
+            )}
 
-        <DialogFooter className="border-t border-border pt-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => statusQuery.refetch()}
-            disabled={statusQuery.isFetching || pending}
-            className="mr-auto"
-          >
-            <RotateCcw className="size-3.5" />
-            {t("git.refresh")}
-          </Button>
-          {showPushRetry ? (
-            <Button type="button" onClick={retryPush} disabled={pending}>
-              {t("git.retryPush")}
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant={
-              mode === GitCommitMode.COMMIT_ONLY ? "default" : "secondary"
-            }
-            disabled={!canCommit}
-            onClick={() => {
-              setMode(GitCommitMode.COMMIT_ONLY)
-              void runCommit(GitCommitMode.COMMIT_ONLY)
-            }}
-          >
-            {pending && mode === GitCommitMode.COMMIT_ONLY ? (
-              <LoaderCircle className="size-3.5 animate-spin" />
-            ) : null}
-            {t("git.commitAll")}
-          </Button>
-          <Button
-            type="button"
-            disabled={!canCommitAndPush}
-            onClick={() => {
-              setMode(GitCommitMode.COMMIT_AND_PUSH)
-              void runCommit(GitCommitMode.COMMIT_AND_PUSH)
-            }}
-          >
-            {pending && mode === GitCommitMode.COMMIT_AND_PUSH ? (
-              <LoaderCircle className="size-3.5 animate-spin" />
-            ) : null}
-            {t("git.commitAllPush")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <Modal.Footer className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onPress={() => statusQuery.refetch()}
+                isDisabled={statusQuery.isFetching || pending}
+                className="mr-auto"
+              >
+                <RotateCcw className="size-3.5" />
+                {t("git.refresh")}
+              </Button>
+              {showPushRetry ? (
+                <Button type="button" onPress={retryPush} isDisabled={pending}>
+                  {t("git.retryPush")}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant={
+                  mode === GitCommitMode.COMMIT_ONLY ? "primary" : "secondary"
+                }
+                isDisabled={!canCommit}
+                onPress={() => {
+                  setMode(GitCommitMode.COMMIT_ONLY)
+                  void runCommit(GitCommitMode.COMMIT_ONLY)
+                }}
+              >
+                {pending && mode === GitCommitMode.COMMIT_ONLY ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : null}
+                {t("git.commitAll")}
+              </Button>
+              <Button
+                type="button"
+                isDisabled={!canCommitAndPush}
+                onPress={() => {
+                  setMode(GitCommitMode.COMMIT_AND_PUSH)
+                  void runCommit(GitCommitMode.COMMIT_AND_PUSH)
+                }}
+              >
+                {pending && mode === GitCommitMode.COMMIT_AND_PUSH ? (
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                ) : null}
+                {t("git.commitAllPush")}
+              </Button>
+            </Modal.Footer>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   )
 }
 
@@ -235,27 +240,29 @@ function RepositorySummary({ status }: { status: ProjectGitStatus }) {
   const { t } = useTranslation()
 
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-3">
+    <div className="rounded-lg border border-border bg-surface px-3 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={status.isGitRepository ? "secondary" : "destructive"}>
+        <Chip
+          color={status.isGitRepository ? "default" : "danger"}
+          size="sm"
+          variant="soft"
+        >
           {status.isGitRepository ? t("git.gitRepo") : t("git.noGit")}
-        </Badge>
+        </Chip>
         {status.branch ? (
           <span className="inline-flex items-center gap-1 text-sm text-foreground">
-            <GitBranch className="size-3.5 text-muted-foreground" />
+            <GitBranch className="size-3.5 text-muted" />
             {status.branch}
           </span>
         ) : null}
         {status.headShortSha ? (
-          <span className="font-mono text-xs text-muted-foreground">
+          <span className="font-mono text-xs text-muted">
             {status.headShortSha}
           </span>
         ) : null}
       </div>
-      <div className="mt-2 text-xs text-muted-foreground">
-        {status.rootPath}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+      <div className="mt-2 text-xs text-muted">{status.rootPath}</div>
+      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted">
         <span>{t("git.dirtyFiles", { count: status.files.length })}</span>
         {status.upstream ? (
           <span>{t("git.upstream", { name: status.upstream })}</span>
@@ -285,7 +292,7 @@ function Diagnostics({ diagnostics }: { diagnostics: { message: string }[] }) {
       {visible.map((diagnostic, index) => (
         <div
           key={`${diagnostic.message}-${index}`}
-          className="rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-muted-foreground"
+          className="rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm text-muted"
         >
           {diagnostic.message}
         </div>
@@ -299,13 +306,13 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
 
   if (files.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-lg border border-border bg-surface px-3 py-6 text-center text-sm text-muted">
         {t("git.noChangesToCommit")}
       </div>
     )
   }
   return (
-    <div className="max-h-64 overflow-auto rounded-lg border border-border bg-card">
+    <div className="max-h-64 overflow-auto rounded-lg border border-border bg-surface">
       {files.map((file) => (
         <div
           key={`${file.oldPath || ""}:${file.path}`}
@@ -315,8 +322,8 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
             className={cn(
               "w-20 shrink-0 text-xs font-medium",
               file.status === GitFileStatus.CONFLICTED
-                ? "text-destructive"
-                : "text-muted-foreground"
+                ? "text-danger"
+                : "text-muted"
             )}
           >
             {formatFileStatus(file.status, t)}
@@ -325,7 +332,9 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
             {file.oldPath ? `${file.oldPath} -> ${file.path}` : file.path}
           </span>
           {file.partiallyStaged ? (
-            <Badge variant="outline">{t("git.partial")}</Badge>
+            <Chip size="sm" variant="secondary">
+              {t("git.partial")}
+            </Chip>
           ) : null}
         </div>
       ))}
@@ -335,9 +344,9 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
 
 function PanelMessage({ body, title }: { body: string; title: string }) {
   return (
-    <div className="rounded-lg border border-border bg-card px-4 py-6 text-center">
+    <div className="rounded-lg border border-border bg-surface px-4 py-6 text-center">
       <div className="font-medium text-foreground">{title}</div>
-      <div className="mt-1 text-sm text-muted-foreground">{body}</div>
+      <div className="mt-1 text-sm text-muted">{body}</div>
     </div>
   )
 }

@@ -9,15 +9,10 @@ import {
   Wrench,
   X,
 } from "lucide-react"
+import { Modal } from "@heroui/react"
 
 import { CodeContainer } from "@/components/app/shared"
 import { useWorkspaceShell } from "@/components/app/workspace"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   SessionTranscriptAttachmentKind,
   SessionTranscriptItemKind,
@@ -107,7 +102,7 @@ export function ThoughtProcessGroupEntry({
       <button
         type="button"
         aria-expanded={expanded}
-        className="flex w-full items-center gap-1 border-b border-border pb-1 text-base font-medium text-muted-foreground transition hover:text-foreground"
+        className="flex w-full items-center gap-1 border-b border-border pb-1 text-base font-medium text-muted transition hover:text-foreground"
         onClick={toggleExpanded}
       >
         <span className="min-w-0 truncate">{label}</span>
@@ -147,7 +142,7 @@ export function CommandExecutionGroupEntry({
         onClick={toggleExpanded}
         expanded={expanded}
         iconClassName="size-3 shrink-0"
-        className="max-w-full gap-2 text-base font-medium text-muted-foreground hover:text-foreground"
+        className="max-w-full gap-2 text-base font-medium text-muted hover:text-foreground"
       >
         <span>{label}</span>
       </TranscriptDisclosureButton>
@@ -184,7 +179,7 @@ function UserMessageEntry({
       <div className="max-w-[85%]">
         <SessionRichText
           text={displayText}
-          className="rounded-lg bg-muted px-3 py-2.5 leading-6"
+          className="rounded-lg bg-surface-tertiary px-3 py-2.5 leading-6"
           markdown={false}
           onLocalPathClick={onSelectPath}
         />
@@ -247,7 +242,7 @@ function TranscriptAttachmentPill({
     return (
       <TranscriptImageAttachment
         attachment={attachment}
-        icon={<Icon className="size-5 text-muted-foreground" />}
+        icon={<Icon className="size-5 text-muted" />}
         label={label}
       />
     )
@@ -255,12 +250,12 @@ function TranscriptAttachmentPill({
 
   const content = (
     <>
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <Icon className="size-3.5 shrink-0 text-muted" />
       <span className="truncate">{label}</span>
     </>
   )
   const className =
-    "inline-flex max-w-72 items-center gap-2 rounded-md bg-card px-2.5 py-1.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
+    "inline-flex max-w-72 items-center gap-2 rounded-md bg-surface px-2.5 py-1.5 text-sm text-muted transition hover:bg-surface-tertiary hover:text-foreground"
 
   if (attachment.url) {
     return (
@@ -314,19 +309,17 @@ function TranscriptImageAttachment({
       loading="lazy"
     />
   ) : (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted px-2 text-center">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-surface-tertiary px-2 text-center">
       {icon}
-      <span className="max-w-full truncate text-xs text-muted-foreground">
-        {label}
-      </span>
-      <span className="max-w-full truncate text-[11px] text-muted-foreground/70">
+      <span className="max-w-full truncate text-xs text-muted">{label}</span>
+      <span className="max-w-full truncate text-[11px] text-muted/70">
         {t("artifact.previewUnavailable")}
       </span>
     </div>
   )
 
   const className =
-    "block size-20 overflow-hidden rounded-lg border border-border bg-card transition hover:border-border-strong"
+    "block size-20 overflow-hidden rounded-lg border border-border bg-surface transition hover:border-border-strong"
 
   if (attachment.url) {
     return (
@@ -377,46 +370,55 @@ function ImagePreviewDialog({
   const fullscreen = posture === "phone"
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          fullscreen
-            ? "h-[100dvh] max-h-none w-screen max-w-none rounded-none bg-black p-0 text-white sm:max-w-none"
-            : "max-h-[80vh] max-w-[80vw] p-2 sm:max-w-[80vw]"
-        )}
-        showCloseButton={!fullscreen}
-      >
-        <DialogTitle className="sr-only">{label}</DialogTitle>
-        {fullscreen ? (
-          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-black/70 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
-            <div className="min-w-0 truncate text-sm font-medium text-white">
-              {label}
-            </div>
-            <DialogClose asChild>
-              <button
-                type="button"
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10"
-                aria-label={t("transcript.closeImagePreview")}
+    <Modal isOpen={open} onOpenChange={onOpenChange}>
+      <Modal.Backdrop variant="opaque">
+        <Modal.Container size="cover">
+          <Modal.Dialog
+            className={cn(
+              "relative grid gap-6 rounded-3xl bg-overlay p-6 text-sm text-overlay-foreground ring-1 ring-foreground/5 outline-none",
+              fullscreen
+                ? "h-[100dvh] max-h-none w-screen max-w-none rounded-none bg-black p-0 text-white sm:max-w-none"
+                : "max-h-[80vh] max-w-[80vw] p-2 sm:max-w-[80vw]"
+            )}
+          >
+            <Modal.Heading className="sr-only">{label}</Modal.Heading>
+            {!fullscreen ? (
+              <Modal.CloseTrigger
+                aria-label="Close"
+                className="absolute top-4 right-4 z-10 flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-tertiary hover:text-foreground"
               >
                 <X className="size-4" />
-              </button>
-            </DialogClose>
-          </div>
-        ) : null}
-        <img
-          src={src}
-          alt={label}
-          className={cn(
-            fullscreen
-              ? "h-full w-full object-contain px-2 pt-[calc(env(safe-area-inset-top)+4rem)] pb-[env(safe-area-inset-bottom)]"
-              : "max-h-[calc(80vh-2rem)] max-w-full rounded-lg object-contain"
-          )}
-          loading="eager"
-          draggable={false}
-          onClick={(event) => event.stopPropagation()}
-        />
-      </DialogContent>
-    </Dialog>
+              </Modal.CloseTrigger>
+            ) : null}
+            {fullscreen ? (
+              <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 bg-black/70 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3">
+                <div className="min-w-0 truncate text-sm font-medium text-white">
+                  {label}
+                </div>
+                <Modal.CloseTrigger
+                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10"
+                  aria-label={t("transcript.closeImagePreview")}
+                >
+                  <X className="size-4" />
+                </Modal.CloseTrigger>
+              </div>
+            ) : null}
+            <img
+              src={src}
+              alt={label}
+              className={cn(
+                fullscreen
+                  ? "h-full w-full object-contain px-2 pt-[calc(env(safe-area-inset-top)+4rem)] pb-[env(safe-area-inset-bottom)]"
+                  : "max-h-[calc(80vh-2rem)] max-w-full rounded-lg object-contain"
+              )}
+              loading="eager"
+              draggable={false}
+              onClick={(event) => event.stopPropagation()}
+            />
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   )
 }
 
@@ -492,7 +494,7 @@ function ReasoningEntry({
 
   return (
     <div className="flex gap-3" data-testid="session-transcript-reasoning">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-tertiary text-muted">
         {isStreaming ? (
           <LoaderCircle className="size-3.5 animate-spin" />
         ) : (
@@ -505,11 +507,11 @@ function ReasoningEntry({
           expanded={showContent}
           iconClassName="size-3"
           aria-label={disclosureLabel}
-          className="w-full gap-2 rounded-lg border border-border bg-card px-3 py-2 text-muted-foreground hover:text-foreground"
+          className="w-full gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-muted hover:text-foreground"
         >
           <span className="text-sm font-medium text-foreground">{label}</span>
           {!showContent && preview ? (
-            <span className="truncate text-muted-foreground">— {preview}</span>
+            <span className="truncate text-muted">— {preview}</span>
           ) : null}
         </TranscriptDisclosureButton>
         {showContent ? (
@@ -520,7 +522,7 @@ function ReasoningEntry({
             {summaryText ? (
               <SessionRichText
                 text={summaryText}
-                className="text-muted-foreground"
+                className="text-muted"
                 onLocalPathClick={onSelectPath}
               />
             ) : null}
@@ -540,7 +542,7 @@ function ToolCallEntry({ item }: { item: SessionTranscriptItem }) {
 
   return (
     <div className="flex gap-3" data-testid="session-transcript-tool">
-      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+      <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-tertiary">
         <Wrench className="size-3.5 text-foreground/50" />
       </div>
       <div className="min-w-0 flex-1">
@@ -667,11 +669,11 @@ function CommandEntry({ item }: { item: SessionTranscriptItem }) {
     <div className="min-w-0" data-testid="session-transcript-command">
       <TranscriptDisclosureItem
         active={active}
-        buttonClassName="gap-1.5 text-muted-foreground hover:text-foreground"
+        buttonClassName="gap-1.5 text-muted hover:text-foreground"
         iconClassName="size-3"
         label={
           <span className="min-w-0 truncate text-foreground">
-            <span className="text-muted-foreground">{statusPrefix}</span>{" "}
+            <span className="text-muted">{statusPrefix}</span>{" "}
             <span className="font-mono">{commandLabel}</span>
           </span>
         }
@@ -698,9 +700,7 @@ function CommandExecutionDetail({
       {detail.output.length > 0 ? (
         <>
           {"\n\n"}
-          <span className="text-muted-foreground">
-            {detail.output.join("\n")}
-          </span>
+          <span className="text-muted">{detail.output.join("\n")}</span>
         </>
       ) : null}
     </CodeContainer>
@@ -721,8 +721,8 @@ function ReasoningMarker({
   label: string
 }) {
   return (
-    <div className="inline-flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
+    <div className="inline-flex min-w-0 items-center gap-2 text-sm text-muted">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-tertiary">
         {active ? (
           <LoaderCircle className="size-3.5 animate-spin" />
         ) : (
@@ -743,9 +743,7 @@ function RawReasoningBlock({ text }: { text: string }) {
       className="flex flex-col gap-1"
       data-testid="session-transcript-reasoning-raw"
     >
-      <div className="text-xs text-muted-foreground">
-        {t("transcript.rawReasoning")}
-      </div>
+      <div className="text-xs text-muted">{t("transcript.rawReasoning")}</div>
       <CodeContainer as="pre" className="whitespace-pre-wrap">
         {text}
       </CodeContainer>

@@ -7,5 +7,5 @@ storage/
 
 storage/artifacts/sessions
 tmp
-
+.idea
 test-results/

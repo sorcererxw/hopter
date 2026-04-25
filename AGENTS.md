@@ -104,7 +104,7 @@ Do not make timeline the default focus.
 
 ### Allowed color sources (in order of preference)
 
-1. **shadcn semantic tokens** — `bg-background`, `text-foreground`, `bg-card`, `bg-popover`, `bg-sidebar`, `text-muted-foreground`, `bg-accent`, `bg-secondary`, `border-border`, etc.
+1. **HeroUI semantic tokens** — `bg-background`, `text-foreground`, `bg-surface`, `bg-overlay`, `text-muted`, `bg-accent`, `bg-surface-secondary`, `border-border`, etc.
 2. **Workspace design tokens** — `bg-ws-*`, `text-ws-*`, `border-ws-*` (defined in `@theme inline` in `index.css`)
 3. **Tailwind palette utilities** — `text-zinc-400`, `text-sky-400`, `text-amber-400`, etc. for specific semantic tones (e.g. syntax highlighting, status indicators)
 4. **Arbitrary values as last resort** — only for values that have no token equivalent (e.g. `shadow-[...]`, complex `calc()`, `min(...)` expressions)
@@ -149,7 +149,7 @@ Do not make timeline the default focus.
 - ❌ Hard-coded hex colors in className: `text-[#888]`, `bg-[#1e1e1e]`
 - ❌ CSS var arbitrary syntax when a ws-token exists: `text-[var(--workspace-text-primary)]`
 - ❌ Non-standard opacity fractions: `white/7`, `white/8`, `white/12`
-- ❌ Redundant custom tokens when shadcn already has an equivalent (`bg-popover` = `#1e1e1e`, `bg-card` = `#1a1a1a`, `bg-sidebar` = `#141414`)
+- ❌ Legacy pre-HeroUI color utilities after the HeroUI migration; use the HeroUI surface, overlay, segment, danger, field, focus, and muted utility families instead.
 
 ## Active repository shape
 

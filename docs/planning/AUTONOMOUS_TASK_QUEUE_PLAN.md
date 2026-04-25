@@ -1905,7 +1905,7 @@ Existing design leverage:
 - workspace shell hierarchy from `docs/product/UI_REBUILD_DESIGN_DOC.md`
 - `ui/AGENTS.md` posture model: `phone`, `compact`, `wide`
 - existing session detail and session rail patterns
-- existing shadcn/Tailwind workspace token rules
+- existing HeroUI/Tailwind workspace token rules
 
 ### Design Dual Voices
 

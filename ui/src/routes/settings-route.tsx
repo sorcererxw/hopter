@@ -2,17 +2,12 @@ import { useEffect, useState, type ReactNode } from "react"
 import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation } from "react-router-dom"
+import { Check, ChevronDown } from "lucide-react"
+import { Label, ListBox, Select } from "@heroui/react"
 
+import { workspaceScrollbarClassName } from "@/components/app/shared"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useTheme } from "@/components/theme-provider"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useBackends } from "@/features/host/use-host-backends"
 import { useHostStatus } from "@/features/host/use-host-status"
 import {
@@ -108,13 +103,66 @@ function SettingsRow({
       <div className="min-w-0 flex-1">
         <div className="text-sm text-foreground">{label}</div>
         {description ? (
-          <div className="mt-0.5 text-sm font-normal text-muted-foreground">
+          <div className="mt-0.5 text-sm text-muted">
             {description}
           </div>
         ) : null}
       </div>
       <div className="shrink-0">{action}</div>
     </div>
+  )
+}
+
+function SettingsSelect({
+  ariaLabel,
+  isDisabled = false,
+  onValueChange,
+  options,
+  value,
+}: {
+  ariaLabel: string
+  isDisabled?: boolean
+  onValueChange: (value: string) => void
+  options: readonly { label: string; value: string }[]
+  value: string
+}) {
+  const selectedLabel =
+    options.find((option) => option.value === value)?.label ?? ""
+
+  return (
+    <Select
+      isDisabled={isDisabled}
+      onSelectionChange={(key) => {
+        if (key != null) {
+          onValueChange(String(key))
+        }
+      }}
+      selectedKey={value || null}
+      variant="secondary"
+    >
+      <Select.Trigger aria-label={ariaLabel} className="min-w-40">
+        <Select.Value>{selectedLabel}</Select.Value>
+        <Select.Indicator>
+          <ChevronDown className="size-4 text-muted" />
+        </Select.Indicator>
+      </Select.Trigger>
+      <Select.Popover className="min-w-40 rounded-2xl bg-overlay p-1 shadow-2xl">
+        <ListBox>
+          {options.map((option) => (
+            <ListBox.Item
+              key={option.value}
+              id={option.value}
+              textValue={option.label}
+            >
+              <Label>{option.label}</Label>
+              <ListBox.ItemIndicator>
+                <Check className="size-3.5" />
+              </ListBox.ItemIndicator>
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      </Select.Popover>
+    </Select>
   )
 }
 
@@ -180,7 +228,12 @@ export function SettingsRoute() {
         showOverflowMenu={false}
       />
 
-      <div className="workspace-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10">
+      <div
+        className={cn(
+          workspaceScrollbarClassName,
+          "min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10"
+        )}
+      >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10">
           <SettingsSection id="general" title={t("app.settings.general")}>
             <div className="divide-y divide-border rounded-lg border border-border">
@@ -190,7 +243,7 @@ export function SettingsRoute() {
                 action={
                   <div className="flex items-center gap-2 text-sm">
                     {hostStatusLoading ? (
-                      <span className="font-normal text-muted-foreground">
+                      <span className="text-muted">
                         {t("app.settings.loading")}
                       </span>
                     ) : (
@@ -221,81 +274,48 @@ export function SettingsRoute() {
                     : t("app.settings.themeDescription")
                 }
                 action={
-                  <Select
+                  <SettingsSelect
+                    ariaLabel={t("app.settings.theme")}
+                    options={THEME_OPTIONS.map((option) => ({
+                      label: t(option.labelKey),
+                      value: option.value,
+                    }))}
                     value={theme}
                     onValueChange={(value) =>
                       setTheme(value as "dark" | "light" | "system")
                     }
-                  >
-                    <SelectTrigger
-                      aria-label={t("app.settings.theme")}
-                      className="min-w-40"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {THEME_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {t(option.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  />
                 }
               />
               <SettingsRow
                 label={t("app.settings.language")}
                 description={t("app.settings.languageDescription")}
                 action={
-                  <Select
+                  <SettingsSelect
+                    ariaLabel={t("app.settings.language")}
+                    options={LOCALE_OPTIONS.map((option) => ({
+                      label: t(option.labelKey),
+                      value: option.value,
+                    }))}
                     value={locale}
                     onValueChange={(value) => setLocale(value as typeof locale)}
-                  >
-                    <SelectTrigger
-                      aria-label={t("app.settings.language")}
-                      className="min-w-40"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {LOCALE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {t(option.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  />
                 }
               />
               <SettingsRow
                 label={t("app.settings.sendShortcut")}
                 description={t("app.settings.sendShortcutDescription")}
                 action={
-                  <Select
+                  <SettingsSelect
+                    ariaLabel={t("app.settings.sendShortcut")}
+                    isDisabled={configQuery.isLoading || updateConfig.isPending}
+                    options={COMPOSER_SEND_SHORTCUT_OPTIONS.map((option) => ({
+                      label: formatComposerSendShortcutPreference(option.value),
+                      value: option.value,
+                    }))}
                     value={sendShortcut}
                     onValueChange={handleSendShortcutChange}
-                    disabled={configQuery.isLoading || updateConfig.isPending}
-                  >
-                    <SelectTrigger
-                      aria-label={t("app.settings.sendShortcut")}
-                      className="min-w-40"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {COMPOSER_SEND_SHORTCUT_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {formatComposerSendShortcutPreference(option.value)}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  />
                 }
               />
             </div>
@@ -303,11 +323,11 @@ export function SettingsRoute() {
 
           <SettingsSection id="agents" title={t("app.settings.agents")}>
             {backendsLoading ? (
-              <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
+              <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
                 {t("app.settings.loadingBackends")}
               </div>
             ) : !backends || backends.length === 0 ? (
-              <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted-foreground">
+              <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
                 {t("app.settings.noBackends")}
               </div>
             ) : (
@@ -327,7 +347,7 @@ export function SettingsRoute() {
                           availabilityColor(backend.available)
                         )}
                       />
-                      <span className="font-normal text-muted-foreground">
+                      <span className="text-muted">
                         {backend.available
                           ? t("app.settings.available")
                           : t("app.settings.unavailable")}

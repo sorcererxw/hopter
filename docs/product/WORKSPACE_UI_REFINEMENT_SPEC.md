@@ -26,7 +26,7 @@ The goal is:
 
 This spec does not do the following:
 
-- replace shadcn primitives
+- replace the HeroUI component baseline
 - introduce a second component library
 - redesign the route model from scratch
 - add a real terminal implementation
@@ -34,7 +34,7 @@ This spec does not do the following:
 
 ## Hard constraints
 
-1. Do not modify `ui/src/components/ui/*` primitives unless there is a true primitive bug.
+1. Do not introduce a second component baseline.
 2. Apply the refinement pass in `ui/src/components/app/*` and `ui/src/index.css`.
 3. Keep the product as a workspace shell, not a dashboard and not a marketing page.
 4. Keep `Geist Variable + JetBrains Mono`.
@@ -362,7 +362,7 @@ The goal is to stop the UI from feeling:
 
 ### Muted text usage
 
-Reduce `text-muted-foreground` usage sharply.
+Reduce `text-muted` usage sharply.
 
 Use muted text only for:
 
