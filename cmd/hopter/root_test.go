@@ -132,7 +132,7 @@ func TestMaybeStartRelayWaitsForConnectorTokenBeforeEnrollment(t *testing.T) {
 	}
 
 	broker := httptestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		t.Fatalf("broker enrollment should not run without a connector token")
+		t.Fatalf("broker control-plane request should not run without a connector token")
 	})
 	defer broker.Close()
 
@@ -208,34 +208,12 @@ func TestMaybeStartRelayStartsConnectorWhenConnectorTokenExists(t *testing.T) {
 		return nil
 	}
 
-	var enrolled bool
-	broker := httptestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/relay/hosts/host_local" {
-			t.Fatalf("path = %s, want /api/relay/hosts/host_local", r.URL.Path)
-		}
-		if r.Header.Get("Authorization") != "Bearer relay-token" {
-			t.Fatalf("authorization header = %q", r.Header.Get("Authorization"))
-		}
-		var payload map[string]string
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("decode enrollment body: %v", err)
-		}
-		if payload["tunnelTarget"] != "https://host_local.hosts.hopter.run" {
-			t.Fatalf("tunnel target = %q", payload["tunnelTarget"])
-		}
-		enrolled = true
-		_, _ = w.Write([]byte(`{"host":{"id":"host_local","name":"host_local","status":"online"}}`))
-	})
-	defer broker.Close()
-
 	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
 	if err := serverhttp.WriteRelayAuthFile(authPath, serverhttp.RelayCredential{
 		HostID:         "host_local",
 		WorkspaceSlug:  "alice",
 		WorkspaceURL:   "https://alice.hopter.dev",
-		BrokerBaseURL:  broker.URL,
 		TunnelTarget:   "https://host_local.hosts.hopter.run",
-		RelayToken:     "relay-token",
 		ConnectorToken: "connector-token",
 		ExpiresAt:      time.Now().Add(time.Hour),
 	}); err != nil {
@@ -261,9 +239,6 @@ func TestMaybeStartRelayStartsConnectorWhenConnectorTokenExists(t *testing.T) {
 	got := strings.Join(args, " ")
 	if got != "tunnel --no-autoupdate run --token connector-token" {
 		t.Fatalf("args = %q", got)
-	}
-	if !enrolled {
-		t.Fatal("expected host enrollment request")
 	}
 }
 

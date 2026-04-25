@@ -306,14 +306,6 @@ func startRelayWithStoredAuth(ctx context.Context, cfg app.Config, store serverh
 		return err
 	}
 
-	if strings.TrimSpace(credential.RelayToken) != "" {
-		if err := enrollRelayHost(ctx, cfg, credential); err != nil {
-			if out != nil {
-				fmt.Fprintf(out, "  Host enrollment failed: %v\n\n", err)
-			}
-			return err
-		}
-	}
 	startRelayHeartbeat(ctx, cfg, store, credential)
 	startRelayReleaseOnShutdown(ctx, cfg, store, credential)
 
@@ -440,41 +432,6 @@ func relayConnectorCommand(cfg app.Config, credential serverhttp.RelayCredential
 	return command, []string{"tunnel", "--no-autoupdate", "run", "--token", token}
 }
 
-func enrollRelayHost(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
-	endpoint, err := relayBrokerURL(credential, "/api/relay/hosts/"+url.PathEscape(cfg.HostID))
-	if err != nil {
-		return err
-	}
-	tunnelTarget := strings.TrimSpace(credential.TunnelTarget)
-	if tunnelTarget == "" {
-		tunnelTarget = cfg.HostID + ".hopter.internal"
-	}
-
-	body, err := json.Marshal(map[string]string{
-		"displayName":  cfg.HostID,
-		"status":       "online",
-		"tunnelTarget": tunnelTarget,
-	})
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPut, endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.RelayToken)
-	request.Header.Set("Content-Type", "application/json")
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("broker enrollment returned %d", response.StatusCode)
-	}
-	return nil
-}
-
 func markRelayReady(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
 	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
 		return nil
@@ -544,28 +501,11 @@ func startRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.R
 }
 
 func sendRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
-	if strings.TrimSpace(credential.RelayLeaseID) != "" && credential.RelayLeaseVersion > 0 {
-		return sendRelayAPIHeartbeat(ctx, cfg, store, credential)
+	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
+		return nil
 	}
 
-	endpoint, err := relayBrokerURL(credential, "/api/relay/hosts/"+url.PathEscape(cfg.HostID)+"/heartbeat")
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.RelayToken)
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("broker heartbeat returned %d", response.StatusCode)
-	}
-	return nil
+	return sendRelayAPIHeartbeat(ctx, cfg, store, credential)
 }
 
 func sendRelayAPIHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
@@ -678,23 +618,6 @@ func relayAPILeaseURL(cfg app.Config, leaseID string, action string) (string, er
 		return "", fmt.Errorf("relay API URL must include scheme and host")
 	}
 	target.Path = "/api/relay/leases/" + url.PathEscape(leaseID) + "/" + strings.TrimLeft(action, "/")
-	target.RawQuery = ""
-	return target.String(), nil
-}
-
-func relayBrokerURL(credential serverhttp.RelayCredential, path string) (string, error) {
-	base := strings.TrimSpace(credential.BrokerBaseURL)
-	if base == "" {
-		base = credential.WorkspaceURL
-	}
-	target, err := url.Parse(base)
-	if err != nil {
-		return "", err
-	}
-	if target.Scheme == "" || target.Host == "" {
-		return "", fmt.Errorf("relay broker URL must include scheme and host")
-	}
-	target.Path = path
 	target.RawQuery = ""
 	return target.String(), nil
 }

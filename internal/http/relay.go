@@ -640,6 +640,7 @@ func relayAuthFileExists(path string) bool {
 
 func relayAuthUsable(credential RelayCredential, now time.Time) bool {
 	hasCredential := strings.TrimSpace(credential.RelayToken) != "" ||
+		strings.TrimSpace(credential.ConnectorToken) != "" ||
 		strings.TrimSpace(credential.OAuthAccessToken) != "" ||
 		strings.TrimSpace(credential.OAuthRefreshToken) != ""
 	if !hasCredential {
