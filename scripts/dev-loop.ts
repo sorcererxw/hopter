@@ -21,6 +21,7 @@ const goDevHost = uiDevHost
 const uiDevProxyHost = normalizeLocalhostHost(uiDevHost)
 const uiDevProxyUrl = localHttpUrl(uiDevHost, 5173)
 const healthUrl = "http://127.0.0.1:8787/healthz"
+const relayMode = process.argv.slice(2).includes("--relay")
 
 let viteProc: ReturnType<typeof spawn> | null = null
 let goProc: ReturnType<typeof spawn> | null = null
@@ -290,19 +291,25 @@ async function startVite() {
 }
 
 function resolveGoRunner() {
+  const args = ["run", "github.com/air-verse/air@latest", "-c", ".air.toml"]
+  if (relayMode) {
+    args.push("--", "--relay")
+  }
+
   return {
     command: "go",
-    args: ["run", "github.com/air-verse/air@latest", "-c", ".air.toml"],
+    args,
   }
 }
 
 async function startGoLoop() {
-  printConsoleLine("supervisor", "starting go hot reload loop")
+  printConsoleLine("supervisor", `starting go hot reload loop${relayMode ? " with relay enabled" : ""}`)
   appendDevLog(
     "supervisor",
     {
       event: "go_loop_starting",
       proxyUrl: uiDevProxyUrl,
+      relay: relayMode,
     },
     repoRoot
   )

@@ -94,12 +94,6 @@
         @apply border-border outline-focus/50;
     }
 
-    html,
-    body,
-    #root {
-        @apply overflow-hidden h-full bg-background font-sans font-medium text-base text-foreground antialiased;
-    }
-
     code,
     pre {
         @apply font-mono;

@@ -1,8 +1,9 @@
-.PHONY: help dev reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-docs validate-app-server-runtime validate-app-server-approvals validate-app-server-reasoning validate-git-actions validate-tasks-idl validate-tasks-store validate-interrupt-ui validate-update-ui validate-all
+.PHONY: help dev dev-relay reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-docs validate-app-server-runtime validate-app-server-approvals validate-app-server-reasoning validate-git-actions validate-tasks-idl validate-tasks-store validate-interrupt-ui validate-update-ui validate-all
 
 help:
 	@echo "Targets:"
 	@echo "  dev                Run the AI-first live loop with Vite, Go hot reload, and persistent logs"
+	@echo "  dev-relay          Run the live loop with hosted relay mode enabled"
 	@echo "  reset              Stop stale listeners on 5173/8787 and clear tmp/air"
 	@echo "  verify-live        Attach to the current dev loop and run a live smoke check"
 	@echo "  start              Build UI, then run the Go server"
@@ -37,6 +38,9 @@ help:
 
 dev:
 	bash scripts/dev.sh
+
+dev-relay:
+	bash scripts/dev.sh --relay
 
 reset:
 	bash scripts/reset-dev.sh

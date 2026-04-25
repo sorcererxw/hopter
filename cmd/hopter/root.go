@@ -624,14 +624,21 @@ func relayAPILeaseURL(cfg app.Config, leaseID string, action string) (string, er
 
 func relayLoginURL(cfg app.Config) string {
 	callbackURL := localBrowserURL(cfg.HTTP) + "/api/relay/callback"
-	loginURL, err := serverhttp.BeginRelayOAuthLogin(callbackURL, relayHTTPOptions(cfg))
-	if err == nil {
-		return loginURL
-	}
+	authorizeURL, authorizeErr := serverhttp.BeginRelayOAuthLogin(callbackURL, relayHTTPOptions(cfg))
 
 	target, err := urlWithFallback(cfg.Relay.AuthURL)
 	if err != nil {
-		target, _ = urlWithFallback("https://auth.hopter.dev/login")
+		target, _ = urlWithFallback("https://hopter.dev/login")
+	}
+	if authorizeErr == nil {
+		target.Path = "/login"
+		query := target.Query()
+		query.Set("mode", "cli-relay")
+		query.Set("hostId", cfg.HostID)
+		query.Set("callbackURL", authorizeURL)
+		query.Set("exchangeURL", cfg.Relay.ExchangeURL)
+		target.RawQuery = query.Encode()
+		return target.String()
 	}
 
 	query := target.Query()

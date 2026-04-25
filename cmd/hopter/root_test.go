@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,6 +64,27 @@ func TestRelayLoginURLIncludesCallbackAndHost(t *testing.T) {
 	}
 
 	got := relayLoginURL(cfg)
+	parsed, err := url.Parse(got)
+	if err != nil {
+		t.Fatalf("relayLoginURL returned invalid URL %q: %v", got, err)
+	}
+	if parsed.Scheme != "https" || parsed.Host != "hopter.dev" || parsed.Path != "/login" {
+		t.Fatalf("relayLoginURL should open the site login page, got %s", got)
+	}
+	authorizeURL := parsed.Query().Get("callbackURL")
+	if authorizeURL == "" {
+		t.Fatalf("relayLoginURL missing nested OAuth callbackURL:\n%s", got)
+	}
+	for _, want := range []string{
+		"https://hopter.dev/login?",
+		"callbackURL=",
+		"mode=cli-relay",
+		"hostId=host_local",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("relayLoginURL missing %q:\n%s", want, got)
+		}
+	}
 	for _, want := range []string{
 		"https://auth.hopter.dev/api/auth/oauth2/authorize?",
 		"response_type=code",
@@ -72,8 +94,8 @@ func TestRelayLoginURLIncludesCallbackAndHost(t *testing.T) {
 		"code_challenge_method=S256",
 		"resource=hopter",
 	} {
-		if !strings.Contains(got, want) {
-			t.Fatalf("relayLoginURL missing %q:\n%s", want, got)
+		if !strings.Contains(authorizeURL, want) {
+			t.Fatalf("relayLoginURL nested authorize URL missing %q:\n%s", want, authorizeURL)
 		}
 	}
 }
@@ -96,7 +118,7 @@ func TestMaybeStartRelayOpensLoginWhenTokenMissing(t *testing.T) {
 		HTTP:   app.HTTPConfig{Host: "127.0.0.1", Port: 18787},
 		Relay: app.RelayConfig{
 			Enabled:   true,
-			AuthURL:   "https://auth.hopter.dev/login",
+			AuthURL:   "https://hopter.dev/login",
 			AuthStore: "file",
 			AuthPath:  filepath.Join(t.TempDir(), "missing-token"),
 		},

@@ -1,13 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+relay_mode=0
+for arg in "$@"; do
+  case "${arg}" in
+    --relay)
+      relay_mode=1
+      ;;
+    *)
+      echo "usage: $0 [--relay]" >&2
+      exit 2
+      ;;
+  esac
+done
+
 if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   repo_base="$(basename "${repo_root}" | LC_ALL=C sed 's/[^A-Za-z0-9._-]/-/g')"
   repo_hash="$(printf '%s' "${repo_root}" | shasum -a 256 | awk '{print substr($1, 1, 8)}')"
   repo_slug="${repo_base:-workspace}-${repo_hash}"
   tmux_session="hopter-${repo_slug}-dev"
-  dev_command="HOPTER_DEV_FOREGROUND=1 make dev"
+  dev_target="dev"
+  if [[ "${relay_mode}" == "1" ]]; then
+    dev_target="dev-relay"
+  fi
+  dev_command="HOPTER_DEV_FOREGROUND=1 make ${dev_target}"
 
   has_listener() {
     lsof -tiTCP:"$1" -sTCP:LISTEN -n -P >/dev/null 2>&1
@@ -33,4 +50,4 @@ if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   echo "[supervisor] tmux not found; running foreground in a non-interactive shell" >&2
 fi
 
-exec bun scripts/dev-loop.ts
+exec bun scripts/dev-loop.ts "$@"

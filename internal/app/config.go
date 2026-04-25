@@ -111,10 +111,10 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 	cfg.Relay = RelayConfig{
 		Enabled:           opts.Relay,
 		ResetAuth:         opts.ResetAuth,
-		AuthURL:           firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://auth.hopter.dev/api/auth/oauth2/authorize"),
+		AuthURL:           firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://hopter.dev/login"),
 		ExchangeURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_EXCHANGE_URL")), "https://api.hopter.dev/api/relay/exchange"),
 		AllocateURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_ALLOCATE_URL")), "https://api.hopter.dev/api/relay/allocate"),
-		OAuthAuthorizeURL: firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_AUTHORIZE_URL")), strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://auth.hopter.dev/api/auth/oauth2/authorize"),
+		OAuthAuthorizeURL: firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_AUTHORIZE_URL")), "https://auth.hopter.dev/api/auth/oauth2/authorize"),
 		OAuthTokenURL:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_TOKEN_URL")), "https://auth.hopter.dev/api/auth/oauth2/token"),
 		OAuthClientID:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_CLIENT_ID")), "hopter-cli"),
 		OAuthAudience:     firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_OAUTH_AUDIENCE")), "hopter"),
