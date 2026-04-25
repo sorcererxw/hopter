@@ -34,7 +34,7 @@ export function SkillReferenceChip({
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-80 max-w-xs -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-left text-sm leading-5 whitespace-normal text-popover-foreground shadow-lg group-hover:block"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-80 max-w-xs -translate-x-1/2 rounded-lg border border-border bg-overlay px-3 py-2 text-left text-sm leading-5 whitespace-normal text-overlay-foreground shadow-lg group-hover:block"
         data-testid="skill-reference-tooltip"
       >
         <span className="line-clamp-3 block">{tooltipDescription}</span>

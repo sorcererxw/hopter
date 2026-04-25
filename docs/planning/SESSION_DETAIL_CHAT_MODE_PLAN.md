@@ -375,7 +375,7 @@ New expected files:
 - `ui/src/components/app/session-transcript.tsx`
 - `ui/src/components/app/session-message-bubble.tsx`
 - `ui/src/components/app/session-composer-toolbar.tsx`
-- optional shadcn primitive additions if we need `select`, `tooltip`, or `dropdown-menu`
+- optional HeroUI component additions if we need `select`, `tooltip`, or `dropdown-menu`
 
 ### Selected session pane refactor
 

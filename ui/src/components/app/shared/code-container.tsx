@@ -2,6 +2,8 @@ import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
+import { workspaceScrollbarClassName } from "./style-classnames"
+
 type CodeContainerProps<T extends ElementType = "div"> = {
   as?: T
   children: ReactNode
@@ -19,7 +21,8 @@ export function CodeContainer<T extends ElementType = "div">({
   return (
     <Component
       className={cn(
-        "workspace-scrollbar max-w-full overflow-x-auto rounded-lg border border-border bg-card px-4 py-3 font-mono text-sm leading-6 text-foreground",
+        workspaceScrollbarClassName,
+        "max-w-full overflow-x-auto rounded-lg border border-border bg-surface px-4 py-3 font-mono text-sm leading-6 text-foreground",
         className
       )}
       {...props}

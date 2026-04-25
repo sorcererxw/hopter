@@ -70,7 +70,7 @@ Create:
 - `ui/package.json`
 - `ui/vite.config.ts`
 - `ui/src/main.tsx`
-- Tailwind + shadcn baseline
+- Tailwind + HeroUI baseline
 
 Acceptance:
 

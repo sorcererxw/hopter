@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/sorcererxw/.gstack/projects/unknown/master-autoplan-restore-20260418-153359.md -->
+<!-- /autoplan restore point: local gstack project artifact -->
 # UI Font Configuration Refactor Plan
 
 ## Status
@@ -39,8 +39,8 @@ After this refactor, the user should feel one coherent typographic voice:
 ## Constraints
 
 1. Follow the UI refinement spec: keep `Geist Variable + JetBrains Mono`.
-2. Do not mutate `ui/src/components/ui/*` primitives unless there is a true primitive bug.
-3. Prefer shadcn and workspace tokens over ad hoc values.
+2. Do not introduce a second component baseline.
+3. Prefer HeroUI and workspace tokens over ad hoc values.
 4. Keep the change in the font/typography blast radius. This is not a visual redesign.
 5. Validation must produce evidence, not just a code diff.
 
@@ -48,7 +48,7 @@ After this refactor, the user should feel one coherent typographic voice:
 
 ### Premise 1
 
-The right problem is not "pick better fonts." That decision is already made in [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md).
+The right problem is not "pick better fonts." That decision is already made in [`docs/product/WORKSPACE_UI_REFINEMENT_SPEC.md`](../product/WORKSPACE_UI_REFINEMENT_SPEC.md).
 
 Verdict: accepted.
 
@@ -111,7 +111,7 @@ THIS PLAN
 |---|---:|---|---|---|
 | A. Patch every component inline | low | Fast initial diff | Locks inconsistency into more class strings, hard to maintain | reject |
 | B. Add semantic typography utilities in `ui/src/index.css`, migrate affected components, and add a drift inventory check | medium | Explicit, low-risk, future-proof, matches repo pattern | Slight upfront naming work plus one validation rule | accept |
-| C. Push typography into `ui/src/components/ui/*` primitives | medium-high | Centralizes some defaults | Violates UI guardrail, too wide for this blast radius | reject |
+| C. Push typography into primitive wrappers | medium-high | Centralizes some defaults | Violates UI guardrail, too wide for this blast radius | reject |
 
 ## Accepted Scope
 
@@ -126,14 +126,14 @@ THIS PLAN
 ## Deferred To TODOS.md
 
 1. Audit the entire settings surface for placeholder values beyond fonts.
-2. Consider a follow-up pass to reduce overuse of `text-muted-foreground` outside the font refactor blast radius.
+2. Consider a follow-up pass to reduce overuse of `text-muted` outside the font refactor blast radius.
 3. Consider screenshot regression coverage dedicated to typography hierarchy once the terminal stack stabilizes.
 
 ## NOT In Scope
 
 1. Replacing the actual font families.
 2. Redesigning the terminal feature or transcript information architecture.
-3. Editing shadcn primitives for style preference only.
+3. Editing primitive wrappers for style preference only.
 4. Theme token changes unrelated to typography.
 5. Backend, Connect, SSE, or Codex runtime behavior.
 
@@ -397,7 +397,7 @@ The implementation is not complete until evidence exists for:
 | 1 | CEO | Treat this as a system convergence task, not font exploration | mechanical | completeness | the repo already chose the font families | replacing fonts |
 | 2 | CEO | Use selective expansion inside the app-layer typography blast radius | taste | boil lakes | all duplicated owners directly touched should converge in one pass | pilot-only pass |
 | 3 | Design | Keep typography ownership in CSS utilities, not component-local strings | mechanical | explicit over clever | the concern is semantic typography, not component state | TS helper abstraction |
-| 4 | Design | Do not modify shadcn primitives unless a real bug appears | mechanical | pragmatic | matches repo guardrail and limits blast radius | primitive-layer refactor |
+| 4 | Design | Do not modify primitive wrappers unless a real bug appears | mechanical | pragmatic | matches repo guardrail and limits blast radius | primitive-layer refactor |
 | 5 | Eng | Normalize terminal, transcript payloads, inspector, and composer together | taste | choose completeness | these are the visible mono surfaces users read together | settings-only or transcript-only patch |
 | 6 | Eng | Preserve density on technical surfaces unless a local size is clearly arbitrary | taste | pragmatic | convergence should not silently become a readability redesign | force `text-base` everywhere |
 | 7 | Eng | Add a grep-based inventory check beside screenshots | mechanical | explicit over clever | screenshots show looks, grep shows drift | screenshot-only validation |

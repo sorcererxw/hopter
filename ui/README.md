@@ -1,21 +1,13 @@
-# React + TypeScript + Vite + shadcn/ui
+# Hopter UI
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+React + TypeScript + Vite workspace UI for `hopter`.
 
-## Adding components
+The component baseline is HeroUI v3. Do not add shadcn components or restore a
+`components.json` shadcn registry config.
 
-To add components to your app, run the following command:
+## Development
 
 ```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `src/components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+pnpm --dir ui dev
+pnpm --dir ui build
 ```

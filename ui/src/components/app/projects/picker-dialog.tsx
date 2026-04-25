@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { File, Folder, FolderGit2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { Button, Modal, Skeleton } from "@heroui/react"
 
 import { useWorkspaceShell } from "@/components/app/workspace"
 import type {
@@ -15,9 +16,6 @@ import {
 } from "@/features/host/use-host-browser"
 import { useCreateProject } from "@/features/projects/use-projects"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 
 const EMPTY_ROOTS: DirectoryRoot[] = []
 
@@ -64,25 +62,30 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
   const { closeProjectPicker } = useWorkspaceShell()
   const navigate = useNavigate()
   return (
-    <Dialog
-      open={open}
+    <Modal
+      isOpen={open}
       onOpenChange={(nextOpen) => !nextOpen && closeProjectPicker()}
     >
-      <DialogContent
-        showCloseButton={false}
-        data-testid="project-picker-dialog-shell"
-        className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-base text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
-      >
-        <ProjectPickerContent
-          onProjectOpened={(projectId) => {
-            closeProjectPicker()
-            navigate(`/?compose=1&projectId=${encodeURIComponent(projectId)}`)
-          }}
-          onRequestClose={closeProjectPicker}
-          standalone={false}
-        />
-      </DialogContent>
-    </Dialog>
+      <Modal.Backdrop variant="opaque">
+        <Modal.Container size="cover">
+          <Modal.Dialog
+            data-testid="project-picker-dialog-shell"
+            className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-base text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
+          >
+            <ProjectPickerContent
+              onProjectOpened={(projectId) => {
+                closeProjectPicker()
+                navigate(
+                  `/?compose=1&projectId=${encodeURIComponent(projectId)}`
+                )
+              }}
+              onRequestClose={closeProjectPicker}
+              standalone={false}
+            />
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal>
   )
 }
 
@@ -233,17 +236,17 @@ function ProjectPickerContent({
     <div
       data-testid={standalone ? "project-picker-page" : "project-picker-dialog"}
       className={cn(
-        "flex h-full min-h-0 w-full flex-col overflow-hidden bg-popover",
+        "flex h-full min-h-0 w-full flex-col overflow-hidden bg-overlay",
         standalone ? "" : "max-w-7xl rounded-xl border border-border"
       )}
     >
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-popover">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-overlay">
           {listingQuery.isLoading ? (
             <div className="space-y-2 px-4 py-4">
-              <Skeleton className="h-10 w-full bg-accent" />
-              <Skeleton className="h-10 w-full bg-accent" />
-              <Skeleton className="h-10 w-full bg-accent" />
+              <Skeleton className="h-10 w-full bg-surface-tertiary" />
+              <Skeleton className="h-10 w-full bg-surface-tertiary" />
+              <Skeleton className="h-10 w-full bg-surface-tertiary" />
             </div>
           ) : (
             <ListView
@@ -265,19 +268,18 @@ function ProjectPickerContent({
         </div>
       ) : null}
 
-      <div className="flex h-13 items-center justify-between border-t border-border bg-card px-5">
-        <div className="min-w-0 flex-1 overflow-hidden text-muted-foreground">
+      <div className="flex h-13 items-center justify-between border-t border-border bg-surface px-5">
+        <div className="min-w-0 flex-1 overflow-hidden text-muted">
           <span className="truncate">{footerText}</span>
         </div>
 
         <div className="ml-4 flex shrink-0 items-center gap-2">
-          <Button type="button" onClick={onRequestClose} variant="secondary">
+          <Button type="button" onPress={onRequestClose} variant="secondary">
             {t("projectPicker.cancel")}
           </Button>
           <Button
             type="button"
-            onClick={() => void handleOpen()}
-            variant="default"
+            onPress={() => void handleOpen()}
             className={cn(
               createProject.isPending ? "cursor-wait opacity-70" : ""
             )}
@@ -317,15 +319,15 @@ function ListView({
         {!standalone ? <col className="w-1/6" /> : null}
       </colgroup>
       {!standalone ? (
-        <thead className="text-sm font-normal text-muted-foreground">
+        <thead className="text-sm font-normal text-muted">
           <tr className="border-b border-border">
-            <th className="sticky top-0 bg-popover px-6 py-4 text-left">
+            <th className="sticky top-0 bg-overlay px-6 py-4 text-left">
               {t("projectPicker.name")}
             </th>
-            <th className="sticky top-0 bg-popover px-6 py-4 text-left">
+            <th className="sticky top-0 bg-overlay px-6 py-4 text-left">
               {t("projectPicker.dateModified")}
             </th>
-            <th className="sticky top-0 bg-popover px-6 py-4 text-left">
+            <th className="sticky top-0 bg-overlay px-6 py-4 text-left">
               {t("projectPicker.size")}
             </th>
           </tr>
@@ -346,7 +348,7 @@ function ListView({
                 // Single click previews eligibility in the footer; double click
                 // navigates into directories for faster repo discovery.
                 "cursor-pointer transition",
-                selected ? "bg-muted" : "hover:bg-muted"
+                selected ? "bg-surface-tertiary" : "hover:bg-surface-tertiary"
               )}
             >
               <td className="px-6 py-4">
@@ -358,7 +360,7 @@ function ListView({
                         ? "text-foreground"
                         : entry.isDirectory
                           ? "text-sky-400"
-                          : "text-muted-foreground"
+                          : "text-muted"
                     )}
                   />
                   <span
@@ -375,9 +377,7 @@ function ListView({
                   <td
                     className={cn(
                       "px-6 py-4",
-                      selected
-                        ? "text-muted-foreground"
-                        : "text-muted-foreground"
+                      selected ? "text-muted" : "text-muted"
                     )}
                   >
                     —
@@ -385,9 +385,7 @@ function ListView({
                   <td
                     className={cn(
                       "px-6 py-4",
-                      selected
-                        ? "text-muted-foreground"
-                        : "text-muted-foreground"
+                      selected ? "text-muted" : "text-muted"
                     )}
                   >
                     —
@@ -405,7 +403,7 @@ function ListView({
 function EmptyState() {
   const { t } = useTranslation()
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-muted-foreground">
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-3 py-4 text-muted">
       <Folder className="size-8 opacity-30" />
       <span>{t("projectPicker.noResults")}</span>
     </div>

@@ -23,9 +23,9 @@ func (f *fakeProjectSessionLister) ListSessions(projectID string, limit uint32) 
 func TestListProjectsIncludesSyntheticSessionProjects(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	syntheticProject := core.Project{
-		ID:             "cwd:/tmp/codeshell",
-		Name:           "codeshell",
-		RootPath:       "/tmp/codeshell",
+		ID:             "cwd:/tmp/sample-project",
+		Name:           "sample-project",
+		RootPath:       "/tmp/sample-project",
 		DefaultBackend: "codex",
 		CreatedAt:      time.Now().UTC(),
 		UpdatedAt:      time.Now().UTC(),

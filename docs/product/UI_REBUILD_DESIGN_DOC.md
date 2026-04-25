@@ -237,8 +237,9 @@ Guidelines:
 ### Styling rules
 
 - Tailwind utility styling remains allowed and expected
-- shadcn/ui primitives remain the base building blocks
-- new or rebuilt primitives must be generated via the official shadcn CLI
+- HeroUI v3 should back interactive primitives
+- app-layer code should use HeroUI directly or the temporary `heroui-adapter.tsx` compatibility layer
+- compatibility wrappers should be simplified toward HeroUI compound APIs over time
 - avoid introducing a parallel custom primitive layer
 
 ## Interaction rules
@@ -278,4 +279,4 @@ Do not build:
 - a project-centric admin IA
 - a timeline-first reading experience
 - a separate page for every small object
-- a design system that drifts away from Tailwind + shadcn discipline
+- a design system that drifts away from Tailwind + HeroUI-backed primitive discipline

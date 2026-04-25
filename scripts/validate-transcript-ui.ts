@@ -374,7 +374,7 @@ async function assertCommandStatusPrefixMuted(
   }
 
   const className = (await prefix.getAttribute("class")) ?? "";
-  if (!className.includes("text-muted-foreground")) {
+  if (!className.includes("text-muted")) {
     throw new Error(`${expectedText} command prefix does not use muted color`);
   }
 }
@@ -611,10 +611,10 @@ async function main() {
     await reasoningMenuButton.getByText("Medium").waitFor();
 
     checks.push({
-      name: "composer shadcn selection menus",
+      name: "composer HeroUI selection menus",
       status: "pass",
       detail:
-        "composer model and reasoning controls opened as shadcn dropdown radio menus, fast mode toggled the model trigger icon, and selected values updated",
+        "composer model and reasoning controls opened as HeroUI dropdown radio menus, fast mode toggled the model trigger icon, and selected values updated",
     });
 
     await page.getByTestId("session-transcript").waitFor();

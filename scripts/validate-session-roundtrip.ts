@@ -10,7 +10,7 @@ import {
 } from "./lib/rebuild-validation.ts";
 
 const BASE_URL = "http://127.0.0.1:8787";
-const CODESHELL_ROOT = process.cwd();
+const REPO_ROOT = process.cwd();
 
 type Project = {
   id: string;
@@ -137,7 +137,7 @@ async function main() {
     const projectResponse = await listProjects();
     const projects = projectResponse.projects ?? [];
     const targetProject =
-      projects.find((project) => project.rootPath === CODESHELL_ROOT) ?? projects[0];
+      projects.find((project) => project.rootPath === REPO_ROOT) ?? projects[0];
 
     checks.push({
       name: "project list includes selectable repo",

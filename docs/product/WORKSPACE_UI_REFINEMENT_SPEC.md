@@ -10,7 +10,7 @@
 
 This document turns the current UI review into implementation-ready rules.
 
-[`UI_REBUILD_DESIGN_DOC.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/product/UI_REBUILD_DESIGN_DOC.md) still defines the product shape.
+[`UI_REBUILD_DESIGN_DOC.md`](UI_REBUILD_DESIGN_DOC.md) still defines the product shape.
 This document defines the next-pass refinement rules that should guide the actual UI implementation.
 
 The goal is not "make it prettier."
@@ -26,7 +26,7 @@ The goal is:
 
 This spec does not do the following:
 
-- replace shadcn primitives
+- replace the HeroUI component baseline
 - introduce a second component library
 - redesign the route model from scratch
 - add a real terminal implementation
@@ -34,7 +34,7 @@ This spec does not do the following:
 
 ## Hard constraints
 
-1. Do not modify `ui/src/components/ui/*` primitives unless there is a true primitive bug.
+1. Do not introduce a second component baseline.
 2. Apply the refinement pass in `ui/src/components/app/*` and `ui/src/index.css`.
 3. Keep the product as a workspace shell, not a dashboard and not a marketing page.
 4. Keep `Geist Variable + JetBrains Mono`.
@@ -362,7 +362,7 @@ The goal is to stop the UI from feeling:
 
 ### Muted text usage
 
-Reduce `text-muted-foreground` usage sharply.
+Reduce `text-muted` usage sharply.
 
 Use muted text only for:
 
@@ -473,12 +473,12 @@ The following files are the expected touch points for implementation.
 
 ### Core
 
-- [`ui/src/index.css`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/index.css)
-- [`ui/src/components/app/workspace-topbar.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/workspace-topbar.tsx)
-- [`ui/src/components/app/session-composer.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-composer.tsx)
-- [`ui/src/components/app/session-rail.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-rail.tsx)
-- [`ui/src/components/app/session-detail-pane.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-detail-pane.tsx)
-- [`ui/src/components/app/session-rich-text.tsx`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/ui/src/components/app/session-rich-text.tsx)
+- [`ui/src/index.css`](../../ui/src/index.css)
+- [`ui/src/components/app/workspace-topbar.tsx`](../../ui/src/components/app/workspace-topbar.tsx)
+- [`ui/src/components/app/session-composer.tsx`](../../ui/src/components/app/session-composer.tsx)
+- [`ui/src/components/app/session-rail.tsx`](../../ui/src/components/app/session-rail.tsx)
+- [`ui/src/components/app/session-detail-pane.tsx`](../../ui/src/components/app/session-detail-pane.tsx)
+- [`ui/src/components/app/session-rich-text.tsx`](../../ui/src/components/app/session-rich-text.tsx)
 
 ### Principles for implementation
 

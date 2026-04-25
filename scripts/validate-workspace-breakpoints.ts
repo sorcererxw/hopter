@@ -16,6 +16,8 @@ const healthUrl = `${baseUrl}/healthz`;
 
 const sessionId = "sess_breakpoint_probe";
 const projectId = "proj_breakpoint_probe";
+const repoRoot = process.cwd();
+const projectName = path.basename(repoRoot);
 const updatedAt = "2026-04-17T12:00:00Z";
 
 function buildListProjectsResponse() {
@@ -23,8 +25,8 @@ function buildListProjectsResponse() {
     projects: [
       {
         id: projectId,
-        name: "codeshell",
-        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
+        name: projectName,
+        rootPath: repoRoot,
         defaultBackend: "codex",
         createdAt: updatedAt,
         updatedAt,
@@ -41,8 +43,8 @@ function buildListSessionsResponse() {
         title: "Breakpoint Probe",
         project: {
           id: projectId,
-          name: "codeshell",
-          rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
+          name: projectName,
+          rootPath: repoRoot,
         },
         status: "SESSION_STATUS_RUNNING",
         updatedAt,
@@ -59,8 +61,8 @@ function buildSessionMetaResponse() {
       title: "Breakpoint Probe",
       project: {
         id: projectId,
-        name: "codeshell",
-        rootPath: "/Users/sorcererxw/repo/sorcererxw/codeshell/hopter",
+        name: projectName,
+        rootPath: repoRoot,
       },
       status: "SESSION_STATUS_RUNNING",
       summary: "Breakpoint shell validation is in progress.",

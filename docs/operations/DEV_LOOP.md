@@ -9,8 +9,8 @@ Use it when you need to answer one of four questions:
 3. where AI should read machine state and logs
 4. how to validate the current live loop without rebuilding everything
 
-If you only need the shortest path, start with [`README.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/README.md).
-If you need the full contributor workflow, read [`docs/operations/CONTRIBUTING.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/CONTRIBUTING.md).
+If you only need the shortest path, start with [`README.md`](../../README.md).
+If you need the full contributor workflow, read [`docs/operations/CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## One-screen summary
 
@@ -106,7 +106,7 @@ Configured exclusions include:
 - `tmp/`
 - `node_modules/`
 
-The config lives in [`.air.toml`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/.air.toml).
+The config lives in [`.air.toml`](../../.air.toml).
 
 ## Machine-readable dev state
 
@@ -116,10 +116,10 @@ The local loop writes state to:
 ~/.hopter/devlogs/<repo-slug>/state.json
 ```
 
-For this repo the usual path is:
+For a checkout whose directory is named `hopter`, this resolves to a path like:
 
 ```text
-~/.hopter/devlogs/codeshell/state.json
+~/.hopter/devlogs/hopter-<repo-path-hash>/state.json
 ```
 
 State values:
@@ -135,7 +135,7 @@ AI agents should treat this file as the authority for "should I wait, or is the 
 Typical usage:
 
 ```bash
-cat ~/.hopter/devlogs/codeshell/state.json
+cat ~/.hopter/devlogs/<repo-slug>/state.json
 ```
 
 ## File-based log plane
@@ -185,9 +185,9 @@ use an environment-variable override to avoid the collision.
 Examples:
 
 ```bash
-tail -f ~/.hopter/devlogs/codeshell/timeline.jsonl
-rg '"status":"build_failed"|Port 5173|address already in use' ~/.hopter/devlogs/codeshell/
-jq -c 'select(.source=="supervisor")' ~/.hopter/devlogs/codeshell/timeline.jsonl | tail -n 20
+tail -f ~/.hopter/devlogs/<repo-slug>/timeline.jsonl
+rg '"status":"build_failed"|Port 5173|address already in use' ~/.hopter/devlogs/<repo-slug>/
+jq -c 'select(.source=="supervisor")' ~/.hopter/devlogs/<repo-slug>/timeline.jsonl | tail -n 20
 ```
 
 ## Console logs vs file logs
@@ -269,8 +269,8 @@ lsof -iTCP:8787 -sTCP:LISTEN -n -P
 Read:
 
 ```bash
-cat ~/.hopter/devlogs/codeshell/state.json
-tail -n 50 ~/.hopter/devlogs/codeshell/timeline.jsonl
+cat ~/.hopter/devlogs/<repo-slug>/state.json
+tail -n 50 ~/.hopter/devlogs/<repo-slug>/timeline.jsonl
 ```
 
 If the state is `rebuilding`, wait.
@@ -281,8 +281,8 @@ If the state is `build_failed`, inspect `go.jsonl`.
 Read:
 
 ```bash
-cat ~/.hopter/devlogs/codeshell/state.json
-tail -n 100 ~/.hopter/devlogs/codeshell/browser.jsonl
+cat ~/.hopter/devlogs/<repo-slug>/state.json
+tail -n 100 ~/.hopter/devlogs/<repo-slug>/browser.jsonl
 cat storage/artifacts/validation/latest-verify-live.txt
 ```
 

@@ -6,7 +6,7 @@ must not be used as active implementation guidance unless a current document in
 
 ## Archive Sets
 
-- [`bun-first-v1/`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/archive/bun-first-v1): old Bun/Hono-first product, architecture, planning, validation, and handoff documents from the pre-Go rebuild direction.
+- [`bun-first-v1/`](bun-first-v1/): old Bun/Hono-first product, architecture, planning, validation, and handoff documents from the pre-Go rebuild direction.
 
 ## Rule
 

@@ -1,4 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import { homedir } from "node:os"
 import path from "node:path"
 
@@ -61,7 +62,10 @@ export function nextDevStateLastError(
 }
 
 export function getRepoSlug(repoRoot = getRepoRoot()) {
-  return path.basename(repoRoot).replace(/[^a-zA-Z0-9._-]+/g, "-")
+  const cleanRoot = path.resolve(repoRoot)
+  const base = path.basename(cleanRoot).replace(/[^a-zA-Z0-9._-]+/g, "-") || "workspace"
+  const hash = createHash("sha256").update(cleanRoot).digest("hex").slice(0, 8)
+  return `${base}-${hash}`
 }
 
 export function getLogsDir(repoRoot = getRepoRoot()) {

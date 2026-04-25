@@ -465,7 +465,7 @@ Update:
 - `workspace-topbar.tsx` to expose `Review`, `Commit All`, `Commit All & Push`
 - `session-detail-pane.tsx` to open the dialog using `session.project.id`
 
-Use shadcn semantic tokens and existing workspace tokens. No hard-coded hex.
+Use HeroUI semantic tokens and existing workspace tokens. No hard-coded hex.
 
 ## State And Event Flow
 

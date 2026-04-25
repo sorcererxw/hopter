@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next"
 import { MoreHorizontal, X } from "lucide-react"
 import { Terminal, useTerminal } from "@wterm/react"
 import "@wterm/react/css"
+import { Button } from "@heroui/react"
 
-import { Button } from "@/components/ui/button"
 import type { useTerminalSession } from "@/features/terminal/use-terminal-session"
 import type { useTerminalUIState } from "@/features/terminal/use-terminal-ui-state"
 import { TerminalStatus } from "@/gen/proto/hopter/v1/terminal_pb"
@@ -210,7 +210,7 @@ export function SessionTerminalDrawer({
 
   return open ? (
     <div
-      className="border-t border-border bg-card"
+      className="border-t border-border bg-surface"
       style={{ height }}
       data-testid="session-terminal-drawer"
     >
@@ -233,7 +233,7 @@ export function SessionTerminalDrawer({
           data-testid="session-terminal-header"
         >
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted">
               <span className="font-mono text-foreground">
                 {header?.shell || "shell"}
               </span>
@@ -241,7 +241,7 @@ export function SessionTerminalDrawer({
               <span>{header?.status || t("terminal.starting")}</span>
             </div>
             {showRunningSummary ? (
-              <div className="truncate pt-1 text-xs text-muted-foreground">
+              <div className="truncate pt-1 text-xs text-muted">
                 {t("terminal.running", { command: header?.commandSummary })}
               </div>
             ) : null}
@@ -250,10 +250,10 @@ export function SessionTerminalDrawer({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              isIconOnly
               aria-label={t("terminal.terminate")}
-              className="text-muted-foreground"
-              onClick={() => {
+              className="text-muted"
+              onPress={() => {
                 const shouldConfirm =
                   isLive && !terminal.terminal?.lastForegroundCommandExited
                 if (
@@ -274,10 +274,10 @@ export function SessionTerminalDrawer({
             <Button
               type="button"
               variant="ghost"
-              size="icon"
+              isIconOnly
               aria-label={t("terminal.hide")}
-              className="text-muted-foreground"
-              onClick={() => setOpen(false)}
+              className="text-muted"
+              onPress={() => setOpen(false)}
             >
               <X className="size-4" />
             </Button>
@@ -337,13 +337,13 @@ export function SessionTerminalDrawer({
 
               {terminal.streamStatus === "starting" &&
               !terminal.errorMessage ? (
-                <div className="absolute inset-0 bg-card/90">
+                <div className="absolute inset-0 bg-surface/90">
                   <StatePanel label={t("terminal.starting")} />
                 </div>
               ) : null}
 
               {terminal.streamStatus === "error" ? (
-                <div className="absolute inset-0 bg-card/90">
+                <div className="absolute inset-0 bg-surface/90">
                   <StatePanel
                     actionLabel={t("terminal.retry")}
                     description={terminal.errorMessage}
@@ -375,12 +375,10 @@ function StatePanel({
 }) {
   return (
     <div className="flex h-full items-center justify-center px-6">
-      <div className="rounded-lg border border-border bg-card px-6 py-4 text-center">
+      <div className="rounded-lg border border-border bg-surface px-6 py-4 text-center">
         <div className="text-foreground">{label}</div>
         {description ? (
-          <div className="pt-1 font-normal text-muted-foreground">
-            {description}
-          </div>
+          <div className="pt-1 font-normal text-muted">{description}</div>
         ) : null}
         {actionLabel && onAction ? (
           <Button
@@ -388,7 +386,7 @@ function StatePanel({
             variant="secondary"
             size="sm"
             className="mt-3 text-foreground"
-            onClick={onAction}
+            onPress={onAction}
           >
             {actionLabel}
           </Button>
@@ -410,11 +408,11 @@ function InlineBanner({
   onAction?: () => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-4 py-2 text-foreground">
+    <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-tertiary px-4 py-2 text-foreground">
       <div className="min-w-0">
         <div className="text-foreground">{label}</div>
         {description ? (
-          <div className="truncate text-xs font-normal text-muted-foreground">
+          <div className="truncate text-xs font-normal text-muted">
             {description}
           </div>
         ) : null}
@@ -425,7 +423,7 @@ function InlineBanner({
           variant="secondary"
           size="sm"
           className="text-foreground"
-          onClick={onAction}
+          onPress={onAction}
         >
           {actionLabel}
         </Button>

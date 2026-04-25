@@ -55,15 +55,15 @@ export function CompletedMessageChangedFiles({
 
   return (
     <div
-      className="mt-3 min-w-0 overflow-hidden rounded-xl border border-border bg-card"
+      className="mt-3 min-w-0 overflow-hidden rounded-xl border border-border bg-surface"
       data-testid="session-transcript-completed-message-files"
     >
-      <div className="flex items-center gap-2 border-b border-border bg-popover px-4 py-3 text-foreground">
+      <div className="flex items-center gap-2 border-b border-border bg-overlay px-4 py-3 text-foreground">
         <span>{t("transcript.filesChanged", { count: changes.length })}</span>
         {changes.length > 1 ? (
           <span className="flex shrink-0 items-center gap-1 text-sm">
             <span className="text-emerald-600">+{additions}</span>
-            <span className="text-destructive">-{deletions}</span>
+            <span className="text-danger">-{deletions}</span>
           </span>
         ) : null}
       </div>
@@ -84,11 +84,11 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
   return (
     <div className="min-w-0">
       <TranscriptDisclosureItem
-        buttonClassName="w-full gap-2 py-0.5 text-base text-muted-foreground hover:text-foreground"
+        buttonClassName="w-full gap-2 py-0.5 text-base text-muted hover:text-foreground"
         iconClassName="ml-auto size-3"
         label={
           <>
-            <span className="shrink-0 text-muted-foreground">
+            <span className="shrink-0 text-muted">
               {change.kindLabel}
             </span>
             <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
@@ -97,7 +97,7 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
             {change.additions || change.deletions ? (
               <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
                 <span className="text-emerald-600">+{change.additions}</span>
-                <span className="text-destructive">-{change.deletions}</span>
+                <span className="text-danger">-{change.deletions}</span>
               </span>
             ) : null}
           </>
@@ -128,7 +128,7 @@ function CompletedMessageChangedFileRow({
   return (
     <div className="min-w-0">
       <TranscriptDisclosureItem
-        buttonClassName="w-full items-center gap-3 px-4 py-3 text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+        buttonClassName="w-full items-center gap-3 px-4 py-3 text-muted hover:bg-surface-tertiary hover:text-foreground"
         iconClassName="size-3"
         label={
           <>
@@ -137,7 +137,7 @@ function CompletedMessageChangedFileRow({
             </span>
             <span className="flex shrink-0 items-center gap-1 text-sm">
               <span className="text-emerald-600">+{change.additions}</span>
-              <span className="text-destructive">-{change.deletions}</span>
+              <span className="text-danger">-{change.deletions}</span>
             </span>
             <span className="flex-1" />
           </>
@@ -183,10 +183,10 @@ function diffLineClassName(line: string) {
     return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
   }
   if (line.startsWith("-") && !line.startsWith("---")) {
-    return "bg-destructive/10 text-destructive"
+    return "bg-danger/10 text-danger"
   }
   if (line.startsWith("@@")) {
-    return "bg-accent text-muted-foreground"
+    return "bg-surface-tertiary text-muted"
   }
   return ""
 }

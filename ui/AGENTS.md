@@ -2,7 +2,7 @@
 
 This file adds UI-specific implementation rules for everything under `/ui`.
 
-These rules refine the root [`AGENTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/AGENTS.md). If they conflict, this file wins for `ui/**`.
+These rules refine the root [`AGENTS.md`](../AGENTS.md). If they conflict, this file wins for `ui/**`.
 
 ## Breakpoint architecture
 
@@ -108,7 +108,7 @@ The evidence should include screenshots and at least one interaction proof for:
 
 ## Typography rules
 
-These rules apply to `ui/**` outside `ui/src/components/ui/*` primitives unless a file has a clear, local semantic reason to differ.
+These rules apply to `ui/**` unless a file has a clear, local semantic reason to differ.
 
 ### Font families
 

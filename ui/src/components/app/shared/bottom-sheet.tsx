@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
+import { Button } from "@heroui/react"
 
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type BottomSheetProps = {
@@ -11,7 +11,12 @@ type BottomSheetProps = {
   title: string
 }
 
-export function BottomSheet({ children, onClose, open, title }: BottomSheetProps) {
+export function BottomSheet({
+  children,
+  onClose,
+  open,
+  title,
+}: BottomSheetProps) {
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -42,18 +47,18 @@ export function BottomSheet({ children, onClose, open, title }: BottomSheetProps
       />
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto rounded-t-xl border-t border-border bg-popover pb-[env(safe-area-inset-bottom)]",
-          "animate-in slide-in-from-bottom duration-200"
+          "absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto rounded-t-xl border-t border-border bg-overlay pb-[env(safe-area-inset-bottom)]",
+          "animate-in duration-200 slide-in-from-bottom"
         )}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-popover px-4 py-3 text-sm font-medium text-foreground">
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-overlay px-4 py-3 text-sm font-medium text-foreground">
           <span className="text-foreground">{title}</span>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={onClose}
-            className="text-muted-foreground"
+            onPress={onClose}
+            className="text-muted"
           >
             {t("common.done")}
           </Button>
@@ -76,9 +81,12 @@ export function BottomSheetItem({
   return (
     <Button
       type="button"
-      onClick={onClick}
+      onPress={onClick}
       variant="ghost"
-      className={cn("flex w-full items-center px-4 py-3 text-base text-foreground", active ? "bg-accent font-medium" : "hover:bg-accent")}
+      className={cn(
+        "flex w-full items-center px-4 py-3 text-base text-foreground",
+        active ? "bg-surface-tertiary font-medium" : "hover:bg-surface-tertiary"
+      )}
     >
       {children}
     </Button>

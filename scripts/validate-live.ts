@@ -215,7 +215,9 @@ async function run() {
       pageText?.includes("Loading threads") ||
       pageText?.includes("The shell is ready") ||
       pageText?.includes("New Session") ||
-      pageText?.includes("New Thread")
+      pageText?.includes("New Thread") ||
+      pageText?.includes("开始新会话") ||
+      pageText?.includes("新会话")
 
     checks.push({
       name: "workspace shell renders through Go origin",

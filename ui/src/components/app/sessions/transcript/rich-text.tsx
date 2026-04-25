@@ -8,8 +8,12 @@ import type {
 } from "react"
 import { Check, Copy } from "lucide-react"
 
-import { ShikiCodeFrame } from "@/components/app/shared"
-import { SkillReferenceChip } from "@/components/app/shared"
+import {
+  inlineCodeClassName,
+  ShikiCodeFrame,
+  SkillReferenceChip,
+  workspaceScrollbarClassName,
+} from "@/components/app/shared"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkills } from "@/features/host/use-host-skills"
 import type { HighlightLanguage } from "@/lib/shiki/highlighter"
@@ -194,7 +198,7 @@ export function SessionRichText({
             }
 
             return (
-              <code className="workspace-inline-code font-mono text-sm">
+              <code className={cn(inlineCodeClassName, "font-mono text-sm")}>
                 {code}
               </code>
             )
@@ -217,7 +221,12 @@ export function SessionRichText({
           ),
           p: ({ children }) => <p>{children}</p>,
           table: ({ children }) => (
-            <div className="workspace-scrollbar my-3 max-w-full overflow-x-auto">
+            <div
+              className={cn(
+                workspaceScrollbarClassName,
+                "my-3 max-w-full overflow-x-auto"
+              )}
+            >
               <table className="min-w-full border-separate border-spacing-0 border border-border text-left text-sm">
                 {children}
               </table>
@@ -230,13 +239,13 @@ export function SessionRichText({
             </td>
           ),
           th: ({ children }) => (
-            <th className="border-r border-b border-border bg-muted px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
+            <th className="border-r border-b border-border bg-surface-tertiary px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
               {children}
             </th>
           ),
           thead: ({ children }) => <thead>{children}</thead>,
           tr: ({ children }) => (
-            <tr className="bg-background even:bg-muted/20 [&:last-child>td]:border-b-0 [&:last-child>th]:border-b-0">
+            <tr className="bg-background even:bg-surface-tertiary/20 [&:last-child>td]:border-b-0 [&:last-child>th]:border-b-0">
               {children}
             </tr>
           ),
@@ -542,15 +551,15 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   }, [code])
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border bg-muted px-3 py-1.5">
-        <div className="font-mono text-xs text-muted-foreground">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border bg-surface-tertiary px-3 py-1.5">
+        <div className="font-mono text-xs text-muted">
           {languageLabel || "text"}
         </div>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-surface-tertiary hover:text-foreground"
           aria-label={
             copied ? t("transcript.copied") : t("transcript.copyCode")
           }

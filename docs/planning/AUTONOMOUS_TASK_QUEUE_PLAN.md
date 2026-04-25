@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/sorcererxw/.gstack/projects/codeshell/master-autoplan-restore-20260421-212344.md -->
+<!-- /autoplan restore point: local gstack project artifact -->
 # Tasks Execution Plan
 
 ## Status
@@ -1243,7 +1243,7 @@ development-complete gates for human confirmation.
 - Active branch: `master`.
 - Base branch: `master`.
 - New plan file: `docs/planning/AUTONOMOUS_TASK_QUEUE_PLAN.md`.
-- Restore point: `/Users/sorcererxw/.gstack/projects/codeshell/master-autoplan-restore-20260421-212344.md`.
+- Restore point: local gstack project artifact.
 - Existing uncommitted user change preserved: `docs/planning/COMMIT_AND_PUSH_CAPABILITY_PLAN.md`.
 - Design doc check: no branch-specific `/office-hours` design doc found.
 - UI scope: yes. The plan adds top-level `Tasks`, task detail, subtask checklist,
@@ -1905,7 +1905,7 @@ Existing design leverage:
 - workspace shell hierarchy from `docs/product/UI_REBUILD_DESIGN_DOC.md`
 - `ui/AGENTS.md` posture model: `phone`, `compact`, `wide`
 - existing session detail and session rail patterns
-- existing shadcn/Tailwind workspace token rules
+- existing HeroUI/Tailwind workspace token rules
 
 ### Design Dual Voices
 
@@ -2254,9 +2254,7 @@ Critical test gaps added to the plan:
 - SSE disconnect and reconnect refetch
 - commit blocked not done
 
-Test plan artifact:
-
-- `/Users/sorcererxw/.gstack/projects/codeshell/sorcererxw-master-eng-review-test-plan-20260421-215200.md`
+Test plan artifact: local gstack engineering review artifact.
 
 ### Section 4: Performance
 

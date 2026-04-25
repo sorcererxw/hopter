@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
+import { Check, ChevronDown } from "lucide-react"
+import { Button, Dropdown, Label, Tooltip } from "@heroui/react"
 
+import { stableDropdownPopoverClassName } from "@/components/app/shared"
 import { SessionComposer } from "@/components/app/sessions/composer"
 import {
   rememberSessionComposerSelection,
@@ -9,19 +12,6 @@ import {
 } from "@/components/app/sessions/composer"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useWorkspaceShell } from "@/components/app/workspace"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useProjects } from "@/features/projects/use-projects"
 import {
   agentSelectionPreferenceFromConfig,
@@ -108,7 +98,7 @@ export function HomeWorkspacePane() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
-        <div className="w-full max-w-[720px]">
+        <div className="w-full max-w-180">
           <div className="mb-8 text-center">
             <h2 className="text-4xl leading-tight font-medium tracking-tight text-foreground">
               {t("home.startNewSession")}
@@ -121,58 +111,81 @@ export function HomeWorkspacePane() {
             disabled={!selectedProjectId}
             footerStart={
               <div className="min-w-0">
-                <Tooltip open={projectSelectOpen ? false : undefined}>
-                  <TooltipTrigger asChild>
-                    <div className="min-w-0">
-                      <Select
-                        value={selectedProjectId}
-                        disabled={projectsLoading && projectOptions.length === 0}
-                        onOpenChange={setProjectSelectOpen}
-                        onValueChange={(nextProjectId) => {
-                          setSearchParams((current) => {
-                            const next = new URLSearchParams(current)
-                            if (nextProjectId) {
-                              next.set("projectId", nextProjectId)
-                            } else {
-                              next.delete("projectId")
-                            }
-                            return next
-                          })
-                        }}
-                      >
-                        <SelectTrigger
-                          aria-label={t("home.selectProject")}
-                          className="h-8 w-auto max-w-44 min-w-0 justify-start gap-1 rounded-full border-0 bg-transparent px-2.5 text-muted-foreground shadow-none hover:bg-accent hover:text-foreground focus-visible:border-transparent focus-visible:ring-0"
-                          size="sm"
+                <Tooltip isOpen={projectSelectOpen ? false : undefined}>
+                  <Tooltip.Trigger className="min-w-0">
+                    <Dropdown
+                      onOpenChange={setProjectSelectOpen}
+                    >
+                      <span className="inline-flex min-w-0 rounded-full">
+                        <Dropdown.Trigger
+                          isDisabled={
+                            projectsLoading && projectOptions.length === 0
+                          }
                         >
-                          <SelectValue asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label={t("home.selectProject")}
+                            className="max-w-44 rounded-full text-muted hover:text-foreground"
+                            isDisabled={
+                              projectsLoading && projectOptions.length === 0
+                            }
+                          >
                             <span className="min-w-0 truncate">
                               {selectedProject?.name ||
                                 (projectsLoading
                                   ? t("app.settings.loading")
                                   : t("home.selectProject"))}
                             </span>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent
-                          align="start"
-                          position="popper"
-                          className="min-w-40"
+                            <ChevronDown className="size-3" />
+                          </Button>
+                        </Dropdown.Trigger>
+                      </span>
+                      <Dropdown.Popover
+                        placement="bottom start"
+                        className={stableDropdownPopoverClassName}
+                      >
+                        <Dropdown.Menu
+                          selectionMode="single"
+                          selectedKeys={
+                            selectedProjectId
+                              ? new Set([selectedProjectId])
+                              : new Set()
+                          }
+                          onAction={(key) => {
+                            const nextProjectId = String(key)
+                            setSearchParams((current) => {
+                              const next = new URLSearchParams(current)
+                              if (nextProjectId) {
+                                next.set("projectId", nextProjectId)
+                              } else {
+                                next.delete("projectId")
+                              }
+                              return next
+                            })
+                          }}
                         >
-                          <SelectGroup>
-                            {projectOptions.map((project) => (
-                              <SelectItem key={project.id} value={project.id}>
-                                {project.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
+                          {projectOptions.map((project) => (
+                            <Dropdown.Item
+                              key={project.id}
+                              id={project.id}
+                              textValue={project.name}
+                            >
+                              <Label>{project.name}</Label>
+                              <span className="flex size-3.5 items-center justify-center">
+                                {project.id === selectedProjectId ? (
+                                  <Check className="size-3.5" />
+                                ) : null}
+                              </span>
+                            </Dropdown.Item>
+                          ))}
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
+                    </Dropdown>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content placement="top" showArrow>
                     {t("home.selectProject")}
-                  </TooltipContent>
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             }

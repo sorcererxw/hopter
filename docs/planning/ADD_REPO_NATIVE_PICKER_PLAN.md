@@ -101,7 +101,7 @@ Verdict: reject.
 Choose **Approach B**.
 
 One sentence version:
-**build a Finder column-view style repo picker inside a shadcn dialog, with every column populated by server-side directory reads.**
+**build a Finder column-view style repo picker inside a HeroUI modal, with every column populated by server-side directory reads.**
 
 ## UX redesign
 

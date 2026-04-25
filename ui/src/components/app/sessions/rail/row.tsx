@@ -56,7 +56,7 @@ export function RailRow({
   const content = (currentIcon: ReactNode) => (
     <>
       {reserveIconSpace ? (
-        <span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground">
+        <span className="flex size-5 shrink-0 items-center justify-center text-muted">
           {currentIcon}
         </span>
       ) : null}

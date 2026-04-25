@@ -4,14 +4,16 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type ButtonHTMLAttributes,
   type ChangeEvent,
+  type ComponentProps,
   type ClipboardEvent,
+  type Key,
   type KeyboardEvent,
 } from "react"
 import { useTranslation } from "react-i18next"
 import {
   ArrowUp,
+  Check,
   ChevronDown,
   LoaderCircle,
   Paperclip,
@@ -19,23 +21,16 @@ import {
   X,
   Zap,
 } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
 import {
+  Button,
+  Dropdown,
+  Header,
+  Label,
+  Separator,
+  Switch,
   Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Switch } from "@/components/ui/switch"
+} from "@heroui/react"
+
 import {
   composerSendShortcutPreferenceFromConfig,
   formatComposerSendShortcutPreference,
@@ -52,7 +47,11 @@ import {
   applyAtomicSkillDeletion,
   normalizeAtomicSkillSelection,
 } from "./skill-token"
-import { SkillReferenceChip } from "@/components/app/shared"
+import {
+  hiddenScrollbarClassName,
+  SkillReferenceChip,
+  stableDropdownPopoverClassName,
+} from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
@@ -117,6 +116,11 @@ type ComposerTextSegment = {
   reference?: string
   selected?: boolean
   text: string
+}
+
+type ComposerDropdownOption = {
+  label: string
+  value: string
 }
 
 // SessionComposer owns prompt entry plus lightweight agent selection state. It
@@ -598,7 +602,7 @@ export function SessionComposer({
               />
             ) : null}
 
-            <div className="overflow-hidden rounded-2xl border border-border bg-popover">
+            <div className="overflow-hidden rounded-2xl border border-border bg-overlay">
               <div className="px-3 pt-3 pb-2">
                 <div className="relative min-h-14">
                   {hasComposerTextOverlay ? (
@@ -648,57 +652,56 @@ export function SessionComposer({
                     onTouchEnd={syncCaretPosition}
                     placeholder={placeholder}
                     className={cn(
-                      "scrollbar-native-hidden relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-muted-foreground",
+                      hiddenScrollbarClassName,
+                      "relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-field-placeholder",
                       hasComposerTextOverlay
                         ? "text-transparent caret-foreground selection:bg-transparent selection:text-transparent"
                         : "text-foreground"
                     )}
                   />
                 </div>
-              </div>
 
-              {attachments.length > 0 || attachmentError ? (
-                <div className="px-3 pb-2">
-                  {attachments.length > 0 ? (
-                    <div
-                      className="flex flex-wrap gap-2"
-                      data-testid="composer-image-attachments"
-                    >
-                      {attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground"
-                        >
-                          <img
-                            alt=""
-                            src={attachment.url}
-                            className="size-6 rounded-md object-cover"
-                          />
-                          <span className="max-w-40 truncate">
-                            {attachment.label}
-                          </span>
-                          <GhostIconButton
-                            aria-label={t("composer.removeAttachment", {
-                              label: attachment.label,
-                            })}
-                            className="size-5 md:size-5"
-                            onClick={() => removeAttachment(attachment.id)}
+                {attachments.length > 0 || attachmentError ? (
+                  <div className="px-3 pb-2">
+                    {attachments.length > 0 ? (
+                      <div
+                        className="flex flex-wrap gap-2"
+                        data-testid="composer-image-attachments"
+                      >
+                        {attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-surface-secondary px-2 py-1 text-xs text-foreground"
                           >
-                            <X className="size-3" />
-                          </GhostIconButton>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  {attachmentError ? (
-                    <div className="mt-2 text-xs text-amber-400">
-                      {attachmentError}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+                            <img
+                              alt=""
+                              src={attachment.url}
+                              className="size-6 rounded-md object-cover"
+                            />
+                            <span className="max-w-40 truncate">
+                              {attachment.label}
+                            </span>
+                            <GhostIconButton
+                              aria-label={t("composer.removeAttachment", {
+                                label: attachment.label,
+                              })}
+                              className="size-5 md:size-5"
+                              onPress={() => removeAttachment(attachment.id)}
+                            >
+                              <X className="size-3" />
+                            </GhostIconButton>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {attachmentError ? (
+                      <div className="mt-2 text-xs text-amber-400">
+                        {attachmentError}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
-              <TooltipProvider>
                 <div className="flex items-center justify-between px-2 pb-2">
                   <div className="flex min-w-0 items-center gap-1">
                     <input
@@ -710,20 +713,20 @@ export function SessionComposer({
                       onChange={(event) => void handleImageSelection(event)}
                     />
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <Tooltip.Trigger>
                         <span className="inline-flex rounded-full">
                           <GhostIconButton
                             aria-label={t("composer.attachImages")}
-                            disabled={disabled || busy || interruptMode}
-                            onClick={() => imageInputRef.current?.click()}
+                            isDisabled={disabled || busy || interruptMode}
+                            onPress={() => imageInputRef.current?.click()}
                           >
                             <Paperclip className="size-4" />
                           </GhostIconButton>
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
+                      </Tooltip.Trigger>
+                      <Tooltip.Content placement="top" showArrow>
                         {t("composer.attachImages")}
-                      </TooltipContent>
+                      </Tooltip.Content>
                     </Tooltip>
                     {footerStart ? (
                       <div className="min-w-0">{footerStart}</div>
@@ -731,54 +734,51 @@ export function SessionComposer({
                   </div>
 
                   <div className="flex min-w-0 items-center justify-end gap-1">
-                    <ContextWindowIndicator
-                      t={t}
-                      usage={contextWindowUsage}
-                    />
+                    <ContextWindowIndicator t={t} usage={contextWindowUsage} />
 
-                    <InlineDropdownMenu
-                      aria-label={t("composer.model")}
+                    <AgentSelectionDropdown
+                      aria-label={t("composer.agentSelection")}
                       codexFastMode={codexFastMode}
                       disabled={
                         codexModelsQuery.isLoading || modelOptions.length === 0
                       }
                       onCodexFastModeChange={handleCodexFastModeChange}
-                      options={modelOptions.map((model) => ({
+                      modelOptions={modelOptions.map((model) => ({
                         label: model.displayName || modelValue(model),
                         value: modelValue(model),
                       }))}
+                      modelValue={effectiveModel}
+                      reasoningOptions={supportedReasoningOptions}
+                      reasoningValue={effectiveReasoningEffort}
                       showCodexFastModeToggle
-                      tooltip={t("composer.selectModel")}
-                      value={effectiveModel}
-                      onValueChange={handleModelChange}
+                      tooltip={t("composer.agentSelection")}
+                      onModelChange={handleModelChange}
+                      onReasoningChange={handleReasoningEffortChange}
                     >
-                      {selectedModelOption
-                        ? selectedModelOption.displayName ||
-                          modelValue(selectedModelOption)
-                        : codexModelsQuery.isLoading
-                          ? t("composer.loadingModel")
-                          : t("composer.defaultModel")}
-                    </InlineDropdownMenu>
-
-                    <InlineDropdownMenu
-                      aria-label={t("composer.reasoningEffort")}
-                      disabled={supportedReasoningOptions.length === 0}
-                      options={supportedReasoningOptions}
-                      tooltip={t("composer.selectReasoningEffort")}
-                      value={effectiveReasoningEffort}
-                      onValueChange={handleReasoningEffortChange}
-                    >
-                      {formatReasoningEffort(effectiveReasoningEffort, t)}
-                    </InlineDropdownMenu>
+                      <span className="min-w-0 truncate">
+                        {selectedModelOption
+                          ? selectedModelOption.displayName ||
+                            modelValue(selectedModelOption)
+                          : codexModelsQuery.isLoading
+                            ? t("composer.loadingModel")
+                            : t("composer.defaultModel")}
+                      </span>
+                      {effectiveReasoningEffort ? (
+                        <span className="shrink-0">
+                          {formatReasoningEffort(effectiveReasoningEffort, t)}
+                        </span>
+                      ) : null}
+                    </AgentSelectionDropdown>
 
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <Tooltip.Trigger>
                         <span className="inline-flex rounded-full">
                           <Button
                             type="button"
-                            size="icon-lg"
-                            onClick={() => void handleSubmit()}
-                            disabled={!canSubmit}
+                            size="lg"
+                            isIconOnly
+                            onPress={() => void handleSubmit()}
+                            isDisabled={!canSubmit}
                             aria-label={
                               interruptMode
                                 ? t("composer.interruptTurn")
@@ -790,8 +790,8 @@ export function SessionComposer({
                             className={cn(
                               "size-9 rounded-full transition md:size-8",
                               canSubmit
-                                ? "bg-primary text-primary-foreground hover:brightness-110"
-                                : "bg-accent text-muted-foreground"
+                                ? "bg-accent text-accent-foreground hover:brightness-110"
+                                : "bg-surface-tertiary text-muted"
                             )}
                           >
                             {busy ? (
@@ -803,14 +803,14 @@ export function SessionComposer({
                             )}
                           </Button>
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
+                      </Tooltip.Trigger>
+                      <Tooltip.Content placement="top" showArrow>
                         {sendButtonTooltip}
-                      </TooltipContent>
+                      </Tooltip.Content>
                     </Tooltip>
                   </div>
                 </div>
-              </TooltipProvider>
+              </div>
             </div>
           </div>
         </div>
@@ -845,13 +845,13 @@ function ContextWindowIndicator({
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
+      <Tooltip.Trigger>
         <button
           type="button"
           aria-label={t("composer.contextWindow")}
-          className="inline-flex size-8 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-accent"
+          className="inline-flex size-8 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-surface-tertiary"
         >
-          <span className="relative flex size-4 items-center justify-center text-muted-foreground">
+          <span className="relative flex size-4 items-center justify-center text-muted">
             <span
               aria-hidden="true"
               className="absolute inset-0 rounded-full bg-border"
@@ -867,11 +867,12 @@ function ContextWindowIndicator({
             />
           </span>
         </button>
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        sideOffset={8}
+      </Tooltip.Trigger>
+      <Tooltip.Content
+        placement="top"
+        offset={8}
         className="max-w-72 px-5 py-4"
+        showArrow
       >
         <div className="space-y-3 text-center">
           <div className="text-sm font-medium">
@@ -891,7 +892,7 @@ function ContextWindowIndicator({
             })}
           </div>
         </div>
-      </TooltipContent>
+      </Tooltip.Content>
     </Tooltip>
   )
 }
@@ -963,8 +964,8 @@ function SkillSuggestionPopover({
       className="absolute inset-x-0 bottom-full z-50 mb-2"
       data-testid="skill-suggestion-popover"
     >
-      <div className="overflow-hidden rounded-lg border border-border bg-popover text-sm font-medium text-foreground shadow-lg">
-        <div className="border-b border-border px-4 py-2 text-xs tracking-wider text-muted-foreground uppercase">
+      <div className="overflow-hidden rounded-lg border border-border bg-overlay text-sm font-medium text-foreground shadow-lg">
+        <div className="border-b border-border px-4 py-2 text-xs tracking-wider text-muted uppercase">
           {loading
             ? t("composer.loadingSkills")
             : query
@@ -973,12 +974,12 @@ function SkillSuggestionPopover({
         </div>
 
         {loading ? (
-          <div className="px-4 py-3 text-muted-foreground">
+          <div className="px-4 py-3 text-muted">
             {t("composer.loadingSkills")}
           </div>
         ) : skills.length === 0 ? (
           <div
-            className="px-4 py-3 text-muted-foreground"
+            className="px-4 py-3 text-muted"
             data-testid="skill-suggestion-empty"
           >
             {t("composer.noSkills", { query: `$${query}` })}{" "}
@@ -1004,21 +1005,21 @@ function SkillSuggestionPopover({
                     : "text-foreground"
                 )}
               >
-                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-secondary font-mono text-xs text-foreground">
+                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-secondary font-mono text-xs text-foreground">
                   $
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate">{skill.name}</span>
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className="font-mono text-xs text-muted">
                       ${skill.reference}
                     </span>
-                    <span className="shrink-0 text-xs tracking-wider text-muted-foreground uppercase">
+                    <span className="shrink-0 text-xs tracking-wider text-muted uppercase">
                       {formatSkillSource(skill.source, t)}
                     </span>
                   </div>
                   {skill.description ? (
-                    <div className="mt-1 line-clamp-1 text-muted-foreground">
+                    <div className="mt-1 line-clamp-1 text-muted">
                       {skill.description}
                     </div>
                   ) : null}
@@ -1036,13 +1037,16 @@ function GhostIconButton({
   children,
   className,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: Omit<
+  React.ComponentProps<typeof Button>,
+  "isIconOnly" | "type" | "variant"
+>) {
   return (
     <Button
       type="button"
       variant="ghost"
-      size="icon"
-      className={cn("text-muted-foreground md:size-7", className)}
+      isIconOnly
+      className={cn("text-muted md:size-7", className)}
       {...props}
     >
       {children}
@@ -1093,41 +1097,87 @@ function resolveReasoningEffort(model: AgentModel, requested: string) {
   return model.defaultReasoningEffort || efforts[0] || ""
 }
 
-function InlineDropdownMenu({
+function AgentSelectionDropdown({
   children,
   codexFastMode = false,
   disabled = false,
+  modelOptions,
+  modelValue,
   onCodexFastModeChange,
-  onValueChange,
-  options,
+  onModelChange,
+  onReasoningChange,
+  reasoningOptions,
+  reasoningValue,
   showCodexFastModeToggle = false,
   tooltip,
-  value,
   ...props
 }: {
-  children: string
+  children: ReactNode
   codexFastMode?: boolean
   disabled?: boolean
+  modelOptions: readonly ComposerDropdownOption[]
+  modelValue: string
   onCodexFastModeChange?: (checked: boolean) => void
-  onValueChange: (value: string) => void
-  options: readonly { label: string; value: string }[]
+  onModelChange: (value: string) => void
+  onReasoningChange: (value: string) => void
+  reasoningOptions: readonly ComposerDropdownOption[]
+  reasoningValue: string
   showCodexFastModeToggle?: boolean
   tooltip: string
-  value: string
-} & Omit<React.ComponentProps<typeof Button>, "onChange" | "value">) {
+} & Omit<ComponentProps<typeof Button>, "onChange" | "value">) {
   const { t } = useTranslation()
+  const positionFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  const [shouldUpdateMenuPosition, setShouldUpdateMenuPosition] =
+    useState(true)
+  const selectedModelLabel =
+    modelOptions.find((option) => option.value === modelValue)?.label ??
+    modelValue
+
+  useEffect(() => {
+    return () => {
+      if (positionFreezeTimeoutRef.current !== null) {
+        clearTimeout(positionFreezeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  function handleOpenChange(isOpen: boolean) {
+    if (positionFreezeTimeoutRef.current !== null) {
+      clearTimeout(positionFreezeTimeoutRef.current)
+      positionFreezeTimeoutRef.current = null
+    }
+
+    setShouldUpdateMenuPosition(true)
+    if (isOpen) {
+      // Let React Aria compute the initial placement, then keep the root menu
+      // still while submenus open and trigger their own overlay measurements.
+      positionFreezeTimeoutRef.current = setTimeout(() => {
+        setShouldUpdateMenuPosition(false)
+        positionFreezeTimeoutRef.current = null
+      }, 50)
+    }
+  }
+
+  function handleAction(key: Key) {
+    const action = String(key)
+    if (action.startsWith("reasoning:")) {
+      onReasoningChange(action.slice("reasoning:".length))
+    }
+  }
 
   return (
-    <DropdownMenu>
+    <Dropdown onOpenChange={handleOpenChange}>
       <Tooltip>
-        <TooltipTrigger asChild>
+        <Tooltip.Trigger>
           <span className="inline-flex rounded-full">
-            <DropdownMenuTrigger asChild disabled={disabled}>
+            <Dropdown.Trigger isDisabled={disabled}>
               <Button
                 type="button"
                 variant="ghost"
-                className="rounded-full text-muted-foreground hover:text-foreground"
-                disabled={disabled}
+                className="max-w-64 rounded-full text-muted hover:text-foreground"
+                isDisabled={disabled}
                 {...props}
               >
                 {codexFastMode ? (
@@ -1136,43 +1186,105 @@ function InlineDropdownMenu({
                     data-testid="composer-fast-mode-icon"
                   />
                 ) : null}
-                <span>{children}</span>
+                <span className="flex min-w-0 items-center gap-1">
+                  {children}
+                </span>
                 <ChevronDown className="size-3" />
               </Button>
-            </DropdownMenuTrigger>
+            </Dropdown.Trigger>
           </span>
-        </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
+        </Tooltip.Trigger>
+        <Tooltip.Content placement="top" showArrow>
+          {tooltip}
+        </Tooltip.Content>
       </Tooltip>
-      <DropdownMenuContent align="end" className="min-w-40">
+      <Dropdown.Popover
+        className={cn(stableDropdownPopoverClassName, "w-72")}
+        shouldUpdatePosition={shouldUpdateMenuPosition}
+      >
+        <Dropdown.Menu onAction={handleAction} selectionMode="none">
+          {reasoningOptions.length > 0 ? (
+            <Dropdown.Section>
+              <Header className="px-2 py-1 text-xs text-muted">
+                {t("composer.intelligence")}
+              </Header>
+              {reasoningOptions.map((option) => (
+                <Dropdown.Item
+                  key={`reasoning:${option.value}`}
+                  id={`reasoning:${option.value}`}
+                  textValue={option.label}
+                >
+                  <Label>{option.label}</Label>
+                  <span className="flex size-3.5 items-center justify-center">
+                    {option.value === reasoningValue ? (
+                      <Check className="size-3.5" />
+                    ) : null}
+                  </span>
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Section>
+          ) : null}
+          <Separator className="my-1" />
+          <Dropdown.SubmenuTrigger>
+            <Dropdown.Item id="model-submenu" textValue={t("composer.model")}>
+              <Label>{t("composer.model")}</Label>
+              <span className="ml-auto flex min-w-0 items-center gap-2">
+                <span className="max-w-36 truncate text-muted">
+                  {selectedModelLabel}
+                </span>
+                <Dropdown.SubmenuIndicator />
+              </span>
+            </Dropdown.Item>
+            <Dropdown.Popover
+              className={cn(stableDropdownPopoverClassName, "w-72")}
+              placement="start top"
+            >
+              <Dropdown.Menu
+                onAction={(key) =>
+                  onModelChange(String(key).slice("model:".length))
+                }
+                selectionMode="none"
+              >
+                {modelOptions.map((option) => (
+                  <Dropdown.Item
+                    key={`model:${option.value}`}
+                    id={`model:${option.value}`}
+                    textValue={option.label}
+                  >
+                    <Label>{option.label}</Label>
+                    <span className="flex size-3.5 items-center justify-center">
+                      {option.value === modelValue ? (
+                        <Check className="size-3.5" />
+                      ) : null}
+                    </span>
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown.SubmenuTrigger>
+        </Dropdown.Menu>
         {showCodexFastModeToggle ? (
-          <>
-            <div className="flex items-center justify-between gap-4 px-3 py-2">
-              <div className="min-w-0">
-                <div className="text-sm font-medium">
-                  {t("composer.fastMode")}
-                </div>
+          <div className="flex items-center justify-between gap-4 px-3 py-2">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">
+                {t("composer.fastMode")}
               </div>
-              <Switch
-                aria-label={t("composer.codexFastMode")}
-                checked={codexFastMode}
-                onCheckedChange={(checked) => {
-                  onCodexFastModeChange?.(checked)
-                }}
-              />
             </div>
-            <DropdownMenuSeparator />
-          </>
+            <Switch
+              aria-label={t("composer.codexFastMode")}
+              isSelected={codexFastMode}
+              onChange={(checked) => {
+                onCodexFastModeChange?.(checked)
+              }}
+            >
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+            </Switch>
+          </div>
         ) : null}
-        <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </Dropdown.Popover>
+    </Dropdown>
   )
 }
 
