@@ -1126,9 +1126,39 @@ function AgentSelectionDropdown({
   tooltip: string
 } & Omit<ComponentProps<typeof Button>, "onChange" | "value">) {
   const { t } = useTranslation()
+  const positionFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  )
+  const [shouldUpdateMenuPosition, setShouldUpdateMenuPosition] =
+    useState(true)
   const selectedModelLabel =
     modelOptions.find((option) => option.value === modelValue)?.label ??
     modelValue
+
+  useEffect(() => {
+    return () => {
+      if (positionFreezeTimeoutRef.current !== null) {
+        clearTimeout(positionFreezeTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  function handleOpenChange(isOpen: boolean) {
+    if (positionFreezeTimeoutRef.current !== null) {
+      clearTimeout(positionFreezeTimeoutRef.current)
+      positionFreezeTimeoutRef.current = null
+    }
+
+    setShouldUpdateMenuPosition(true)
+    if (isOpen) {
+      // Let React Aria compute the initial placement, then keep the root menu
+      // still while submenus open and trigger their own overlay measurements.
+      positionFreezeTimeoutRef.current = setTimeout(() => {
+        setShouldUpdateMenuPosition(false)
+        positionFreezeTimeoutRef.current = null
+      }, 50)
+    }
+  }
 
   function handleAction(key: Key) {
     const action = String(key)
@@ -1138,7 +1168,7 @@ function AgentSelectionDropdown({
   }
 
   return (
-    <Dropdown>
+    <Dropdown onOpenChange={handleOpenChange}>
       <Tooltip>
         <Tooltip.Trigger>
           <span className="inline-flex rounded-full">
@@ -1168,7 +1198,10 @@ function AgentSelectionDropdown({
           {tooltip}
         </Tooltip.Content>
       </Tooltip>
-      <Dropdown.Popover className={cn(stableDropdownPopoverClassName, "w-72")}>
+      <Dropdown.Popover
+        className={cn(stableDropdownPopoverClassName, "w-72")}
+        shouldUpdatePosition={shouldUpdateMenuPosition}
+      >
         <Dropdown.Menu onAction={handleAction} selectionMode="none">
           {reasoningOptions.length > 0 ? (
             <Dropdown.Section>
@@ -1204,6 +1237,7 @@ function AgentSelectionDropdown({
             </Dropdown.Item>
             <Dropdown.Popover
               className={cn(stableDropdownPopoverClassName, "w-72")}
+              placement="start top"
             >
               <Dropdown.Menu
                 onAction={(key) =>

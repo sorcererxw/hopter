@@ -98,7 +98,7 @@ export function HomeWorkspacePane() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
-        <div className="w-full max-w-[720px]">
+        <div className="w-full max-w-180">
           <div className="mb-8 text-center">
             <h2 className="text-4xl leading-tight font-medium tracking-tight text-foreground">
               {t("home.startNewSession")}
