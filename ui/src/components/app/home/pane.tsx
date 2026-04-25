@@ -114,9 +114,6 @@ export function HomeWorkspacePane() {
                 <Tooltip isOpen={projectSelectOpen ? false : undefined}>
                   <Tooltip.Trigger className="min-w-0">
                     <Dropdown
-                      isDisabled={
-                        projectsLoading && projectOptions.length === 0
-                      }
                       onOpenChange={setProjectSelectOpen}
                     >
                       <span className="inline-flex min-w-0 rounded-full">
