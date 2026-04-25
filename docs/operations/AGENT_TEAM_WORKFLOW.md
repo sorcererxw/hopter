@@ -104,8 +104,8 @@ Before planning or editing, the lead agent reads:
 - `docs/operations/DEV_LOOP.md`
 - active planning docs relevant to the request
 - current git status
-- current dev-loop state from `~/.hopter/devlogs/codeshell/state.json` when live validation is needed
-- current timeline logs from `~/.hopter/devlogs/codeshell/timeline.jsonl` when live validation is needed
+- current dev-loop state from `~/.hopter/devlogs/<repo-slug>/state.json` when live validation is needed
+- current timeline logs from `~/.hopter/devlogs/<repo-slug>/timeline.jsonl` when live validation is needed
 
 If unrelated modified files exist, record them and avoid touching them unless required by the task.
 
@@ -246,8 +246,8 @@ make verify-live
 Then inspect:
 
 ```bash
-cat ~/.hopter/devlogs/codeshell/state.json
-tail -n 80 ~/.hopter/devlogs/codeshell/timeline.jsonl
+cat ~/.hopter/devlogs/<repo-slug>/state.json
+tail -n 80 ~/.hopter/devlogs/<repo-slug>/timeline.jsonl
 ```
 
 For UI work, use browser automation or Computer Use MCP to exercise the actual feature. Capture screenshots, state files, timeline excerpts, or validation bundle paths under `storage/artifacts/validation/`.

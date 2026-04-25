@@ -4,5 +4,8 @@ export const workspaceScrollbarClassName =
 export const hiddenScrollbarClassName =
   "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&::-webkit-scrollbar]:size-0"
 
+export const stableDropdownPopoverClassName =
+  "min-w-40 rounded-2xl border border-border bg-overlay p-1 shadow-2xl data-[entering=true]:animate-none data-[entering=true]:transition-none data-[exiting=true]:animate-none data-[exiting=true]:transition-none"
+
 export const inlineCodeClassName =
   "inline rounded-lg bg-surface-tertiary px-[0.45rem] py-[0.1rem] leading-[1.4] whitespace-break-spaces text-foreground [overflow-wrap:anywhere] [word-break:break-word] [-webkit-box-decoration-break:clone] [box-decoration-break:clone]"

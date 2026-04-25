@@ -132,12 +132,12 @@ function SettingsSelect({
   return (
     <Select
       isDisabled={isDisabled}
-      onSelectionChange={(key) => {
+      onChange={(key) => {
         if (key != null) {
           onValueChange(String(key))
         }
       }}
-      selectedKey={value || null}
+      value={value || null}
       variant="secondary"
     >
       <Select.Trigger aria-label={ariaLabel} className="min-w-40">
@@ -155,9 +155,11 @@ function SettingsSelect({
               textValue={option.label}
             >
               <Label>{option.label}</Label>
-              <ListBox.ItemIndicator>
-                <Check className="size-3.5" />
-              </ListBox.ItemIndicator>
+              <span className="flex size-3.5 items-center justify-center">
+                {option.value === value ? (
+                  <Check className="size-3.5" />
+                ) : null}
+              </span>
             </ListBox.Item>
           ))}
         </ListBox>

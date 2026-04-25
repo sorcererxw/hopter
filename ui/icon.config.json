@@ -1,0 +1,43 @@
+{
+  "input": "src/assets/hopter-icon-source.svg",
+  "output": {
+    "publicDir": "public",
+    "reactDir": "src/components/icons",
+    "snippetFile": "icon-head-snippet.html"
+  },
+  "app": {
+    "name": "hopter workspace",
+    "shortName": "hopter",
+    "startUrl": "/",
+    "scope": "/",
+    "display": "standalone"
+  },
+  "colors": {
+    "lightIcon": "#100e0e",
+    "darkIcon": "#ffffff",
+    "appBackground": "#ffffff",
+    "appForeground": "#100e0e",
+    "themeColor": "#101010",
+    "themeColorDark": "#101010",
+    "backgroundColor": "#101010"
+  },
+  "react": {
+    "enabled": true,
+    "componentName": "LogoIcon"
+  },
+  "favicon": {
+    "enabled": true,
+    "svg": true,
+    "ico": true
+  },
+  "pwa": {
+    "enabled": true,
+    "manifest": false,
+    "icons": [192, 512],
+    "maskable": true
+  },
+  "apple": {
+    "enabled": true,
+    "size": 180
+  }
+}

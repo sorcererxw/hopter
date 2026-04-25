@@ -1,0 +1,35 @@
+import type { CSSProperties, SVGProps } from "react"
+
+export interface LogoIconProps extends SVGProps<SVGSVGElement> {
+  title?: string
+  "aria-label"?: string
+  style?: CSSProperties
+}
+
+export function LogoIcon({
+  title,
+  "aria-label": ariaLabel,
+  ...props
+}: LogoIconProps) {
+  const labelled = Boolean(title || ariaLabel)
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 205 191"
+      aria-hidden={labelled ? undefined : true}
+      role={labelled ? "img" : undefined}
+      aria-label={ariaLabel}
+      {...props}
+    >
+      {title ? <title>{title}</title> : null}
+      <path
+        fill="currentColor"
+        stroke="currentColor"
+        d="M180.5 157.358c0-5.033-4.091-9.142-9.172-9.142l-16.261-.005 8.188 13.504.06.1.06.102a9.17 9.17 0 0 0 7.953 4.583c5.081 0 9.172-4.109 9.172-9.142Zm-93.642-33.167 25.586.007-14.132-23.309zm19.525-90.55c0-5.032-4.09-9.14-9.171-9.141s-9.172 4.109-9.172 9.142c0 1.533.37 2.947 1.017 4.191l8.154 14.11 8.154-14.11a9 9 0 0 0 1.018-4.191ZM24.5 157.32c0 5.033 4.09 9.142 9.172 9.142a9.16 9.16 0 0 0 7.785-4.305l6.868-13.974-14.654-.004c-5.081 0-9.171 4.109-9.171 9.141ZM130.383 33.642c0 5.642-1.421 10.99-3.935 15.666l-.088.163-15.205 26.308 29.36 48.428 30.817.009c18.303.001 33.168 14.824 33.168 33.142 0 18.32-14.868 33.142-33.172 33.142-12.196 0-22.845-6.584-28.597-16.343l-15.734-25.954-51.933-.015-12.47 25.372-.206.356c-5.723 9.87-16.436 16.545-28.716 16.545C15.368 190.461.5 175.639.5 157.319c0-18.319 14.868-33.142 33.172-33.142l26.448.007 23.496-47.802L68.063 49.47l-.088-.163a33 33 0 0 1-3.935-15.666C64.04 15.322 78.908.5 97.212.5s33.171 14.822 33.171 33.142Z"
+      />
+    </svg>
+  )
+}
+
+export default LogoIcon

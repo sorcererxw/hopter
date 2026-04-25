@@ -13,8 +13,14 @@ What matters is that the contract for reading them lives in the repository, not 
 
 The local dev loop writes machine state and timeline logs here:
 
-- state: `~/.hopter/devlogs/codeshell/state.json`
-- timeline: `~/.hopter/devlogs/codeshell/timeline.jsonl`
+- state: `~/.hopter/devlogs/<repo-slug>/state.json`
+- timeline: `~/.hopter/devlogs/<repo-slug>/timeline.jsonl`
+
+The repo slug is derived from the checkout path that launched `make dev`.
+For a checkout whose directory is named `hopter`, that resolves to a path like:
+
+- state: `~/.hopter/devlogs/hopter-<repo-path-hash>/state.json`
+- timeline: `~/.hopter/devlogs/hopter-<repo-path-hash>/timeline.jsonl`
 
 These files are the authority for the live stack state.
 Do not rely only on terminal memory when validating the running app.
@@ -25,7 +31,7 @@ Do not rely only on terminal memory when validating the running app.
 
 Path:
 
-- `~/.hopter/devlogs/codeshell/state.json`
+- `~/.hopter/devlogs/<repo-slug>/state.json`
 
 Use it to check:
 
@@ -40,7 +46,7 @@ Use it to check:
 
 Path:
 
-- `~/.hopter/devlogs/codeshell/timeline.jsonl`
+- `~/.hopter/devlogs/<repo-slug>/timeline.jsonl`
 
 Use it to check:
 
@@ -59,8 +65,8 @@ When validating live UI work, prefer this sequence:
 
 Then inspect:
 
-- `~/.hopter/devlogs/codeshell/state.json`
-- `~/.hopter/devlogs/codeshell/timeline.jsonl`
+- `~/.hopter/devlogs/<repo-slug>/state.json`
+- `~/.hopter/devlogs/<repo-slug>/timeline.jsonl`
 
 ## Minimum evidence expected
 

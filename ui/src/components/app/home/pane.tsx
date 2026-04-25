@@ -2,8 +2,9 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Check, ChevronDown } from "lucide-react"
-import { Label, ListBox, Select, Tooltip } from "@heroui/react"
+import { Button, Dropdown, Label, Tooltip } from "@heroui/react"
 
+import { stableDropdownPopoverClassName } from "@/components/app/shared"
 import { SessionComposer } from "@/components/app/sessions/composer"
 import {
   rememberSessionComposerSelection,
@@ -112,65 +113,78 @@ export function HomeWorkspacePane() {
               <div className="min-w-0">
                 <Tooltip isOpen={projectSelectOpen ? false : undefined}>
                   <Tooltip.Trigger className="min-w-0">
-                    <Select
+                    <Dropdown
                       isDisabled={
                         projectsLoading && projectOptions.length === 0
                       }
                       onOpenChange={setProjectSelectOpen}
-                      onSelectionChange={(key) => {
-                        if (key == null) {
-                          return
-                        }
-                        const nextProjectId = String(key)
-                        setSearchParams((current) => {
-                          const next = new URLSearchParams(current)
-                          if (nextProjectId) {
-                            next.set("projectId", nextProjectId)
-                          } else {
-                            next.delete("projectId")
-                          }
-                          return next
-                        })
-                      }}
-                      selectedKey={selectedProjectId || null}
-                      variant="secondary"
                     >
-                      <Select.Trigger
-                        aria-label={t("home.selectProject")}
-                        className="h-8 w-auto max-w-44 min-w-0 justify-start gap-1 rounded-full border-0 bg-transparent px-2.5 text-muted shadow-none hover:bg-surface-tertiary hover:text-foreground focus-visible:border-transparent focus-visible:ring-0"
-                      >
-                        <Select.Value>
-                          <span className="min-w-0 truncate">
-                            {selectedProject?.name ||
-                              (projectsLoading
-                                ? t("app.settings.loading")
-                                : t("home.selectProject"))}
-                          </span>
-                        </Select.Value>
-                        <Select.Indicator>
-                          <ChevronDown className="size-3 text-muted" />
-                        </Select.Indicator>
-                      </Select.Trigger>
-                      <Select.Popover
+                      <span className="inline-flex min-w-0 rounded-full">
+                        <Dropdown.Trigger
+                          isDisabled={
+                            projectsLoading && projectOptions.length === 0
+                          }
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label={t("home.selectProject")}
+                            className="max-w-44 rounded-full text-muted hover:text-foreground"
+                            isDisabled={
+                              projectsLoading && projectOptions.length === 0
+                            }
+                          >
+                            <span className="min-w-0 truncate">
+                              {selectedProject?.name ||
+                                (projectsLoading
+                                  ? t("app.settings.loading")
+                                  : t("home.selectProject"))}
+                            </span>
+                            <ChevronDown className="size-3" />
+                          </Button>
+                        </Dropdown.Trigger>
+                      </span>
+                      <Dropdown.Popover
                         placement="bottom start"
-                        className="min-w-40 rounded-2xl bg-overlay p-1 shadow-2xl"
+                        className={stableDropdownPopoverClassName}
                       >
-                        <ListBox>
+                        <Dropdown.Menu
+                          selectionMode="single"
+                          selectedKeys={
+                            selectedProjectId
+                              ? new Set([selectedProjectId])
+                              : new Set()
+                          }
+                          onAction={(key) => {
+                            const nextProjectId = String(key)
+                            setSearchParams((current) => {
+                              const next = new URLSearchParams(current)
+                              if (nextProjectId) {
+                                next.set("projectId", nextProjectId)
+                              } else {
+                                next.delete("projectId")
+                              }
+                              return next
+                            })
+                          }}
+                        >
                           {projectOptions.map((project) => (
-                            <ListBox.Item
+                            <Dropdown.Item
                               key={project.id}
                               id={project.id}
                               textValue={project.name}
                             >
                               <Label>{project.name}</Label>
-                              <ListBox.ItemIndicator>
-                                <Check className="size-3.5" />
-                              </ListBox.ItemIndicator>
-                            </ListBox.Item>
+                              <span className="flex size-3.5 items-center justify-center">
+                                {project.id === selectedProjectId ? (
+                                  <Check className="size-3.5" />
+                                ) : null}
+                              </span>
+                            </Dropdown.Item>
                           ))}
-                        </ListBox>
-                      </Select.Popover>
-                    </Select>
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
+                    </Dropdown>
                   </Tooltip.Trigger>
                   <Tooltip.Content placement="top" showArrow>
                     {t("home.selectProject")}

@@ -3,7 +3,9 @@ set -euo pipefail
 
 if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  repo_slug="$(basename "${repo_root}" | LC_ALL=C sed 's/[^A-Za-z0-9._-]/-/g')"
+  repo_base="$(basename "${repo_root}" | LC_ALL=C sed 's/[^A-Za-z0-9._-]/-/g')"
+  repo_hash="$(printf '%s' "${repo_root}" | shasum -a 256 | awk '{print substr($1, 1, 8)}')"
+  repo_slug="${repo_base:-workspace}-${repo_hash}"
   tmux_session="hopter-${repo_slug}-dev"
   dev_command="HOPTER_DEV_FOREGROUND=1 make dev"
 

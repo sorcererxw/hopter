@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/sorcererxw/.gstack/projects/unknown/master-autoplan-restore-20260417-210607.md -->
+<!-- /autoplan restore point: local gstack project artifact -->
 # Breakpoint Architecture Redesign Plan
 
 Date: 2026-04-17

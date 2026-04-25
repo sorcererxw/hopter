@@ -1,6 +1,6 @@
 # Alpha Readiness Summary
 
-For the validation/evidence map behind this summary, see [`docs/VALIDATION_HARNESS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/VALIDATION_HARNESS.md).
+For the validation/evidence map behind this summary, see [`docs/VALIDATION_HARNESS.md`](../../../VALIDATION_HARNESS.md).
 
 Current validation evidence roots:
 

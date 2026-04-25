@@ -18,9 +18,9 @@ import {
 describe("session transcript pending hint reconciliation", () => {
   test("matches ellipsis-truncated hints against the full user transcript text", () => {
     const prompt =
-      "请用中文说明 codeshell/hopter 项目当前现状：产品定位、Go-first 架构方向、当前可用能力、最近已知验证证据、下一步主要风险。请基于当前 codeshell 项目上下文回答，先不要改代码。"
+      "请用中文说明 sample-project/hopter 项目当前现状：产品定位、Go-first 架构方向、当前可用能力、最近已知验证证据、下一步主要风险。请基于当前 sample-project 项目上下文回答，先不要改代码。"
     const truncatedHint =
-      "请用中文说明 codeshell/hopter 项目当前现状：产品定位、Go-first 架构方向、当前可用能力、…"
+      "请用中文说明 sample-project/hopter 项目当前现状：产品定位、Go-first 架构方向、当前可用能力、…"
 
     expect(prompt.startsWith(truncatedHint)).toBe(false)
     expect(transcriptTextMatchesPendingHint(prompt, truncatedHint)).toBe(true)
@@ -133,7 +133,7 @@ describe("session transcript pending hint reconciliation", () => {
   test("keeps a terminal completed thought item visible", async () => {
     ensureBrowserOrigin()
     const { buildTimelineItems } = await import(
-      "../ui/src/components/app/sessions/transcript/timeline.tsx"
+      "../ui/src/components/app/sessions/transcript/timeline-model.ts"
     )
     const items: ActivityItem[] = [
       transcriptActivityItem(
@@ -156,7 +156,7 @@ describe("session transcript pending hint reconciliation", () => {
   test("groups consecutive completed commands before an active command", async () => {
     ensureBrowserOrigin()
     const { buildTimelineItems } = await import(
-      "../ui/src/components/app/sessions/transcript/timeline.tsx"
+      "../ui/src/components/app/sessions/transcript/timeline-model.ts"
     )
     const items: ActivityItem[] = [
       transcriptActivityItem(

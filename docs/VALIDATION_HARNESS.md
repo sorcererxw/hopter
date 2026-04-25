@@ -25,11 +25,11 @@ complete until the relevant script has produced a reviewable evidence path.
 
 ## Start With The Smallest Useful Document
 
-- Need the active requirement map: [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_TASK_LIST.md)
-- Need the validation strategy: [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_VALIDATION_PLAN.md)
-- Need runtime artifact conventions: [`docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md)
-- Need local dev-loop verification: [`docs/operations/DEV_LOOP.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/DEV_LOOP.md)
-- Need old Bun-first validation history: [`docs/archive/bun-first-v1/validation/`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/archive/bun-first-v1/validation)
+- Need the active requirement map: [`docs/planning/GO_REBUILD_TASK_LIST.md`](planning/GO_REBUILD_TASK_LIST.md)
+- Need the validation strategy: [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](planning/GO_REBUILD_VALIDATION_PLAN.md)
+- Need runtime artifact conventions: [`docs/operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md`](operations/RUNTIME_ARTIFACTS_AND_VALIDATION.md)
+- Need local dev-loop verification: [`docs/operations/DEV_LOOP.md`](operations/DEV_LOOP.md)
+- Need old Bun-first validation history: [`docs/archive/bun-first-v1/validation/`](archive/bun-first-v1/validation/)
 
 ## Active Validation Scripts
 
@@ -57,7 +57,7 @@ Focused runtime and UI validations:
 - `make validate-session-roundtrip`
 - `make validate-transcript-ui`
 
-The corresponding TypeScript scripts live under [`scripts/`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/scripts).
+The corresponding TypeScript scripts live under [`scripts/`](../scripts/).
 
 ## Evidence Storage
 
@@ -83,7 +83,7 @@ human-readable summary where the script supports one.
 ## App-server Gate
 
 For changes that affect the `codex app-server` connection path, follow
-[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
+[`docs/operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md`](operations/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS.md)
 and run:
 
 ```bash
@@ -94,8 +94,8 @@ HOPTER_APP_SERVER_DOCS_REVIEWED=1 make validate-app-server-docs
 
 When changing behavior or adding a feature:
 
-1. identify the affected task or acceptance rule in [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_TASK_LIST.md)
-2. update [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_VALIDATION_PLAN.md) if the validation shape changes
+1. identify the affected task or acceptance rule in [`docs/planning/GO_REBUILD_TASK_LIST.md`](planning/GO_REBUILD_TASK_LIST.md)
+2. update [`docs/planning/GO_REBUILD_VALIDATION_PLAN.md`](planning/GO_REBUILD_VALIDATION_PLAN.md) if the validation shape changes
 3. extend the smallest relevant validation script under `scripts/`
 4. make sure the script writes structured evidence under `storage/artifacts/validation/<run-id>/`
 5. record the evidence path in the handoff or final response
@@ -104,6 +104,6 @@ When changing behavior or adding a feature:
 
 The old Bun-first validation program, PRD acceptance matrix, M0 spike spec, and
 M0 findings are archived under
-[`docs/archive/bun-first-v1/validation/`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/archive/bun-first-v1/validation).
+[`docs/archive/bun-first-v1/validation/`](archive/bun-first-v1/validation/).
 They are useful historical evidence, but they are not active Go rebuild release
 gates.

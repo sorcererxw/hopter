@@ -3,11 +3,11 @@
 This archive contains the old Bun/Hono-first v1 planning set. It was superseded
 by the Go rebuild direction captured in:
 
-- [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_MASTER_PLAN.md)
-- [`docs/planning/GO_REBUILD_TASK_LIST.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/GO_REBUILD_TASK_LIST.md)
-- [`docs/planning/BACKEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/BACKEND_EXECUTION_PLAN.md)
-- [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/FRONTEND_EXECUTION_PLAN.md)
-- [`docs/planning/IDL_EXECUTION_PLAN.md`](/Users/sorcererxw/repo/sorcererxw/codeshell/hopter/docs/planning/IDL_EXECUTION_PLAN.md)
+- [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](../../planning/GO_REBUILD_MASTER_PLAN.md)
+- [`docs/planning/GO_REBUILD_TASK_LIST.md`](../../planning/GO_REBUILD_TASK_LIST.md)
+- [`docs/planning/BACKEND_EXECUTION_PLAN.md`](../../planning/BACKEND_EXECUTION_PLAN.md)
+- [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](../../planning/FRONTEND_EXECUTION_PLAN.md)
+- [`docs/planning/IDL_EXECUTION_PLAN.md`](../../planning/IDL_EXECUTION_PLAN.md)
 
 ## Contents
 

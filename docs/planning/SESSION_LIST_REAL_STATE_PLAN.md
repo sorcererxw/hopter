@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/sorcererxw/.gstack/projects/unknown/master-autoplan-restore-20260422-123919.md -->
+<!-- /autoplan restore point: local gstack project artifact -->
 
 # Session List Real State Plan
 
@@ -487,8 +487,8 @@ watermarks.
 ### DX Review
 
 DX subagent timed out and was closed. The plan still includes implementation-facing
-contract details, validation commands, and a separate test-plan artifact:
-`/Users/sorcererxw/.gstack/projects/unknown/master-session-list-real-state-test-plan-20260422-1254.md`.
+contract details, validation commands, and a separate local gstack test-plan
+artifact.
 
 ## Final Recommended Shape
 

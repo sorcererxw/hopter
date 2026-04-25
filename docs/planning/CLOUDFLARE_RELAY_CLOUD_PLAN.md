@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/sorcererxw/.gstack/projects/unknown/master-autoplan-restore-20260423-182706.md -->
+<!-- /autoplan restore point: local gstack project artifact -->
 # Cloudflare Relay Cloud Plan
 
 ## Status
@@ -165,7 +165,7 @@ Example local workspace:
 
 ```text
 ~/src/hopter-dev/
-  /codeshell        # public repo
+  /hopter           # public repo
   /hopter-cloud     # private repo
   /contracts        # optional shared contract package or generated SDK output
 ```
@@ -334,7 +334,7 @@ Rules:
 
 The public repo needs a thin relay client lane, not a hosted-service rewrite.
 
-### New surfaces in `codeshell`
+### New surfaces in `hopter`
 
 1. CLI
    - add `hopter relay login`
@@ -432,7 +432,7 @@ The right abstraction is **one workspace**, not one git repo.
 
 ```text
 ~/src/hopter-dev/
-  /codeshell
+  /hopter
   /hopter-cloud
   /.envrc
   /Makefile
@@ -651,10 +651,10 @@ presence so a user can reopen the same local workspace from another network.
 
 Loaded review skills from disk:
 
-- `/Users/sorcererxw/.agents/skills/gstack/plan-ceo-review/SKILL.md`
-- `/Users/sorcererxw/.agents/skills/gstack/plan-design-review/SKILL.md`
-- `/Users/sorcererxw/.agents/skills/gstack/plan-eng-review/SKILL.md`
-- `/Users/sorcererxw/.agents/skills/gstack/plan-devex-review/SKILL.md`
+- `plan-ceo-review`
+- `plan-design-review`
+- `plan-eng-review`
+- `plan-devex-review`
 
 ## CEO Review
 

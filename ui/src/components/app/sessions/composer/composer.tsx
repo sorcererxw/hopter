@@ -5,12 +5,15 @@ import {
   useState,
   type ReactNode,
   type ChangeEvent,
+  type ComponentProps,
   type ClipboardEvent,
+  type Key,
   type KeyboardEvent,
 } from "react"
 import { useTranslation } from "react-i18next"
 import {
   ArrowUp,
+  Check,
   ChevronDown,
   LoaderCircle,
   Paperclip,
@@ -18,7 +21,15 @@ import {
   X,
   Zap,
 } from "lucide-react"
-import { Button, Dropdown, Label, Switch, Tooltip } from "@heroui/react"
+import {
+  Button,
+  Dropdown,
+  Header,
+  Label,
+  Separator,
+  Switch,
+  Tooltip,
+} from "@heroui/react"
 
 import {
   composerSendShortcutPreferenceFromConfig,
@@ -39,6 +50,7 @@ import {
 import {
   hiddenScrollbarClassName,
   SkillReferenceChip,
+  stableDropdownPopoverClassName,
 } from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
@@ -104,6 +116,11 @@ type ComposerTextSegment = {
   reference?: string
   selected?: boolean
   text: string
+}
+
+type ComposerDropdownOption = {
+  label: string
+  value: string
 }
 
 // SessionComposer owns prompt entry plus lightweight agent selection state. It
@@ -719,40 +736,39 @@ export function SessionComposer({
                   <div className="flex min-w-0 items-center justify-end gap-1">
                     <ContextWindowIndicator t={t} usage={contextWindowUsage} />
 
-                    <InlineDropdownMenu
-                      aria-label={t("composer.model")}
+                    <AgentSelectionDropdown
+                      aria-label={t("composer.agentSelection")}
                       codexFastMode={codexFastMode}
                       disabled={
                         codexModelsQuery.isLoading || modelOptions.length === 0
                       }
                       onCodexFastModeChange={handleCodexFastModeChange}
-                      options={modelOptions.map((model) => ({
+                      modelOptions={modelOptions.map((model) => ({
                         label: model.displayName || modelValue(model),
                         value: modelValue(model),
                       }))}
+                      modelValue={effectiveModel}
+                      reasoningOptions={supportedReasoningOptions}
+                      reasoningValue={effectiveReasoningEffort}
                       showCodexFastModeToggle
-                      tooltip={t("composer.selectModel")}
-                      value={effectiveModel}
-                      onValueChange={handleModelChange}
+                      tooltip={t("composer.agentSelection")}
+                      onModelChange={handleModelChange}
+                      onReasoningChange={handleReasoningEffortChange}
                     >
-                      {selectedModelOption
-                        ? selectedModelOption.displayName ||
-                          modelValue(selectedModelOption)
-                        : codexModelsQuery.isLoading
-                          ? t("composer.loadingModel")
-                          : t("composer.defaultModel")}
-                    </InlineDropdownMenu>
-
-                    <InlineDropdownMenu
-                      aria-label={t("composer.reasoningEffort")}
-                      disabled={supportedReasoningOptions.length === 0}
-                      options={supportedReasoningOptions}
-                      tooltip={t("composer.selectReasoningEffort")}
-                      value={effectiveReasoningEffort}
-                      onValueChange={handleReasoningEffortChange}
-                    >
-                      {formatReasoningEffort(effectiveReasoningEffort, t)}
-                    </InlineDropdownMenu>
+                      <span className="min-w-0 truncate">
+                        {selectedModelOption
+                          ? selectedModelOption.displayName ||
+                            modelValue(selectedModelOption)
+                          : codexModelsQuery.isLoading
+                            ? t("composer.loadingModel")
+                            : t("composer.defaultModel")}
+                      </span>
+                      {effectiveReasoningEffort ? (
+                        <span className="shrink-0">
+                          {formatReasoningEffort(effectiveReasoningEffort, t)}
+                        </span>
+                      ) : null}
+                    </AgentSelectionDropdown>
 
                     <Tooltip>
                       <Tooltip.Trigger>
@@ -1081,29 +1097,45 @@ function resolveReasoningEffort(model: AgentModel, requested: string) {
   return model.defaultReasoningEffort || efforts[0] || ""
 }
 
-function InlineDropdownMenu({
+function AgentSelectionDropdown({
   children,
   codexFastMode = false,
   disabled = false,
+  modelOptions,
+  modelValue,
   onCodexFastModeChange,
-  onValueChange,
-  options,
+  onModelChange,
+  onReasoningChange,
+  reasoningOptions,
+  reasoningValue,
   showCodexFastModeToggle = false,
   tooltip,
-  value,
   ...props
 }: {
-  children: string
+  children: ReactNode
   codexFastMode?: boolean
   disabled?: boolean
+  modelOptions: readonly ComposerDropdownOption[]
+  modelValue: string
   onCodexFastModeChange?: (checked: boolean) => void
-  onValueChange: (value: string) => void
-  options: readonly { label: string; value: string }[]
+  onModelChange: (value: string) => void
+  onReasoningChange: (value: string) => void
+  reasoningOptions: readonly ComposerDropdownOption[]
+  reasoningValue: string
   showCodexFastModeToggle?: boolean
   tooltip: string
-  value: string
-} & Omit<React.ComponentProps<typeof Button>, "onChange" | "value">) {
+} & Omit<ComponentProps<typeof Button>, "onChange" | "value">) {
   const { t } = useTranslation()
+  const selectedModelLabel =
+    modelOptions.find((option) => option.value === modelValue)?.label ??
+    modelValue
+
+  function handleAction(key: Key) {
+    const action = String(key)
+    if (action.startsWith("reasoning:")) {
+      onReasoningChange(action.slice("reasoning:".length))
+    }
+  }
 
   return (
     <Dropdown>
@@ -1114,7 +1146,7 @@ function InlineDropdownMenu({
               <Button
                 type="button"
                 variant="ghost"
-                className="rounded-full text-muted hover:text-foreground"
+                className="max-w-64 rounded-full text-muted hover:text-foreground"
                 isDisabled={disabled}
                 {...props}
               >
@@ -1124,7 +1156,9 @@ function InlineDropdownMenu({
                     data-testid="composer-fast-mode-icon"
                   />
                 ) : null}
-                <span>{children}</span>
+                <span className="flex min-w-0 items-center gap-1">
+                  {children}
+                </span>
                 <ChevronDown className="size-3" />
               </Button>
             </Dropdown.Trigger>
@@ -1134,46 +1168,87 @@ function InlineDropdownMenu({
           {tooltip}
         </Tooltip.Content>
       </Tooltip>
-      <Dropdown.Popover className="min-w-40 rounded-2xl bg-overlay p-1 shadow-2xl">
-        {showCodexFastModeToggle ? (
-          <>
-            <div className="flex items-center justify-between gap-4 px-3 py-2">
-              <div className="min-w-0">
-                <div className="text-sm font-medium">
-                  {t("composer.fastMode")}
-                </div>
-              </div>
-              <Switch
-                aria-label={t("composer.codexFastMode")}
-                isSelected={codexFastMode}
-                onChange={(checked) => {
-                  onCodexFastModeChange?.(checked)
-                }}
-              >
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
-              </Switch>
-            </div>
-            <div className="my-1 h-px bg-border" />
-          </>
-        ) : null}
-        <Dropdown.Menu
-          selectionMode="single"
-          selectedKeys={new Set([value])}
-          onAction={(key) => onValueChange(String(key))}
-        >
-          {options.map((option) => (
-            <Dropdown.Item
-              key={option.value}
-              id={option.value}
-              textValue={option.label}
-            >
-              <Label>{option.label}</Label>
-              <Dropdown.ItemIndicator />
+      <Dropdown.Popover className={cn(stableDropdownPopoverClassName, "w-72")}>
+        <Dropdown.Menu onAction={handleAction} selectionMode="none">
+          {reasoningOptions.length > 0 ? (
+            <Dropdown.Section>
+              <Header className="px-2 py-1 text-xs text-muted">
+                {t("composer.intelligence")}
+              </Header>
+              {reasoningOptions.map((option) => (
+                <Dropdown.Item
+                  key={`reasoning:${option.value}`}
+                  id={`reasoning:${option.value}`}
+                  textValue={option.label}
+                >
+                  <Label>{option.label}</Label>
+                  <span className="flex size-3.5 items-center justify-center">
+                    {option.value === reasoningValue ? (
+                      <Check className="size-3.5" />
+                    ) : null}
+                  </span>
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Section>
+          ) : null}
+          <Separator className="my-1" />
+          <Dropdown.SubmenuTrigger>
+            <Dropdown.Item id="model-submenu" textValue={t("composer.model")}>
+              <Label>{t("composer.model")}</Label>
+              <span className="ml-auto flex min-w-0 items-center gap-2">
+                <span className="max-w-36 truncate text-muted">
+                  {selectedModelLabel}
+                </span>
+                <Dropdown.SubmenuIndicator />
+              </span>
             </Dropdown.Item>
-          ))}
+            <Dropdown.Popover
+              className={cn(stableDropdownPopoverClassName, "w-72")}
+            >
+              <Dropdown.Menu
+                onAction={(key) =>
+                  onModelChange(String(key).slice("model:".length))
+                }
+                selectionMode="none"
+              >
+                {modelOptions.map((option) => (
+                  <Dropdown.Item
+                    key={`model:${option.value}`}
+                    id={`model:${option.value}`}
+                    textValue={option.label}
+                  >
+                    <Label>{option.label}</Label>
+                    <span className="flex size-3.5 items-center justify-center">
+                      {option.value === modelValue ? (
+                        <Check className="size-3.5" />
+                      ) : null}
+                    </span>
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown.Popover>
+          </Dropdown.SubmenuTrigger>
         </Dropdown.Menu>
+        {showCodexFastModeToggle ? (
+          <div className="flex items-center justify-between gap-4 px-3 py-2">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">
+                {t("composer.fastMode")}
+              </div>
+            </div>
+            <Switch
+              aria-label={t("composer.codexFastMode")}
+              isSelected={codexFastMode}
+              onChange={(checked) => {
+                onCodexFastModeChange?.(checked)
+              }}
+            >
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+            </Switch>
+          </div>
+        ) : null}
       </Dropdown.Popover>
     </Dropdown>
   )
