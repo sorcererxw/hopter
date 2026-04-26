@@ -1,5 +1,5 @@
 import { type ComponentPropsWithoutRef } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
@@ -72,7 +72,7 @@ function parseSizeFromClassName(className?: string) {
   }
 }
 
-function createHugeIcon(icon: unknown) {
+function createHugeIcon(icon: IconSvgElement) {
   return ({ size, className, ...props }: HugeIconProps) => {
     const parsed = parseSizeFromClassName(className)
 

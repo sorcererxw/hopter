@@ -1334,7 +1334,6 @@ function AgentSelectionDropdown({
               placement="start top"
             >
               <Dropdown.Menu
-                closeOnSelect={false}
                 onAction={(key) =>
                   onModelChange(String(key).slice("model:".length))
                 }
