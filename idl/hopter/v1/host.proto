@@ -12,6 +12,7 @@ service HostService {
   rpc ListBackends(ListBackendsRequest) returns (ListBackendsResponse);
   rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
   rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse);
+  rpc GetSkill(GetSkillRequest) returns (GetSkillResponse);
   rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse);
   rpc ListDirectoryRoots(ListDirectoryRootsRequest) returns (ListDirectoryRootsResponse);
   rpc ListDirectory(ListDirectoryRequest) returns (ListDirectoryResponse);
@@ -157,12 +158,21 @@ message SkillSummary {
   string reference = 2;
   string description = 3;
   string source = 4;
+  string path = 5;
 }
 
 message ListSkillsRequest {}
 
 message ListSkillsResponse {
   repeated SkillSummary skills = 1;
+}
+
+message GetSkillRequest {
+  string path = 1;
+}
+
+message GetSkillResponse {
+  SkillSummary skill = 1;
 }
 
 message MCPServerSummary {

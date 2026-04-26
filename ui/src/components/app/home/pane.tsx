@@ -212,17 +212,19 @@ export function HomeWorkspacePane() {
             onSubmit={async ({
               attachments,
               codexFastMode,
+              input,
               model,
+              rawInput,
               reasoningEffort,
             }) => {
               if (
                 !selectedProjectId ||
-                (!prompt.trim() && attachments.length === 0)
+                (!input.trim() && attachments.length === 0)
               ) {
                 return
               }
 
-              const normalizedPrompt = prompt.trim()
+              const normalizedPrompt = input.trim()
               const session = await createSession.mutateAsync({
                 attachments,
                 backendKey: "codex",
@@ -232,7 +234,7 @@ export function HomeWorkspacePane() {
                 prompt: normalizedPrompt,
                 reasoningEffort,
                 title:
-                  deriveTitle(normalizedPrompt) ||
+                  deriveTitle(rawInput) ||
                   attachments[0]?.label ||
                   undefined,
               })

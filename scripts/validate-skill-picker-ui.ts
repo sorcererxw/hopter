@@ -102,18 +102,21 @@ function buildSkillListResponse() {
         reference: "excel",
         description: "Create and edit spreadsheet or excel files",
         source: "local",
+        path: "/tmp/hopter-skills/excel/SKILL.md",
       },
       {
         name: "Ask Claude",
         reference: "ask-claude",
         description: "Ask Claude via local CLI and capture a reusable artifact",
         source: "local",
+        path: "/tmp/hopter-skills/ask-claude/SKILL.md",
       },
       {
         name: "Autopilot",
         reference: "autopilot",
         description: "Full autonomous execution from idea to working code",
         source: "project",
+        path: "/tmp/hopter-skills/autopilot/SKILL.md",
       },
     ],
   };
@@ -264,7 +267,8 @@ async function main() {
 
     const input = page.getByTestId("session-prompt-input");
     await input.waitFor({ state: "visible", timeout: 15_000 });
-    await input.fill("$ex");
+    await input.click();
+    await page.keyboard.type("$ex");
 
     const popover = page.getByTestId("skill-suggestion-popover");
     await popover.waitFor({ state: "visible", timeout: 10_000 });
@@ -279,11 +283,11 @@ async function main() {
     });
 
     await input.press("Enter");
-    const selectedValue = await input.inputValue();
+    const selectedValue = await input.textContent();
 
     checks.push({
       name: "enter inserts selected skill reference",
-      status: selectedValue === "$excel " ? "pass" : "fail",
+      status: selectedValue === "Excel " ? "pass" : "fail",
       detail: `input value after selection: ${selectedValue}`,
     });
 
@@ -294,7 +298,7 @@ async function main() {
     checks.push({
       name: "selected skill is highlighted inside the composer",
       status:
-        (await skillHighlight.textContent()) === "$excel" &&
+        (await skillHighlight.textContent()) === "Excel" &&
         highlightBackground !== "rgba(0, 0, 0, 0)"
           ? "pass"
           : "fail",
@@ -310,14 +314,15 @@ async function main() {
           : `unexpected send payload: ${JSON.stringify(sendCalls[0])}`,
     });
 
-    await input.type("build a revenue model");
+    await page.keyboard.type("build a revenue model");
     await page.getByTestId("session-followup-submit").click();
 
     checks.push({
       name: "composer sends the inserted skill reference",
       status:
         sendCalls.length === 1 &&
-        sendCalls[0]?.input === "$excel build a revenue model"
+        sendCalls[0]?.input ===
+          "[$excel](/tmp/hopter-skills/excel/SKILL.md) build a revenue model"
           ? "pass"
           : "fail",
       detail:

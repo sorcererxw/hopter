@@ -101,6 +101,71 @@ description: "Ask Claude via local CLI"
 	}
 }
 
+func TestReadSkillSummaryFileOnlyAcceptsSkillMarkdown(t *testing.T) {
+	root := t.TempDir()
+	skillDir := filepath.Join(root, "excel")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill dir: %v", err)
+	}
+
+	skillPath := filepath.Join(skillDir, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte(`---
+name: "Excel"
+description: "Spreadsheet work"
+---
+Body
+`), 0o644); err != nil {
+		t.Fatalf("write skill file: %v", err)
+	}
+
+	skill, err := readSkillSummaryFile(skillPath)
+	if err != nil {
+		t.Fatalf("readSkillSummaryFile: %v", err)
+	}
+	if skill.Reference != "excel" {
+		t.Fatalf("reference = %q, want excel", skill.Reference)
+	}
+	if skill.Description != "Spreadsheet work" {
+		t.Fatalf("description = %q, want Spreadsheet work", skill.Description)
+	}
+
+	otherPath := filepath.Join(skillDir, "README.md")
+	if err := os.WriteFile(otherPath, []byte("# nope"), 0o644); err != nil {
+		t.Fatalf("write non-skill file: %v", err)
+	}
+	if _, err := readSkillSummaryFile(otherPath); err == nil {
+		t.Fatalf("expected non-SKILL.md path to be rejected")
+	}
+}
+
+func TestReadSkillSummaryFormatsSlugNamesForDisplay(t *testing.T) {
+	root := t.TempDir()
+	skillDir := filepath.Join(root, "imagegen")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill dir: %v", err)
+	}
+
+	skillPath := filepath.Join(skillDir, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte(`---
+name: "imagegen"
+description: "Generate images"
+---
+`), 0o644); err != nil {
+		t.Fatalf("write skill file: %v", err)
+	}
+
+	skill, err := readSkillSummary(skillPath, "local")
+	if err != nil {
+		t.Fatalf("readSkillSummary: %v", err)
+	}
+	if skill.Name != "Image Gen" {
+		t.Fatalf("name = %q, want Image Gen", skill.Name)
+	}
+	if skill.Reference != "imagegen" {
+		t.Fatalf("reference = %q, want imagegen", skill.Reference)
+	}
+}
+
 func TestListDirectoryHidesDotEntriesAndFlagsRepos(t *testing.T) {
 	root := t.TempDir()
 	repoDir := filepath.Join(root, "demo-repo")

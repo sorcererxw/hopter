@@ -8,6 +8,7 @@ export function SkillReferenceChip({
   description,
   name,
   reference,
+  tooltipPlacement = "top",
   variant = "skill",
   ...props
 }: {
@@ -15,10 +16,14 @@ export function SkillReferenceChip({
   name?: string
   reference: string
   source?: string
+  tooltipPlacement?: "bottom" | "top"
   variant?: "plugin" | "skill"
 } & Omit<ComponentPropsWithoutRef<"span">, "children">) {
   const tooltipDescription = description?.trim() || name?.trim() || reference
   const Icon = variant === "plugin" ? Hammer : Package
+  const displayLabel = name?.trim() || reference
+  const tooltipPlacementClassName =
+    tooltipPlacement === "bottom" ? "top-full mt-2" : "bottom-full mb-2"
 
   return (
     <span
@@ -30,11 +35,14 @@ export function SkillReferenceChip({
     >
       <Icon className="size-3.5 shrink-0" />
       <span className="min-w-0" data-testid="reference-chip-label">
-        {reference}
+        {displayLabel}
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-80 max-w-xs -translate-x-1/2 rounded-lg border border-border bg-overlay px-3 py-2 text-left text-sm leading-5 whitespace-normal text-overlay-foreground shadow-lg group-hover:block"
+        className={cn(
+          "pointer-events-none absolute left-1/2 z-50 hidden w-80 max-w-xs -translate-x-1/2 rounded-lg border border-border bg-overlay px-3 py-2 text-left text-sm leading-5 whitespace-normal text-overlay-foreground shadow-lg group-hover:block",
+          tooltipPlacementClassName
+        )}
         data-testid="skill-reference-tooltip"
       >
         <span className="line-clamp-3 block">{tooltipDescription}</span>

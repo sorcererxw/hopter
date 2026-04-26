@@ -587,23 +587,65 @@ func readSkillSummary(path string, source string) (Skill, error) {
 		return Skill{}, err
 	}
 
-	name, description := parseSkillFrontmatter(string(content))
-	if name == "" {
-		name = filepath.Base(filepath.Dir(path))
+	rawName, description := parseSkillFrontmatter(string(content))
+	if rawName == "" {
+		rawName = filepath.Base(filepath.Dir(path))
 	}
 
-	reference := normalizeSkillReference(name)
+	reference := normalizeSkillReference(rawName)
 	if reference == "" {
 		return Skill{}, fmt.Errorf("skill %q produced empty reference", path)
 	}
 
 	return Skill{
-		Name:        strings.TrimSpace(name),
+		Name:        displaySkillName(rawName),
 		Reference:   reference,
 		Description: strings.TrimSpace(description),
 		Source:      source,
 		Path:        path,
 	}, nil
+}
+
+func readSkillSummaryFile(path string) (Skill, error) {
+	canonicalPath, info, err := resolvePath(path)
+	if err != nil {
+		return Skill{}, err
+	}
+	if info.IsDir() {
+		return Skill{}, fmt.Errorf("path %q is a directory", canonicalPath)
+	}
+	if filepath.Base(canonicalPath) != "SKILL.md" {
+		return Skill{}, fmt.Errorf("path %q is not a SKILL.md file", canonicalPath)
+	}
+
+	roots, err := discoverDirectoryRoots()
+	if err != nil {
+		return Skill{}, err
+	}
+	if !isAllowedPath(canonicalPath, roots) {
+		return Skill{}, fmt.Errorf("path %q is outside allowed roots", canonicalPath)
+	}
+
+	skill, err := readSkillSummary(canonicalPath, inferSkillSource(canonicalPath))
+	if err != nil {
+		return Skill{}, err
+	}
+	skill.Path = canonicalPath
+	return skill, nil
+}
+
+func inferSkillSource(path string) string {
+	cleanPath := filepath.Clean(path)
+	for _, root := range discoverSkillRoots() {
+		canonicalRoot, err := canonicalizeExistingPath(root.Path)
+		if err != nil {
+			continue
+		}
+		if pathWithinRoot(cleanPath, canonicalRoot) {
+			return root.Source
+		}
+	}
+	return ""
 }
 
 func parseSkillFrontmatter(content string) (string, string) {
@@ -629,6 +671,87 @@ func parseSkillFrontmatter(content string) (string, string) {
 	}
 
 	return name, description
+}
+
+func displaySkillName(name string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return ""
+	}
+	if !looksLikeSlugName(trimmed) {
+		return trimmed
+	}
+
+	parts := strings.FieldsFunc(trimmed, func(r rune) bool {
+		return r == '-' || r == '_' || r == ':' || r == '/'
+	})
+	words := make([]string, 0, len(parts)+1)
+	for _, part := range parts {
+		for _, word := range splitCompactSkillName(part) {
+			if word != "" {
+				words = append(words, formatSkillNameWord(word))
+			}
+		}
+	}
+	if len(words) == 0 {
+		return trimmed
+	}
+	return strings.Join(words, " ")
+}
+
+func looksLikeSlugName(name string) bool {
+	return name == strings.ToLower(name) &&
+		(strings.ContainsAny(name, "-_:") || !strings.Contains(name, " "))
+}
+
+func splitCompactSkillName(value string) []string {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	if strings.HasSuffix(lower, "gen") && len(lower) > len("gen") {
+		return []string{lower[:len(lower)-len("gen")], "gen"}
+	}
+	return []string{lower}
+}
+
+func formatSkillNameWord(word string) string {
+	switch strings.ToLower(word) {
+	case "api":
+		return "API"
+	case "cli":
+		return "CLI"
+	case "css":
+		return "CSS"
+	case "dx":
+		return "DX"
+	case "gen":
+		return "Gen"
+	case "github":
+		return "GitHub"
+	case "gmail":
+		return "Gmail"
+	case "gstack":
+		return "GStack"
+	case "html":
+		return "HTML"
+	case "mcp":
+		return "MCP"
+	case "openai":
+		return "OpenAI"
+	case "qa":
+		return "QA"
+	case "ui":
+		return "UI"
+	case "ux":
+		return "UX"
+	case "vscode":
+		return "VS Code"
+	case "heroui":
+		return "HeroUI"
+	}
+
+	if word == "" {
+		return ""
+	}
+	return strings.ToUpper(word[:1]) + word[1:]
 }
 
 func parseYAMLScalar(value string) string {

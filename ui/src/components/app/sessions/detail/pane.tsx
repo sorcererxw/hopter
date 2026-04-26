@@ -179,14 +179,16 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               onSubmit={async ({
                 attachments,
                 codexFastMode,
+                input,
                 model,
+                rawInput,
                 reasoningEffort,
               }) => {
-                if (!prompt.trim() && attachments.length === 0) {
+                if (!input.trim() && attachments.length === 0) {
                   return
                 }
 
-                const normalizedPrompt = prompt.trim()
+                const normalizedPrompt = input.trim()
                 const pendingInput =
                   normalizedPrompt || attachments[0]?.label || "[image]"
                 // Clear the input optimistically so the UI behaves like chat,
@@ -217,7 +219,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
                   })
                 } catch (error) {
                   setOptimisticPendingInput("")
-                  setPrompt(normalizedPrompt)
+                  setPrompt(rawInput)
                   throw error
                 }
               }}

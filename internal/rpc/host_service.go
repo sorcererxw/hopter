@@ -112,10 +112,28 @@ func (s *HostService) ListSkills(_ context.Context, _ *connect.Request[hopterv1.
 			Reference:   skill.Reference,
 			Description: skill.Description,
 			Source:      skill.Source,
+			Path:        skill.Path,
 		})
 	}
 
 	return connect.NewResponse(response), nil
+}
+
+func (s *HostService) GetSkill(_ context.Context, req *connect.Request[hopterv1.GetSkillRequest]) (*connect.Response[hopterv1.GetSkillResponse], error) {
+	skill, err := s.workspace.GetSkill(req.Msg.GetPath())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	return connect.NewResponse(&hopterv1.GetSkillResponse{
+		Skill: &hopterv1.SkillSummary{
+			Name:        skill.Name,
+			Reference:   skill.Reference,
+			Description: skill.Description,
+			Source:      skill.Source,
+			Path:        skill.Path,
+		},
+	}), nil
 }
 
 func (s *HostService) ListMCPServers(_ context.Context, _ *connect.Request[hopterv1.ListMCPServersRequest]) (*connect.Response[hopterv1.ListMCPServersResponse], error) {

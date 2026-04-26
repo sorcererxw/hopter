@@ -15,7 +15,7 @@ import {
   workspaceScrollbarClassName,
 } from "@/components/app/shared"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
-import { useHostSkills } from "@/features/host/use-host-skills"
+import { useHostSkill } from "@/features/host/use-host-skill"
 import type { HighlightLanguage } from "@/lib/shiki/highlighter"
 import { cn } from "@/lib/utils"
 
@@ -76,28 +76,15 @@ function loadMarkdownModules() {
 }
 
 // SessionRichText renders assistant output, reviews, and summaries with a lazy
-// markdown path plus a plain-text fallback. It also upgrades inline skill/plugin
-// references into richer chips when those references are known locally.
+// markdown path plus a plain-text fallback. It upgrades explicit markdown
+// references into richer chips while keeping plain transcript text untouched.
 export function SessionRichText({
   className,
   markdown = true,
   onLocalPathClick,
   text,
 }: SessionRichTextProps) {
-  const hostSkillsQuery = useHostSkills()
   const mcpServersQuery = useMCPServers()
-  const skillByReference = new Map(
-    (hostSkillsQuery.data ?? []).map((skill) => [
-      skill.reference.toLowerCase(),
-      {
-        description: skill.description,
-        name: skill.name,
-        reference: skill.reference,
-        source: skill.source,
-        variant: "skill" as const,
-      },
-    ])
-  )
   const pluginByReference = new Map(
     (mcpServersQuery.data ?? []).map((server) => [
       normalizeReference(server.name),
@@ -144,7 +131,6 @@ export function SessionRichText({
       <PlainRichText
         className={className}
         isLongForm={isLongForm}
-        skillByReference={skillByReference}
         pluginByReference={pluginByReference}
         text={text}
       />
@@ -180,21 +166,6 @@ export function SessionRichText({
             if (codeClassName?.includes("language-")) {
               // Leave fenced code blocks for the surrounding <pre> renderer.
               return <code className={codeClassName}>{code}</code>
-            }
-
-            if (isSkillReferenceText(code)) {
-              const reference = code.replace(/^\$/, "")
-              const skill = skillByReference.get(normalizeReference(reference))
-              return (
-                <SkillReferenceChip
-                  data-testid="session-skill-reference"
-                  description={skill?.description}
-                  name={skill?.name}
-                  reference={reference}
-                  source={skill?.source}
-                  variant="skill"
-                />
-              )
             }
 
             return (
@@ -266,18 +237,16 @@ export function SessionRichText({
 function PlainRichText({
   className,
   isLongForm,
-  skillByReference,
   pluginByReference,
   text,
 }: {
   className?: string
   isLongForm: boolean
-  skillByReference: Map<string, InlineReferenceMetadata>
   pluginByReference: Map<string, InlineReferenceMetadata>
   text: string
 }) {
-  // Plain-text rendering still highlights known inline references so non-markdown
-  // content keeps most of the affordances that markdown mode provides.
+  // Plain fallback recognizes explicit markdown reference links while markdown
+  // modules load, but it does not upgrade free-form $skill text.
   return (
     <div
       className={cn(
@@ -287,31 +256,65 @@ function PlainRichText({
       )}
     >
       <div className="break-words whitespace-pre-wrap">
-        {renderInlineHighlightedPlainText(
-          text,
-          skillByReference,
-          pluginByReference
-        )}
+        {renderInlineHighlightedPlainText(text, pluginByReference)}
       </div>
     </div>
   )
 }
 
-function isSkillReferenceText(value: string) {
-  return /^\$[a-z0-9:-]+$/i.test(value.trim())
-}
-
 function renderInlineHighlightedPlainText(
   text: string,
-  skillByReference: Map<string, InlineReferenceMetadata>,
   pluginByReference: Map<string, InlineReferenceMetadata>
 ) {
-  const parts = renderPluginMarkdownTokens(text, pluginByReference)
-  return parts.flatMap((part, index) =>
+  const skillParts = renderSkillMarkdownTokens(text)
+  const pluginParts = skillParts.flatMap((part) =>
     typeof part === "string"
-      ? renderReferenceTokens(part, skillByReference, pluginByReference, index)
+      ? renderPluginMarkdownTokens(part, pluginByReference)
       : [part]
   )
+  return pluginParts.flatMap((part, index) =>
+    typeof part === "string"
+      ? renderReferenceTokens(part, pluginByReference, index)
+      : [part]
+  )
+}
+
+function renderSkillMarkdownTokens(text: string) {
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)/gi
+  const parts: ReactNode[] = []
+  let lastIndex = 0
+
+  for (const match of text.matchAll(pattern)) {
+    const token = match[0] ?? ""
+    const label = match[1]?.trim() ?? ""
+    const href = match[2]?.trim() ?? ""
+    const matchIndex = match.index ?? 0
+    const reference = skillReferenceFromLabel(label)
+    const path = skillPathFromHref(href)
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.slice(lastIndex, matchIndex))
+    }
+
+    if (!reference || !path) {
+      parts.push(token)
+    } else {
+      parts.push(
+        <SkillLinkChip
+          key={`skill-md-${matchIndex}`}
+          labelReference={reference}
+          path={path}
+        />
+      )
+    }
+    lastIndex = matchIndex + token.length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
 }
 
 function renderPluginMarkdownTokens(
@@ -345,6 +348,7 @@ function renderPluginMarkdownTokens(
           name={metadata?.name}
           reference={label || metadata?.name || reference}
           source={metadata?.source}
+          tooltipPlacement="bottom"
           variant="plugin"
         />
       )
@@ -361,11 +365,10 @@ function renderPluginMarkdownTokens(
 
 function renderReferenceTokens(
   text: string,
-  skillByReference: Map<string, InlineReferenceMetadata>,
   pluginByReference: Map<string, InlineReferenceMetadata>,
   keyPrefix: number
 ) {
-  const pattern = /(^|[\s([{])([@$][a-z0-9:-]+)/gi
+  const pattern = /(^|[\s([{])(@[a-z0-9:-]+)/gi
   const parts: ReactNode[] = []
   let lastIndex = 0
 
@@ -374,13 +377,9 @@ function renderReferenceTokens(
     const prefix = match[1] ?? ""
     const token = match[2] ?? ""
     const matchIndex = match.index ?? 0
-    const tokenPrefix = token[0]
     const reference = token.slice(1)
     const label = reference
-    const metadata =
-      tokenPrefix === "$"
-        ? skillByReference.get(normalizeReference(reference))
-        : pluginByReference.get(normalizeReference(reference))
+    const metadata = pluginByReference.get(normalizeReference(reference))
     const tokenStart = matchIndex + prefix.length
 
     if (matchIndex > lastIndex) {
@@ -390,28 +389,19 @@ function renderReferenceTokens(
       parts.push(prefix)
     }
     if (token) {
-      if (tokenPrefix === "@" && !metadata) {
+      if (!metadata) {
         parts.push(token)
       } else {
         parts.push(
           <SkillReferenceChip
             key={`${keyPrefix}-${token}-${tokenStart}`}
-            data-testid={
-              tokenPrefix === "@" || metadata?.variant === "plugin"
-                ? "session-plugin-reference"
-                : "session-skill-reference"
-            }
+            data-testid="session-plugin-reference"
             description={metadata?.description}
             name={metadata?.name}
-            reference={
-              tokenPrefix === "@"
-                ? metadata?.name || label
-                : (metadata?.reference ?? reference)
-            }
+            reference={metadata?.name || label}
             source={metadata?.source}
-            variant={
-              tokenPrefix === "@" ? "plugin" : (metadata?.variant ?? "skill")
-            }
+            tooltipPlacement="bottom"
+            variant="plugin"
           />
         )
       }
@@ -448,6 +438,12 @@ function MarkdownLink({
     return <span>{children}</span>
   }
 
+  const skillReference = skillReferenceFromLabel(label)
+  const skillPath = skillPathFromHref(href)
+  if (skillReference && skillPath) {
+    return <SkillLinkChip labelReference={skillReference} path={skillPath} />
+  }
+
   const pluginReference = pluginReferenceFromHref(href, label)
   if (pluginReference) {
     const plugin = pluginByReference.get(normalizeReference(pluginReference))
@@ -459,6 +455,7 @@ function MarkdownLink({
         name={plugin?.name}
         reference={displayLabel || plugin?.name || pluginReference}
         source={plugin?.source}
+        tooltipPlacement="bottom"
         variant="plugin"
       />
     )
@@ -497,6 +494,62 @@ function MarkdownLink({
       {children}
     </a>
   )
+}
+
+function SkillLinkChip({
+  labelReference,
+  path,
+}: {
+  labelReference: string
+  path: string
+}) {
+  const skillQuery = useHostSkill(path)
+  const skill = skillQuery.data
+
+  return (
+    <SkillReferenceChip
+      data-testid="session-skill-reference"
+      description={skill?.description}
+      name={skill?.name}
+      reference={skill?.reference || labelReference}
+      source={skill?.source}
+      tooltipPlacement="bottom"
+      variant="skill"
+    />
+  )
+}
+
+function skillReferenceFromLabel(label: string) {
+  const normalized = label.trim()
+  if (!/^\$[a-z0-9:-]+$/i.test(normalized)) {
+    return ""
+  }
+  return normalized.slice(1)
+}
+
+function skillPathFromHref(href: string) {
+  const path = localPathFromHref(href)
+  const pathWithoutAnchor = path.replace(/[?#].*$/, "")
+  if (!/(^|\/)SKILL\.md$/i.test(pathWithoutAnchor)) {
+    return ""
+  }
+  return pathWithoutAnchor
+}
+
+function localPathFromHref(href: string) {
+  const trimmed = href.trim()
+  if (trimmed.startsWith("file://")) {
+    try {
+      return decodeURI(new URL(trimmed).pathname)
+    } catch {
+      return trimmed
+    }
+  }
+  try {
+    return decodeURI(trimmed)
+  } catch {
+    return trimmed
+  }
 }
 
 function pluginReferenceFromHref(href: string, label: string) {

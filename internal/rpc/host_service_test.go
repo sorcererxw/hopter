@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -16,6 +18,38 @@ type fakeHostModelLister struct {
 
 func (f *fakeHostModelLister) ListModels(bool) ([]core.AgentModel, error) {
 	return f.models, nil
+}
+
+func TestGetSkillReadsSkillSummaryByPath(t *testing.T) {
+	root := t.TempDir()
+	skillDir := filepath.Join(root, "ask-claude")
+	if err := os.MkdirAll(skillDir, 0o755); err != nil {
+		t.Fatalf("mkdir skill dir: %v", err)
+	}
+	skillPath := filepath.Join(skillDir, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte(`---
+name: ask-claude
+description: "Ask Claude via local CLI"
+---
+`), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	service := NewHostService(workspace, nil)
+
+	resp, err := service.GetSkill(context.Background(), connect.NewRequest(&hopterv1.GetSkillRequest{
+		Path: skillPath,
+	}))
+	if err != nil {
+		t.Fatalf("GetSkill: %v", err)
+	}
+	if resp.Msg.GetSkill().GetReference() != "ask-claude" {
+		t.Fatalf("reference = %q, want ask-claude", resp.Msg.GetSkill().GetReference())
+	}
+	if resp.Msg.GetSkill().GetDescription() != "Ask Claude via local CLI" {
+		t.Fatalf("description = %q", resp.Msg.GetSkill().GetDescription())
+	}
 }
 
 func TestListModelsReturnsCodexModels(t *testing.T) {

@@ -1229,6 +1229,7 @@ type SkillSummary struct {
 	Reference     string                 `protobuf:"bytes,2,opt,name=reference,proto3" json:"reference,omitempty"`
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	Source        string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
+	Path          string                 `protobuf:"bytes,5,opt,name=path,proto3" json:"path,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1287,6 +1288,13 @@ func (x *SkillSummary) GetDescription() string {
 func (x *SkillSummary) GetSource() string {
 	if x != nil {
 		return x.Source
+	}
+	return ""
+}
+
+func (x *SkillSummary) GetPath() string {
+	if x != nil {
+		return x.Path
 	}
 	return ""
 }
@@ -1371,6 +1379,94 @@ func (x *ListSkillsResponse) GetSkills() []*SkillSummary {
 	return nil
 }
 
+type GetSkillRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSkillRequest) Reset() {
+	*x = GetSkillRequest{}
+	mi := &file_hopter_v1_host_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSkillRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSkillRequest) ProtoMessage() {}
+
+func (x *GetSkillRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hopter_v1_host_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSkillRequest.ProtoReflect.Descriptor instead.
+func (*GetSkillRequest) Descriptor() ([]byte, []int) {
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetSkillRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type GetSkillResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Skill         *SkillSummary          `protobuf:"bytes,1,opt,name=skill,proto3" json:"skill,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSkillResponse) Reset() {
+	*x = GetSkillResponse{}
+	mi := &file_hopter_v1_host_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSkillResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSkillResponse) ProtoMessage() {}
+
+func (x *GetSkillResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hopter_v1_host_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSkillResponse.ProtoReflect.Descriptor instead.
+func (*GetSkillResponse) Descriptor() ([]byte, []int) {
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GetSkillResponse) GetSkill() *SkillSummary {
+	if x != nil {
+		return x.Skill
+	}
+	return nil
+}
+
 type MCPServerSummary struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Name                string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1382,7 +1478,7 @@ type MCPServerSummary struct {
 
 func (x *MCPServerSummary) Reset() {
 	*x = MCPServerSummary{}
-	mi := &file_hopter_v1_host_proto_msgTypes[21]
+	mi := &file_hopter_v1_host_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1394,7 +1490,7 @@ func (x *MCPServerSummary) String() string {
 func (*MCPServerSummary) ProtoMessage() {}
 
 func (x *MCPServerSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[21]
+	mi := &file_hopter_v1_host_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1407,7 +1503,7 @@ func (x *MCPServerSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MCPServerSummary.ProtoReflect.Descriptor instead.
 func (*MCPServerSummary) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{21}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *MCPServerSummary) GetName() string {
@@ -1439,7 +1535,7 @@ type ListMCPServersRequest struct {
 
 func (x *ListMCPServersRequest) Reset() {
 	*x = ListMCPServersRequest{}
-	mi := &file_hopter_v1_host_proto_msgTypes[22]
+	mi := &file_hopter_v1_host_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1451,7 +1547,7 @@ func (x *ListMCPServersRequest) String() string {
 func (*ListMCPServersRequest) ProtoMessage() {}
 
 func (x *ListMCPServersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[22]
+	mi := &file_hopter_v1_host_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1464,7 +1560,7 @@ func (x *ListMCPServersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMCPServersRequest.ProtoReflect.Descriptor instead.
 func (*ListMCPServersRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{22}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{24}
 }
 
 type ListMCPServersResponse struct {
@@ -1476,7 +1572,7 @@ type ListMCPServersResponse struct {
 
 func (x *ListMCPServersResponse) Reset() {
 	*x = ListMCPServersResponse{}
-	mi := &file_hopter_v1_host_proto_msgTypes[23]
+	mi := &file_hopter_v1_host_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1488,7 +1584,7 @@ func (x *ListMCPServersResponse) String() string {
 func (*ListMCPServersResponse) ProtoMessage() {}
 
 func (x *ListMCPServersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[23]
+	mi := &file_hopter_v1_host_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1501,7 +1597,7 @@ func (x *ListMCPServersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMCPServersResponse.ProtoReflect.Descriptor instead.
 func (*ListMCPServersResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{23}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListMCPServersResponse) GetServers() []*MCPServerSummary {
@@ -1522,7 +1618,7 @@ type DirectoryRoot struct {
 
 func (x *DirectoryRoot) Reset() {
 	*x = DirectoryRoot{}
-	mi := &file_hopter_v1_host_proto_msgTypes[24]
+	mi := &file_hopter_v1_host_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1534,7 +1630,7 @@ func (x *DirectoryRoot) String() string {
 func (*DirectoryRoot) ProtoMessage() {}
 
 func (x *DirectoryRoot) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[24]
+	mi := &file_hopter_v1_host_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1547,7 +1643,7 @@ func (x *DirectoryRoot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryRoot.ProtoReflect.Descriptor instead.
 func (*DirectoryRoot) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{24}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DirectoryRoot) GetLabel() string {
@@ -1585,7 +1681,7 @@ type DirectoryEntry struct {
 
 func (x *DirectoryEntry) Reset() {
 	*x = DirectoryEntry{}
-	mi := &file_hopter_v1_host_proto_msgTypes[25]
+	mi := &file_hopter_v1_host_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1597,7 +1693,7 @@ func (x *DirectoryEntry) String() string {
 func (*DirectoryEntry) ProtoMessage() {}
 
 func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[25]
+	mi := &file_hopter_v1_host_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1610,7 +1706,7 @@ func (x *DirectoryEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryEntry.ProtoReflect.Descriptor instead.
 func (*DirectoryEntry) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{25}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *DirectoryEntry) GetName() string {
@@ -1666,7 +1762,7 @@ type DirectoryListing struct {
 
 func (x *DirectoryListing) Reset() {
 	*x = DirectoryListing{}
-	mi := &file_hopter_v1_host_proto_msgTypes[26]
+	mi := &file_hopter_v1_host_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1678,7 +1774,7 @@ func (x *DirectoryListing) String() string {
 func (*DirectoryListing) ProtoMessage() {}
 
 func (x *DirectoryListing) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[26]
+	mi := &file_hopter_v1_host_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1691,7 +1787,7 @@ func (x *DirectoryListing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DirectoryListing.ProtoReflect.Descriptor instead.
 func (*DirectoryListing) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{26}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DirectoryListing) GetCurrentPath() string {
@@ -1732,7 +1828,7 @@ type PathMetadata struct {
 
 func (x *PathMetadata) Reset() {
 	*x = PathMetadata{}
-	mi := &file_hopter_v1_host_proto_msgTypes[27]
+	mi := &file_hopter_v1_host_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1744,7 +1840,7 @@ func (x *PathMetadata) String() string {
 func (*PathMetadata) ProtoMessage() {}
 
 func (x *PathMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[27]
+	mi := &file_hopter_v1_host_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1757,7 +1853,7 @@ func (x *PathMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PathMetadata.ProtoReflect.Descriptor instead.
 func (*PathMetadata) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{27}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *PathMetadata) GetPath() string {
@@ -1831,7 +1927,7 @@ type ListDirectoryRootsRequest struct {
 
 func (x *ListDirectoryRootsRequest) Reset() {
 	*x = ListDirectoryRootsRequest{}
-	mi := &file_hopter_v1_host_proto_msgTypes[28]
+	mi := &file_hopter_v1_host_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1843,7 +1939,7 @@ func (x *ListDirectoryRootsRequest) String() string {
 func (*ListDirectoryRootsRequest) ProtoMessage() {}
 
 func (x *ListDirectoryRootsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[28]
+	mi := &file_hopter_v1_host_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +1952,7 @@ func (x *ListDirectoryRootsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRootsRequest.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRootsRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{28}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{30}
 }
 
 type ListDirectoryRootsResponse struct {
@@ -1868,7 +1964,7 @@ type ListDirectoryRootsResponse struct {
 
 func (x *ListDirectoryRootsResponse) Reset() {
 	*x = ListDirectoryRootsResponse{}
-	mi := &file_hopter_v1_host_proto_msgTypes[29]
+	mi := &file_hopter_v1_host_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1880,7 +1976,7 @@ func (x *ListDirectoryRootsResponse) String() string {
 func (*ListDirectoryRootsResponse) ProtoMessage() {}
 
 func (x *ListDirectoryRootsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[29]
+	mi := &file_hopter_v1_host_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1893,7 +1989,7 @@ func (x *ListDirectoryRootsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRootsResponse.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRootsResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{29}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListDirectoryRootsResponse) GetRoots() []*DirectoryRoot {
@@ -1912,7 +2008,7 @@ type ListDirectoryRequest struct {
 
 func (x *ListDirectoryRequest) Reset() {
 	*x = ListDirectoryRequest{}
-	mi := &file_hopter_v1_host_proto_msgTypes[30]
+	mi := &file_hopter_v1_host_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1924,7 +2020,7 @@ func (x *ListDirectoryRequest) String() string {
 func (*ListDirectoryRequest) ProtoMessage() {}
 
 func (x *ListDirectoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[30]
+	mi := &file_hopter_v1_host_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1937,7 +2033,7 @@ func (x *ListDirectoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryRequest.ProtoReflect.Descriptor instead.
 func (*ListDirectoryRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{30}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListDirectoryRequest) GetPath() string {
@@ -1956,7 +2052,7 @@ type ListDirectoryResponse struct {
 
 func (x *ListDirectoryResponse) Reset() {
 	*x = ListDirectoryResponse{}
-	mi := &file_hopter_v1_host_proto_msgTypes[31]
+	mi := &file_hopter_v1_host_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1968,7 +2064,7 @@ func (x *ListDirectoryResponse) String() string {
 func (*ListDirectoryResponse) ProtoMessage() {}
 
 func (x *ListDirectoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[31]
+	mi := &file_hopter_v1_host_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1981,7 +2077,7 @@ func (x *ListDirectoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDirectoryResponse.ProtoReflect.Descriptor instead.
 func (*ListDirectoryResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{31}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListDirectoryResponse) GetListing() *DirectoryListing {
@@ -2000,7 +2096,7 @@ type GetPathMetadataRequest struct {
 
 func (x *GetPathMetadataRequest) Reset() {
 	*x = GetPathMetadataRequest{}
-	mi := &file_hopter_v1_host_proto_msgTypes[32]
+	mi := &file_hopter_v1_host_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +2108,7 @@ func (x *GetPathMetadataRequest) String() string {
 func (*GetPathMetadataRequest) ProtoMessage() {}
 
 func (x *GetPathMetadataRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[32]
+	mi := &file_hopter_v1_host_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +2121,7 @@ func (x *GetPathMetadataRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPathMetadataRequest.ProtoReflect.Descriptor instead.
 func (*GetPathMetadataRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{32}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetPathMetadataRequest) GetPath() string {
@@ -2044,7 +2140,7 @@ type GetPathMetadataResponse struct {
 
 func (x *GetPathMetadataResponse) Reset() {
 	*x = GetPathMetadataResponse{}
-	mi := &file_hopter_v1_host_proto_msgTypes[33]
+	mi := &file_hopter_v1_host_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2056,7 +2152,7 @@ func (x *GetPathMetadataResponse) String() string {
 func (*GetPathMetadataResponse) ProtoMessage() {}
 
 func (x *GetPathMetadataResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[33]
+	mi := &file_hopter_v1_host_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2069,7 +2165,7 @@ func (x *GetPathMetadataResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPathMetadataResponse.ProtoReflect.Descriptor instead.
 func (*GetPathMetadataResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{33}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *GetPathMetadataResponse) GetMetadata() *PathMetadata {
@@ -2088,7 +2184,7 @@ type ListRecentReposRequest struct {
 
 func (x *ListRecentReposRequest) Reset() {
 	*x = ListRecentReposRequest{}
-	mi := &file_hopter_v1_host_proto_msgTypes[34]
+	mi := &file_hopter_v1_host_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2100,7 +2196,7 @@ func (x *ListRecentReposRequest) String() string {
 func (*ListRecentReposRequest) ProtoMessage() {}
 
 func (x *ListRecentReposRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[34]
+	mi := &file_hopter_v1_host_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2113,7 +2209,7 @@ func (x *ListRecentReposRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRecentReposRequest.ProtoReflect.Descriptor instead.
 func (*ListRecentReposRequest) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{34}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListRecentReposRequest) GetLimit() uint32 {
@@ -2132,7 +2228,7 @@ type ListRecentReposResponse struct {
 
 func (x *ListRecentReposResponse) Reset() {
 	*x = ListRecentReposResponse{}
-	mi := &file_hopter_v1_host_proto_msgTypes[35]
+	mi := &file_hopter_v1_host_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2144,7 +2240,7 @@ func (x *ListRecentReposResponse) String() string {
 func (*ListRecentReposResponse) ProtoMessage() {}
 
 func (x *ListRecentReposResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hopter_v1_host_proto_msgTypes[35]
+	mi := &file_hopter_v1_host_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2157,7 +2253,7 @@ func (x *ListRecentReposResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRecentReposResponse.ProtoReflect.Descriptor instead.
 func (*ListRecentReposResponse) Descriptor() ([]byte, []int) {
-	return file_hopter_v1_host_proto_rawDescGZIP(), []int{35}
+	return file_hopter_v1_host_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ListRecentReposResponse) GetRepos() []*PathMetadata {
@@ -2242,15 +2338,20 @@ const file_hopter_v1_host_proto_rawDesc = "" +
 	"\x0einclude_hidden\x18\x02 \x01(\bR\rincludeHiddenB\x0e\n" +
 	"\f_backend_key\"C\n" +
 	"\x12ListModelsResponse\x12-\n" +
-	"\x06models\x18\x01 \x03(\v2\x15.hopter.v1.AgentModelR\x06models\"z\n" +
+	"\x06models\x18\x01 \x03(\v2\x15.hopter.v1.AgentModelR\x06models\"\x8e\x01\n" +
 	"\fSkillSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
 	"\treference\x18\x02 \x01(\tR\treference\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x16\n" +
-	"\x06source\x18\x04 \x01(\tR\x06source\"\x13\n" +
+	"\x06source\x18\x04 \x01(\tR\x06source\x12\x12\n" +
+	"\x04path\x18\x05 \x01(\tR\x04path\"\x13\n" +
 	"\x11ListSkillsRequest\"E\n" +
 	"\x12ListSkillsResponse\x12/\n" +
-	"\x06skills\x18\x01 \x03(\v2\x17.hopter.v1.SkillSummaryR\x06skills\"q\n" +
+	"\x06skills\x18\x01 \x03(\v2\x17.hopter.v1.SkillSummaryR\x06skills\"%\n" +
+	"\x0fGetSkillRequest\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\"A\n" +
+	"\x10GetSkillResponse\x12-\n" +
+	"\x05skill\x18\x01 \x01(\v2\x17.hopter.v1.SkillSummaryR\x05skill\"q\n" +
 	"\x10MCPServerSummary\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x121\n" +
@@ -2333,14 +2434,15 @@ const file_hopter_v1_host_proto_rawDesc = "" +
 	"\x16UPDATE_STATE_REEXECING\x10\b\x12 \n" +
 	"\x1cUPDATE_STATE_FAILED_PRE_EXEC\x10\t\x12)\n" +
 	"%UPDATE_STATE_FAILED_POST_EXEC_UNKNOWN\x10\n" +
-	"2\x89\b\n" +
+	"2\xce\b\n" +
 	"\vHostService\x12R\n" +
 	"\rGetHostStatus\x12\x1f.hopter.v1.GetHostStatusRequest\x1a .hopter.v1.GetHostStatusResponse\x12O\n" +
 	"\fListBackends\x12\x1e.hopter.v1.ListBackendsRequest\x1a\x1f.hopter.v1.ListBackendsResponse\x12I\n" +
 	"\n" +
 	"ListModels\x12\x1c.hopter.v1.ListModelsRequest\x1a\x1d.hopter.v1.ListModelsResponse\x12I\n" +
 	"\n" +
-	"ListSkills\x12\x1c.hopter.v1.ListSkillsRequest\x1a\x1d.hopter.v1.ListSkillsResponse\x12U\n" +
+	"ListSkills\x12\x1c.hopter.v1.ListSkillsRequest\x1a\x1d.hopter.v1.ListSkillsResponse\x12C\n" +
+	"\bGetSkill\x12\x1a.hopter.v1.GetSkillRequest\x1a\x1b.hopter.v1.GetSkillResponse\x12U\n" +
 	"\x0eListMCPServers\x12 .hopter.v1.ListMCPServersRequest\x1a!.hopter.v1.ListMCPServersResponse\x12a\n" +
 	"\x12ListDirectoryRoots\x12$.hopter.v1.ListDirectoryRootsRequest\x1a%.hopter.v1.ListDirectoryRootsResponse\x12R\n" +
 	"\rListDirectory\x12\x1f.hopter.v1.ListDirectoryRequest\x1a .hopter.v1.ListDirectoryResponse\x12X\n" +
@@ -2365,7 +2467,7 @@ func file_hopter_v1_host_proto_rawDescGZIP() []byte {
 }
 
 var file_hopter_v1_host_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_hopter_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_hopter_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_hopter_v1_host_proto_goTypes = []any{
 	(InstallSource)(0),                 // 0: hopter.v1.InstallSource
 	(UpdatePolicy)(0),                  // 1: hopter.v1.UpdatePolicy
@@ -2391,35 +2493,37 @@ var file_hopter_v1_host_proto_goTypes = []any{
 	(*SkillSummary)(nil),               // 21: hopter.v1.SkillSummary
 	(*ListSkillsRequest)(nil),          // 22: hopter.v1.ListSkillsRequest
 	(*ListSkillsResponse)(nil),         // 23: hopter.v1.ListSkillsResponse
-	(*MCPServerSummary)(nil),           // 24: hopter.v1.MCPServerSummary
-	(*ListMCPServersRequest)(nil),      // 25: hopter.v1.ListMCPServersRequest
-	(*ListMCPServersResponse)(nil),     // 26: hopter.v1.ListMCPServersResponse
-	(*DirectoryRoot)(nil),              // 27: hopter.v1.DirectoryRoot
-	(*DirectoryEntry)(nil),             // 28: hopter.v1.DirectoryEntry
-	(*DirectoryListing)(nil),           // 29: hopter.v1.DirectoryListing
-	(*PathMetadata)(nil),               // 30: hopter.v1.PathMetadata
-	(*ListDirectoryRootsRequest)(nil),  // 31: hopter.v1.ListDirectoryRootsRequest
-	(*ListDirectoryRootsResponse)(nil), // 32: hopter.v1.ListDirectoryRootsResponse
-	(*ListDirectoryRequest)(nil),       // 33: hopter.v1.ListDirectoryRequest
-	(*ListDirectoryResponse)(nil),      // 34: hopter.v1.ListDirectoryResponse
-	(*GetPathMetadataRequest)(nil),     // 35: hopter.v1.GetPathMetadataRequest
-	(*GetPathMetadataResponse)(nil),    // 36: hopter.v1.GetPathMetadataResponse
-	(*ListRecentReposRequest)(nil),     // 37: hopter.v1.ListRecentReposRequest
-	(*ListRecentReposResponse)(nil),    // 38: hopter.v1.ListRecentReposResponse
-	(HostStatusKind)(0),                // 39: hopter.v1.HostStatusKind
-	(*timestamppb.Timestamp)(nil),      // 40: google.protobuf.Timestamp
+	(*GetSkillRequest)(nil),            // 24: hopter.v1.GetSkillRequest
+	(*GetSkillResponse)(nil),           // 25: hopter.v1.GetSkillResponse
+	(*MCPServerSummary)(nil),           // 26: hopter.v1.MCPServerSummary
+	(*ListMCPServersRequest)(nil),      // 27: hopter.v1.ListMCPServersRequest
+	(*ListMCPServersResponse)(nil),     // 28: hopter.v1.ListMCPServersResponse
+	(*DirectoryRoot)(nil),              // 29: hopter.v1.DirectoryRoot
+	(*DirectoryEntry)(nil),             // 30: hopter.v1.DirectoryEntry
+	(*DirectoryListing)(nil),           // 31: hopter.v1.DirectoryListing
+	(*PathMetadata)(nil),               // 32: hopter.v1.PathMetadata
+	(*ListDirectoryRootsRequest)(nil),  // 33: hopter.v1.ListDirectoryRootsRequest
+	(*ListDirectoryRootsResponse)(nil), // 34: hopter.v1.ListDirectoryRootsResponse
+	(*ListDirectoryRequest)(nil),       // 35: hopter.v1.ListDirectoryRequest
+	(*ListDirectoryResponse)(nil),      // 36: hopter.v1.ListDirectoryResponse
+	(*GetPathMetadataRequest)(nil),     // 37: hopter.v1.GetPathMetadataRequest
+	(*GetPathMetadataResponse)(nil),    // 38: hopter.v1.GetPathMetadataResponse
+	(*ListRecentReposRequest)(nil),     // 39: hopter.v1.ListRecentReposRequest
+	(*ListRecentReposResponse)(nil),    // 40: hopter.v1.ListRecentReposResponse
+	(HostStatusKind)(0),                // 41: hopter.v1.HostStatusKind
+	(*timestamppb.Timestamp)(nil),      // 42: google.protobuf.Timestamp
 }
 var file_hopter_v1_host_proto_depIdxs = []int32{
-	39, // 0: hopter.v1.HostStatus.status:type_name -> hopter.v1.HostStatusKind
+	41, // 0: hopter.v1.HostStatus.status:type_name -> hopter.v1.HostStatusKind
 	3,  // 1: hopter.v1.HostStatus.backends:type_name -> hopter.v1.BackendStatus
-	40, // 2: hopter.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
+	42, // 2: hopter.v1.HostStatus.updated_at:type_name -> google.protobuf.Timestamp
 	4,  // 3: hopter.v1.GetHostStatusResponse.host_status:type_name -> hopter.v1.HostStatus
-	40, // 4: hopter.v1.AvailableUpdate.published_at:type_name -> google.protobuf.Timestamp
+	42, // 4: hopter.v1.AvailableUpdate.published_at:type_name -> google.protobuf.Timestamp
 	0,  // 5: hopter.v1.UpdateStatus.install_source:type_name -> hopter.v1.InstallSource
 	1,  // 6: hopter.v1.UpdateStatus.update_policy:type_name -> hopter.v1.UpdatePolicy
 	2,  // 7: hopter.v1.UpdateStatus.state:type_name -> hopter.v1.UpdateState
 	7,  // 8: hopter.v1.UpdateStatus.available_update:type_name -> hopter.v1.AvailableUpdate
-	40, // 9: hopter.v1.UpdateStatus.last_checked_at:type_name -> google.protobuf.Timestamp
+	42, // 9: hopter.v1.UpdateStatus.last_checked_at:type_name -> google.protobuf.Timestamp
 	8,  // 10: hopter.v1.GetUpdateStatusResponse.update_status:type_name -> hopter.v1.UpdateStatus
 	8,  // 11: hopter.v1.CheckForUpdateResponse.update_status:type_name -> hopter.v1.UpdateStatus
 	8,  // 12: hopter.v1.ApplyUpdateResponse.update_status:type_name -> hopter.v1.UpdateStatus
@@ -2427,42 +2531,45 @@ var file_hopter_v1_host_proto_depIdxs = []int32{
 	17, // 14: hopter.v1.AgentModel.supported_reasoning_efforts:type_name -> hopter.v1.ModelReasoningEffort
 	18, // 15: hopter.v1.ListModelsResponse.models:type_name -> hopter.v1.AgentModel
 	21, // 16: hopter.v1.ListSkillsResponse.skills:type_name -> hopter.v1.SkillSummary
-	24, // 17: hopter.v1.ListMCPServersResponse.servers:type_name -> hopter.v1.MCPServerSummary
-	28, // 18: hopter.v1.DirectoryListing.entries:type_name -> hopter.v1.DirectoryEntry
-	40, // 19: hopter.v1.PathMetadata.modified_at:type_name -> google.protobuf.Timestamp
-	27, // 20: hopter.v1.ListDirectoryRootsResponse.roots:type_name -> hopter.v1.DirectoryRoot
-	29, // 21: hopter.v1.ListDirectoryResponse.listing:type_name -> hopter.v1.DirectoryListing
-	30, // 22: hopter.v1.GetPathMetadataResponse.metadata:type_name -> hopter.v1.PathMetadata
-	30, // 23: hopter.v1.ListRecentReposResponse.repos:type_name -> hopter.v1.PathMetadata
-	5,  // 24: hopter.v1.HostService.GetHostStatus:input_type -> hopter.v1.GetHostStatusRequest
-	15, // 25: hopter.v1.HostService.ListBackends:input_type -> hopter.v1.ListBackendsRequest
-	19, // 26: hopter.v1.HostService.ListModels:input_type -> hopter.v1.ListModelsRequest
-	22, // 27: hopter.v1.HostService.ListSkills:input_type -> hopter.v1.ListSkillsRequest
-	25, // 28: hopter.v1.HostService.ListMCPServers:input_type -> hopter.v1.ListMCPServersRequest
-	31, // 29: hopter.v1.HostService.ListDirectoryRoots:input_type -> hopter.v1.ListDirectoryRootsRequest
-	33, // 30: hopter.v1.HostService.ListDirectory:input_type -> hopter.v1.ListDirectoryRequest
-	35, // 31: hopter.v1.HostService.GetPathMetadata:input_type -> hopter.v1.GetPathMetadataRequest
-	37, // 32: hopter.v1.HostService.ListRecentRepos:input_type -> hopter.v1.ListRecentReposRequest
-	9,  // 33: hopter.v1.HostService.GetUpdateStatus:input_type -> hopter.v1.GetUpdateStatusRequest
-	11, // 34: hopter.v1.HostService.CheckForUpdate:input_type -> hopter.v1.CheckForUpdateRequest
-	13, // 35: hopter.v1.HostService.ApplyUpdate:input_type -> hopter.v1.ApplyUpdateRequest
-	6,  // 36: hopter.v1.HostService.GetHostStatus:output_type -> hopter.v1.GetHostStatusResponse
-	16, // 37: hopter.v1.HostService.ListBackends:output_type -> hopter.v1.ListBackendsResponse
-	20, // 38: hopter.v1.HostService.ListModels:output_type -> hopter.v1.ListModelsResponse
-	23, // 39: hopter.v1.HostService.ListSkills:output_type -> hopter.v1.ListSkillsResponse
-	26, // 40: hopter.v1.HostService.ListMCPServers:output_type -> hopter.v1.ListMCPServersResponse
-	32, // 41: hopter.v1.HostService.ListDirectoryRoots:output_type -> hopter.v1.ListDirectoryRootsResponse
-	34, // 42: hopter.v1.HostService.ListDirectory:output_type -> hopter.v1.ListDirectoryResponse
-	36, // 43: hopter.v1.HostService.GetPathMetadata:output_type -> hopter.v1.GetPathMetadataResponse
-	38, // 44: hopter.v1.HostService.ListRecentRepos:output_type -> hopter.v1.ListRecentReposResponse
-	10, // 45: hopter.v1.HostService.GetUpdateStatus:output_type -> hopter.v1.GetUpdateStatusResponse
-	12, // 46: hopter.v1.HostService.CheckForUpdate:output_type -> hopter.v1.CheckForUpdateResponse
-	14, // 47: hopter.v1.HostService.ApplyUpdate:output_type -> hopter.v1.ApplyUpdateResponse
-	36, // [36:48] is the sub-list for method output_type
-	24, // [24:36] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	21, // 17: hopter.v1.GetSkillResponse.skill:type_name -> hopter.v1.SkillSummary
+	26, // 18: hopter.v1.ListMCPServersResponse.servers:type_name -> hopter.v1.MCPServerSummary
+	30, // 19: hopter.v1.DirectoryListing.entries:type_name -> hopter.v1.DirectoryEntry
+	42, // 20: hopter.v1.PathMetadata.modified_at:type_name -> google.protobuf.Timestamp
+	29, // 21: hopter.v1.ListDirectoryRootsResponse.roots:type_name -> hopter.v1.DirectoryRoot
+	31, // 22: hopter.v1.ListDirectoryResponse.listing:type_name -> hopter.v1.DirectoryListing
+	32, // 23: hopter.v1.GetPathMetadataResponse.metadata:type_name -> hopter.v1.PathMetadata
+	32, // 24: hopter.v1.ListRecentReposResponse.repos:type_name -> hopter.v1.PathMetadata
+	5,  // 25: hopter.v1.HostService.GetHostStatus:input_type -> hopter.v1.GetHostStatusRequest
+	15, // 26: hopter.v1.HostService.ListBackends:input_type -> hopter.v1.ListBackendsRequest
+	19, // 27: hopter.v1.HostService.ListModels:input_type -> hopter.v1.ListModelsRequest
+	22, // 28: hopter.v1.HostService.ListSkills:input_type -> hopter.v1.ListSkillsRequest
+	24, // 29: hopter.v1.HostService.GetSkill:input_type -> hopter.v1.GetSkillRequest
+	27, // 30: hopter.v1.HostService.ListMCPServers:input_type -> hopter.v1.ListMCPServersRequest
+	33, // 31: hopter.v1.HostService.ListDirectoryRoots:input_type -> hopter.v1.ListDirectoryRootsRequest
+	35, // 32: hopter.v1.HostService.ListDirectory:input_type -> hopter.v1.ListDirectoryRequest
+	37, // 33: hopter.v1.HostService.GetPathMetadata:input_type -> hopter.v1.GetPathMetadataRequest
+	39, // 34: hopter.v1.HostService.ListRecentRepos:input_type -> hopter.v1.ListRecentReposRequest
+	9,  // 35: hopter.v1.HostService.GetUpdateStatus:input_type -> hopter.v1.GetUpdateStatusRequest
+	11, // 36: hopter.v1.HostService.CheckForUpdate:input_type -> hopter.v1.CheckForUpdateRequest
+	13, // 37: hopter.v1.HostService.ApplyUpdate:input_type -> hopter.v1.ApplyUpdateRequest
+	6,  // 38: hopter.v1.HostService.GetHostStatus:output_type -> hopter.v1.GetHostStatusResponse
+	16, // 39: hopter.v1.HostService.ListBackends:output_type -> hopter.v1.ListBackendsResponse
+	20, // 40: hopter.v1.HostService.ListModels:output_type -> hopter.v1.ListModelsResponse
+	23, // 41: hopter.v1.HostService.ListSkills:output_type -> hopter.v1.ListSkillsResponse
+	25, // 42: hopter.v1.HostService.GetSkill:output_type -> hopter.v1.GetSkillResponse
+	28, // 43: hopter.v1.HostService.ListMCPServers:output_type -> hopter.v1.ListMCPServersResponse
+	34, // 44: hopter.v1.HostService.ListDirectoryRoots:output_type -> hopter.v1.ListDirectoryRootsResponse
+	36, // 45: hopter.v1.HostService.ListDirectory:output_type -> hopter.v1.ListDirectoryResponse
+	38, // 46: hopter.v1.HostService.GetPathMetadata:output_type -> hopter.v1.GetPathMetadataResponse
+	40, // 47: hopter.v1.HostService.ListRecentRepos:output_type -> hopter.v1.ListRecentReposResponse
+	10, // 48: hopter.v1.HostService.GetUpdateStatus:output_type -> hopter.v1.GetUpdateStatusResponse
+	12, // 49: hopter.v1.HostService.CheckForUpdate:output_type -> hopter.v1.CheckForUpdateResponse
+	14, // 50: hopter.v1.HostService.ApplyUpdate:output_type -> hopter.v1.ApplyUpdateResponse
+	38, // [38:51] is the sub-list for method output_type
+	25, // [25:38] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_hopter_v1_host_proto_init() }
@@ -2478,7 +2585,7 @@ func file_hopter_v1_host_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hopter_v1_host_proto_rawDesc), len(file_hopter_v1_host_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   36,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

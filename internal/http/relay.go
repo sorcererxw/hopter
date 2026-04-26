@@ -263,34 +263,57 @@ func RelayOAuthTokenNeedsRefresh(credential RelayCredential, now time.Time) bool
 
 func requestRelayOAuthToken(ctx context.Context, tokenURL string, form url.Values) (relayOAuthTokenResponse, error) {
 	target := strings.TrimSpace(firstNonEmpty(tokenURL, "https://auth.hopter.dev/api/auth/oauth2/token"))
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, target, strings.NewReader(form.Encode()))
-	if err != nil {
-		return relayOAuthTokenResponse{}, err
-	}
-	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	request.Header.Set("Accept", "application/json")
+	encoded := form.Encode()
+	backoffs := []time.Duration{250 * time.Millisecond, 750 * time.Millisecond, 1500 * time.Millisecond}
 
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return relayOAuthTokenResponse{}, err
-	}
-	defer response.Body.Close()
+	for attempt := 0; ; attempt++ {
+		request, err := http.NewRequestWithContext(ctx, http.MethodPost, target, strings.NewReader(encoded))
+		if err != nil {
+			return relayOAuthTokenResponse{}, err
+		}
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		request.Header.Set("Accept", "application/json")
 
-	data, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		return relayOAuthTokenResponse{}, err
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			return relayOAuthTokenResponse{}, err
+		}
+
+		data, readErr := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+		_ = response.Body.Close()
+		if readErr != nil {
+			return relayOAuthTokenResponse{}, readErr
+		}
+
+		if response.StatusCode >= 200 && response.StatusCode <= 299 {
+			var decoded relayOAuthTokenResponse
+			if err := json.Unmarshal(data, &decoded); err != nil {
+				return relayOAuthTokenResponse{}, err
+			}
+			if strings.TrimSpace(decoded.AccessToken) == "" {
+				return relayOAuthTokenResponse{}, fmt.Errorf("oauth token response missing access token")
+			}
+			return decoded, nil
+		}
+
+		if !relayOAuthTokenStatusIsRetryable(response.StatusCode) || attempt >= len(backoffs) {
+			return relayOAuthTokenResponse{}, fmt.Errorf("oauth token endpoint returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
+		}
+
+		timer := time.NewTimer(backoffs[attempt])
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return relayOAuthTokenResponse{}, ctx.Err()
+		case <-timer.C:
+		}
 	}
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return relayOAuthTokenResponse{}, fmt.Errorf("oauth token endpoint returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
-	}
-	var decoded relayOAuthTokenResponse
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		return relayOAuthTokenResponse{}, err
-	}
-	if strings.TrimSpace(decoded.AccessToken) == "" {
-		return relayOAuthTokenResponse{}, fmt.Errorf("oauth token response missing access token")
-	}
-	return decoded, nil
+}
+
+func relayOAuthTokenStatusIsRetryable(statusCode int) bool {
+	return statusCode == http.StatusBadGateway ||
+		statusCode == http.StatusServiceUnavailable ||
+		statusCode == http.StatusGatewayTimeout
 }
 
 func exchangeRelayCode(ctx context.Context, opts RelayOptions, code string) (RelayCredential, error) {

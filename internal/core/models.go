@@ -395,6 +395,7 @@ type WorkspaceService interface {
 	GetHostStatus() HostSnapshot
 	ListBackends() []Backend
 	ListSkills() ([]Skill, error)
+	GetSkill(path string) (Skill, error)
 	ListMCPServers() ([]MCPServer, error)
 	ListDirectoryRoots() ([]DirectoryRoot, error)
 	ListDirectory(path string) (DirectoryListing, error)

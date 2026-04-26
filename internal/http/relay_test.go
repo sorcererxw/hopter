@@ -1,6 +1,7 @@
 package serverhttp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -133,6 +134,47 @@ func TestRelayCallbackExchangesOAuthCodeAndStoresRefreshToken(t *testing.T) {
 	}
 	if stored.OAuthAccessTokenExpiresAt.IsZero() {
 		t.Fatal("missing access token expiry")
+	}
+}
+
+func TestRefreshRelayOAuthTokenRetriesTransientTokenEndpointRestart(t *testing.T) {
+	attempts := 0
+	tokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 3 {
+			http.Error(w, "Your worker restarted mid-request. Please try sending the request again.", http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"access_token": "jwt-access-token",
+			"refresh_token": "new-refresh-token",
+			"token_type": "Bearer",
+			"scope": "openid offline_access",
+			"expires_in": 3600
+		}`))
+	}))
+	t.Cleanup(tokenServer.Close)
+
+	refreshed, err := RefreshRelayOAuthToken(context.Background(), RelayOptions{
+		OAuthTokenURL: tokenServer.URL,
+		OAuthClientID: "hopter-cli",
+		OAuthAudience: "hopter",
+	}, RelayCredential{
+		OAuthRefreshToken: "old-refresh-token",
+	})
+	if err != nil {
+		t.Fatalf("refresh token: %v", err)
+	}
+	if attempts != 3 {
+		t.Fatalf("attempts = %d, want 3", attempts)
+	}
+	if refreshed.OAuthAccessToken != "jwt-access-token" {
+		t.Fatalf("access token = %q", refreshed.OAuthAccessToken)
+	}
+	if refreshed.OAuthRefreshToken != "new-refresh-token" {
+		t.Fatalf("refresh token = %q", refreshed.OAuthRefreshToken)
 	}
 }
 

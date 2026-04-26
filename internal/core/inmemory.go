@@ -54,6 +54,10 @@ func (w *InMemoryWorkspace) ListSkills() ([]Skill, error) {
 	return discoverSkills()
 }
 
+func (w *InMemoryWorkspace) GetSkill(path string) (Skill, error) {
+	return readSkillSummaryFile(path)
+}
+
 func (w *InMemoryWorkspace) ListMCPServers() ([]MCPServer, error) {
 	return discoverMCPServers()
 }

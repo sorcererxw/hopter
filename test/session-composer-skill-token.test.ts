@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test"
 import {
   applyAtomicSkillDeletion,
   normalizeAtomicSkillSelection,
-} from "../ui/src/components/app/session-composer-skill-token.ts"
+} from "../ui/src/components/app/sessions/composer/skill-token.ts"
 
 const skills = new Set(["office-hours", "autopilot"])
 

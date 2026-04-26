@@ -43,6 +43,8 @@ const (
 	HostServiceListModelsProcedure = "/hopter.v1.HostService/ListModels"
 	// HostServiceListSkillsProcedure is the fully-qualified name of the HostService's ListSkills RPC.
 	HostServiceListSkillsProcedure = "/hopter.v1.HostService/ListSkills"
+	// HostServiceGetSkillProcedure is the fully-qualified name of the HostService's GetSkill RPC.
+	HostServiceGetSkillProcedure = "/hopter.v1.HostService/GetSkill"
 	// HostServiceListMCPServersProcedure is the fully-qualified name of the HostService's
 	// ListMCPServers RPC.
 	HostServiceListMCPServersProcedure = "/hopter.v1.HostService/ListMCPServers"
@@ -74,6 +76,7 @@ type HostServiceClient interface {
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
 	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	GetSkill(context.Context, *connect.Request[v1.GetSkillRequest]) (*connect.Response[v1.GetSkillResponse], error)
 	ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
@@ -117,6 +120,12 @@ func NewHostServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			httpClient,
 			baseURL+HostServiceListSkillsProcedure,
 			connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
+			connect.WithClientOptions(opts...),
+		),
+		getSkill: connect.NewClient[v1.GetSkillRequest, v1.GetSkillResponse](
+			httpClient,
+			baseURL+HostServiceGetSkillProcedure,
+			connect.WithSchema(hostServiceMethods.ByName("GetSkill")),
 			connect.WithClientOptions(opts...),
 		),
 		listMCPServers: connect.NewClient[v1.ListMCPServersRequest, v1.ListMCPServersResponse](
@@ -176,6 +185,7 @@ type hostServiceClient struct {
 	listBackends       *connect.Client[v1.ListBackendsRequest, v1.ListBackendsResponse]
 	listModels         *connect.Client[v1.ListModelsRequest, v1.ListModelsResponse]
 	listSkills         *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
+	getSkill           *connect.Client[v1.GetSkillRequest, v1.GetSkillResponse]
 	listMCPServers     *connect.Client[v1.ListMCPServersRequest, v1.ListMCPServersResponse]
 	listDirectoryRoots *connect.Client[v1.ListDirectoryRootsRequest, v1.ListDirectoryRootsResponse]
 	listDirectory      *connect.Client[v1.ListDirectoryRequest, v1.ListDirectoryResponse]
@@ -204,6 +214,11 @@ func (c *hostServiceClient) ListModels(ctx context.Context, req *connect.Request
 // ListSkills calls hopter.v1.HostService.ListSkills.
 func (c *hostServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
 	return c.listSkills.CallUnary(ctx, req)
+}
+
+// GetSkill calls hopter.v1.HostService.GetSkill.
+func (c *hostServiceClient) GetSkill(ctx context.Context, req *connect.Request[v1.GetSkillRequest]) (*connect.Response[v1.GetSkillResponse], error) {
+	return c.getSkill.CallUnary(ctx, req)
 }
 
 // ListMCPServers calls hopter.v1.HostService.ListMCPServers.
@@ -252,6 +267,7 @@ type HostServiceHandler interface {
 	ListBackends(context.Context, *connect.Request[v1.ListBackendsRequest]) (*connect.Response[v1.ListBackendsResponse], error)
 	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	GetSkill(context.Context, *connect.Request[v1.GetSkillRequest]) (*connect.Response[v1.GetSkillResponse], error)
 	ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error)
 	ListDirectoryRoots(context.Context, *connect.Request[v1.ListDirectoryRootsRequest]) (*connect.Response[v1.ListDirectoryRootsResponse], error)
 	ListDirectory(context.Context, *connect.Request[v1.ListDirectoryRequest]) (*connect.Response[v1.ListDirectoryResponse], error)
@@ -291,6 +307,12 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 		HostServiceListSkillsProcedure,
 		svc.ListSkills,
 		connect.WithSchema(hostServiceMethods.ByName("ListSkills")),
+		connect.WithHandlerOptions(opts...),
+	)
+	hostServiceGetSkillHandler := connect.NewUnaryHandler(
+		HostServiceGetSkillProcedure,
+		svc.GetSkill,
+		connect.WithSchema(hostServiceMethods.ByName("GetSkill")),
 		connect.WithHandlerOptions(opts...),
 	)
 	hostServiceListMCPServersHandler := connect.NewUnaryHandler(
@@ -351,6 +373,8 @@ func NewHostServiceHandler(svc HostServiceHandler, opts ...connect.HandlerOption
 			hostServiceListModelsHandler.ServeHTTP(w, r)
 		case HostServiceListSkillsProcedure:
 			hostServiceListSkillsHandler.ServeHTTP(w, r)
+		case HostServiceGetSkillProcedure:
+			hostServiceGetSkillHandler.ServeHTTP(w, r)
 		case HostServiceListMCPServersProcedure:
 			hostServiceListMCPServersHandler.ServeHTTP(w, r)
 		case HostServiceListDirectoryRootsProcedure:
@@ -390,6 +414,10 @@ func (UnimplementedHostServiceHandler) ListModels(context.Context, *connect.Requ
 
 func (UnimplementedHostServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.HostService.ListSkills is not implemented"))
+}
+
+func (UnimplementedHostServiceHandler) GetSkill(context.Context, *connect.Request[v1.GetSkillRequest]) (*connect.Response[v1.GetSkillResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.HostService.GetSkill is not implemented"))
 }
 
 func (UnimplementedHostServiceHandler) ListMCPServers(context.Context, *connect.Request[v1.ListMCPServersRequest]) (*connect.Response[v1.ListMCPServersResponse], error) {

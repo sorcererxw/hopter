@@ -11,6 +11,10 @@ import {
   type KeyboardEvent,
 } from "react"
 import { useTranslation } from "react-i18next"
+import { Node, mergeAttributes } from "@tiptap/core"
+import Placeholder from "@tiptap/extension-placeholder"
+import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
 import {
   ArrowUp,
   Check,
@@ -43,21 +47,53 @@ import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
 import type { SessionComposerSelection } from "./selection"
-import {
-  applyAtomicSkillDeletion,
-  normalizeAtomicSkillSelection,
-} from "./skill-token"
-import {
-  hiddenScrollbarClassName,
-  SkillReferenceChip,
-  stableDropdownPopoverClassName,
-} from "@/components/app/shared"
+import { stableDropdownPopoverClassName } from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
 const DEFAULT_REASONING_EFFORT = "xhigh"
 const MAX_IMAGE_ATTACHMENTS = 4
 const MAX_IMAGE_ATTACHMENT_BYTES = 10 * 1024 * 1024
+
+const SkillMention = Node.create({
+  name: "skillMention",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+
+  addAttributes() {
+    return {
+      name: { default: "" },
+      path: { default: "" },
+      reference: { default: "" },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: "span[data-skill-reference]" }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const reference = String(HTMLAttributes.reference || "")
+    const name = String(HTMLAttributes.name || "")
+    return [
+      "span",
+      mergeAttributes(HTMLAttributes, {
+        "data-testid": "composer-skill-highlight",
+        "data-skill-reference": reference,
+        class:
+          "inline-flex items-center rounded-md bg-accent px-1 py-0.5 font-semibold whitespace-nowrap text-accent-foreground",
+      }),
+      name || reference || "skill",
+    ]
+  },
+
+  renderText({ node }) {
+    const reference = String(node.attrs.reference || "")
+    return reference ? `$${reference}` : ""
+  },
+})
 
 export type SessionComposerAttachment = {
   contentType: string
@@ -70,7 +106,9 @@ export type SessionComposerAttachment = {
 type SessionComposerSubmitOptions = {
   attachments: SessionComposerAttachment[]
   codexFastMode: boolean
+  input: string
   model: string
+  rawInput: string
   reasoningEffort: string
 }
 
@@ -110,22 +148,13 @@ type SkillMentionMatch = {
   start: number
 }
 
-type ComposerTextSegment = {
-  highlighted: boolean
-  known?: boolean
-  reference?: string
-  selected?: boolean
-  text: string
-}
-
 type ComposerDropdownOption = {
   label: string
   value: string
 }
 
-// SessionComposer owns prompt entry plus lightweight agent selection state. It
-// also does local skill-token editing so the backend receives already-formed
-// `$skill` references instead of partial mention syntax.
+// SessionComposer owns prompt entry, lightweight agent selection, and Tiptap
+// skill mention nodes that serialize to markdown links on submit.
 export function SessionComposer({
   busy = false,
   contextWindowUsage,
@@ -147,9 +176,7 @@ export function SessionComposer({
   value,
 }: SessionComposerProps) {
   const { t } = useTranslation()
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
-  const composerOverlayRef = useRef<HTMLDivElement | null>(null)
   const [attachments, setAttachments] = useState<SessionComposerAttachment[]>(
     []
   )
@@ -159,14 +186,10 @@ export function SessionComposer({
       (interruptMode && value.trim().length === 0)) &&
     !busy &&
     !disabled
-  const [caretPosition, setCaretPosition] = useState(value.length)
-  const [selectionRange, setSelectionRange] = useState({
-    end: value.length,
-    start: value.length,
-  })
   const [skillSuggestionsDismissed, setSkillSuggestionsDismissed] =
     useState(false)
   const [highlightedSkillIndex, setHighlightedSkillIndex] = useState(0)
+  const [editorRevision, setEditorRevision] = useState(0)
   const [selectedModel, setSelectedModel] = useState(
     initialSelection?.model ?? DEFAULT_MODEL
   )
@@ -222,9 +245,86 @@ export function SessionComposer({
     selectionKey,
   ])
 
+  const skillByReference = useMemo(
+    () =>
+      new Map(
+        (hostSkillsQuery.data ?? []).map((skill) => [
+          normalizeSearch(skill.reference),
+          skill,
+        ])
+      ),
+    [hostSkillsQuery.data]
+  )
+  const skillSignature = useMemo(
+    () =>
+      (hostSkillsQuery.data ?? [])
+        .map((skill) => `${skill.reference}:${skill.path}:${skill.name}`)
+        .join("|"),
+    [hostSkillsQuery.data]
+  )
+  const editor = useEditor(
+    {
+      content: composerValueToTiptapDoc(value, skillByReference),
+      editable: !disabled && !busy && !interruptMode,
+      editorProps: {
+        attributes: {
+          "aria-label": placeholder,
+          "data-testid": inputTestId ?? "",
+          class:
+            "min-h-14 w-full outline-none text-base leading-relaxed text-foreground [&_.is-empty::before]:pointer-events-none [&_.is-empty::before]:float-left [&_.is-empty::before]:h-0 [&_.is-empty::before]:text-field-placeholder [&_.is-empty::before]:content-[attr(data-placeholder)] [&_p]:m-0",
+        },
+      },
+      extensions: [
+        StarterKit.configure({
+          blockquote: false,
+          bulletList: false,
+          code: false,
+          codeBlock: false,
+          dropcursor: false,
+          gapcursor: false,
+          heading: false,
+          horizontalRule: false,
+          listItem: false,
+          orderedList: false,
+        }),
+        Placeholder.configure({ placeholder }),
+        SkillMention,
+      ],
+      immediatelyRender: false,
+      onSelectionUpdate: () => setEditorRevision((current) => current + 1),
+      onUpdate: ({ editor }) => {
+        onValueChange(editorToPlainText(editor))
+        setEditorRevision((current) => current + 1)
+      },
+    },
+    [inputTestId, placeholder]
+  )
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+    editor.setEditable(!disabled && !busy && !interruptMode)
+  }, [busy, disabled, editor, interruptMode])
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+    const editorValue = editorToPlainText(editor)
+    const expectedContent = composerValueToTiptapDoc(value, skillByReference)
+    if (
+      editorValue !== value ||
+      JSON.stringify(editor.getJSON()) !== JSON.stringify(expectedContent)
+    ) {
+      editor.commands.setContent(expectedContent, { emitUpdate: false })
+      setEditorRevision((current) => current + 1)
+    }
+  }, [editor, skillByReference, skillSignature, value])
+
   const activeSkillMatch = useMemo(
-    () => getActiveSkillMatch(value, caretPosition),
-    [caretPosition, value]
+    () => getActiveSkillMatchFromEditor(editor),
+    [editor, editorRevision]
   )
   const activeSkillSignature = activeSkillMatch
     ? `${activeSkillMatch.start}:${activeSkillMatch.end}:${activeSkillMatch.query}`
@@ -239,23 +339,6 @@ export function SessionComposer({
       MAX_SKILL_SUGGESTIONS
     )
   }, [activeSkillMatch, hostSkillsQuery.data])
-  const atomicSkillReferences = useMemo(
-    () =>
-      new Set(
-        (hostSkillsQuery.data ?? [])
-          .map((skill) => normalizeSearch(skill.reference))
-          .filter(Boolean)
-      ),
-    [hostSkillsQuery.data]
-  )
-  const composerTextSegments = useMemo(
-    () =>
-      buildComposerTextSegments(value, atomicSkillReferences, selectionRange),
-    [atomicSkillReferences, selectionRange, value]
-  )
-  const hasComposerTextOverlay = composerTextSegments.some(
-    (segment) => segment.highlighted
-  )
   const showSkillSuggestions =
     Boolean(activeSkillMatch) &&
     !interruptMode &&
@@ -309,77 +392,28 @@ export function SessionComposer({
     return () => window.removeEventListener("keydown", handleWindowKeyDown)
   }, [canSubmit, interruptMode, onInterrupt])
 
-  function syncCaretPosition() {
-    if (!textareaRef.current) {
-      return
-    }
-    const textarea = textareaRef.current
-    syncComposerOverlayScroll()
-    const selection = normalizeAtomicSkillSelection(
-      textarea.value,
-      textarea.selectionStart ?? textarea.value.length,
-      textarea.selectionEnd ?? textarea.value.length,
-      atomicSkillReferences
-    )
-    if (selection.changed) {
-      // Known skill references behave like atomic chips: keep the caret from
-      // landing in the middle of a `$skill-name` token.
-      textarea.setSelectionRange(selection.start, selection.end)
-    }
-    setCaretPosition(selection.end)
-    setSelectionRange({ end: selection.end, start: selection.start })
-  }
-
-  function handleComposerInput(value: string) {
-    onValueChange(value)
-    window.requestAnimationFrame(() => {
-      syncComposerOverlayScroll()
-      syncCaretPosition()
-    })
-  }
-
-  function syncComposerOverlayScroll() {
-    if (!textareaRef.current || !composerOverlayRef.current) {
-      return
-    }
-    const textarea = textareaRef.current
-    const overlay = composerOverlayRef.current
-    const textareaScrollRange = Math.max(
-      0,
-      textarea.scrollHeight - textarea.clientHeight
-    )
-    const overlayScrollRange = Math.max(
-      0,
-      overlay.scrollHeight - overlay.clientHeight
-    )
-    overlay.scrollTop =
-      textareaScrollRange > 0
-        ? (textarea.scrollTop / textareaScrollRange) * overlayScrollRange
-        : 0
-    overlay.scrollLeft = textarea.scrollLeft
-  }
-
   function insertSkillReference(skill: SkillSummary) {
-    if (!activeSkillMatch) {
+    if (!editor || !activeSkillMatch) {
       return
     }
 
-    const nextValue = [
-      value.slice(0, activeSkillMatch.start),
-      `$${skill.reference} `,
-      value.slice(activeSkillMatch.end),
-    ].join("")
-
-    onValueChange(nextValue)
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from: activeSkillMatch.start, to: activeSkillMatch.end })
+      .insertContent([
+        {
+          type: "skillMention",
+          attrs: {
+            name: skill.name,
+            path: skill.path,
+            reference: skill.reference,
+          },
+        },
+        { type: "text", text: " " },
+      ])
+      .run()
     setSkillSuggestionsDismissed(true)
-    window.requestAnimationFrame(() => {
-      // Move the caret to the end of the inserted token plus trailing space so
-      // the next keystroke continues the prompt naturally.
-      const nextCaret = activeSkillMatch.start + skill.reference.length + 2
-      textareaRef.current?.focus()
-      textareaRef.current?.setSelectionRange(nextCaret, nextCaret)
-      setCaretPosition(nextCaret)
-    })
   }
 
   async function handleSubmit() {
@@ -392,10 +426,16 @@ export function SessionComposer({
       return
     }
 
+    const rawInput = editor ? editorToPlainText(editor) : value
+    const serializedInput = editor
+      ? editorToMarkdown(editor, skillByReference)
+      : serializeSkillReferences(value, skillByReference)
     await onSubmit({
       attachments,
       codexFastMode,
+      input: serializedInput,
       model: effectiveModel,
+      rawInput,
       reasoningEffort: effectiveReasoningEffort,
     })
     setAttachments([])
@@ -408,9 +448,7 @@ export function SessionComposer({
     await attachImageFiles(files)
   }
 
-  async function handleTextareaPaste(
-    event: ClipboardEvent<HTMLTextAreaElement>
-  ) {
+  async function handleEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
     const imageFiles = Array.from(event.clipboardData.files).filter((file) =>
       file.type.startsWith("image/")
     )
@@ -511,30 +549,7 @@ export function SessionComposer({
     })
   }
 
-  function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    const atomicDeletion = applyAtomicSkillDeletion(
-      value,
-      event.currentTarget.selectionStart ?? value.length,
-      event.currentTarget.selectionEnd ?? value.length,
-      event.key,
-      atomicSkillReferences
-    )
-    if (atomicDeletion) {
-      event.preventDefault()
-      // Backspace/delete should remove an entire skill token rather than
-      // corrupting the mention into an unparseable partial reference.
-      onValueChange(atomicDeletion.value)
-      window.requestAnimationFrame(() => {
-        textareaRef.current?.setSelectionRange(
-          atomicDeletion.selectionStart,
-          atomicDeletion.selectionEnd
-        )
-        textareaRef.current?.focus()
-        setCaretPosition(atomicDeletion.selectionEnd)
-      })
-      return
-    }
-
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === "Enter" && event.shiftKey) {
       return
     }
@@ -605,59 +620,10 @@ export function SessionComposer({
             <div className="overflow-hidden rounded-2xl border border-border bg-overlay">
               <div className="px-3 pt-3 pb-2">
                 <div className="relative min-h-14">
-                  {hasComposerTextOverlay ? (
-                    <div
-                      ref={composerOverlayRef}
-                      aria-hidden="true"
-                      data-testid="composer-visual-overlay"
-                      className="pointer-events-none absolute inset-0 overflow-hidden py-0 text-base leading-relaxed break-words whitespace-pre-wrap text-foreground"
-                    >
-                      {/* The overlay mirrors textarea content only for highlighted
-                      skill chips; the real editable value still lives in the
-                      textarea underneath. */}
-                      {composerTextSegments.map((segment, index) =>
-                        segment.highlighted ? (
-                          <ComposerSkillToken
-                            key={`${segment.text}-${index}`}
-                            known={Boolean(segment.known)}
-                            reference={segment.reference}
-                            selected={Boolean(segment.selected)}
-                            text={segment.text}
-                          />
-                        ) : (
-                          <span key={`${segment.text}-${index}`}>
-                            {segment.text}
-                          </span>
-                        )
-                      )}
-                      <span>{"\u200b"}</span>
-                    </div>
-                  ) : null}
-
-                  <textarea
-                    ref={textareaRef}
-                    data-testid={inputTestId}
-                    rows={2}
-                    value={value}
-                    onChange={(event) =>
-                      handleComposerInput(event.target.value)
-                    }
-                    onClick={syncCaretPosition}
-                    onKeyDown={handleTextareaKeyDown}
-                    onKeyUp={syncCaretPosition}
-                    onMouseUp={syncCaretPosition}
-                    onPaste={(event) => void handleTextareaPaste(event)}
-                    onScroll={syncComposerOverlayScroll}
-                    onSelect={syncCaretPosition}
-                    onTouchEnd={syncCaretPosition}
-                    placeholder={placeholder}
-                    className={cn(
-                      hiddenScrollbarClassName,
-                      "relative z-10 min-h-14 w-full resize-none bg-transparent text-base leading-relaxed outline-none placeholder:text-field-placeholder",
-                      hasComposerTextOverlay
-                        ? "text-transparent caret-foreground selection:bg-transparent selection:text-transparent"
-                        : "text-foreground"
-                    )}
+                  <EditorContent
+                    editor={editor}
+                    onKeyDownCapture={handleEditorKeyDown}
+                    onPaste={(event) => void handleEditorPaste(event)}
                   />
                 </div>
 
@@ -897,53 +863,6 @@ function ContextWindowIndicator({
   )
 }
 
-function ComposerSkillToken({
-  known,
-  reference,
-  selected,
-  text,
-}: {
-  known: boolean
-  reference?: string
-  selected: boolean
-  text: string
-}) {
-  if (known) {
-    return (
-      <span
-        data-testid="composer-skill-highlight"
-        data-known="true"
-        data-selected={selected ? "true" : "false"}
-        className="relative inline-block text-accent-foreground"
-      >
-        <span aria-hidden="true" className="invisible inline-flex">
-          <SkillReferenceChip
-            reference={reference || text.replace(/^\$/, "")}
-          />
-        </span>
-        <span className="absolute inset-y-0 left-0 inline-flex items-center">
-          <SkillReferenceChip
-            reference={reference || text.replace(/^\$/, "")}
-          />
-        </span>
-      </span>
-    )
-  }
-
-  return (
-    <span
-      data-testid="composer-skill-highlight"
-      className="relative inline-block text-accent-foreground"
-    >
-      <span
-        aria-hidden="true"
-        className="absolute -inset-x-1 inset-y-0 rounded-md bg-accent"
-      />
-      <span className="relative">{text}</span>
-    </span>
-  )
-}
-
 function SkillSuggestionPopover({
   highlightedIndex,
   loading,
@@ -1085,6 +1004,176 @@ function formatBytes(bytes: number) {
 
 function modelValue(model: AgentModel) {
   return model.model || model.id
+}
+
+function composerValueToTiptapDoc(
+  value: string,
+  skillByReference: ReadonlyMap<string, SkillSummary>
+): JSONContent {
+  const lines = value.split("\n")
+  return {
+    type: "doc",
+    content: lines.map((line) => ({
+      type: "paragraph",
+      content: composerLineToTiptapContent(line, skillByReference),
+    })),
+  }
+}
+
+function composerLineToTiptapContent(
+  value: string,
+  skillByReference: ReadonlyMap<string, SkillSummary>
+) {
+  const content: JSONContent[] = []
+  const pattern = /(^|[\s([{])(\$[a-z0-9:-]+)/gi
+  let lastIndex = 0
+
+  for (const match of value.matchAll(pattern)) {
+    const fullMatch = match[0] ?? ""
+    const prefix = match[1] ?? ""
+    const token = match[2] ?? ""
+    const matchIndex = match.index ?? 0
+    const tokenStart = matchIndex + prefix.length
+    const reference = normalizeSearch(token.slice(1))
+    const skill = skillByReference.get(reference)
+
+    pushTextContent(content, value.slice(lastIndex, tokenStart))
+    if (skill) {
+      content.push(skillToTiptapNode(skill))
+    } else {
+      pushTextContent(content, token)
+    }
+
+    lastIndex = matchIndex + fullMatch.length
+  }
+
+  pushTextContent(content, value.slice(lastIndex))
+  return content
+}
+
+function pushTextContent(content: JSONContent[], text: string) {
+  if (!text) {
+    return
+  }
+  content.push({ type: "text", text })
+}
+
+function skillToTiptapNode(skill: SkillSummary): JSONContent {
+  return {
+    type: "skillMention",
+    attrs: {
+      name: skill.name,
+      path: skill.path,
+      reference: skill.reference,
+    },
+  }
+}
+
+function editorToPlainText(editor: Editor) {
+  return tiptapContentToText(editor.getJSON(), "plain")
+}
+
+function editorToMarkdown(
+  editor: Editor,
+  skillByReference: ReadonlyMap<string, SkillSummary>
+) {
+  const markdown = tiptapContentToText(editor.getJSON(), "markdown")
+  return serializeSkillReferences(markdown, skillByReference)
+}
+
+function tiptapContentToText(
+  node: JSONContent | undefined,
+  mode: "markdown" | "plain"
+): string {
+  if (!node) {
+    return ""
+  }
+
+  if (node.type === "text") {
+    return node.text ?? ""
+  }
+  if (node.type === "hardBreak") {
+    return "\n"
+  }
+  if (node.type === "skillMention") {
+    const reference = String(node.attrs?.reference ?? "")
+    const path = String(node.attrs?.path ?? "")
+    if (!reference) {
+      return ""
+    }
+    return mode === "markdown" && path
+      ? `[$${reference}](${encodeSkillPathHref(path)})`
+      : `$${reference}`
+  }
+
+  if (node.type === "doc") {
+    return (node.content ?? [])
+      .map((child) => tiptapContentToText(child, mode))
+      .join("\n")
+  }
+  const childText = (node.content ?? [])
+    .map((child) => tiptapContentToText(child, mode))
+    .join("")
+
+  if (node.type === "paragraph") {
+    return childText
+  }
+  return childText
+}
+
+function getActiveSkillMatchFromEditor(editor: Editor | null): SkillMentionMatch | null {
+  if (!editor) {
+    return null
+  }
+  const { from, to } = editor.state.selection
+  if (from !== to) {
+    return null
+  }
+
+  const prefix = editor.state.doc.textBetween(0, from, "\n", "")
+  const match = prefix.match(/(?:^|[\s([{])\$([a-z0-9:-]*)$/i)
+  if (!match) {
+    return null
+  }
+
+  const query = match[1] ?? ""
+  return {
+    start: from - query.length - 1,
+    end: from,
+    query,
+  }
+}
+
+function serializeSkillReferences(
+  value: string,
+  skillByReference: ReadonlyMap<string, SkillSummary>
+) {
+  if (!value || skillByReference.size === 0) {
+    return value
+  }
+
+  return value.replace(
+    /(^|[\s([{])(\$[a-z0-9:-]+)/gi,
+    (match, prefix, token, offset) => {
+      if (
+        prefix === "[" &&
+        value.slice(offset + match.length).startsWith("](")
+      ) {
+        return match
+      }
+
+      const reference = normalizeSearch(token.slice(1))
+      const skill = skillByReference.get(reference)
+      if (!skill?.path) {
+        return match
+      }
+      return `${prefix}[$${skill.reference}](${encodeSkillPathHref(skill.path)})`
+    }
+  )
+}
+
+function encodeSkillPathHref(path: string) {
+  return encodeURI(path).replace(/\)/g, "%29")
 }
 
 function resolveReasoningEffort(model: AgentModel, requested: string) {
@@ -1288,25 +1377,6 @@ function AgentSelectionDropdown({
   )
 }
 
-function getActiveSkillMatch(
-  value: string,
-  caretPosition: number
-): SkillMentionMatch | null {
-  const clampedCaret = Math.max(0, Math.min(caretPosition, value.length))
-  const prefix = value.slice(0, clampedCaret)
-  const match = prefix.match(/(?:^|[\s([{])\$([a-z0-9:-]*)$/i)
-  if (!match) {
-    return null
-  }
-
-  const query = match[1] ?? ""
-  return {
-    start: clampedCaret - query.length - 1,
-    end: clampedCaret,
-    query,
-  }
-}
-
 function rankSkills(skills: SkillSummary[], query: string) {
   const normalizedQuery = normalizeSearch(query)
 
@@ -1441,73 +1511,4 @@ function trimTrailingZeroes(value: string) {
 
 function normalizeSearch(value?: string) {
   return (value ?? "").trim().toLowerCase()
-}
-
-function buildComposerTextSegments(
-  value: string,
-  skillReferences: ReadonlySet<string>,
-  selectedRange: {
-    end: number
-    start: number
-  }
-): ComposerTextSegment[] {
-  if (!value) {
-    return []
-  }
-
-  const pattern = /(^|[\s([{])(\$[a-z0-9:-]+)/gi
-  const segments: ComposerTextSegment[] = []
-  let lastIndex = 0
-
-  for (const match of value.matchAll(pattern)) {
-    const fullMatch = match[0] ?? ""
-    const prefix = match[1] ?? ""
-    const token = match[2] ?? ""
-    const matchIndex = match.index ?? 0
-    const reference = normalizeSearch(token.slice(1))
-    const tokenStart = matchIndex + prefix.length
-    const tokenEnd = tokenStart + token.length
-
-    if (matchIndex > lastIndex) {
-      segments.push({
-        highlighted: false,
-        text: value.slice(lastIndex, matchIndex),
-      })
-    }
-
-    if (prefix) {
-      segments.push({
-        highlighted: false,
-        text: prefix,
-      })
-    }
-
-    if (token) {
-      const known = skillReferences.has(reference)
-      segments.push({
-        highlighted: true,
-        known,
-        reference,
-        selected:
-          known &&
-          selectedRange.start === tokenStart &&
-          selectedRange.end === tokenEnd,
-        text: token,
-      })
-    }
-
-    lastIndex = matchIndex + fullMatch.length
-    if (lastIndex < tokenStart + token.length) {
-      lastIndex = tokenStart + token.length
-    }
-  }
-
-  if (lastIndex < value.length) {
-    segments.push({
-      highlighted: false,
-      text: value.slice(lastIndex),
-    })
-  }
-
-  return segments
 }
