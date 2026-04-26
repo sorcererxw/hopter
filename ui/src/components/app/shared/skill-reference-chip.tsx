@@ -1,4 +1,4 @@
-import { Hammer, Package } from "lucide-react"
+import { Hammer, Package } from "@/components/icons/hugeicons"
 import type { ComponentPropsWithoutRef } from "react"
 
 import { cn } from "@/lib/utils"

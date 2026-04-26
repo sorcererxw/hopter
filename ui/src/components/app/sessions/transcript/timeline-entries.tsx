@@ -8,7 +8,7 @@ import {
   LoaderCircle,
   Wrench,
   X,
-} from "lucide-react"
+} from "@/components/icons/hugeicons"
 import { Modal } from "@heroui/react"
 
 import { CodeContainer, SessionImage } from "@/components/app/shared"
@@ -147,7 +147,7 @@ export function CommandExecutionGroupEntry({
         <span>{label}</span>
       </TranscriptDisclosureButton>
       {expanded ? (
-        <div className="mt-1 flex flex-col gap-2 border-l border-border pl-4">
+        <div className="mt-1 flex flex-col gap-2">
           {items.map((item) => (
             <CommandEntry key={item.id} item={item} />
           ))}

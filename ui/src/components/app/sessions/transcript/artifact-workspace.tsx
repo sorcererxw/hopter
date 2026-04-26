@@ -10,7 +10,7 @@ import {
   ListTree,
   LoaderCircle,
   TestTube2,
-} from "lucide-react"
+} from "@/components/icons/hugeicons"
 import { Button, Chip, Link } from "@heroui/react"
 
 import { CodeContainer, SessionImage } from "@/components/app/shared"

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Search } from "lucide-react"
+import { Search } from "@/components/icons/hugeicons"
 import { Navigate, useLocation } from "react-router-dom"
 import { Chip, Input } from "@heroui/react"
 

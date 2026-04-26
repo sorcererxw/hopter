@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import type { TFunction } from "i18next"
 import { useTranslation } from "react-i18next"
 import { Navigate, useLocation } from "react-router-dom"
-import { Check, ChevronDown } from "lucide-react"
+import { Tick02, ChevronDown } from "@/components/icons/hugeicons"
 import { Label, ListBox, Select } from "@heroui/react"
 
 import { workspaceScrollbarClassName } from "@/components/app/shared"
@@ -113,6 +113,26 @@ function SettingsRow({
   )
 }
 
+function backendQuotaLabel(
+  backend: {
+    available: boolean
+    reason: string
+    version: string
+  },
+  t: TFunction
+) {
+  const trimmedReason = backend.reason.trim()
+  if (trimmedReason) {
+    return trimmedReason
+  }
+  if (backend.version.trim() !== "") {
+    return t("app.settings.quotaFromVersion", { version: backend.version })
+  }
+  return backend.available
+    ? t("app.settings.quotaNotProvided")
+    : t("app.settings.quotaUnavailable")
+}
+
 function SettingsSelect({
   ariaLabel,
   isDisabled = false,
@@ -157,7 +177,7 @@ function SettingsSelect({
               <Label>{option.label}</Label>
               <span className="flex size-3.5 items-center justify-center">
                 {option.value === value ? (
-                  <Check className="size-3.5" />
+                  <Tick02 className="size-3.5" />
                 ) : null}
               </span>
             </ListBox.Item>
@@ -337,23 +357,33 @@ export function SettingsRoute() {
                 {backends.map((backend) => (
                   <div
                     key={backend.backendKey}
-                    className="flex items-center justify-between gap-4 px-4 py-3"
+                    className="px-4 py-3"
                   >
-                    <div className="min-w-0 truncate text-sm text-foreground">
-                      {backend.backendKey}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          availabilityColor(backend.available)
-                        )}
-                      />
-                      <span className="text-muted">
-                        {backend.available
-                          ? t("app.settings.available")
-                          : t("app.settings.unavailable")}
-                      </span>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-foreground">
+                          {backend.backendKey}
+                        </div>
+                        <div className="mt-1 text-xs text-muted">
+                          {t("app.settings.planQuota")}:{" "}
+                            <span className="text-muted">
+                              {backendQuotaLabel(backend, t)}
+                            </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2 text-sm">
+                        <span
+                          className={cn(
+                            "size-2 rounded-full",
+                            availabilityColor(backend.available)
+                          )}
+                        />
+                        <span className="text-foreground">
+                          {backend.available
+                            ? t("app.settings.available")
+                            : t("app.settings.unavailable")}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

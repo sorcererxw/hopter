@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { File, Folder, FolderGit2 } from "lucide-react"
+import { File, Folder, FolderGit2 } from "@/components/icons/hugeicons"
 import { useNavigate } from "react-router-dom"
 import { Button, Modal, Skeleton } from "@heroui/react"
 

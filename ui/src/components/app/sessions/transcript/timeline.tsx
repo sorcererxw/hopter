@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { LoaderCircle } from "lucide-react"
+import { LoaderCircle } from "@/components/icons/hugeicons"
 import { cn } from "@/lib/utils"
 
 import type { ActivityItem } from "./activity"

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { Check, ChevronDown } from "lucide-react"
+import { Tick02, ChevronDown } from "@/components/icons/hugeicons"
 import { Button, Dropdown, Label, Tooltip } from "@heroui/react"
 
 import { stableDropdownPopoverClassName } from "@/components/app/shared"
@@ -171,10 +171,19 @@ export function HomeWorkspacePane() {
                               id={project.id}
                               textValue={project.name}
                             >
-                              <Label>{project.name}</Label>
+                              <Label>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm text-foreground">
+                                    {project.name}
+                                  </p>
+                                  <p className="truncate text-xs text-muted">
+                                    {project.rootPath}
+                                  </p>
+                                </div>
+                              </Label>
                               <span className="flex size-3.5 items-center justify-center">
                                 {project.id === selectedProjectId ? (
-                                  <Check className="size-3.5" />
+                                  <Tick02 className="size-3.5" />
                                 ) : null}
                               </span>
                             </Dropdown.Item>

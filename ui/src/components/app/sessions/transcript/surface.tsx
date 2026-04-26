@@ -1,6 +1,6 @@
 import type { RefObject } from "react"
 import { useTranslation } from "react-i18next"
-import { ArrowDown } from "lucide-react"
+import { ArrowDown } from "@/components/icons/hugeicons"
 
 import {
   hiddenScrollbarClassName,

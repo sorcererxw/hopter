@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { GitBranch, LoaderCircle, RotateCcw, X } from "lucide-react"
+import { GitBranch, LoaderCircle, RotateCcw, X } from "@/components/icons/hugeicons"
 import { toast } from "sonner"
 import { Button, Chip, Description, Modal } from "@heroui/react"
 

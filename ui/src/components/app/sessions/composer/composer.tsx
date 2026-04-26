@@ -17,14 +17,14 @@ import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap
 import StarterKit from "@tiptap/starter-kit"
 import {
   ArrowUp,
-  Check,
+  Tick02,
   ChevronDown,
   LoaderCircle,
-  Paperclip,
+  AttachmentIcon,
   Square,
   X,
   Zap,
-} from "lucide-react"
+} from "@/components/icons/hugeicons"
 import {
   Button,
   Dropdown,
@@ -691,7 +691,7 @@ export function SessionComposer({
                             isDisabled={disabled || busy || interruptMode}
                             onPress={() => imageInputRef.current?.click()}
                           >
-                            <Paperclip className="size-4" />
+                            <AttachmentIcon className="size-4" />
                           </GhostIconButton>
                         </span>
                       </Tooltip.Trigger>
@@ -812,6 +812,10 @@ function ContextWindowIndicator({
   const remainingPercent = Math.max(0, 100 - usedPercent)
   const ringStyle = {
     background: `conic-gradient(currentColor ${usedPercent}%, transparent 0)`,
+    maskImage:
+      "radial-gradient(circle, transparent calc(50% - 1px), #000 calc(50% - 1px))",
+    WebkitMaskImage:
+      "radial-gradient(circle, transparent calc(50% - 1px), #000 calc(50% - 1px))",
   }
 
   return (
@@ -825,16 +829,12 @@ function ContextWindowIndicator({
           <span className="relative flex size-4 items-center justify-center text-muted">
             <span
               aria-hidden="true"
-              className="absolute inset-0 rounded-full bg-border"
+              className="absolute inset-0 rounded-full border-3 border-border"
             />
             <span
               aria-hidden="true"
               className="absolute inset-0 rounded-full opacity-80"
               style={ringStyle}
-            />
-            <span
-              aria-hidden="true"
-              className="absolute inset-[2px] rounded-full bg-background"
             />
           </span>
         </button>
@@ -1311,7 +1311,7 @@ function AgentSelectionDropdown({
                   <Label>{option.label}</Label>
                   <span className="flex size-3.5 items-center justify-center">
                     {option.value === reasoningValue ? (
-                      <Check className="size-3.5" />
+                      <Tick02 className="size-3.5" />
                     ) : null}
                   </span>
                 </Dropdown.Item>
@@ -1334,6 +1334,7 @@ function AgentSelectionDropdown({
               placement="start top"
             >
               <Dropdown.Menu
+                closeOnSelect={false}
                 onAction={(key) =>
                   onModelChange(String(key).slice("model:".length))
                 }
@@ -1348,7 +1349,7 @@ function AgentSelectionDropdown({
                     <Label>{option.label}</Label>
                     <span className="flex size-3.5 items-center justify-center">
                       {option.value === modelValue ? (
-                        <Check className="size-3.5" />
+                        <Tick02 className="size-3.5" />
                       ) : null}
                     </span>
                   </Dropdown.Item>

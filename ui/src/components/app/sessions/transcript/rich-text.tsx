@@ -6,7 +6,7 @@ import type {
   ReactElement,
   ReactNode,
 } from "react"
-import { Check, Copy } from "lucide-react"
+import { Check, Copy } from "@/components/icons/hugeicons"
 
 import {
   inlineCodeClassName,

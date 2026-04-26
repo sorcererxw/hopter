@@ -168,6 +168,18 @@ type ReadThreadTurn struct {
 	Items  []ReadThreadItem `json:"items"`
 }
 
+type readAccountRateLimitsResponse struct {
+	RateLimits accountRateLimits `json:"rateLimits"`
+}
+
+type accountRateLimits struct {
+	Credits   *protocol.CreditsSnapshot `json:"credits"`
+	LimitName *string                   `json:"limitName"`
+	PlanType  interface{}               `json:"planType"`
+	Primary   *protocol.RateLimitWindow `json:"primary"`
+	Secondary *protocol.RateLimitWindow `json:"secondary"`
+}
+
 type ReadThreadResult struct {
 	Thread struct {
 		ID            string                     `json:"id"`
@@ -314,6 +326,14 @@ func (c *Client) ListModels(includeHidden bool) (*ModelListResult, error) {
 	return &out, nil
 }
 
+func (c *Client) ReadAccountRateLimits() (string, error) {
+	var out readAccountRateLimitsResponse
+	if err := c.call(protocolMethodAccountRateLimitsRead, nil, &out); err != nil {
+		return "", err
+	}
+	return accountRateLimitsSummary(out.RateLimits), nil
+}
+
 func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
 	params := protocol.ThreadResumeParams{
 		ThreadID:       threadID,
@@ -437,6 +457,36 @@ func optionalString(value string) *string {
 		return nil
 	}
 	return &value
+}
+
+func accountRateLimitsSummary(rateLimits accountRateLimits) string {
+	if rateLimits.Credits != nil {
+		if rateLimits.Credits.Unlimited {
+			return "Unlimited"
+		}
+		if rateLimits.Credits.Balance != nil {
+			if balance := strings.TrimSpace(*rateLimits.Credits.Balance); balance != "" {
+				return "Balance " + balance
+			}
+		}
+		if !rateLimits.Credits.HasCredits {
+			return "No credits"
+		}
+	}
+
+	if rateLimits.Primary != nil && (rateLimits.Primary.UsedPercent > 0 || rateLimits.Primary.ResetsAt != nil || rateLimits.Primary.WindowDurationMins != nil) {
+		return fmt.Sprintf("Primary used %d%%", rateLimits.Primary.UsedPercent)
+	}
+	if rateLimits.Secondary != nil && (rateLimits.Secondary.UsedPercent > 0 || rateLimits.Secondary.ResetsAt != nil || rateLimits.Secondary.WindowDurationMins != nil) {
+		return fmt.Sprintf("Secondary used %d%%", rateLimits.Secondary.UsedPercent)
+	}
+	if rateLimits.PlanType != nil {
+		return fmt.Sprintf("%v", rateLimits.PlanType)
+	}
+	if rateLimits.LimitName != nil {
+		return strings.TrimSpace(*rateLimits.LimitName)
+	}
+	return ""
 }
 
 func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResult, error) {
@@ -708,6 +758,7 @@ func (t *tracedTransport) traceLine(direction string, line string) {
 const (
 	protocolMethodApplyPatchApproval                  = "applyPatchApproval"
 	protocolMethodExecCommandApproval                 = "execCommandApproval"
+	protocolMethodAccountRateLimitsRead               = "account/rateLimits/read"
 	protocolMethodItemCommandExecutionRequestApproval = "item/commandExecution/requestApproval"
 	protocolMethodItemFileChangeRequestApproval       = "item/fileChange/requestApproval"
 	protocolMethodItemPermissionsRequestApproval      = "item/permissions/requestApproval"

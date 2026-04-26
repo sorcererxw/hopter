@@ -8,17 +8,16 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  ChevronDown,
   Copy,
   Folder,
   FolderOpen,
-  ListChecks,
+  TaskDone01Icon,
   LoaderCircle,
   Settings,
-  SquarePen,
+  QuillWrite02Icon,
   X,
-} from "lucide-react"
-import { useNavigate } from "react-router-dom"
+} from "@/components/icons/hugeicons"
+import { useLocation, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Button, Description, Modal, Tooltip } from "@heroui/react"
 
@@ -46,31 +45,6 @@ import { useWorkspaceShell } from "@/components/app/workspace"
 import { RailRow, type RailRowProps } from "./row"
 import LogoIcon from "@/components/icons/LogoIcon.tsx"
 
-function formatRelativeTime(date?: Date) {
-  if (!date) {
-    return ""
-  }
-
-  const diffMs = Date.now() - date.getTime()
-  const diffMinutes = Math.floor(diffMs / 60_000)
-
-  if (diffMinutes < 1) {
-    return "now"
-  }
-
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m`
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) {
-    return `${diffHours}h`
-  }
-
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays}d`
-}
-
 function sessionWeight(updatedAt?: Date) {
   if (!updatedAt) {
     return 0
@@ -91,13 +65,23 @@ function shouldShowSessionUnreadDot(status: SessionStatus, unread: boolean) {
   )
 }
 
-function RailBrand({ right }: { right?: ReactNode }) {
+function RailBrand({
+  right,
+  className,
+  iconClassName,
+  labelClassName,
+}: {
+  right?: ReactNode
+  className?: string
+  iconClassName?: string
+  labelClassName?: string
+}) {
   return (
     <RailRow
-      icon={<LogoIcon />}
+      icon={<LogoIcon className={cn("size-4", iconClassName)} />}
       interactive={false}
-      className="text-foreground"
-      labelClassName="min-w-0 font-semibold tracking-tight text-foreground"
+      className={cn(className)}
+      labelClassName={cn("min-w-0 font-semibold tracking-tight", labelClassName)}
       label="Hopter"
       right={right}
       rightClassName="opacity-100"
@@ -114,7 +98,6 @@ const sessionRailUiStateStorageKey = "hopter.sessionRailUiState"
 type SessionRailUiState = {
   closedProjectIds: Record<string, boolean>
   collapsedProjectIds: Record<string, boolean>
-  projectsCollapsed: boolean
 }
 
 // The rail remembers per-project expansion state locally because it is purely
@@ -124,7 +107,6 @@ function readSessionRailUiState(): SessionRailUiState {
     return {
       closedProjectIds: {},
       collapsedProjectIds: {},
-      projectsCollapsed: false,
     }
   }
 
@@ -134,7 +116,6 @@ function readSessionRailUiState(): SessionRailUiState {
       return {
         closedProjectIds: {},
         collapsedProjectIds: {},
-        projectsCollapsed: false,
       }
     }
 
@@ -152,13 +133,11 @@ function readSessionRailUiState(): SessionRailUiState {
         !Array.isArray(parsed.collapsedProjectIds)
           ? parsed.collapsedProjectIds
           : {},
-      projectsCollapsed: parsed.projectsCollapsed === true,
     }
   } catch {
     return {
       closedProjectIds: {},
       collapsedProjectIds: {},
-      projectsCollapsed: false,
     }
   }
 }
@@ -168,6 +147,9 @@ type SessionRailConfiguredItem =
       key: string
       kind: "brand"
       right?: ReactNode
+      brandClassName?: string
+      brandIconClassName?: string
+      brandLabelClassName?: string
     }
   | {
       key: string
@@ -176,7 +158,7 @@ type SessionRailConfiguredItem =
     }
   | {
       key: string
-      kind: "spacer"
+      kind: "divider"
       className: string
     }
 
@@ -185,7 +167,12 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
     case "brand":
       return (
         <li key={item.key}>
-          <RailBrand right={item.right} />
+          <RailBrand
+            right={item.right}
+            className={item.brandClassName}
+            iconClassName={item.brandIconClassName}
+            labelClassName={item.brandLabelClassName}
+          />
         </li>
       )
     case "row":
@@ -194,8 +181,12 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
           <RailRow {...item.props} />
         </li>
       )
-    case "spacer":
-      return <li key={item.key} className={item.className} aria-hidden="true" />
+    case "divider":
+      return (
+        <li key={item.key} aria-hidden="true">
+          <div className={cn("my-1 h-px border-t border-border", item.className)} />
+        </li>
+      )
   }
 }
 
@@ -203,8 +194,9 @@ function renderConfiguredRailItem(item: SessionRailConfiguredItem) {
 // persistence, and the host update affordance all live here.
 export function SessionRail({ onNavigate }: SessionRailProps) {
   const { t } = useTranslation()
-  const { eventStreamState, posture } = useWorkspaceShell()
+  const { eventStreamState } = useWorkspaceShell()
   const navigate = useNavigate()
+  const { pathname, search } = useLocation()
   const unreadSessionIds = useUnreadSessionIds()
   const railScrollRef = useRef<HTMLDivElement | null>(null)
   const railListRef = useRef<HTMLUListElement | null>(null)
@@ -303,10 +295,19 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
     )
   }, [railUiState])
 
-  const { closedProjectIds, collapsedProjectIds, projectsCollapsed } =
-    railUiState
+  const { closedProjectIds, collapsedProjectIds } = railUiState
 
   const updateControl = getUpdateControl(updateStatus, applyUpdate.isPending)
+  const isNewChatActive = pathname === "/" && new URLSearchParams(search).get("compose") === "1"
+  const railPrimaryTextClass = "text-foreground"
+  const railMutedTextClass = "text-muted"
+  const railNavRowClass = "text-muted hover:bg-surface-tertiary"
+  const railActiveNavClass = "bg-surface-tertiary text-foreground"
+  const railProjectRowClass =
+    "pr-10 text-muted group-hover:bg-surface-tertiary hover:bg-surface-tertiary"
+  const railSessionRowClass = "text-muted hover:bg-surface-tertiary"
+  const railMutedRowHoverClass = "text-muted hover:bg-surface-tertiary"
+  const railRootClass = "bg-background text-foreground"
 
   async function handleApplyUpdate() {
     try {
@@ -343,32 +344,39 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
           onOpenDialog={() => setUpdateDialogOpen(true)}
           status={updateStatus}
         />
-      ) : null,
+        ) : null,
+      brandClassName: railPrimaryTextClass,
+      brandIconClassName: railPrimaryTextClass,
+      brandLabelClassName: railPrimaryTextClass,
     },
     {
       key: "new-chat",
       kind: "row",
       props: {
         asDivInteractive: true,
-        icon: <SquarePen className="size-3.5" />,
+        icon: <QuillWrite02Icon className="size-4" />,
+        hoverable: true,
         label: t("nav.newChat"),
         onClick: () => {
           onNavigate?.()
           navigate("/?compose=1")
         },
-        className: "text-muted hover:bg-surface-tertiary hover:text-foreground",
+        className: isNewChatActive
+          ? cn(railNavRowClass, railActiveNavClass)
+          : railNavRowClass,
       },
     },
     {
       key: "tasks",
       kind: "row",
       props: {
-        icon: <ListChecks className="size-3.5" />,
+        icon: <TaskDone01Icon className="size-4" />,
+        hoverable: true,
         label: t("nav.tasks"),
         onClick: onNavigate,
         to: "/tasks",
-        className: "text-muted hover:bg-surface-tertiary hover:text-foreground",
-        activeClassName: "bg-surface-tertiary text-foreground",
+        className: railNavRowClass,
+        activeClassName: railActiveNavClass,
         nav: true,
       },
     },
@@ -376,53 +384,28 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       key: "settings",
       kind: "row",
       props: {
-        icon: <Settings className="size-3.5" />,
+        icon: <Settings className="size-4" />,
+        hoverable: true,
         label: t("nav.settings"),
         onClick: onNavigate,
         to: "/settings",
-        className: "text-muted hover:bg-surface-tertiary hover:text-foreground",
-        activeClassName: "bg-surface-tertiary text-foreground",
+        className: railNavRowClass,
+        activeClassName: railActiveNavClass,
         nav: true,
       },
     },
     {
-      key: "section-gap",
-      kind: "spacer",
-      className: "h-3",
-    },
-    {
-      key: "projects-toggle",
-      kind: "row",
-      props: {
-        icon: null,
-        label: t("nav.projects"),
-        onClick: () =>
-          setRailUiState((current) => ({
-            ...current,
-            projectsCollapsed: !current.projectsCollapsed,
-          })),
-        asDivInteractive: true,
-        reserveIconSpace: false,
-        labelFill: false,
-        labelClassName: "select-none tracking-tight text-muted",
-        className: "text-muted",
-        right: (
-          <ChevronDown
-            className={cn(
-              "size-3 transition-transform",
-              projectsCollapsed ? "-rotate-90" : "rotate-0"
-            )}
-          />
-        ),
-      },
+      key: "section-divider",
+      kind: "divider",
+      className: "mx-2",
     },
   ]
 
   return (
     <div
       className={cn(
-        "flex h-full flex-col text-base text-foreground",
-        posture === "phone" ? "bg-background" : "bg-surface-secondary"
+        "flex h-full flex-col text-base",
+        railRootClass
       )}
       data-testid="session-rail"
     >
@@ -438,7 +421,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
           <ul
             ref={railListRef}
             data-rail-list="true"
-            className="flex min-h-full flex-col gap-1"
+            className="flex min-h-full flex-col gap-0.5"
           >
             {configuredRailItems.map(renderConfiguredRailItem)}
 
@@ -447,7 +430,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                 <RailRow
                   icon={null}
                   label={t("nav.loadingThreads")}
-                  labelClassName="text-muted"
+                  labelClassName={railMutedTextClass}
                 />
               </li>
             ) : null}
@@ -457,7 +440,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                 <RailRow
                   icon={null}
                   label={t("nav.sessionDataPending")}
-                  labelClassName="text-muted"
+                  labelClassName={railMutedTextClass}
                 />
               </li>
             ) : null}
@@ -467,161 +450,128 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                 <RailRow
                   icon={null}
                   label={t("nav.noThreads")}
-                  labelClassName="text-muted"
+                  labelClassName={railMutedTextClass}
                 />
               </li>
             ) : null}
 
-            {projectsCollapsed
-              ? null
-              : groupedSessions.map((group) => {
-                  const groupKey = group.projectId || group.projectName
-                  const folderClosed = closedProjectIds[groupKey] ?? false
-                  const sessionsCollapsed =
-                    collapsedProjectIds[groupKey] ?? false
-                  // Collapsing a long project list still keeps a small preview
-                  // set visible so the rail remains scannable at a glance.
-                  const visibleSessions = sessionsCollapsed
-                    ? group.sessions.slice(0, 5)
-                    : group.sessions
+            {groupedSessions.map((group) => {
+              const groupKey = group.projectId || group.projectName
+              const folderClosed = closedProjectIds[groupKey] ?? false
+              const sessionsCollapsed = collapsedProjectIds[groupKey] ?? false
+              const visibleSessions = sessionsCollapsed
+                ? group.sessions.slice(0, 5)
+                : group.sessions
 
-                  return (
-                    <Fragment key={groupKey}>
-                      <li>
-                        <div className="group relative">
-                          <RailRow
-                            icon={
-                              folderClosed ? (
-                                <Folder className="size-3.5" />
-                              ) : (
-                                <FolderOpen className="size-3.5" />
-                              )
-                            }
-                            label={
-                              group.projectRootPath ? (
-                                <Tooltip>
-                                  <Tooltip.Trigger className="block truncate">
-                                    {group.projectName}
-                                  </Tooltip.Trigger>
-                                  <Tooltip.Content
-                                    placement="top start"
-                                    className="max-w-md break-all"
-                                    showArrow
-                                  >
-                                    {group.projectRootPath}
-                                  </Tooltip.Content>
-                                </Tooltip>
-                              ) : (
-                                group.projectName
-                              )
-                            }
-                            onClick={() =>
-                              setRailUiState((current) => ({
-                                ...current,
-                                closedProjectIds: {
-                                  ...current.closedProjectIds,
-                                  [groupKey]:
-                                    !current.closedProjectIds[groupKey],
-                                },
-                              }))
-                            }
-                            labelClassName="whitespace-nowrap tracking-tight text-foreground"
-                            className="pr-10 text-foreground group-hover:bg-surface-tertiary group-hover:text-foreground hover:bg-surface-tertiary hover:text-foreground"
-                            ariaExpanded={!folderClosed}
-                          />
-                          <button
-                            type="button"
-                            title={t("rail.newThreadInProject", {
-                              project: group.projectName,
-                            })}
-                            className="absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-surface hover:text-foreground"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              onNavigate?.()
-                              navigate({
-                                pathname: "/",
-                                search: new URLSearchParams(
-                                  group.projectId
-                                    ? {
-                                        compose: "1",
-                                        projectId: group.projectId,
-                                      }
-                                    : { compose: "1" }
-                                ).toString(),
-                              })
-                            }}
-                          >
-                            <SquarePen className="size-3" />
-                          </button>
-                        </div>
-                      </li>
-                      {folderClosed
-                        ? null
-                        : visibleSessions.map((session) => {
-                            const updatedAt = timestampToDate(session.updatedAt)
-                            const sessionRunning = isSessionRunning(
-                              session.status
-                            )
-                            const showUnreadDot = shouldShowSessionUnreadDot(
-                              session.status,
-                              unreadSessionIds.has(session.id)
-                            )
+              return (
+                <Fragment key={groupKey}>
+                  <li>
+                    <RailRow
+                      icon={
+                        folderClosed ? (
+                          <Folder className="size-4" />
+                        ) : (
+                          <FolderOpen className="size-4" />
+                        )
+                      }
+                      label={
+                        group.projectRootPath ? (
+                          <Tooltip>
+                            <Tooltip.Trigger className="block truncate">
+                              {group.projectName}
+                            </Tooltip.Trigger>
+                            <Tooltip.Content
+                              placement="top start"
+                              className="max-w-md break-all"
+                              showArrow
+                            >
+                              {group.projectRootPath}
+                            </Tooltip.Content>
+                          </Tooltip>
+                        ) : (
+                          group.projectName
+                        )
+                      }
+                      onClick={() =>
+                        setRailUiState((current) => ({
+                          ...current,
+                          closedProjectIds: {
+                            ...current.closedProjectIds,
+                            [groupKey]: !current.closedProjectIds[groupKey],
+                          },
+                        }))
+                      }
+                      labelClassName={cn(
+                        "whitespace-nowrap tracking-tight",
+                        railMutedTextClass
+                      )}
+                      className={railProjectRowClass}
+                      ariaExpanded={!folderClosed}
+                    />
+                  </li>
+                  {folderClosed
+                    ? null
+                    : visibleSessions.map((session) => {
+                        const sessionRunning = isSessionRunning(session.status)
+                        const showUnreadDot = shouldShowSessionUnreadDot(
+                          session.status,
+                          unreadSessionIds.has(session.id)
+                        )
 
-                            return (
-                              <li key={session.id}>
-                                <RailRow
-                                  icon={
-                                    sessionRunning ? (
-                                      <LoaderCircle className="size-3.5 animate-spin text-muted" />
-                                    ) : showUnreadDot ? (
-                                      <span className="size-1.5 rounded-full bg-sky-400/75" />
-                                    ) : null
-                                  }
-                                  label={
-                                    session.title || t("rail.untitledThread")
-                                  }
-                                  onClick={onNavigate}
-                                  to={`/sessions/${session.id}`}
-                                  labelClassName="truncate"
-                                  right={
-                                    <span className="text-muted">
-                                      {formatRelativeTime(updatedAt)}
-                                    </span>
-                                  }
-                                  className="text-foreground/80 hover:bg-surface-tertiary hover:text-foreground"
-                                  activeClassName="bg-surface-tertiary text-foreground"
-                                  nav
-                                />
-                              </li>
-                            )
-                          })}
-                      {!folderClosed && group.sessions.length > 5 ? (
-                        <li>
-                          <RailRow
-                            asDivInteractive
-                            icon={null}
-                            label={
-                              sessionsCollapsed
-                                ? t("rail.showMore")
-                                : t("rail.showFewer")
-                            }
-                            onClick={() =>
-                              setRailUiState((current) => ({
-                                ...current,
-                                collapsedProjectIds: {
-                                  ...current.collapsedProjectIds,
-                                  [groupKey]: !sessionsCollapsed,
-                                },
-                              }))
-                            }
-                            labelClassName="text-muted"
-                            className="hover:bg-surface-tertiary"
-                          />
-                        </li>
-                      ) : null}
-                    </Fragment>
-                  )
-                })}
+                        return (
+                          <li key={session.id}>
+                            <RailRow
+                              icon={
+                                sessionRunning ? (
+                                  <LoaderCircle
+                                    className={cn(
+                                      "size-4 animate-spin",
+                                      railMutedTextClass
+                                    )}
+                                  />
+                                ) : showUnreadDot ? (
+                                  <span className="size-1.5 rounded-full bg-sky-400/75" />
+                            ) : null
+                          }
+                          label={session.title || t("rail.untitledThread")}
+                          hoverable={true}
+                          onClick={onNavigate}
+                          to={`/sessions/${session.id}`}
+                          labelClassName="truncate"
+                          className={railSessionRowClass}
+                          activeClassName={railActiveNavClass}
+                          nav
+                        />
+                          </li>
+                        )
+                      })}
+                  {!folderClosed && group.sessions.length > 5 ? (
+                    <li>
+                      <RailRow
+                        asDivInteractive
+                        icon={null}
+                        label={
+                          sessionsCollapsed
+                            ? t("rail.showMore")
+                            : t("rail.showFewer")
+                        }
+                        onClick={() =>
+                          setRailUiState((current) => ({
+                            ...current,
+                            collapsedProjectIds: {
+                              ...current.collapsedProjectIds,
+                              [groupKey]: !sessionsCollapsed,
+                            },
+                          }))
+                        }
+                        labelClassName={railMutedTextClass}
+                        className={railMutedRowHoverClass}
+                      />
+                    </li>
+                  ) : null}
+                </Fragment>
+              )
+            })}
           </ul>
         </div>
         <ScrollbarIndicator
@@ -639,13 +589,17 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
                 <Modal.Heading className="font-heading text-base leading-none font-medium">
                   {t("rail.upgradeDialogTitle")}
                 </Modal.Heading>
-                <Description className="text-sm text-muted">
+                <Description className={cn("text-sm", railMutedTextClass)}>
                   {t("rail.upgradeDialogDescription", { name: "hopter" })}
                 </Description>
               </Modal.Header>
               <Modal.CloseTrigger
                 aria-label="Close"
-                className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-tertiary hover:text-foreground"
+                className={cn(
+                  "absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg transition hover:bg-surface-tertiary",
+                  railMutedTextClass,
+                  "hover:text-foreground"
+                )}
               >
                 <X className="size-4" />
               </Modal.CloseTrigger>

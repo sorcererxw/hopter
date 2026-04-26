@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { CheckCircle2, Circle, ListChecks, LoaderCircle } from "lucide-react"
-import { Button, TextArea } from "@heroui/react"
+import {
+  CheckCircle2,
+  Circle,
+  ListChecks,
+  LoaderCircle,
+} from "@/components/icons/hugeicons"
+import { ChevronDown, Tick02 } from "@/components/icons/hugeicons"
+import { Button, Label, ListBox, Select, TextArea } from "@heroui/react"
 
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useProjects } from "@/features/projects/use-projects"
@@ -61,6 +67,9 @@ export function TasksRoute() {
 
   const defaultProjectId = useMemo(() => projects?.[0]?.id ?? "", [projects])
   const selectedProjectId = projectId || defaultProjectId
+  const selectedProjectLabel =
+    projects?.find((project) => project.id === selectedProjectId)?.name ??
+    t("tasks.project")
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -84,32 +93,63 @@ export function TasksRoute() {
         showOverflowMenu={false}
       />
       <div className="min-h-0 flex-1 overflow-hidden">
-        <section className="min-h-0 max-w-3xl overflow-y-auto p-4">
+        <section className="mx-auto min-h-0 max-w-3xl overflow-y-auto p-4">
           <form className="group mb-5" onSubmit={handleSubmit}>
-            <div className="rounded-lg border border-field-border bg-field/30 transition-colors focus-within:border-focus focus-within:ring-[3px] focus-within:ring-focus/50">
+            <div className="rounded-(--radius) border border-border bg-field/30 transition-colors">
               <TextArea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder={t("tasks.placeholder")}
-                className="min-h-28 border-0 bg-transparent focus-visible:ring-0"
+                className="min-h-28 rounded-(--radius) border-0 bg-transparent focus-visible:outline-none [&[data-focused='true']]:!border-border [&:focus]:!border-border [&[data-focus-visible='true']]:!border-border [&[data-focused='true']]:bg-transparent [&:focus]:bg-transparent [&[data-focus-visible='true']]:bg-transparent [&[data-focused='true']]:shadow-none [&:focus]:shadow-none [&[data-focus-visible='true']]:shadow-none"
                 fullWidth
                 variant="secondary"
               />
-              <div className="hidden items-center justify-between gap-2 border-t border-border px-3 py-2 group-focus-within:flex">
+              <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
                 {/* Keep project selection close to submit so the form stays
                 focused on "create from prompt" rather than project management. */}
-                <select
-                  aria-label={t("tasks.project")}
-                  className="h-8 min-w-40 rounded-full border border-field-border bg-field/30 px-3 text-sm text-foreground outline-none focus-visible:border-focus focus-visible:ring-3 focus-visible:ring-focus/50 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={selectedProjectId}
-                  onChange={(event) => setProjectId(event.target.value)}
+                <Select
+                  isDisabled={!projects || projects.length === 0}
+                  onChange={(key) => {
+                    if (key != null) {
+                      setProjectId(String(key))
+                    }
+                  }}
+                  value={selectedProjectId || null}
+                  variant="secondary"
                 >
-                  {(projects ?? []).map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
-                </select>
+                  <Select.Trigger
+                    aria-label={t("tasks.project")}
+                    className="h-8 min-w-40 rounded-full border border-field-border bg-field/30 px-3 text-muted transition-colors hover:text-foreground"
+                  >
+                    <Select.Value>{selectedProjectLabel}</Select.Value>
+                    <Select.Indicator>
+                      <ChevronDown className="size-4 text-muted" />
+                    </Select.Indicator>
+                  </Select.Trigger>
+                  <Select.Popover className="min-w-40 rounded-(--radius) bg-overlay p-1 shadow-2xl">
+                    <ListBox
+                      selectionMode="single"
+                      selectedKeys={
+                        selectedProjectId ? new Set([selectedProjectId]) : new Set()
+                      }
+                    >
+                      {(projects ?? []).map((project) => (
+                        <ListBox.Item
+                          key={project.id}
+                          id={project.id}
+                          textValue={project.name}
+                        >
+                          <Label>{project.name}</Label>
+                          <span className="flex size-3.5 items-center justify-center">
+                            {project.id === selectedProjectId ? (
+                              <Tick02 className="size-3.5" />
+                            ) : null}
+                          </span>
+                        </ListBox.Item>
+                      ))}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
                 <Button
                   type="submit"
                   size="sm"
@@ -142,8 +182,8 @@ export function TasksRoute() {
             {!tasksQuery.isLoading &&
             !tasksQuery.isError &&
             (tasksQuery.data?.length ?? 0) === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-lg px-6 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-surface-secondary text-muted">
+              <div className="flex min-h-64 flex-col items-center justify-center rounded-(--radius) px-6 text-center">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-(--radius) bg-surface-secondary text-muted">
                   <ListChecks className="size-5" />
                 </div>
                 <p className="text-sm font-medium text-foreground">
@@ -159,7 +199,7 @@ export function TasksRoute() {
               return (
                 <article
                   key={task.id}
-                  className="rounded-lg border border-border bg-surface p-3"
+                  className="rounded-(--radius) border border-border bg-surface p-3"
                 >
                   <div className="flex items-start gap-3">
                     {done ? (
@@ -174,7 +214,7 @@ export function TasksRoute() {
                         </h2>
                         <span
                           className={cn(
-                            "rounded-md border border-border px-1.5 py-0.5 text-xs text-muted",
+                            "rounded-(--radius) border border-border px-1.5 py-0.5 text-xs text-muted",
                             task.lifecycleStatus ===
                               TaskLifecycleStatus.BLOCKED && "text-amber-400"
                           )}

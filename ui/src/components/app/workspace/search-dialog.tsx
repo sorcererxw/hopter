@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { FolderGit2, Grid2x2, Search, Settings, SquarePen } from "lucide-react"
+import { FolderGit2, Grid2x2, Search, Settings, SquarePen } from "@/components/icons/hugeicons"
 import { useNavigate } from "react-router-dom"
 import { Input, Modal } from "@heroui/react"
 

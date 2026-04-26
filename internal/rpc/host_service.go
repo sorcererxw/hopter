@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -16,18 +17,63 @@ type HostService struct {
 	workspace core.WorkspaceService
 	updates   core.UpdateService
 	models    hostModelLister
+	quotas    hostQuotaReader
 }
 
 type hostModelLister interface {
 	ListModels(includeHidden bool) ([]core.AgentModel, error)
 }
 
+type hostQuotaReader interface {
+	ReadAccountRateLimits() (string, error)
+}
+
 func NewHostService(workspace core.WorkspaceService, updates core.UpdateService, models ...hostModelLister) *HostService {
 	var modelLister hostModelLister
-	if len(models) > 0 {
-		modelLister = models[0]
+	var quotaReader hostQuotaReader
+	for _, dependency := range models {
+		if modelLister == nil {
+			modelLister = dependency
+		}
+		if quotaReader == nil {
+			if reader, ok := dependency.(hostQuotaReader); ok {
+				quotaReader = reader
+			}
+		}
 	}
-	return &HostService{workspace: workspace, updates: updates, models: modelLister}
+	return &HostService{
+		workspace: workspace,
+		updates:   updates,
+		models:    modelLister,
+		quotas:    quotaReader,
+	}
+}
+
+func (s *HostService) readBackendQuota(backend core.Backend) string {
+	if backend.Key != core.BackendKeyCodex || s.quotas == nil {
+		return ""
+	}
+	if !backend.Available {
+		return ""
+	}
+	quota, err := s.quotas.ReadAccountRateLimits()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(quota)
+}
+
+func (s *HostService) mapBackendStatus(backend core.Backend) *hopterv1.BackendStatus {
+	version := strings.TrimSpace(backend.Version)
+	if quota := s.readBackendQuota(backend); quota != "" {
+		version = quota
+	}
+	return &hopterv1.BackendStatus{
+		BackendKey: backend.Key,
+		Available:  backend.Available,
+		Version:    version,
+		Reason:     backend.Reason,
+	}
 }
 
 func (s *HostService) GetHostStatus(_ context.Context, _ *connect.Request[hopterv1.GetHostStatusRequest]) (*connect.Response[hopterv1.GetHostStatusResponse], error) {
@@ -35,12 +81,7 @@ func (s *HostService) GetHostStatus(_ context.Context, _ *connect.Request[hopter
 	backends := s.workspace.ListBackends()
 	backendStatuses := make([]*hopterv1.BackendStatus, 0, len(backends))
 	for _, backend := range backends {
-		backendStatuses = append(backendStatuses, &hopterv1.BackendStatus{
-			BackendKey: backend.Key,
-			Available:  backend.Available,
-			Version:    backend.Version,
-			Reason:     backend.Reason,
-		})
+		backendStatuses = append(backendStatuses, s.mapBackendStatus(backend))
 	}
 
 	return connect.NewResponse(&hopterv1.GetHostStatusResponse{
@@ -61,12 +102,7 @@ func (s *HostService) ListBackends(_ context.Context, _ *connect.Request[hopterv
 		Backends: make([]*hopterv1.BackendStatus, 0, len(backends)),
 	}
 	for _, backend := range backends {
-		response.Backends = append(response.Backends, &hopterv1.BackendStatus{
-			BackendKey: backend.Key,
-			Available:  backend.Available,
-			Version:    backend.Version,
-			Reason:     backend.Reason,
-		})
+		response.Backends = append(response.Backends, s.mapBackendStatus(backend))
 	}
 	return connect.NewResponse(response), nil
 }

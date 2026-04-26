@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
-import { MoreHorizontal, X } from "lucide-react"
+import { MoreHorizontal, X } from "@/components/icons/hugeicons"
 import { Terminal, useTerminal } from "@wterm/react"
 import "@wterm/react/css"
 import { Button } from "@heroui/react"

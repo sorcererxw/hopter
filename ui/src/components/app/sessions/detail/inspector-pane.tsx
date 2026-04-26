@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "lucide-react"
+import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "@/components/icons/hugeicons"
 import { Button } from "@heroui/react"
 
 import { ShikiCodeFrame } from "@/components/app/shared"

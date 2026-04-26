@@ -32,6 +32,12 @@ importers:
       '@heroui/styles':
         specifier: ^3.0.3
         version: 3.0.3(tailwind-merge@3.5.0)(tailwindcss@4.2.2)
+      '@hugeicons/core-free-icons':
+        specifier: ^4.1.1
+        version: 4.1.1
+      '@hugeicons/react':
+        specifier: ^1.1.6
+        version: 1.1.6(react@19.2.5)
       '@shikijs/langs':
         specifier: ^4.0.2
         version: 4.0.2
@@ -77,9 +83,6 @@ importers:
       i18next:
         specifier: ^26.0.6
         version: 26.0.6(typescript@5.9.3)
-      lucide-react:
-        specifier: ^1.8.0
-        version: 1.8.0(react@19.2.5)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -951,6 +954,14 @@ packages:
     resolution: {integrity: sha512-DtN5QWfLVxy6DSDNgtUuHVU/h4G+dfoDHHxGVZRW6plCEh1Rc5Yc7YW7b8JBiYCknSRx/fqLXpas3Fe5Q5XJSw==}
     peerDependencies:
       tailwindcss: '>=4.0.0'
+
+  '@hugeicons/core-free-icons@4.1.1':
+    resolution: {integrity: sha512-teqIBvPHl90ygIwKyJwTxOH8aNp1X1PjDTcMvLkEwdPxPD+8mssrZ5kXKIAJJFYPsz69a8LYQY0UPid4PAdavg==}
+
+  '@hugeicons/react@1.1.6':
+    resolution: {integrity: sha512-c2LhXJMAW5wN1pC/smBXG0YPqUON6ceR/ZdXHCjEI9KvB+hjtqYjmzIxok5hAQOeXGz0WtORgCQMzqewFKAZwg==}
+    peerDependencies:
+      react: '>=16.0.0'
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2677,11 +2688,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@1.8.0:
-    resolution: {integrity: sha512-WuvlsjngSk7TnTBJ1hsCy3ql9V9VOdcPkd3PKcSmM34vJD8KG6molxz7m7zbYFgICwsanQWmJ13JlYs4Zp7Arw==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   magic-string@0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
@@ -4628,6 +4634,12 @@ snapshots:
     transitivePeerDependencies:
       - tailwind-merge
 
+  '@hugeicons/core-free-icons@4.1.1': {}
+
+  '@hugeicons/react@1.1.6(react@19.2.5)':
+    dependencies:
+      react: 19.2.5
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -6406,10 +6418,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@1.8.0(react@19.2.5):
-    dependencies:
-      react: 19.2.5
 
   magic-string@0.25.9:
     dependencies:

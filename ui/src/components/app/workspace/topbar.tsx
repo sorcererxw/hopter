@@ -3,12 +3,11 @@ import { useTranslation } from "react-i18next"
 import {
   ArrowLeft,
   ChevronDown,
-  Copy,
   MoreHorizontal,
-  PanelLeft,
+  SidebarLeftIcon,
   PanelRight,
   Terminal,
-} from "lucide-react"
+} from "@/components/icons/hugeicons"
 import { toast } from "sonner"
 import { Button } from "@heroui/react"
 
@@ -50,7 +49,6 @@ export function WorkspaceTopbar({
   onToggleInspector,
   projectName,
   resumeCommand,
-  sessionId,
   showInspectorToggle = false,
   showCommit = false,
   showOverflowMenu = true,
@@ -65,7 +63,7 @@ export function WorkspaceTopbar({
   const [commitOpen, setCommitOpen] = useState(false)
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copiedItem, setCopiedItem] = useState<
-    "resume-command" | "session-id" | null
+    "resume-command" | null
   >(null)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -94,7 +92,7 @@ export function WorkspaceTopbar({
   }, [overflowOpen, commitOpen])
 
   const handleCopy = useCallback(
-    async (text: string, item: "resume-command" | "session-id") => {
+    async (text: string, item: "resume-command") => {
       if (!text) {
         return
       }
@@ -107,11 +105,7 @@ export function WorkspaceTopbar({
       }
 
       setCopiedItem(item)
-      toast.success(
-        item === "resume-command"
-          ? t("topbar.codexCommandCopied")
-          : t("topbar.sessionIdCopied")
-      )
+      toast.success(t("topbar.codexCommandCopied"))
       if (copiedTimerRef.current) {
         clearTimeout(copiedTimerRef.current)
       }
@@ -133,7 +127,7 @@ export function WorkspaceTopbar({
       />
     ) : leadingAction === "toggle-rail" ? (
       <TopbarLeadingButton
-        icon={<PanelLeft className="size-4" />}
+        icon={<SidebarLeftIcon className="size-4" />}
         label={t("nav.toggleNavigation")}
         onClick={onLeadingAction}
         testId="workspace-topbar-rail-toggle"
@@ -142,7 +136,7 @@ export function WorkspaceTopbar({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-1.5 font-medium text-foreground"
+      className="flex items-center justify-between gap-3 bg-background px-4 py-1.5 font-medium text-foreground"
       data-testid="workspace-topbar"
       data-toolbar-mode={toolbarMode}
     >
@@ -241,16 +235,7 @@ export function WorkspaceTopbar({
                             : t("topbar.resumeInCodex")}
                         </OverflowMenuItem>
                       ) : null}
-                      {sessionId ? (
-                        <OverflowMenuItem
-                          icon={<Copy className="size-3.5" />}
-                          onClick={() => handleCopy(sessionId, "session-id")}
-                        >
-                          {copiedItem === "session-id"
-                            ? t("topbar.copied")
-                            : t("topbar.copySessionId")}
-                        </OverflowMenuItem>
-                      ) : null}
+
                     </div>
                   </>
                 ) : null}
@@ -295,16 +280,7 @@ export function WorkspaceTopbar({
                             : t("topbar.resumeInCodex")}
                         </OverflowMenuItem>
                       ) : null}
-                      {sessionId ? (
-                        <OverflowMenuItem
-                          icon={<Copy className="size-3.5" />}
-                          onClick={() => handleCopy(sessionId, "session-id")}
-                        >
-                          {copiedItem === "session-id"
-                            ? t("topbar.copied")
-                            : t("topbar.copySessionId")}
-                        </OverflowMenuItem>
-                      ) : null}
+
                     </div>
                   </>
                 ) : null}
