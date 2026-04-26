@@ -2,17 +2,26 @@
 set -euo pipefail
 
 relay_mode=0
+reset_auth=0
 for arg in "$@"; do
   case "${arg}" in
     --relay)
       relay_mode=1
       ;;
+    --reset-auth)
+      reset_auth=1
+      ;;
     *)
-      echo "usage: $0 [--relay]" >&2
+      echo "usage: $0 [--relay] [--reset-auth]" >&2
       exit 2
       ;;
   esac
 done
+
+if [[ "${reset_auth}" == "1" && "${relay_mode}" != "1" ]]; then
+  echo "--reset-auth requires --relay" >&2
+  exit 2
+fi
 
 if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,11 +29,13 @@ if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   repo_hash="$(printf '%s' "${repo_root}" | shasum -a 256 | awk '{print substr($1, 1, 8)}')"
   repo_slug="${repo_base:-workspace}-${repo_hash}"
   tmux_session="hopter-${repo_slug}-dev"
-  dev_target="dev"
+  dev_command="HOPTER_DEV_FOREGROUND=1 bash scripts/dev.sh"
   if [[ "${relay_mode}" == "1" ]]; then
-    dev_target="dev-relay"
+    dev_command="${dev_command} --relay"
   fi
-  dev_command="HOPTER_DEV_FOREGROUND=1 make ${dev_target}"
+  if [[ "${reset_auth}" == "1" ]]; then
+    dev_command="${dev_command} --reset-auth"
+  fi
 
   has_listener() {
     lsof -tiTCP:"$1" -sTCP:LISTEN -n -P >/dev/null 2>&1

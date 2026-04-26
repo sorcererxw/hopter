@@ -3,7 +3,7 @@
 help:
 	@echo "Targets:"
 	@echo "  dev                Run the AI-first live loop with Vite, Go hot reload, and persistent logs"
-	@echo "  dev-relay          Run the live loop with hosted relay mode enabled"
+	@echo "  dev-relay          Run the live loop with hosted relay mode enabled and reset stored relay auth"
 	@echo "  reset              Stop stale listeners on 5173/8787 and clear tmp/air"
 	@echo "  verify-live        Attach to the current dev loop and run a live smoke check"
 	@echo "  start              Build UI, then run the Go server"
@@ -40,7 +40,7 @@ dev:
 	bash scripts/dev.sh
 
 dev-relay:
-	bash scripts/dev.sh --relay
+	bash scripts/dev.sh --relay --reset-auth
 
 reset:
 	bash scripts/reset-dev.sh
