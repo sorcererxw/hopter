@@ -1,14 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { PatchDiff } from "@pierre/diffs/react"
 import { useTranslation } from "react-i18next"
 
 import { CodeContainer } from "@/components/app/shared"
 import { useTheme } from "@/components/theme-provider"
 import { type SessionTranscriptItem } from "@/gen/proto/hopter/v1/session_pb"
-import {
-  highlightCodeToTokens,
-  type HighlightLanguage,
-} from "@/lib/shiki/highlighter"
-import { cn } from "@/lib/utils"
 
 import { TranscriptDisclosureItem } from "./timeline-disclosure"
 
@@ -97,30 +92,21 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
         iconClassName="ml-auto size-3"
         label={
           <>
-            <span className="shrink-0 text-muted">
-              {change.kindLabel}
-            </span>
+            <span className="shrink-0 text-muted">{change.kindLabel}</span>
             <span className="min-w-0 truncate font-mono text-foreground underline decoration-border underline-offset-4">
               {formatFileChangePath(change.path)}
             </span>
             {change.additions || change.deletions ? (
               <span className="flex shrink-0 items-center gap-1 font-sans text-sm tabular-nums">
-                <span className={DIFF_ADD_CLASS}>
-                  +{change.additions}
-                </span>
-                <span className={DIFF_DELETE_CLASS}>
-                  -{change.deletions}
-                </span>
+                <span className={DIFF_ADD_CLASS}>+{change.additions}</span>
+                <span className={DIFF_DELETE_CLASS}>-{change.deletions}</span>
               </span>
             ) : null}
           </>
         }
         title={change.path}
       >
-        <CodeContainer
-          as="pre"
-          className="mt-1 max-h-96 break-words whitespace-pre-wrap"
-        >
+        <CodeContainer className="mt-1 max-h-96 overflow-x-hidden px-0 py-0">
           <DiffCodeBlock diff={change.diff} filePath={change.path} />
         </CodeContainer>
       </TranscriptDisclosureItem>
@@ -157,10 +143,7 @@ function CompletedMessageChangedFileRow({
         }
         title={pathLabel}
       >
-        <CodeContainer
-          as="pre"
-          className="mb-4 max-h-96 rounded-none border-0 bg-transparent px-0 py-0 break-words whitespace-pre-wrap"
-        >
+        <CodeContainer className="mb-4 max-h-96 overflow-x-hidden rounded-none border-0 bg-transparent px-0 py-0">
           <DiffCodeBlock
             diff={change.diff}
             filePath={change.movePath ?? change.path}
@@ -171,7 +154,49 @@ function CompletedMessageChangedFileRow({
   )
 }
 
-// DiffCodeBlock renders diff text line-by-line with semantic coloring for additions, deletions, and hunks.
+const diffThemeByResolvedTheme = {
+  dark: "github-dark-default",
+  light: "github-light-default",
+} as const
+
+const diffUnsafeCss = `
+:host {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+
+pre {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+[data-diffs-header] {
+  display: none;
+}
+
+[data-line-type="addition"] {
+  color: rgb(134 239 172);
+}
+
+[data-line-type="deletion"] {
+  color: rgb(252 165 165);
+}
+
+[data-line-type="metadata"] {
+  color: rgb(161 161 170);
+}
+`
+
+// DiffCodeBlock delegates unified diff parsing, line numbering, and syntax highlighting to @pierre/diffs.
 function DiffCodeBlock({
   diff,
   filePath,
@@ -180,297 +205,46 @@ function DiffCodeBlock({
   filePath?: string
 }) {
   const { t } = useTranslation()
-  const rows = useMemo(() => parseDiffRows(diff), [diff])
-  const highlightLanguage = useMemo(
-    () => inferDiffSourceLanguage(filePath),
-    [filePath]
-  )
-  const highlightedRows = useHighlightedDiffRows(rows, highlightLanguage)
+  const { resolvedTheme } = useTheme()
+  const patch = normalizeSingleFilePatch(diff, filePath)
 
-  if (rows.length === 0) {
+  if (!patch) {
     return <>{t("artifact.noDiffContent")}</>
   }
 
   return (
-    <>
-      {rows.map((row, index) => (
-        <span
-          className={cn(
-            "-mx-4 flex min-w-full items-start border-l-4",
-            diffLineClassName(row.line)
-          )}
-          key={`${index}-${row.line}`}
-        >
-          <span
-            className={cn(
-            "w-10 shrink-0 pr-2 text-right text-muted select-none",
-              diffLineNumberClassName(row.line)
-            )}
-          >
-            {row.oldLineNumber ?? ""}
-          </span>
-          <span
-            className={cn(
-              "w-10 shrink-0 border-r border-border pr-2 text-right text-muted select-none",
-              diffLineNumberClassName(row.line)
-            )}
-          >
-            {row.newLineNumber ?? ""}
-          </span>
-          <span className="w-7 shrink-0 px-2 text-right select-none">
-            {row.marker}
-          </span>
-          <span className="min-w-0 flex-1 px-2">
-            <HighlightedDiffCodeContent
-              fallback={row.code}
-              tokens={highlightedRows[index]}
-            />
-          </span>
-        </span>
-      ))}
-    </>
+    <PatchDiff
+      className="block min-w-0 w-full"
+      disableWorkerPool
+      options={{
+        collapsed: false,
+        diffIndicators: "classic",
+        diffStyle: "unified",
+        disableBackground: true,
+        disableFileHeader: true,
+        hunkSeparators: "metadata",
+        overflow: "wrap",
+        theme: diffThemeByResolvedTheme[resolvedTheme],
+        themeType: resolvedTheme,
+        unsafeCSS: diffUnsafeCss,
+      }}
+      patch={patch}
+    />
   )
 }
 
-type DiffRow = {
-  code: string
-  line: string
-  marker?: string
-  newLineNumber?: number
-  oldLineNumber?: number
-}
-
-// parseDiffRows converts unified diff hunks into rows with old/new line numbers.
-function parseDiffRows(diff?: string): DiffRow[] {
-  const lines = diff?.trim().split("\n") ?? []
-  let oldLineNumber: number | undefined
-  let newLineNumber: number | undefined
-
-  return lines.map((line) => {
-    const hunkMatch = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
-    if (hunkMatch) {
-      oldLineNumber = Number(hunkMatch[1])
-      newLineNumber = Number(hunkMatch[2])
-      return { code: line, line }
-    }
-
-    if (oldLineNumber === undefined || newLineNumber === undefined) {
-      return { code: line, line }
-    }
-
-    if (line.startsWith("+") && !line.startsWith("+++")) {
-      const row = { code: line.slice(1), line, marker: "+", newLineNumber }
-      newLineNumber += 1
-      return row
-    }
-
-    if (line.startsWith("-") && !line.startsWith("---")) {
-      const row = { code: line.slice(1), line, marker: "-", oldLineNumber }
-      oldLineNumber += 1
-      return row
-    }
-
-    if (line.startsWith("\\ No newline at end of file")) {
-      return { code: line, line }
-    }
-
-    const row = {
-      code: line.startsWith(" ") ? line.slice(1) : line,
-      line,
-      marker: line.startsWith(" ") ? " " : undefined,
-      newLineNumber,
-      oldLineNumber,
-    }
-    oldLineNumber += 1
-    newLineNumber += 1
-    return row
-  })
-}
-
-type HighlightToken = {
-  bgColor?: string
-  color?: string
-  content: string
-  fontStyle?: number
-}
-
-type HighlightLine = HighlightToken[]
-
-const shikiThemeByResolvedTheme = {
-  dark: "github-dark-default",
-  light: "github-light-default",
-} as const
-
-// useHighlightedDiffRows highlights changed source content using the original file language.
-function useHighlightedDiffRows(
-  rows: DiffRow[],
-  language: HighlightLanguage
-): Array<HighlightLine | undefined> {
-  const { resolvedTheme } = useTheme()
-  const [highlightedRows, setHighlightedRows] = useState<
-    Array<HighlightLine | undefined>
-  >([])
-
-  useEffect(() => {
-    let cancelled = false
-    const sourceRows = rows.filter((row) => shouldHighlightDiffRow(row))
-    const source = sourceRows.map((row) => row.code).join("\n")
-
-    if (!source.trim()) {
-      setHighlightedRows([])
-      return
-    }
-
-    void highlightCodeToTokens(
-      source,
-      language,
-      shikiThemeByResolvedTheme[resolvedTheme]
-    )
-      .then((result) => {
-        if (cancelled) {
-          return
-        }
-
-        const nextRows: Array<HighlightLine | undefined> = []
-        let tokenLineIndex = 0
-        for (const row of rows) {
-          if (shouldHighlightDiffRow(row)) {
-            nextRows.push(result.tokens[tokenLineIndex] as HighlightLine)
-            tokenLineIndex += 1
-          } else {
-            nextRows.push(undefined)
-          }
-        }
-        setHighlightedRows(nextRows)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHighlightedRows([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [language, resolvedTheme, rows])
-
-  return highlightedRows
-}
-
-function shouldHighlightDiffRow(row: DiffRow) {
-  return row.oldLineNumber !== undefined || row.newLineNumber !== undefined
-}
-
-function HighlightedDiffCodeContent({
-  fallback,
-  tokens,
-}: {
-  fallback: string
-  tokens?: HighlightLine
-}) {
-  if (!tokens) {
-    return <>{fallback || " "}</>
+function normalizeSingleFilePatch(diff?: string, filePath?: string) {
+  const trimmed = diff?.trim()
+  if (!trimmed || !/^@@ /m.test(trimmed)) {
+    return undefined
   }
-  if (tokens.length === 0) {
-    return <> </>
-  }
-  return (
-    <>
-      {tokens.map((token, tokenIndex) => (
-        <span key={`${tokenIndex}-${token.content}`} style={tokenStyle(token)}>
-          {token.content}
-        </span>
-      ))}
-    </>
-  )
-}
 
-function tokenStyle(token: HighlightToken) {
-  const style: Record<string, string> = {}
-  if (token.color) {
-    style.color = token.color
+  if (/^diff --git /m.test(trimmed) || /^---\s+\S/m.test(trimmed)) {
+    return trimmed
   }
-  if (token.bgColor) {
-    style.backgroundColor = token.bgColor
-  }
-  if (token.fontStyle) {
-    if (token.fontStyle & 1) {
-      style.fontStyle = "italic"
-    }
-    if (token.fontStyle & 2) {
-      style.fontWeight = "700"
-    }
-    if (token.fontStyle & 4) {
-      style.textDecoration = "underline"
-    }
-  }
-  return style
-}
 
-function inferDiffSourceLanguage(filePath?: string): HighlightLanguage {
-  const normalized = filePath?.trim().toLowerCase() || ""
-  const ext = normalized.split(".").pop() || ""
-  switch (ext) {
-    case "ts":
-      return "ts"
-    case "tsx":
-      return "tsx"
-    case "js":
-    case "mjs":
-    case "cjs":
-      return "js"
-    case "jsx":
-      return "jsx"
-    case "go":
-      return "go"
-    case "json":
-      return "json"
-    case "md":
-    case "markdown":
-      return "markdown"
-    case "css":
-      return "css"
-    case "html":
-      return "html"
-    case "yaml":
-    case "yml":
-      return "yaml"
-    case "toml":
-      return "toml"
-    case "sh":
-    case "zsh":
-    case "bash":
-      return "bash"
-    case "proto":
-      return "proto"
-    default:
-      return "text"
-  }
-}
-
-// diffLineClassName maps a diff line prefix to the matching visual treatment.
-function diffLineClassName(line: string) {
-  if (line.startsWith("+") && !line.startsWith("+++")) {
-    return "border-green-600 bg-green-400/15 text-green-700 dark:text-green-300"
-  }
-  if (line.startsWith("-") && !line.startsWith("---")) {
-    return "border-red-600 bg-red-400/15 text-red-700 dark:text-red-300"
-  }
-  if (line.startsWith("@@")) {
-    return "border-transparent bg-surface-tertiary text-muted"
-  }
-  return "border-transparent"
-}
-
-// diffLineNumberClassName tints old/new gutters to match changed rows.
-function diffLineNumberClassName(line: string) {
-  if (line.startsWith("+") && !line.startsWith("+++")) {
-    return DIFF_ADD_CLASS
-  }
-  if (line.startsWith("-") && !line.startsWith("---")) {
-    return DIFF_DELETE_CLASS
-  }
-  return ""
+  const path = formatRelativeFileChangePath(filePath || "file")
+  return [`--- ${path}`, `+++ ${path}`, trimmed].join("\n")
 }
 
 // parseFileChangeBody parses structured or fallback plain-text file-change payloads into a uniform shape.
