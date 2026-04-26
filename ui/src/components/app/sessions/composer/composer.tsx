@@ -47,7 +47,7 @@ import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
 import type { SessionComposerSelection } from "./selection"
-import { stableDropdownPopoverClassName } from "@/components/app/shared"
+import { SessionImage, stableDropdownPopoverClassName } from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
@@ -639,10 +639,15 @@ export function SessionComposer({
                             key={attachment.id}
                             className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-surface-secondary px-2 py-1 text-xs text-foreground"
                           >
-                            <img
-                              alt=""
+                            <SessionImage
                               src={attachment.url}
+                              alt=""
                               className="size-6 rounded-md object-cover"
+                              fallback={
+                                <span className="inline-flex size-6 items-center justify-center rounded-md bg-surface text-xs font-medium text-muted">
+                                  +
+                                </span>
+                              }
                             />
                             <span className="max-w-40 truncate">
                               {attachment.label}
@@ -668,7 +673,7 @@ export function SessionComposer({
                   </div>
                 ) : null}
 
-                <div className="flex items-center justify-between px-2 pb-2">
+                <div className="flex items-center justify-between">
                   <div className="flex min-w-0 items-center gap-1">
                     <input
                       ref={imageInputRef}
@@ -810,12 +815,12 @@ function ContextWindowIndicator({
   }
 
   return (
-    <Tooltip>
+    <Tooltip closeDelay={0} delay={0}>
       <Tooltip.Trigger>
         <button
           type="button"
           aria-label={t("composer.contextWindow")}
-          className="inline-flex size-8 items-center justify-center rounded-full bg-transparent text-foreground transition hover:bg-surface-tertiary"
+          className="inline-flex size-8 items-center justify-center rounded-full bg-transparent text-foreground transition"
         >
           <span className="relative flex size-4 items-center justify-center text-muted">
             <span

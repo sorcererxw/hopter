@@ -12,6 +12,7 @@ import {
   inlineCodeClassName,
   ShikiCodeFrame,
   SkillReferenceChip,
+  SessionImage,
   workspaceScrollbarClassName,
 } from "@/components/app/shared"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
@@ -84,6 +85,7 @@ export function SessionRichText({
   onLocalPathClick,
   text,
 }: SessionRichTextProps) {
+  const { t } = useTranslation()
   const mcpServersQuery = useMCPServers()
   const pluginByReference = new Map(
     (mcpServersQuery.data ?? []).map((server) => [
@@ -184,6 +186,24 @@ export function SessionRichText({
 
             return <CodeBlock code={code} language={language} />
           },
+          img: ({ src, alt, ...props }) => (
+            <SessionImage
+              src={src}
+              alt={alt}
+              fallback={
+                <span
+                  className="inline-flex items-center rounded-md bg-surface px-1 py-0.5 text-xs text-muted"
+                  {...props}
+                >
+                  {typeof alt === "string" && alt.trim().length > 0
+                    ? alt
+                    : t("transcript.image")}
+                </span>
+              }
+              className="inline-block max-w-full rounded-md border border-border"
+              {...props}
+            />
+          ),
           li: ({ children }) => (
             <li className="list-disc text-foreground">{children}</li>
           ),

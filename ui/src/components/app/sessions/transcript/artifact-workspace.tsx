@@ -13,12 +13,12 @@ import {
 } from "lucide-react"
 import { Button, Chip, Link } from "@heroui/react"
 
-import { CodeContainer } from "@/components/app/shared"
+import { CodeContainer, SessionImage } from "@/components/app/shared"
 import type { ArtifactRef } from "@/gen/proto/hopter/v1/common_pb"
 import { ArtifactKind } from "@/gen/proto/hopter/v1/common_pb"
 import { useSessionArtifacts } from "@/features/sessions/use-sessions"
 import { formatUpdatedAt } from "@/lib/format/proto"
-import { cn } from "@/lib/utils"
+import { cn, resolveImageSource } from "@/lib/utils"
 
 import { SessionRichText } from "./rich-text"
 
@@ -123,7 +123,10 @@ function ArtifactPreviewPanel({
   onOpenReview?: () => void
 }) {
   const { t } = useTranslation()
+  const downloadUrl = artifact.downloadUrl?.trim() ?? ""
   const supportsTextPreview = shouldFetchArtifactText(artifact)
+  const resolvedDownloadImage = resolveImageSource(downloadUrl)
+  const canUseDownloadUrl = Boolean(resolvedDownloadImage.isUsable)
   const [imageFailed, setImageFailed] = useState(false)
 
   useEffect(() => {
@@ -131,10 +134,10 @@ function ArtifactPreviewPanel({
   }, [artifact.id])
 
   const textPreviewQuery = useQuery({
-    enabled: supportsTextPreview && artifact.downloadUrl.trim().length > 0,
-    queryKey: ["artifact-preview", artifact.id, artifact.downloadUrl],
+    enabled: supportsTextPreview && canUseDownloadUrl,
+    queryKey: ["artifact-preview", artifact.id, resolvedDownloadImage.src],
     queryFn: async () => {
-      const response = await fetch(artifact.downloadUrl, {
+      const response = await fetch(resolvedDownloadImage.src, {
         credentials: "same-origin",
       })
       if (!response.ok) {
@@ -143,8 +146,7 @@ function ArtifactPreviewPanel({
         )
       }
       return {
-        contentType:
-          response.headers.get("content-type") || artifact.contentType,
+        contentType: response.headers.get("content-type") || artifact.contentType,
         text: await response.text(),
       }
     },
@@ -195,9 +197,9 @@ function ArtifactPreviewPanel({
               {t("artifact.openReview")}
             </Button>
           ) : null}
-          {artifact.downloadUrl ? (
+          {resolvedDownloadImage.isUsable ? (
             <Link
-              href={artifact.downloadUrl}
+              href={resolvedDownloadImage.src}
               target="_blank"
               rel="noreferrer"
               className="inline-flex h-8 items-center justify-center gap-1 rounded-full border border-border bg-field/30 px-3 text-sm text-foreground transition hover:bg-field/50"
@@ -211,9 +213,9 @@ function ArtifactPreviewPanel({
 
       <div className="min-h-[220px] px-4 py-4">
         {artifact.kind === ArtifactKind.SCREENSHOT ? (
-          artifact.downloadUrl && !imageFailed ? (
-            <img
-              src={artifact.downloadUrl}
+          canUseDownloadUrl && !imageFailed ? (
+            <SessionImage
+              src={resolvedDownloadImage.src}
               alt={artifact.label}
               className="max-h-[480px] w-full rounded-md border border-border object-contain"
               onError={() => setImageFailed(true)}

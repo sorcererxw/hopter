@@ -9,8 +9,9 @@
 
 @theme inline {
     --font-ibm-plex-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-    --font-sans: var(--font-ibm-plex-mono);
-    --font-heading: var(--font-sans);
+    --font-geist-sans: "Geist", "Geist Variable", "Inter", sans-serif;
+    --font-sans: var(--font-geist-sans);
+    --font-heading: var(--font-geist-sans);
     --font-mono: var(--font-ibm-plex-mono);
 }
 
@@ -31,7 +32,7 @@
     --field-foreground: oklch(21.03% 0.0000 0.00);
     --field-placeholder: oklch(55.17% 0.0000 0.00);
     --focus: oklch(0 0 0);
-    --font-sans: var(--font-ibm-plex-mono);
+    --font-sans: var(--font-geist-sans);
     --foreground: oklch(21.03% 0.0000 0.00);
     --muted: oklch(55.17% 0.0000 0.00);
     --overlay: oklch(100.00% 0.0000 0.00);

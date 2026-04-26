@@ -62,8 +62,8 @@ export function CompletedMessageChangedFiles({
         <span>{t("transcript.filesChanged", { count: changes.length })}</span>
         {changes.length > 1 ? (
           <span className="flex shrink-0 items-center gap-1 text-sm">
-            <span className="text-emerald-600">+{additions}</span>
-            <span className="text-danger">-{deletions}</span>
+            <span className="text-green-400">+{additions}</span>
+            <span className="text-red-400">-{deletions}</span>
           </span>
         ) : null}
       </div>
@@ -96,8 +96,8 @@ function FileChangeRow({ change }: { change: ParsedFileChange }) {
             </span>
             {change.additions || change.deletions ? (
               <span className="flex shrink-0 items-center gap-1 font-mono text-sm">
-                <span className="text-emerald-600">+{change.additions}</span>
-                <span className="text-danger">-{change.deletions}</span>
+                <span className="text-green-400">+{change.additions}</span>
+                <span className="text-red-400">-{change.deletions}</span>
               </span>
             ) : null}
           </>
@@ -136,8 +136,8 @@ function CompletedMessageChangedFileRow({
               {pathLabel}
             </span>
             <span className="flex shrink-0 items-center gap-1 text-sm">
-              <span className="text-emerald-600">+{change.additions}</span>
-              <span className="text-danger">-{change.deletions}</span>
+            <span className="text-green-400">+{change.additions}</span>
+            <span className="text-red-400">-{change.deletions}</span>
             </span>
             <span className="flex-1" />
           </>
@@ -180,10 +180,10 @@ function DiffCodeBlock({ diff }: { diff?: string }) {
 // diffLineClassName maps a diff line prefix to the matching visual treatment.
 function diffLineClassName(line: string) {
   if (line.startsWith("+") && !line.startsWith("+++")) {
-    return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
+    return "bg-green-400/10 text-green-400"
   }
   if (line.startsWith("-") && !line.startsWith("---")) {
-    return "bg-danger/10 text-danger"
+    return "bg-red-400/10 text-red-400"
   }
   if (line.startsWith("@@")) {
     return "bg-surface-tertiary text-muted"

@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import { Modal } from "@heroui/react"
 
-import { CodeContainer } from "@/components/app/shared"
+import { CodeContainer, SessionImage } from "@/components/app/shared"
 import { useWorkspaceShell } from "@/components/app/workspace"
 import {
   SessionTranscriptAttachmentKind,
@@ -19,7 +19,7 @@ import {
   type SessionTranscriptAttachment,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
-import { cn } from "@/lib/utils"
+import { cn, resolveImageSource } from "@/lib/utils"
 
 import { isReasoningPlaceholderText } from "./activity"
 import { SessionRichText } from "./rich-text"
@@ -301,12 +301,23 @@ function TranscriptImageAttachment({
   const { t } = useTranslation()
   const [previewOpen, setPreviewOpen] = useState(false)
   const thumbnail = attachment.url
+  const thumbnailImage = resolveImageSource(thumbnail)
+  const hasUsableThumbnail = thumbnailImage.isUsable
   const content = thumbnail ? (
-    <img
-      src={thumbnail}
+    <SessionImage
+      src={thumbnailImage.src}
       alt={label}
       className="h-full w-full object-cover"
       loading="lazy"
+      fallback={
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-surface-tertiary px-2 text-center">
+          {icon}
+          <span className="max-w-full truncate text-xs text-muted">{label}</span>
+          <span className="max-w-full truncate text-[11px] text-muted/70">
+            {t("artifact.previewUnavailable")}
+          </span>
+        </div>
+      }
     />
   ) : (
     <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-surface-tertiary px-2 text-center">
@@ -322,6 +333,10 @@ function TranscriptImageAttachment({
     "block size-20 overflow-hidden rounded-lg border border-border bg-surface transition hover:border-border-strong"
 
   if (attachment.url) {
+    if (!hasUsableThumbnail) {
+      return <div className={className}>{content}</div>
+    }
+
     return (
       <>
         <button
@@ -365,9 +380,11 @@ function ImagePreviewDialog({
 }) {
   const { t } = useTranslation()
   const { posture } = useWorkspaceShell()
+  const [previewError, setPreviewError] = useState(false)
   // Phone posture gets a fully immersive preview because the standard dialog
   // chrome wastes too much vertical space on small screens.
   const fullscreen = posture === "phone"
+  const resolvedImage = resolveImageSource(src)
 
   return (
     <Modal isOpen={open} onOpenChange={onOpenChange}>
@@ -403,17 +420,25 @@ function ImagePreviewDialog({
                 </Modal.CloseTrigger>
               </div>
             ) : null}
-            <img
-              src={src}
+            <SessionImage
+              src={resolvedImage.src}
               alt={label}
               className={cn(
                 fullscreen
                   ? "h-full w-full object-contain px-2 pt-[calc(env(safe-area-inset-top)+4rem)] pb-[env(safe-area-inset-bottom)]"
                   : "max-h-[calc(80vh-2rem)] max-w-full rounded-lg object-contain"
               )}
+              onError={() => setPreviewError(true)}
               loading="eager"
               draggable={false}
               onClick={(event) => event.stopPropagation()}
+              fallback={
+                previewError || !resolvedImage.isUsable ? (
+                  <span className="px-4 text-sm text-white">
+                    {t("artifact.previewUnavailable")}
+                  </span>
+                ) : null
+              }
             />
           </Modal.Dialog>
         </Modal.Container>

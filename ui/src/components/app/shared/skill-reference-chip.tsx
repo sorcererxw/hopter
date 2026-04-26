@@ -28,7 +28,7 @@ export function SkillReferenceChip({
   return (
     <span
       className={cn(
-        "group relative inline-flex max-w-full cursor-default items-center gap-1 rounded-md bg-accent px-1 py-0.5 font-semibold whitespace-nowrap text-accent-foreground [&_svg]:text-accent-foreground",
+        "group relative inline-flex max-w-full cursor-default items-center gap-1 rounded-md bg-accent px-1 py-0.5 text-sm font-semibold whitespace-nowrap text-accent-foreground [&_svg]:text-accent-foreground",
         className
       )}
       {...props}
