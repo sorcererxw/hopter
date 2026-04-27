@@ -2,10 +2,7 @@ import type { RefObject } from "react"
 import { useTranslation } from "react-i18next"
 import { ArrowDown } from "@/components/icons/hugeicons"
 
-import {
-  hiddenScrollbarClassName,
-  ScrollbarIndicator,
-} from "@/components/app/shared"
+import { SimplebarScrollArea } from "@/components/app/shared"
 import {
   SessionAttentionBlock,
   SessionConnectionBlock,
@@ -29,12 +26,8 @@ type SessionTranscriptSurfaceProps = {
   onScrollToBottom: () => void
   onTranscriptScroll: () => void
   respondingToApproval: boolean
-  scrollbarScrollable: boolean
-  scrollbarVisible: boolean
   session: Session
   sessionId: string
-  thumbHeight: number
-  thumbOffset: number
   transcriptAwayFromBottom: boolean
   transcriptContentRef: RefObject<HTMLDivElement | null>
   transcriptScrollRef: RefObject<HTMLDivElement | null>
@@ -54,12 +47,8 @@ export function SessionTranscriptSurface({
   onScrollToBottom,
   onTranscriptScroll,
   respondingToApproval,
-  scrollbarScrollable,
-  scrollbarVisible,
   session,
   sessionId,
-  thumbHeight,
-  thumbOffset,
   transcriptAwayFromBottom,
   transcriptContentRef,
   transcriptScrollRef,
@@ -69,13 +58,11 @@ export function SessionTranscriptSurface({
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div
-        ref={transcriptScrollRef}
+      <SimplebarScrollArea
+        scrollableNodeRef={transcriptScrollRef}
         onScroll={onTranscriptScroll}
-        className={cn(
-          hiddenScrollbarClassName,
-          "relative h-full overflow-y-auto px-6 py-0"
-        )}
+        className="relative h-full"
+        contentClassName="px-6 py-0"
       >
         <div
           ref={transcriptContentRef}
@@ -113,13 +100,7 @@ export function SessionTranscriptSurface({
             <InitialTranscriptLoader />
           </div>
         ) : null}
-      </div>
-      <ScrollbarIndicator
-        scrollable={scrollbarScrollable}
-        thumbHeight={thumbHeight}
-        thumbOffset={thumbOffset}
-        visible={scrollbarVisible}
-      />
+      </SimplebarScrollArea>
       <button
         type="button"
         aria-label={t("transcript.scrollLatest")}

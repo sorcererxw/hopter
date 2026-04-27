@@ -4,11 +4,10 @@ import { Search } from "@/components/icons/hugeicons"
 import { Navigate, useLocation } from "react-router-dom"
 import { Chip, Input } from "@heroui/react"
 
-import { workspaceScrollbarClassName } from "@/components/app/shared"
+import { SimplebarScrollArea } from "@/components/app/shared"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkills } from "@/features/host/use-host-skills"
-import { cn } from "@/lib/utils"
 
 // PluginsRoute surfaces host-discovered skills and MCP servers in one searchable
 // pane. It intentionally excludes project-local skills so this page reads as a
@@ -71,11 +70,9 @@ export function PluginsRoute() {
         showOverflowMenu={false}
       />
 
-      <div
-        className={cn(
-          workspaceScrollbarClassName,
-          "min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10"
-        )}
+      <SimplebarScrollArea
+        className="min-h-0 flex-1"
+        contentClassName="px-4 py-6 md:px-8 lg:px-10"
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           <div className="flex flex-wrap gap-4">
@@ -181,7 +178,7 @@ export function PluginsRoute() {
             </>
           )}
         </div>
-      </div>
+      </SimplebarScrollArea>
     </div>
   )
 }

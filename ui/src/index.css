@@ -96,3 +96,9 @@
         @apply font-mono;
     }
 }
+
+@layer components {
+    .hopter-simplebar {
+        height: 100%;
+    }
+}

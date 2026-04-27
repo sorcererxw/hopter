@@ -133,12 +133,8 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
               onScrollToBottom={transcriptFeed.scrollTranscriptToBottom}
               onTranscriptScroll={transcriptFeed.handleTranscriptScroll}
               respondingToApproval={respondToApproval.isPending}
-              scrollbarScrollable={transcriptFeed.scrollbarScrollable}
-              scrollbarVisible={transcriptFeed.scrollbarVisible}
               session={session}
               sessionId={sessionId}
-              thumbHeight={transcriptFeed.thumbHeight}
-              thumbOffset={transcriptFeed.thumbOffset}
               transcriptAwayFromBottom={transcriptFeed.transcriptAwayFromBottom}
               transcriptContentRef={transcriptFeed.transcriptContentRef}
               transcriptScrollRef={transcriptFeed.transcriptScrollRef}

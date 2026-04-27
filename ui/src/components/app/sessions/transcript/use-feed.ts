@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 
-import { useAutoHideScrollbar } from "@/components/app/shared"
 import {
   fetchSessionTranscriptPage,
   useSessionTranscript,
@@ -94,16 +93,6 @@ export function useSessionTranscriptFeed({
     SessionTranscriptPage[]
   >([])
   const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(false)
-  const {
-    handleScroll,
-    scrollbarScrollable,
-    scrollbarVisible,
-    syncScrollbar,
-    thumbHeight,
-    thumbOffset,
-  } = useAutoHideScrollbar(transcriptScrollRef, {
-    contentRef: transcriptContentRef,
-  })
 
   const session = useMemo(
     () => buildSessionDetail(sessionMeta, transcriptPages),
@@ -371,8 +360,11 @@ export function useSessionTranscriptFeed({
   }, [])
 
   useEffect(() => {
-    syncScrollbar()
-  }, [syncScrollbar, transcriptPages, transcriptVisible])
+    const container = transcriptScrollRef.current
+    if (container) {
+      updateTranscriptBottomState(container)
+    }
+  }, [transcriptPages, transcriptVisible])
 
   useLayoutEffect(() => {
     const container = transcriptScrollRef.current
@@ -480,8 +472,6 @@ export function useSessionTranscriptFeed({
     if (!container) {
       return
     }
-    handleScroll()
-
     const scrolledUp =
       container.scrollTop < lastTranscriptScrollTopRef.current - 24
     if (autoStickInProgressRef.current) {
@@ -692,12 +682,8 @@ export function useSessionTranscriptFeed({
     hasUnloadedTranscriptHistory,
     isFetchingPreviousPage,
     isLoadingInitialTranscript,
-    scrollbarScrollable,
-    scrollbarVisible,
     scrollTranscriptToBottom,
     session,
-    thumbHeight,
-    thumbOffset,
     transcriptAwayFromBottom,
     transcriptContentRef,
     transcriptScrollRef,

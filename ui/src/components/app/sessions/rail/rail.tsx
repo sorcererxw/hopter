@@ -21,7 +21,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Button, Description, Modal, Tooltip } from "@heroui/react"
 
-import { ScrollbarIndicator } from "@/components/app/shared"
+import { SimplebarScrollArea } from "@/components/app/shared"
 import {
   UpdatePolicy,
   UpdateState,
@@ -36,10 +36,6 @@ import { SessionStatus } from "@/gen/proto/hopter/v1/common_pb"
 import { timestampToDate } from "@/lib/format/proto"
 import { useUnreadSessionIds } from "@/lib/session-unread"
 import { cn } from "@/lib/utils"
-import {
-  hiddenScrollbarClassName,
-  useAutoHideScrollbar,
-} from "@/components/app/shared"
 import { useWorkspaceShell } from "@/components/app/workspace"
 
 import { RailRow, type RailRowProps } from "./row"
@@ -199,16 +195,6 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
   const { pathname, search } = useLocation()
   const unreadSessionIds = useUnreadSessionIds()
   const railScrollRef = useRef<HTMLDivElement | null>(null)
-  const railListRef = useRef<HTMLUListElement | null>(null)
-  const {
-    handleScroll,
-    scrollbarScrollable,
-    scrollbarVisible,
-    thumbHeight,
-    thumbOffset,
-  } = useAutoHideScrollbar(railScrollRef, {
-    contentRef: railListRef,
-  })
   const {
     data: sessions,
     isError,
@@ -410,16 +396,12 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
       data-testid="session-rail"
     >
       <div className="relative min-h-0 flex-1">
-        <div
-          ref={railScrollRef}
-          className={cn(
-            hiddenScrollbarClassName,
-            "h-full overflow-y-auto px-2 py-1.5 font-medium"
-          )}
-          onScroll={handleScroll}
+        <SimplebarScrollArea
+          scrollableNodeRef={railScrollRef}
+          className="h-full"
+          contentClassName="px-2 py-1.5 font-medium"
         >
           <ul
-            ref={railListRef}
             data-rail-list="true"
             className="flex min-h-full flex-col gap-0.5"
           >
@@ -573,13 +555,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
               )
             })}
           </ul>
-        </div>
-        <ScrollbarIndicator
-          scrollable={scrollbarScrollable}
-          thumbHeight={thumbHeight}
-          thumbOffset={thumbOffset}
-          visible={scrollbarVisible}
-        />
+        </SimplebarScrollArea>
       </div>
       <Modal isOpen={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
         <Modal.Backdrop variant="opaque">
