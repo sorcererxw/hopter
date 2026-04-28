@@ -473,6 +473,35 @@ func TestEnsureAllocatedLeaseStoresRelayBaseURLFromAPI(t *testing.T) {
 	if updated.BrokerBaseURL != "https://deprecated-broker.example" {
 		t.Fatalf("deprecated broker base URL = %q", updated.BrokerBaseURL)
 	}
+	if updated.AuthUserID != "alice" {
+		t.Fatalf("auth user id = %q, want alice", updated.AuthUserID)
+	}
+}
+
+func TestEnsureAllocatedLeaseBackfillsAuthUserIDForStoredLease(t *testing.T) {
+	store := serverhttp.NewFileRelayAuthStore(t.TempDir() + "/relay-auth.json")
+	manager := NewSessionManager(app.Config{}, store, nil)
+
+	updated, err := manager.ensureAllocatedLease(context.Background(), serverhttp.RelayCredential{
+		WorkspaceSlug:     "alice",
+		RelayLeaseID:      "lease-1",
+		RelayLeaseVersion: 1,
+		OAuthAccessToken:  "oauth-access-token",
+	})
+	if err != nil {
+		t.Fatalf("ensure allocated lease: %v", err)
+	}
+	if updated.AuthUserID != "alice" {
+		t.Fatalf("auth user id = %q, want alice", updated.AuthUserID)
+	}
+
+	stored, err := store.Load()
+	if err != nil {
+		t.Fatalf("load stored credential: %v", err)
+	}
+	if stored.AuthUserID != "alice" {
+		t.Fatalf("stored auth user id = %q, want alice", stored.AuthUserID)
+	}
 }
 
 func signedPayload(t *testing.T) string {

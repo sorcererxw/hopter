@@ -33,6 +33,7 @@ type SessionManager struct {
 }
 
 type relayAllocationResponse struct {
+	AuthUserID             string   `json:"authUserId"`
 	LeaseID                string   `json:"leaseId"`
 	LeaseVersion           int      `json:"leaseVersion"`
 	WorkspaceSlug          string   `json:"workspaceSlug"`
@@ -189,7 +190,13 @@ func (m *SessionManager) ensureOAuthAccessToken(ctx context.Context, credential 
 
 func (m *SessionManager) ensureAllocatedLease(ctx context.Context, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
 	if strings.TrimSpace(credential.RelayLeaseID) != "" && credential.RelayLeaseVersion > 0 {
-		return credential, nil
+		updated := backfillRelayAuthUserID(credential)
+		if updated.AuthUserID != credential.AuthUserID {
+			if err := m.store.Store(updated); err != nil {
+				return updated, err
+			}
+		}
+		return updated, nil
 	}
 
 	body, err := json.Marshal(map[string]string{
@@ -230,6 +237,7 @@ func (m *SessionManager) ensureAllocatedLease(ctx context.Context, credential se
 
 	credential.RelayLeaseID = decoded.LeaseID
 	credential.RelayLeaseVersion = decoded.LeaseVersion
+	credential.AuthUserID = firstNonEmpty(decoded.AuthUserID, credential.AuthUserID, decoded.WorkspaceSlug, credential.WorkspaceSlug)
 	credential.WorkspaceSlug = firstNonEmpty(decoded.WorkspaceSlug, credential.WorkspaceSlug)
 	credential.WorkspaceURL = firstNonEmpty(decoded.WorkspaceURL, credential.WorkspaceURL)
 	credential.BrokerBaseURL = firstNonEmpty(decoded.BrokerBaseURL, credential.BrokerBaseURL)
@@ -239,6 +247,13 @@ func (m *SessionManager) ensureAllocatedLease(ctx context.Context, credential se
 		return credential, err
 	}
 	return credential, nil
+}
+
+func backfillRelayAuthUserID(credential serverhttp.RelayCredential) serverhttp.RelayCredential {
+	if strings.TrimSpace(credential.AuthUserID) == "" {
+		credential.AuthUserID = strings.TrimSpace(credential.WorkspaceSlug)
+	}
+	return credential
 }
 
 func (m *SessionManager) startSession(ctx context.Context, credential serverhttp.RelayCredential) (relaySessionResponse, error) {
