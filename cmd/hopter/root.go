@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -24,7 +22,7 @@ import (
 
 	"github.com/sorcererxw/hopter/internal/app"
 	serverhttp "github.com/sorcererxw/hopter/internal/http"
-	"github.com/sorcererxw/hopter/internal/relayconnector/cloudflaredrunner"
+	relayruntime "github.com/sorcererxw/hopter/internal/relay"
 )
 
 type serveOptions struct {
@@ -36,20 +34,20 @@ type serveOptions struct {
 }
 
 func newRootApp(version string, installSource string) *cli.App {
-	app := cli.NewApp()
-	app.Name = "hopter"
-	app.Usage = "Local control plane for coding agents"
-	app.HideVersion = true
-	app.Flags = serveFlags()
-	app.Action = func(c *cli.Context) error {
+	application := cli.NewApp()
+	application.Name = "hopter"
+	application.Usage = "Local control plane for coding agents"
+	application.HideVersion = true
+	application.Flags = serveFlags()
+	application.Action = func(c *cli.Context) error {
 		return runServe(version, installSource, serveOptionsFromContext(c), c.App.Writer)
 	}
-	app.Commands = []*cli.Command{
+	application.Commands = []*cli.Command{
 		newServeCmd(version, installSource),
 		newDoctorCmd(version, installSource),
 		newVersionCmd(version),
 	}
-	return app
+	return application
 }
 
 func newServeCmd(version string, installSource string) *cli.Command {
@@ -110,7 +108,7 @@ func runServe(version string, installSource string, opts serveOptions, out io.Wr
 		}
 	}
 
-	runtime, err := app.NewRuntime(cfg)
+	runtimeState, err := app.NewRuntime(cfg)
 	if err != nil {
 		slog.Error("bootstrap runtime", "error", err)
 		return err
@@ -123,17 +121,17 @@ func runServe(version string, installSource string, opts serveOptions, out io.Wr
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := runtime.Server.Shutdown(shutdownCtx); err != nil {
+		if err := runtimeState.Server.Shutdown(shutdownCtx); err != nil {
 			slog.Error("shutdown server", "error", err)
 		}
 	}()
 
 	slog.Info("hopter listening", "addr", cfg.HTTP.Addr(), "ui_mode", cfg.UI.Mode())
-	if err := maybeStartRelay(ctx, cfg, out); err != nil {
+	if err := maybeStartRelay(ctx, runtimeState, out); err != nil {
 		slog.Warn("relay startup incomplete", "error", err)
 	}
 	printServeReady(out, cfg)
-	if err := runtime.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := runtimeState.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("serve", "error", err)
 		return err
 	}
@@ -141,69 +139,24 @@ func runServe(version string, installSource string, opts serveOptions, out io.Wr
 }
 
 var openBrowser = openBrowserURL
-var lookPath = exec.LookPath
-var startCommand = func(ctx context.Context, name string, args ...string) error {
-	return exec.CommandContext(ctx, name, args...).Start()
-}
 var newRelayAuthStore = func(cfg app.Config) serverhttp.RelayAuthStore {
 	return serverhttp.NewConfiguredRelayAuthStore(cfg.Relay.AuthStore, cfg.Relay.AuthPath)
 }
-var relayConnector = relayConnectorRunner(managedRelayConnectorRunner{})
-
-type relayConnectorRunner interface {
-	Start(context.Context, app.Config, serverhttp.RelayCredential) error
-	CommandPreview(app.Config, serverhttp.RelayCredential) string
+var newRelaySessionManager = func(
+	cfg app.Config,
+	store serverhttp.RelayAuthStore,
+	verifier *serverhttp.RelayRequestVerifier,
+) relaySessionManager {
+	return relayruntime.NewSessionManager(cfg, store, verifier)
 }
 
-type externalRelayConnectorRunner struct{}
-
-type managedRelayConnectorRunner struct {
-	embedded cloudflaredrunner.Runner
-	external externalRelayConnectorRunner
+type relaySessionManager interface {
+	Run(context.Context, serverhttp.RelayCredential) error
+	Ready() <-chan struct{}
 }
 
-func (runner managedRelayConnectorRunner) Start(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
-	if useExternalRelayConnector(cfg) {
-		return runner.external.Start(ctx, cfg, credential)
-	}
-	return runner.embedded.Start(ctx, credential.ConnectorToken)
-}
-
-func (runner managedRelayConnectorRunner) CommandPreview(cfg app.Config, credential serverhttp.RelayCredential) string {
-	if useExternalRelayConnector(cfg) {
-		return runner.external.CommandPreview(cfg, credential)
-	}
-	return "embedded relay connector"
-}
-
-func useExternalRelayConnector(cfg app.Config) bool {
-	connectorBin := strings.TrimSpace(cfg.Relay.ConnectorBin)
-	if connectorBin == "" {
-		return false
-	}
-	return connectorBin != "cloudflared"
-}
-
-func (externalRelayConnectorRunner) Start(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) error {
-	command, args := relayConnectorCommand(cfg, credential)
-	if _, err := lookPath(command); err != nil {
-		slog.Debug("relay connector binary not found", "command", command, "error", err)
-		return fmt.Errorf("relay connector not found")
-	}
-	if err := startCommand(ctx, command, args...); err != nil {
-		slog.Debug("relay connector start failed", "command", command, "error", err)
-		return fmt.Errorf("start relay connector")
-	}
-	return nil
-}
-
-func (externalRelayConnectorRunner) CommandPreview(cfg app.Config, credential serverhttp.RelayCredential) string {
-	command, args := relayConnectorCommand(cfg, credential)
-	return strings.TrimSpace(command + " " + strings.Join(args, " "))
-}
-
-func maybeStartRelay(ctx context.Context, cfg app.Config, out io.Writer) error {
-	if !cfg.Relay.Enabled {
+func maybeStartRelay(ctx context.Context, runtimeState *app.Runtime, out io.Writer) error {
+	if !runtimeState.Config.Relay.Enabled {
 		return nil
 	}
 
@@ -211,19 +164,19 @@ func maybeStartRelay(ctx context.Context, cfg app.Config, out io.Writer) error {
 		fmt.Fprintf(out, "relay requested\n\n")
 	}
 
-	store := newRelayAuthStore(cfg)
+	store := newRelayAuthStore(runtimeState.Config)
 	if !store.Exists() {
-		loginURL := relayLoginURL(cfg)
+		loginURL := relayLoginURL(runtimeState.Config)
 		if out != nil {
 			fmt.Fprintf(out, "  Login required: %s\n", loginURL)
 			fmt.Fprintf(out, "  Waiting for browser login to complete, then relay will continue automatically.\n\n")
 		}
-		go waitForRelayAuthAndStart(ctx, cfg, store, out)
+		go waitForRelayAuthAndStart(ctx, runtimeState, store, out)
 		go openRelayLoginAfterServerStarts(ctx, loginURL)
 		return nil
 	}
 
-	return startRelayWithStoredAuth(ctx, cfg, store, out)
+	return startRelayWithStoredAuth(ctx, runtimeState, store, out)
 }
 
 func openRelayLoginAfterServerStarts(ctx context.Context, loginURL string) {
@@ -240,7 +193,7 @@ func openRelayLoginAfterServerStarts(ctx context.Context, loginURL string) {
 	}
 }
 
-func waitForRelayAuthAndStart(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, out io.Writer) {
+func waitForRelayAuthAndStart(ctx context.Context, runtimeState *app.Runtime, store serverhttp.RelayAuthStore, out io.Writer) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -252,7 +205,7 @@ func waitForRelayAuthAndStart(ctx context.Context, cfg app.Config, store serverh
 			if !store.Exists() {
 				continue
 			}
-			if err := startRelayWithStoredAuth(ctx, cfg, store, out); err != nil {
+			if err := startRelayWithStoredAuth(ctx, runtimeState, store, out); err != nil {
 				slog.Warn("relay startup after login failed", "error", err)
 				if out != nil {
 					fmt.Fprintf(out, "  Relay startup after login failed: %v\n\n", err)
@@ -263,346 +216,41 @@ func waitForRelayAuthAndStart(ctx context.Context, cfg app.Config, store serverh
 	}
 }
 
-func startRelayWithStoredAuth(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, out io.Writer) error {
+func startRelayWithStoredAuth(ctx context.Context, runtimeState *app.Runtime, store serverhttp.RelayAuthStore, out io.Writer) error {
 	credential, err := store.Load()
 	if err != nil {
 		return fmt.Errorf("read relay auth: %w", err)
 	}
 
-	if strings.TrimSpace(credential.ConnectorToken) == "" {
-		credential, err = prepareRelayConnectorCredential(ctx, cfg, store, credential)
-		if err != nil {
-			return err
+	manager := newRelaySessionManager(runtimeState.Config, store, runtimeState.RelayVerifier)
+	go func() {
+		if runErr := manager.Run(ctx, credential); runErr != nil && !errors.Is(runErr, context.Canceled) {
+			slog.Warn("relay session manager exited", "error", runErr)
 		}
-	}
+	}()
 
-	domain := strings.TrimSpace(cfg.Relay.Domain)
-	if domain == "" {
-		domain = strings.TrimPrefix(credential.WorkspaceURL, "https://")
-	}
-
-	if strings.TrimSpace(credential.ConnectorToken) == "" {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-manager.Ready():
 		if out != nil {
-			fmt.Fprintf(out, "  Relay connector is not ready yet; sign-in completed, but the hosted relay has not issued a connector token.\n")
-			if preview := relayConnector.CommandPreview(cfg, credential); preview != "" {
-				fmt.Fprintf(out, "  Connector command will be prepared automatically once auth is ready.\n")
+			domain := strings.TrimSpace(runtimeState.Config.Relay.Domain)
+			if domain == "" {
+				domain = strings.TrimPrefix(firstNonEmpty(credential.WorkspaceURL, credential.BrokerBaseURL, "https://my.hopter.dev"), "https://")
 			}
-			fmt.Fprintf(out, "\n")
+			fmt.Fprintf(out, "  Relay ready: https://%s\n\n", domain)
+		}
+		return nil
+	case <-time.After(15 * time.Second):
+		if out != nil {
+			fmt.Fprintf(out, "  Relay is still negotiating with the broker; continuing in degraded mode.\n\n")
 		}
 		return nil
 	}
-
-	if err := relayConnector.Start(ctx, cfg, credential); err != nil {
-		if out != nil && strings.Contains(err.Error(), "not found") {
-			fmt.Fprintf(out, "  Relay connector is not installed yet. Set HOPTER_RELAY_CONNECTOR_BIN to a connector binary.\n\n")
-		}
-		return err
-	}
-
-	if err := markRelayReady(ctx, cfg, store, credential); err != nil {
-		if out != nil {
-			fmt.Fprintf(out, "  Relay readiness check failed: %v\n\n", err)
-		}
-		return err
-	}
-
-	startRelayHeartbeat(ctx, cfg, store, credential)
-	startRelayReleaseOnShutdown(ctx, cfg, store, credential)
-
-	if out != nil {
-		fmt.Fprintf(out, "  Relay ready: https://%s\n\n", domain)
-	}
-	return nil
-}
-
-func prepareRelayConnectorCredential(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
-	if strings.TrimSpace(credential.OAuthAccessToken) == "" && strings.TrimSpace(credential.OAuthRefreshToken) == "" {
-		return credential, nil
-	}
-	if serverhttp.RelayOAuthTokenNeedsRefresh(credential, time.Now()) {
-		refreshed, err := serverhttp.RefreshRelayOAuthToken(ctx, relayHTTPOptions(cfg), credential)
-		if err != nil {
-			return credential, fmt.Errorf("refresh relay auth: %w", err)
-		}
-		credential = refreshed
-		if err := store.Store(credential); err != nil {
-			return credential, fmt.Errorf("store refreshed relay auth: %w", err)
-		}
-	}
-	allocated, err := allocateRelayTunnel(ctx, cfg, credential)
-	if err != nil {
-		return credential, err
-	}
-	if err := store.Store(allocated); err != nil {
-		return allocated, fmt.Errorf("store relay allocation: %w", err)
-	}
-	return allocated, nil
-}
-
-type relayAllocateResponse struct {
-	AuthUserID            string `json:"authUserId,omitempty"`
-	LeaseID               string `json:"leaseId,omitempty"`
-	LeaseVersion          int    `json:"leaseVersion,omitempty"`
-	WorkspaceSlug         string `json:"workspaceSlug,omitempty"`
-	WorkspaceURL          string `json:"workspaceURL,omitempty"`
-	BrokerBaseURL         string `json:"brokerBaseURL,omitempty"`
-	PrivateHostname       string `json:"privateHostname,omitempty"`
-	TunnelTarget          string `json:"tunnelTarget,omitempty"`
-	RelayToken            string `json:"relayToken,omitempty"`
-	BrokerSecret          string `json:"brokerSecret,omitempty"`
-	ConnectorProvider     string `json:"connectorProvider,omitempty"`
-	ConnectorToken        string `json:"connectorToken,omitempty"`
-	CloudflareTunnelToken string `json:"cloudflareTunnelToken,omitempty"`
-	TunnelToken           string `json:"tunnelToken,omitempty"`
-}
-
-func allocateRelayTunnel(ctx context.Context, cfg app.Config, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
-	allocateURL := strings.TrimSpace(cfg.Relay.AllocateURL)
-	if allocateURL == "" {
-		allocateURL = "https://api.hopter.dev/api/relay/allocate"
-	}
-	payload := map[string]string{}
-	if strings.TrimSpace(credential.WorkspaceSlug) != "" {
-		payload["workspaceSlug"] = credential.WorkspaceSlug
-	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return credential, err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, allocateURL, bytes.NewReader(body))
-	if err != nil {
-		return credential, err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Accept", "application/json")
-
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return credential, err
-	}
-	defer response.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		return credential, err
-	}
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return credential, fmt.Errorf("relay allocation returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
-	}
-
-	var decoded relayAllocateResponse
-	if err := json.Unmarshal(data, &decoded); err != nil {
-		return credential, err
-	}
-	connectorToken := firstNonEmpty(decoded.ConnectorToken, decoded.TunnelToken, decoded.CloudflareTunnelToken)
-	if strings.TrimSpace(connectorToken) == "" {
-		return credential, fmt.Errorf("relay allocation response missing connector token")
-	}
-
-	allocated := credential
-	allocated.AuthUserID = firstNonEmpty(decoded.AuthUserID, allocated.AuthUserID)
-	allocated.HostID = firstNonEmpty(allocated.HostID, cfg.HostID)
-	allocated.WorkspaceSlug = firstNonEmpty(decoded.WorkspaceSlug, allocated.WorkspaceSlug)
-	allocated.WorkspaceURL = firstNonEmpty(decoded.WorkspaceURL, allocated.WorkspaceURL)
-	allocated.BrokerBaseURL = firstNonEmpty(decoded.BrokerBaseURL, allocated.BrokerBaseURL)
-	allocated.TunnelTarget = firstNonEmpty(decoded.TunnelTarget, allocated.TunnelTarget)
-	allocated.PrivateHostname = firstNonEmpty(decoded.PrivateHostname, allocated.PrivateHostname)
-	allocated.RelayLeaseID = firstNonEmpty(decoded.LeaseID, allocated.RelayLeaseID)
-	if decoded.LeaseVersion > 0 {
-		allocated.RelayLeaseVersion = decoded.LeaseVersion
-	}
-	allocated.RelayToken = firstNonEmpty(decoded.RelayToken, allocated.RelayToken)
-	allocated.BrokerSecret = firstNonEmpty(decoded.BrokerSecret, allocated.BrokerSecret, cfg.Relay.BrokerSecret)
-	allocated.ConnectorProvider = firstNonEmpty(decoded.ConnectorProvider, "managed")
-	allocated.ConnectorToken = connectorToken
-	allocated.UpdatedAt = time.Now().UTC()
-	return allocated, nil
 }
 
 func relayTokenExists(path string) bool {
 	return serverhttp.NewFileRelayAuthStore(path).Exists()
-}
-
-func relayConnectorCommand(cfg app.Config, credential serverhttp.RelayCredential) (string, []string) {
-	command := firstNonEmpty(strings.TrimSpace(cfg.Relay.ConnectorBin), strings.TrimSpace(cfg.Relay.Cloudflared), "cloudflared")
-	token := credential.ConnectorToken
-	if token == "" {
-		token = "<relay-connector-token>"
-	}
-	return command, []string{"tunnel", "--no-autoupdate", "run", "--token", token}
-}
-
-func markRelayReady(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
-	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
-		return nil
-	}
-	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
-	if err != nil {
-		return err
-	}
-	credential = updated
-
-	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "ready")
-	if err != nil {
-		return err
-	}
-	payload, err := json.Marshal(map[string]int{
-		"leaseVersion": credential.RelayLeaseVersion,
-	})
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Accept", "application/json")
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
-	if err != nil {
-		return err
-	}
-	if response.StatusCode == http.StatusAccepted {
-		return nil
-	}
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("relay ready returned %d: %s", response.StatusCode, strings.TrimSpace(string(data)))
-	}
-	return nil
-}
-
-func startRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) {
-	interval := cfg.Relay.HeartbeatEvery
-	if interval <= 0 {
-		interval = 30 * time.Second
-	}
-
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if err := sendRelayHeartbeat(ctx, cfg, store, credential); err != nil {
-					slog.Warn("relay heartbeat failed", "error", err)
-				}
-			}
-		}
-	}()
-}
-
-func sendRelayHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
-	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
-		return nil
-	}
-
-	return sendRelayAPIHeartbeat(ctx, cfg, store, credential)
-}
-
-func sendRelayAPIHeartbeat(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
-	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
-	if err != nil {
-		return err
-	}
-	credential = updated
-
-	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "heartbeat")
-	if err != nil {
-		return err
-	}
-	payload, err := json.Marshal(map[string]int{
-		"leaseVersion": credential.RelayLeaseVersion,
-	})
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
-	request.Header.Set("Content-Type", "application/json")
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("relay heartbeat returned %d", response.StatusCode)
-	}
-	return nil
-}
-
-func startRelayReleaseOnShutdown(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) {
-	if strings.TrimSpace(credential.RelayLeaseID) == "" || credential.RelayLeaseVersion <= 0 {
-		return
-	}
-
-	go func() {
-		<-ctx.Done()
-		releaseCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := sendRelayAPIRelease(releaseCtx, cfg, store, credential); err != nil {
-			slog.Warn("relay release failed", "error", err)
-		}
-	}()
-}
-
-func sendRelayAPIRelease(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) error {
-	updated, err := ensureRelayOAuthAccessToken(ctx, cfg, store, credential)
-	if err != nil {
-		return err
-	}
-	credential = updated
-
-	endpoint, err := relayAPILeaseURL(cfg, credential.RelayLeaseID, "release")
-	if err != nil {
-		return err
-	}
-	payload, err := json.Marshal(map[string]int{
-		"leaseVersion": credential.RelayLeaseVersion,
-	})
-	if err != nil {
-		return err
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+credential.OAuthAccessToken)
-	request.Header.Set("Content-Type", "application/json")
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("relay release returned %d", response.StatusCode)
-	}
-	return nil
-}
-
-func ensureRelayOAuthAccessToken(ctx context.Context, cfg app.Config, store serverhttp.RelayAuthStore, credential serverhttp.RelayCredential) (serverhttp.RelayCredential, error) {
-	if !serverhttp.RelayOAuthTokenNeedsRefresh(credential, time.Now()) {
-		return credential, nil
-	}
-	refreshed, err := serverhttp.RefreshRelayOAuthToken(ctx, relayHTTPOptions(cfg), credential)
-	if err != nil {
-		return credential, fmt.Errorf("refresh relay auth: %w", err)
-	}
-	if err := store.Store(refreshed); err != nil {
-		return refreshed, fmt.Errorf("store refreshed relay auth: %w", err)
-	}
-	return refreshed, nil
 }
 
 func relayAPILeaseURL(cfg app.Config, leaseID string, action string) (string, error) {
@@ -662,8 +310,13 @@ func relayHTTPOptions(cfg app.Config) serverhttp.RelayOptions {
 		OAuthClientID:     cfg.Relay.OAuthClientID,
 		OAuthAudience:     cfg.Relay.OAuthAudience,
 		HostID:            cfg.HostID,
-		BrokerSecret:      cfg.Relay.BrokerSecret,
+		RequestVerifier:   runtimeRequestVerifier(nil),
+		RequestSigningKey: cfg.Relay.RequestSigningKey,
 	}
+}
+
+func runtimeRequestVerifier(verifier *serverhttp.RelayRequestVerifier) *serverhttp.RelayRequestVerifier {
+	return verifier
 }
 
 func urlWithFallback(raw string) (*url.URL, error) {

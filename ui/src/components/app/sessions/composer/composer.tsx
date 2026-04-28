@@ -16,7 +16,7 @@ import Placeholder from "@tiptap/extension-placeholder"
 import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import {
-  ArrowUp,
+  ArrowUp02Icon,
   Tick02,
   ChevronDown,
   LoaderCircle,
@@ -27,6 +27,7 @@ import {
 } from "@/components/icons/hugeicons"
 import {
   Button,
+  Card,
   Dropdown,
   Header,
   Label,
@@ -617,8 +618,8 @@ export function SessionComposer({
               />
             ) : null}
 
-            <div className="overflow-hidden rounded-2xl border border-border bg-overlay">
-              <div className="px-3 pt-3 pb-2">
+            <Card className="overflow-hidden rounded-2xl border border-border bg-overlay">
+              <Card.Content>
                 <div className="relative min-h-14">
                   <EditorContent
                     editor={editor}
@@ -770,7 +771,7 @@ export function SessionComposer({
                             ) : interruptMode ? (
                               <Square className="size-3.5 fill-current" />
                             ) : (
-                              <ArrowUp className="size-4" />
+                              <ArrowUp02Icon className="size-4" />
                             )}
                           </Button>
                         </span>
@@ -781,8 +782,8 @@ export function SessionComposer({
                     </Tooltip>
                   </div>
                 </div>
-              </div>
-            </div>
+              </Card.Content>
+            </Card>
           </div>
         </div>
       </div>

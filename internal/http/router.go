@@ -72,15 +72,17 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 }
 
 func relayBrokerGate(opts RelayOptions, next http.Handler) http.Handler {
-	secret := strings.TrimSpace(opts.BrokerSecret)
-	if secret == "" {
-		return next
-	}
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("x-hopter-broker") == "hopter-broker" &&
-			r.Header.Get("x-hopter-broker-secret") != secret {
-			http.Error(w, "invalid broker secret", http.StatusForbidden)
+		if opts.RequestVerifier == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if err := opts.RequestVerifier.VerifyRequest(r); err == nil {
+			next.ServeHTTP(w, WithVerifiedRelayRequest(r))
+			return
+		} else if err != errRelayRequestContextMissing {
+			http.Error(w, err.Error(), http.StatusForbidden)
 			return
 		}
 

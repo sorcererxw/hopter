@@ -9,7 +9,7 @@ import {
   Terminal,
 } from "@/components/icons/hugeicons"
 import { toast } from "sonner"
-import { Button } from "@heroui/react"
+import { Button, Dropdown } from "@heroui/react"
 
 import { cn } from "@/lib/utils"
 
@@ -61,7 +61,6 @@ export function WorkspaceTopbar({
 }: WorkspaceTopbarProps) {
   const { t } = useTranslation()
   const [commitOpen, setCommitOpen] = useState(false)
-  const [overflowOpen, setOverflowOpen] = useState(false)
   const [copiedItem, setCopiedItem] = useState<
     "resume-command" | null
   >(null)
@@ -76,20 +75,19 @@ export function WorkspaceTopbar({
   }, [])
 
   useEffect(() => {
-    if (!overflowOpen && !commitOpen) {
+    if (!commitOpen) {
       return undefined
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOverflowOpen(false)
         setCommitOpen(false)
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [overflowOpen, commitOpen])
+  }, [commitOpen])
 
   const handleCopy = useCallback(
     async (text: string, item: "resume-command") => {
@@ -97,7 +95,6 @@ export function WorkspaceTopbar({
         return
       }
 
-      setOverflowOpen(false)
       const copied = await writeClipboardText(text)
       if (!copied) {
         toast.error(t("topbar.copyFailed"))
@@ -116,6 +113,41 @@ export function WorkspaceTopbar({
   const sidebarLabel = inspectorOpen
     ? t("topbar.closeSidebar")
     : t("topbar.openSidebar")
+  const handleOverflowAction = useCallback(
+    (key: string) => {
+      switch (key) {
+        case "commit-all":
+          onCommit?.()
+          break
+        case "review":
+          onOpenReview?.()
+          break
+        case "commit-push":
+          onCommitAndPush?.()
+          break
+        case "terminal":
+          onOpenTerminal?.()
+          break
+        case "toggle-inspector":
+          onToggleInspector?.()
+          break
+        case "resume-command":
+          handleCopy(resumeCommand || "", "resume-command")
+          break
+        default:
+          break
+      }
+    },
+    [
+      handleCopy,
+      onCommit,
+      onOpenReview,
+      onCommitAndPush,
+      onOpenTerminal,
+      onToggleInspector,
+      resumeCommand,
+    ]
+  )
 
   const leadingButton =
     leadingAction === "back" ? (
@@ -153,93 +185,81 @@ export function WorkspaceTopbar({
           </div>
           <div className="flex items-center gap-1.5">
             {showOverflowMenu ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setOverflowOpen((prev) => !prev)}
-                  className="flex size-9 items-center justify-center rounded-lg text-foreground transition hover:bg-surface-tertiary"
-                >
-                  <MoreHorizontal className="size-4.5" />
-                </button>
-                {overflowOpen ? (
-                  <>
-                    <div
-                      aria-hidden="true"
-                      className="fixed inset-0 z-40"
-                      onClick={() => setOverflowOpen(false)}
-                    />
-                    <div className="absolute top-full right-0 z-50 mt-1 w-52 rounded-lg border border-border bg-overlay py-1 shadow-lg">
-                      {showCommit || showReview ? (
-                        <>
-                          {showCommit ? (
-                            <OverflowMenuItem
-                              onClick={() => {
-                                setOverflowOpen(false)
-                                onCommit?.()
-                              }}
-                            >
-                              {t("topbar.commitAll")}
-                            </OverflowMenuItem>
-                          ) : null}
-                          <OverflowMenuItem
-                            onClick={() => {
-                              setOverflowOpen(false)
-                              onOpenReview?.()
-                            }}
+              <Dropdown>
+                <Dropdown.Trigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    className="size-9 text-foreground"
+                  >
+                    <MoreHorizontal className="size-4.5" />
+                  </Button>
+                </Dropdown.Trigger>
+                <Dropdown.Popover className="w-52">
+                  <Dropdown.Menu
+                    selectionMode="none"
+                    onAction={(key) => handleOverflowAction(String(key))}
+                  >
+                    {showCommit || showReview ? (
+                      <>
+                        {showCommit ? (
+                          <Dropdown.Item
+                            key="commit-all"
+                            textValue={t("topbar.commitAll")}
                           >
-                            {t("topbar.review")}
-                          </OverflowMenuItem>
-                          {showCommit ? (
-                            <OverflowMenuItem
-                              onClick={() => {
-                                setOverflowOpen(false)
-                                onCommitAndPush?.()
-                              }}
-                            >
-                              {t("topbar.commitAllPush")}
-                            </OverflowMenuItem>
-                          ) : null}
-                          {showTerminal ? (
-                            <OverflowMenuItem
-                              icon={<Terminal className="size-3.5" />}
-                              onClick={() => {
-                                setOverflowOpen(false)
-                                onOpenTerminal?.()
-                              }}
-                            >
-                              {t("topbar.terminal")}
-                            </OverflowMenuItem>
-                          ) : null}
-                        </>
-                      ) : null}
-                      {showInspectorToggle ? (
-                        <OverflowMenuItem
-                          icon={<PanelRight className="size-3.5" />}
-                          onClick={() => {
-                            setOverflowOpen(false)
-                            onToggleInspector?.()
-                          }}
+                            {t("topbar.commitAll")}
+                          </Dropdown.Item>
+                        ) : null}
+                        <Dropdown.Item
+                          key="review"
+                          textValue={t("topbar.review")}
                         >
-                          {sidebarLabel}
-                        </OverflowMenuItem>
-                      ) : null}
-                      {resumeCommand ? (
-                        <OverflowMenuItem
-                          icon={<Terminal className="size-3.5" />}
-                          onClick={() =>
-                            handleCopy(resumeCommand, "resume-command")
-                          }
-                        >
-                          {copiedItem === "resume-command"
-                            ? t("topbar.codexCommandCopied")
-                            : t("topbar.resumeInCodex")}
-                        </OverflowMenuItem>
-                      ) : null}
-
-                    </div>
-                  </>
-                ) : null}
-              </div>
+                          {t("topbar.review")}
+                        </Dropdown.Item>
+                        {showCommit ? (
+                          <Dropdown.Item
+                            key="commit-push"
+                            textValue={t("topbar.commitAllPush")}
+                          >
+                            {t("topbar.commitAllPush")}
+                          </Dropdown.Item>
+                        ) : null}
+                        {showTerminal ? (
+                          <Dropdown.Item
+                            key="terminal"
+                            textValue={t("topbar.terminal")}
+                            startContent={<Terminal className="size-3.5" />}
+                          >
+                            {t("topbar.terminal")}
+                          </Dropdown.Item>
+                        ) : null}
+                      </>
+                    ) : null}
+                    {showInspectorToggle ? (
+                      <Dropdown.Item
+                        key="toggle-inspector"
+                        textValue={sidebarLabel}
+                        startContent={<PanelRight className="size-3.5" />}
+                      >
+                        {sidebarLabel}
+                      </Dropdown.Item>
+                    ) : null}
+                    {resumeCommand ? (
+                      <Dropdown.Item
+                        key="resume-command"
+                        textValue={t("topbar.resumeInCodex")}
+                        startContent={<Terminal className="size-3.5" />}
+                      >
+                        {copiedItem === "resume-command"
+                          ? t("topbar.codexCommandCopied")
+                          : t("topbar.resumeInCodex")}
+                      </Dropdown.Item>
+                    ) : null}
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             ) : null}
           </div>
         </>
@@ -252,39 +272,37 @@ export function WorkspaceTopbar({
               <span className="truncate text-muted">{projectName}</span>
             ) : null}
             {showOverflowMenu ? (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setOverflowOpen((prev) => !prev)}
-                  className="flex size-6 items-center justify-center rounded text-muted transition hover:bg-surface-tertiary hover:text-foreground"
-                >
-                  <MoreHorizontal className="size-4" />
-                </button>
-                {overflowOpen ? (
-                  <>
-                    <div
-                      aria-hidden="true"
-                      className="fixed inset-0 z-40"
-                      onClick={() => setOverflowOpen(false)}
-                    />
-                    <div className="absolute top-full left-0 z-50 mt-1 w-48 rounded-lg border border-border bg-overlay py-1 shadow-lg">
-                      {resumeCommand ? (
-                        <OverflowMenuItem
-                          icon={<Terminal className="size-3.5" />}
-                          onClick={() =>
-                            handleCopy(resumeCommand, "resume-command")
-                          }
-                        >
-                          {copiedItem === "resume-command"
-                            ? t("topbar.codexCommandCopied")
-                            : t("topbar.resumeInCodex")}
-                        </OverflowMenuItem>
-                      ) : null}
-
-                    </div>
-                  </>
-                ) : null}
-              </div>
+              <Dropdown>
+                <Dropdown.Trigger>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    isIconOnly
+                    className="size-6 text-muted"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </Dropdown.Trigger>
+                <Dropdown.Popover className="w-48">
+                  <Dropdown.Menu
+                    selectionMode="none"
+                    onAction={(key) => handleOverflowAction(String(key))}
+                  >
+                    {resumeCommand ? (
+                      <Dropdown.Item
+                        key="resume-command"
+                        textValue={t("topbar.resumeInCodex")}
+                        startContent={<Terminal className="size-3.5" />}
+                      >
+                        {copiedItem === "resume-command"
+                          ? t("topbar.codexCommandCopied")
+                          : t("topbar.resumeInCodex")}
+                      </Dropdown.Item>
+                    ) : null}
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown>
             ) : null}
           </div>
 
@@ -434,28 +452,6 @@ function TopbarLeadingButton({
       className="text-foreground"
     >
       {icon}
-    </Button>
-  )
-}
-
-function OverflowMenuItem({
-  children,
-  icon,
-  onClick,
-}: {
-  children: ReactNode
-  icon?: ReactNode
-  onClick: () => void
-}) {
-  return (
-    <Button
-      type="button"
-      onPress={onClick}
-      variant="ghost"
-      className="flex h-auto w-full items-center justify-start gap-2.5 rounded-none px-3 py-2.5 text-foreground"
-    >
-      {icon ?? <span className="size-3.5" />}
-      <span>{children}</span>
     </Button>
   )
 }

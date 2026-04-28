@@ -76,6 +76,11 @@ func registerAuthHandlers(mux *http.ServeMux, terminals TerminalTabTerminator) {
 
 func authGate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if IsVerifiedRelayRequest(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if isLoggedOut(r) {
 			writeJSON(w, http.StatusUnauthorized, map[string]any{
 				"ok": false,

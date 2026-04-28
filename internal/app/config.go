@@ -79,10 +79,8 @@ type RelayConfig struct {
 	Domain            string
 	AuthPath          string
 	AuthStore         string
-	ConnectorBin      string
 	TokenPath         string
-	Cloudflared       string
-	BrokerSecret      string
+	RequestSigningKey string
 	HeartbeatEvery    time.Duration
 }
 
@@ -121,12 +119,10 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 		Domain:            strings.TrimSpace(os.Getenv("HOPTER_RELAY_DOMAIN")),
 		AuthPath:          defaultRelayAuthPath(),
 		AuthStore:         firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_STORE")), "keyring"),
-		ConnectorBin:      firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_CONNECTOR_BIN")), strings.TrimSpace(os.Getenv("HOPTER_CLOUDFLARED_BIN")), "cloudflared"),
-		BrokerSecret:      strings.TrimSpace(os.Getenv("HOPTER_RELAY_BROKER_SECRET")),
+		RequestSigningKey: strings.TrimSpace(firstNonEmpty(os.Getenv("HOPTER_RELAY_REQUEST_SIGNING_KEY"), os.Getenv("HOPTER_RELAY_BROKER_SECRET"))),
 		HeartbeatEvery:    30 * time.Second,
 	}
 	cfg.Relay.TokenPath = cfg.Relay.AuthPath
-	cfg.Relay.Cloudflared = cfg.Relay.ConnectorBin
 
 	if opts.Port != 0 {
 		cfg.HTTP.Port = opts.Port

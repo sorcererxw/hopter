@@ -129,7 +129,7 @@ func TestRelayCallbackExchangesOAuthCodeAndStoresRefreshToken(t *testing.T) {
 	if stored.OAuthRefreshToken != "refresh-token" {
 		t.Fatalf("refresh token = %q", stored.OAuthRefreshToken)
 	}
-	if stored.RelayToken != "" || stored.ConnectorToken != "" {
+	if stored.RelayToken != "" || stored.SessionToken != "" {
 		t.Fatalf("oauth callback should not allocate relay token yet: %+v", stored)
 	}
 	if stored.OAuthAccessTokenExpiresAt.IsZero() {
@@ -225,8 +225,8 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 	if stored.RelayToken != "relay-token" {
 		t.Fatalf("stored relay token = %q, want relay-token", stored.RelayToken)
 	}
-	if stored.ConnectorToken != "connector-token" {
-		t.Fatalf("stored connector token = %q, want connector-token", stored.ConnectorToken)
+	if stored.SessionToken != "connector-token" {
+		t.Fatalf("stored session token = %q, want connector-token", stored.SessionToken)
 	}
 	if stored.TunnelTarget != "https://host_local.hosts.hopter.run" {
 		t.Fatalf("stored tunnel target = %q", stored.TunnelTarget)
@@ -258,7 +258,7 @@ func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 	handler := NewRelayCallbackHandler(RelayOptions{
 		AuthPath:     authPath,
 		HostID:       "host_local",
-		BrokerSecret: "configured-secret",
+		RequestSigningKey: "configured-secret",
 	})
 	request := httptest.NewRequest(
 		http.MethodGet,
@@ -279,8 +279,8 @@ func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 	if stored.RelayToken != "relay-token" {
 		t.Fatalf("stored relay token = %q, want relay-token", stored.RelayToken)
 	}
-	if stored.BrokerSecret != "configured-secret" {
-		t.Fatalf("stored broker secret = %q, want configured-secret", stored.BrokerSecret)
+	if stored.RequestSigningKey != "configured-secret" {
+		t.Fatalf("stored request signing key = %q, want configured-secret", stored.RequestSigningKey)
 	}
 }
 
@@ -317,8 +317,8 @@ func TestRelayCallbackAcceptsLegacyProviderTokenNameWithoutPersistingIt(t *testi
 	if err != nil {
 		t.Fatalf("load auth: %v", err)
 	}
-	if stored.ConnectorToken != "legacy-token" {
-		t.Fatalf("stored connector token = %q, want legacy-token", stored.ConnectorToken)
+	if stored.SessionToken != "legacy-token" {
+		t.Fatalf("stored session token = %q, want legacy-token", stored.SessionToken)
 	}
 	data, err := os.ReadFile(authPath)
 	if err != nil {
@@ -358,9 +358,9 @@ func TestFileRelayAuthStoreDoesNotCacheOnWriteFailure(t *testing.T) {
 	store := NewFileRelayAuthStore(path)
 
 	err := store.Store(RelayCredential{
-		RelayToken:     "relay-token",
-		ConnectorToken: "connector-token",
-		ExpiresAt:      time.Now().Add(time.Hour),
+		RelayToken:   "relay-token",
+		SessionToken: "connector-token",
+		ExpiresAt:    time.Now().Add(time.Hour),
 	})
 	if err == nil {
 		t.Fatal("expected store to fail when path is a directory")
@@ -375,9 +375,9 @@ func TestFileRelayAuthStoreResetClearsPersistedAndInMemoryCredential(t *testing.
 	store := NewFileRelayAuthStore(authPath)
 
 	if err := store.Store(RelayCredential{
-		RelayToken:     "relay-token",
-		ConnectorToken: "connector-token",
-		ExpiresAt:      time.Now().Add(time.Hour),
+		RelayToken:   "relay-token",
+		SessionToken: "connector-token",
+		ExpiresAt:    time.Now().Add(time.Hour),
 	}); err != nil {
 		t.Fatalf("store auth: %v", err)
 	}

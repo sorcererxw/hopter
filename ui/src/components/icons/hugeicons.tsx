@@ -5,6 +5,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ArrowUp01Icon,
+  ArrowUp02Icon as HugeArrowUp02Icon,
   AttachmentIcon as HugeAttachmentIcon,
   Cancel01Icon,
   CheckListIcon,
@@ -116,6 +117,7 @@ export const PanelRightOpen = createHugeIcon(PanelRightOpenIcon)
 export const GitBranch = createHugeIcon(GitBranchIcon)
 export const RotateCcw = createHugeIcon(RotateLeft01Icon)
 export const ArrowUp = createHugeIcon(ArrowUp01Icon)
+export const ArrowUp02Icon = createHugeIcon(HugeArrowUp02Icon)
 export const Paperclip = createHugeIcon(HugeAttachmentIcon)
 export const AttachmentIcon = createHugeIcon(HugeAttachmentIcon)
 export const QuillWrite02Icon = createHugeIcon(HugeQuillWrite02Icon)

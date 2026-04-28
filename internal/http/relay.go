@@ -32,7 +32,8 @@ type RelayOptions struct {
 	OAuthClientID     string
 	OAuthAudience     string
 	HostID            string
-	BrokerSecret      string
+	RequestVerifier   *RelayRequestVerifier
+	RequestSigningKey string
 }
 
 type RelayCredential struct {
@@ -45,10 +46,11 @@ type RelayCredential struct {
 	PrivateHostname           string    `json:"private_hostname,omitempty"`
 	RelayLeaseID              string    `json:"relay_lease_id,omitempty"`
 	RelayLeaseVersion         int       `json:"relay_lease_version,omitempty"`
+	RelayRouteGeneration      int       `json:"relay_route_generation,omitempty"`
+	RelaySessionID            string    `json:"relay_session_id,omitempty"`
 	RelayToken                string    `json:"relay_token,omitempty"`
-	BrokerSecret              string    `json:"broker_secret,omitempty"`
-	ConnectorProvider         string    `json:"connector_provider,omitempty"`
-	ConnectorToken            string    `json:"connector_token,omitempty"`
+	RequestSigningKey         string    `json:"request_signing_key,omitempty"`
+	SessionToken              string    `json:"session_token,omitempty"`
 	OAuthAccessToken          string    `json:"oauth_access_token,omitempty"`
 	OAuthRefreshToken         string    `json:"oauth_refresh_token,omitempty"`
 	OAuthTokenType            string    `json:"oauth_token_type,omitempty"`
@@ -69,7 +71,10 @@ type relayExchangeResponse struct {
 	BrokerBaseURL         string           `json:"brokerBaseURL,omitempty"`
 	TunnelTarget          string           `json:"tunnelTarget,omitempty"`
 	RelayToken            string           `json:"relayToken,omitempty"`
-	BrokerSecret          string           `json:"brokerSecret,omitempty"`
+	RequestSigningKey     string           `json:"requestSigningKey,omitempty"`
+	SessionToken          string           `json:"sessionToken,omitempty"`
+	RouteGeneration       int              `json:"routeGeneration,omitempty"`
+	SessionID             string           `json:"sessionId,omitempty"`
 	ConnectorProvider     string           `json:"connectorProvider,omitempty"`
 	ConnectorToken        string           `json:"connectorToken,omitempty"`
 	CloudflareTunnelToken string           `json:"cloudflareTunnelToken,omitempty"`
@@ -104,8 +109,8 @@ type relayAuthPayload struct {
 
 func (p relayAuthPayload) credential() RelayCredential {
 	credential := p.RelayCredential
-	if credential.ConnectorToken == "" {
-		credential.ConnectorToken = p.CloudflareTunnelToken
+	if credential.SessionToken == "" {
+		credential.SessionToken = p.CloudflareTunnelToken
 	}
 	return credential
 }
@@ -213,7 +218,7 @@ func exchangeRelayOAuthCode(ctx context.Context, opts RelayOptions, state string
 
 	return RelayCredential{
 		HostID:                    opts.HostID,
-		BrokerSecret:              opts.BrokerSecret,
+		RequestSigningKey:         opts.RequestSigningKey,
 		OAuthAccessToken:          token.AccessToken,
 		OAuthRefreshToken:         token.RefreshToken,
 		OAuthTokenType:            firstNonEmpty(token.TokenType, "Bearer"),
@@ -365,9 +370,10 @@ func exchangeRelayCode(ctx context.Context, opts RelayOptions, code string) (Rel
 			BrokerBaseURL:     decoded.BrokerBaseURL,
 			TunnelTarget:      decoded.TunnelTarget,
 			RelayToken:        decoded.RelayToken,
-			BrokerSecret:      decoded.BrokerSecret,
-			ConnectorProvider: decoded.ConnectorProvider,
-			ConnectorToken:    firstNonEmpty(decoded.ConnectorToken, decoded.CloudflareTunnelToken),
+			RequestSigningKey: decoded.RequestSigningKey,
+			SessionToken:      firstNonEmpty(decoded.SessionToken, decoded.ConnectorToken, decoded.CloudflareTunnelToken),
+			RelayRouteGeneration: decoded.RouteGeneration,
+			RelaySessionID:    decoded.SessionID,
 			ExpiresAt:         decoded.ExpiresAt,
 		}), nil
 	}
@@ -398,9 +404,8 @@ func relayCredentialFromCallback(r *http.Request) (RelayCredential, error) {
 		BrokerBaseURL:     strings.TrimSpace(firstNonEmpty(query.Get("brokerBaseURL"), query.Get("broker_base_url"))),
 		TunnelTarget:      strings.TrimSpace(firstNonEmpty(query.Get("tunnelTarget"), query.Get("tunnel_target"))),
 		RelayToken:        relayToken,
-		BrokerSecret:      strings.TrimSpace(firstNonEmpty(query.Get("brokerSecret"), query.Get("broker_secret"))),
-		ConnectorProvider: strings.TrimSpace(firstNonEmpty(query.Get("connectorProvider"), query.Get("connector_provider"))),
-		ConnectorToken:    strings.TrimSpace(firstNonEmpty(query.Get("connectorToken"), query.Get("connector_token"), query.Get("cloudflareTunnelToken"), query.Get("cloudflare_tunnel_token"))),
+		RequestSigningKey: strings.TrimSpace(firstNonEmpty(query.Get("requestSigningKey"), query.Get("request_signing_key"), query.Get("brokerSecret"), query.Get("broker_secret"))),
+		SessionToken:      strings.TrimSpace(firstNonEmpty(query.Get("sessionToken"), query.Get("session_token"), query.Get("connectorToken"), query.Get("connector_token"), query.Get("cloudflareTunnelToken"), query.Get("cloudflare_tunnel_token"))),
 		ExpiresAt:         expiresAt,
 	}, nil
 }
@@ -409,14 +414,11 @@ func normalizeRelayCredential(opts RelayOptions, credential RelayCredential) Rel
 	if credential.HostID == "" {
 		credential.HostID = opts.HostID
 	}
-	if credential.BrokerSecret == "" {
-		credential.BrokerSecret = opts.BrokerSecret
+	if credential.RequestSigningKey == "" {
+		credential.RequestSigningKey = opts.RequestSigningKey
 	}
 	if credential.BrokerBaseURL == "" {
 		credential.BrokerBaseURL = credential.WorkspaceURL
-	}
-	if credential.ConnectorToken != "" && credential.ConnectorProvider == "" {
-		credential.ConnectorProvider = "managed"
 	}
 	return credential
 }
@@ -636,8 +638,10 @@ func decodeRelayAuth(data []byte) (RelayCredential, error) {
 
 func marshalPersistedRelayAuth(payload RelayCredential) ([]byte, error) {
 	persisted := payload
-	persisted.ConnectorToken = ""
-	persisted.ConnectorProvider = ""
+	persisted.SessionToken = ""
+	persisted.RequestSigningKey = ""
+	persisted.RelayRouteGeneration = 0
+	persisted.RelaySessionID = ""
 	data, err := json.MarshalIndent(persisted, "", "  ")
 	if err != nil {
 		return nil, err
@@ -663,7 +667,7 @@ func relayAuthFileExists(path string) bool {
 
 func relayAuthUsable(credential RelayCredential, now time.Time) bool {
 	hasCredential := strings.TrimSpace(credential.RelayToken) != "" ||
-		strings.TrimSpace(credential.ConnectorToken) != "" ||
+		strings.TrimSpace(credential.SessionToken) != "" ||
 		strings.TrimSpace(credential.OAuthAccessToken) != "" ||
 		strings.TrimSpace(credential.OAuthRefreshToken) != ""
 	if !hasCredential {

@@ -29,7 +29,7 @@ export function SimplebarScrollArea({
     <SimpleBar
       autoHide
       forceVisible={forceVisible}
-      className={cn("hopter-simplebar", className)}
+      className={cn("h-full", className)}
       scrollableNodeProps={{
         ref: scrollableNodeRef,
         onScroll,

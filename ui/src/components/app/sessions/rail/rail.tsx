@@ -11,7 +11,6 @@ import {
   Copy,
   Folder,
   FolderOpen,
-  TaskDone01Icon,
   LoaderCircle,
   Settings,
   QuillWrite02Icon,
@@ -350,20 +349,6 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
         className: isNewChatActive
           ? cn(railNavRowClass, railActiveNavClass)
           : railNavRowClass,
-      },
-    },
-    {
-      key: "tasks",
-      kind: "row",
-      props: {
-        icon: <TaskDone01Icon className="size-4" />,
-        hoverable: true,
-        label: t("nav.tasks"),
-        onClick: onNavigate,
-        to: "/tasks",
-        className: railNavRowClass,
-        activeClassName: railActiveNavClass,
-        nav: true,
       },
     },
     {

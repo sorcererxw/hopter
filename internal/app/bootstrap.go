@@ -22,11 +22,13 @@ type Runtime struct {
 	Config    Config
 	EventHub  *events.Hub
 	Workspace core.WorkspaceService
+	RelayVerifier *serverhttp.RelayRequestVerifier
 	Server    *http.Server
 }
 
 func NewRuntime(cfg Config) (*Runtime, error) {
 	eventHub := events.NewHub()
+	relayVerifier := serverhttp.NewRelayRequestVerifier()
 	workspace := core.NewInMemoryWorkspace(cfg.HostID, eventHub)
 	configService, err := userconfig.NewService("", eventHub)
 	if err != nil {
@@ -68,7 +70,8 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 			OAuthClientID:     cfg.Relay.OAuthClientID,
 			OAuthAudience:     cfg.Relay.OAuthAudience,
 			HostID:            cfg.HostID,
-			BrokerSecret:      cfg.Relay.BrokerSecret,
+			RequestVerifier:   relayVerifier,
+			RequestSigningKey: cfg.Relay.RequestSigningKey,
 		},
 	})
 	if err != nil {
@@ -91,9 +94,10 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 	codexManager.StartSessionListMonitor(backgroundCtx, 0, 0)
 
 	return &Runtime{
-		Config:    cfg,
-		EventHub:  eventHub,
-		Workspace: workspace,
-		Server:    server,
+		Config:        cfg,
+		EventHub:      eventHub,
+		Workspace:     workspace,
+		RelayVerifier: relayVerifier,
+		Server:        server,
 	}, nil
 }
