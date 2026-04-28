@@ -230,33 +230,39 @@ export function WorkspaceTopbar({
                           <Dropdown.Item
                             key="terminal"
                             textValue={t("topbar.terminal")}
-                            startContent={<Terminal className="size-3.5" />}
                           >
-                            {t("topbar.terminal")}
+                            <span className="flex items-center gap-1.5">
+                              <Terminal className="size-3.5" />
+                              {t("topbar.terminal")}
+                            </span>
                           </Dropdown.Item>
                         ) : null}
                       </>
                     ) : null}
                     {showInspectorToggle ? (
-                      <Dropdown.Item
-                        key="toggle-inspector"
-                        textValue={sidebarLabel}
-                        startContent={<PanelRight className="size-3.5" />}
-                      >
-                        {sidebarLabel}
-                      </Dropdown.Item>
+                        <Dropdown.Item
+                          key="toggle-inspector"
+                          textValue={sidebarLabel}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <PanelRight className="size-3.5" />
+                            {sidebarLabel}
+                          </span>
+                        </Dropdown.Item>
                     ) : null}
-                    {resumeCommand ? (
-                      <Dropdown.Item
-                        key="resume-command"
-                        textValue={t("topbar.resumeInCodex")}
-                        startContent={<Terminal className="size-3.5" />}
-                      >
-                        {copiedItem === "resume-command"
-                          ? t("topbar.codexCommandCopied")
-                          : t("topbar.resumeInCodex")}
-                      </Dropdown.Item>
-                    ) : null}
+                        {resumeCommand ? (
+                          <Dropdown.Item
+                            key="resume-command"
+                            textValue={t("topbar.resumeInCodex")}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Terminal className="size-3.5" />
+                              {copiedItem === "resume-command"
+                                ? t("topbar.codexCommandCopied")
+                                : t("topbar.resumeInCodex")}
+                            </span>
+                          </Dropdown.Item>
+                        ) : null}
                   </Dropdown.Menu>
                 </Dropdown.Popover>
               </Dropdown>
@@ -293,11 +299,13 @@ export function WorkspaceTopbar({
                       <Dropdown.Item
                         key="resume-command"
                         textValue={t("topbar.resumeInCodex")}
-                        startContent={<Terminal className="size-3.5" />}
                       >
-                        {copiedItem === "resume-command"
-                          ? t("topbar.codexCommandCopied")
-                          : t("topbar.resumeInCodex")}
+                        <span className="flex items-center gap-1.5">
+                          <Terminal className="size-3.5" />
+                          {copiedItem === "resume-command"
+                            ? t("topbar.codexCommandCopied")
+                            : t("topbar.resumeInCodex")}
+                        </span>
                       </Dropdown.Item>
                     ) : null}
                   </Dropdown.Menu>
