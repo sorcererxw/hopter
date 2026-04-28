@@ -158,6 +158,7 @@ func NewRelayCallbackHandler(opts RelayOptions) http.Handler {
 			return
 		}
 
+		w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
 		http.Redirect(w, r, relayCallbackUIURL(credential.WorkspaceURL), http.StatusSeeOther)
 	})
 }

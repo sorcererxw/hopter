@@ -78,6 +78,7 @@ export default defineConfig({
           /^\/events$/,
           /^\/healthz$/,
           /^\/readyz$/,
+          /^\/relay\/callback$/,
         ],
       },
       devOptions: {

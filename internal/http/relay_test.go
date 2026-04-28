@@ -333,6 +333,9 @@ func assertRelayCallbackRedirect(t *testing.T, recorder *httptest.ResponseRecord
 	if recorder.Code != http.StatusSeeOther {
 		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusSeeOther, recorder.Body.String())
 	}
+	if got := recorder.Header().Get("Clear-Site-Data"); got != `"cache", "storage"` {
+		t.Fatalf("Clear-Site-Data = %q, want cache and storage clear", got)
+	}
 	location := recorder.Header().Get("Location")
 	parsed, err := url.Parse(location)
 	if err != nil {

@@ -7,34 +7,39 @@ import "./index.css"
 import App from "./App"
 
 const rootElement = document.getElementById("root")
-const isRelayCallbackNavigation =
+const isRelayCallbackAPINavigation =
   window.location.pathname === "/api/relay/callback"
+const isRelayCallbackUIRoute = window.location.pathname === "/relay/callback"
+const shouldBypassRelayCallbackServiceWorker =
+  isRelayCallbackAPINavigation || isRelayCallbackUIRoute
+let didScheduleRelayCallbackReload = false
 
 if (!rootElement) {
   throw new Error("Root element #root was not found")
 }
 
-if (isRelayCallbackNavigation) {
-  if ("serviceWorker" in navigator) {
-    const bypassKey = "hopter:relay-callback-sw-bypass-url"
-    const currentURL = window.location.href
+if (shouldBypassRelayCallbackServiceWorker && "serviceWorker" in navigator) {
+  const bypassKey = "hopter:relay-callback-sw-bypass-url"
+  const currentURL = window.location.href
 
-    if (window.sessionStorage.getItem(bypassKey) !== currentURL) {
-      window.sessionStorage.setItem(bypassKey, currentURL)
-      void navigator.serviceWorker
-        .getRegistrations()
-        .then((registrations) =>
-          Promise.all(
-            registrations.map((registration) => registration.unregister())
-          )
+  if (window.sessionStorage.getItem(bypassKey) !== currentURL) {
+    window.sessionStorage.setItem(bypassKey, currentURL)
+    didScheduleRelayCallbackReload = true
+    void navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) =>
+        Promise.all(
+          registrations.map((registration) => registration.unregister())
         )
-        .finally(() => {
-          window.location.replace(currentURL)
-        })
-    }
+      )
+      .finally(() => {
+        window.location.replace(currentURL)
+      })
   }
-} else {
-  if ("serviceWorker" in navigator) {
+}
+
+if (!isRelayCallbackAPINavigation && !didScheduleRelayCallbackReload) {
+  if ("serviceWorker" in navigator && !isRelayCallbackUIRoute) {
     registerSW({
       immediate: true,
       onRegisterError(error) {
