@@ -116,9 +116,7 @@ func TestRelayCallbackExchangesOAuthCodeAndStoresRefreshToken(t *testing.T) {
 
 	handler.ServeHTTP(recorder, request)
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
-	}
+	assertRelayCallbackRedirect(t, recorder, "")
 	stored, err := NewFileRelayAuthStore(authPath).Load()
 	if err != nil {
 		t.Fatalf("load auth: %v", err)
@@ -191,6 +189,7 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 			"workspaceSlug": "alice",
 			"workspaceURL": "https://alice.hopter.dev",
 			"brokerBaseURL": "https://alice.hopter.dev",
+			"relayBaseURL": "https://api.hopter.dev",
 			"tunnelTarget": "https://host_local.hosts.hopter.run",
 			"relayToken": "relay-token",
 			"brokerSecret": "broker-secret",
@@ -210,12 +209,7 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 
 	handler.ServeHTTP(recorder, request)
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
-	}
-	if !strings.Contains(recorder.Body.String(), "Relay login received") {
-		t.Fatalf("response did not include success page:\n%s", recorder.Body.String())
-	}
+	assertRelayCallbackRedirect(t, recorder, "https://alice.hopter.dev")
 
 	store := NewFileRelayAuthStore(authPath)
 	stored, err := store.Load()
@@ -230,6 +224,9 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 	}
 	if stored.TunnelTarget != "https://host_local.hosts.hopter.run" {
 		t.Fatalf("stored tunnel target = %q", stored.TunnelTarget)
+	}
+	if stored.RelayBaseURL != "https://api.hopter.dev" {
+		t.Fatalf("stored relay base URL = %q", stored.RelayBaseURL)
 	}
 	if stored.UpdatedAt.IsZero() {
 		t.Fatal("stored token missing UpdatedAt")
@@ -256,22 +253,20 @@ func TestRelayCallbackExchangesCodeAndStoresCredential(t *testing.T) {
 func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 	authPath := filepath.Join(t.TempDir(), "relay", "auth.json")
 	handler := NewRelayCallbackHandler(RelayOptions{
-		AuthPath:     authPath,
-		HostID:       "host_local",
+		AuthPath:          authPath,
+		HostID:            "host_local",
 		RequestSigningKey: "configured-secret",
 	})
 	request := httptest.NewRequest(
 		http.MethodGet,
-		"/api/relay/callback?relayToken=relay-token&hostId=host_local&workspaceSlug=alice&workspaceURL=https%3A%2F%2Falice.hopter.dev&expiresAt=2026-05-01T00%3A00%3A00Z",
+		"/api/relay/callback?relayToken=relay-token&hostId=host_local&workspaceSlug=alice&workspaceURL=https%3A%2F%2Falice.hopter.dev&relay_base_url=https%3A%2F%2Fapi.hopter.dev&expiresAt=2026-05-01T00%3A00%3A00Z",
 		nil,
 	)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, request)
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
-	}
+	assertRelayCallbackRedirect(t, recorder, "https://alice.hopter.dev")
 	stored, err := NewFileRelayAuthStore(authPath).Load()
 	if err != nil {
 		t.Fatalf("load auth: %v", err)
@@ -281,6 +276,9 @@ func TestRelayCallbackStoresCredentialFromQuery(t *testing.T) {
 	}
 	if stored.RequestSigningKey != "configured-secret" {
 		t.Fatalf("stored request signing key = %q, want configured-secret", stored.RequestSigningKey)
+	}
+	if stored.RelayBaseURL != "https://api.hopter.dev" {
+		t.Fatalf("stored relay base URL = %q", stored.RelayBaseURL)
 	}
 }
 
@@ -310,9 +308,7 @@ func TestRelayCallbackAcceptsLegacyProviderTokenNameWithoutPersistingIt(t *testi
 
 	handler.ServeHTTP(recorder, request)
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
-	}
+	assertRelayCallbackRedirect(t, recorder, "https://alice.hopter.dev")
 	stored, err := NewFileRelayAuthStore(authPath).Load()
 	if err != nil {
 		t.Fatalf("load auth: %v", err)
@@ -329,6 +325,27 @@ func TestRelayCallbackAcceptsLegacyProviderTokenNameWithoutPersistingIt(t *testi
 	}
 	if strings.Contains(string(data), "legacy-token") {
 		t.Fatalf("connector token should only be kept in process memory:\n%s", string(data))
+	}
+}
+
+func assertRelayCallbackRedirect(t *testing.T, recorder *httptest.ResponseRecorder, workspaceURL string) {
+	t.Helper()
+	if recorder.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusSeeOther, recorder.Body.String())
+	}
+	location := recorder.Header().Get("Location")
+	parsed, err := url.Parse(location)
+	if err != nil {
+		t.Fatalf("parse redirect location %q: %v", location, err)
+	}
+	if parsed.Path != "/relay/callback" {
+		t.Fatalf("redirect path = %q, want /relay/callback", parsed.Path)
+	}
+	if parsed.Query().Get("status") != "connected" {
+		t.Fatalf("redirect status = %q, want connected", parsed.Query().Get("status"))
+	}
+	if got := parsed.Query().Get("workspaceURL"); got != workspaceURL {
+		t.Fatalf("redirect workspaceURL = %q, want %q", got, workspaceURL)
 	}
 }
 

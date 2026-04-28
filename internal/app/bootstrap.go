@@ -19,11 +19,11 @@ import (
 )
 
 type Runtime struct {
-	Config    Config
-	EventHub  *events.Hub
-	Workspace core.WorkspaceService
+	Config        Config
+	EventHub      *events.Hub
+	Workspace     core.WorkspaceService
 	RelayVerifier *serverhttp.RelayRequestVerifier
-	Server    *http.Server
+	Server        *http.Server
 }
 
 func NewRuntime(cfg Config) (*Runtime, error) {
@@ -41,11 +41,13 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		return nil, err
 	}
 	codexManager := codex.NewManager(workspace, eventHub)
-	agentManager := agents.NewManager(workspace, map[string]agents.Runtime{
-		agents.DefaultBackendKey: codex.NewRuntime(codexManager),
+	codexRuntime := codex.NewRuntime(codexManager)
+	agentManager := agents.NewManager(workspace, map[string]agents.AgentRuntime{
+		agents.DefaultAgentKey: codexRuntime,
 	})
 	terminalManager := terminal.NewManagerWithResolver(workspace, agentManager)
 	sessionReadModel := codex.NewSessionReadModel(workspace, codexManager, agentManager)
+	codexRuntime.SetSessionReader(sessionReadModel)
 
 	router, err := serverhttp.NewRouter(serverhttp.RouterOptions{
 		Version:                cfg.Version,
@@ -53,9 +55,9 @@ func NewRuntime(cfg Config) (*Runtime, error) {
 		EventHub:               eventHub,
 		ConfigServiceHandler:   rpcserver.NewConfigService(configService),
 		GitServiceHandler:      rpcserver.NewGitService(gitService),
-		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService, codexManager),
+		HostServiceHandler:     rpcserver.NewHostService(workspace, updateService, agentManager),
 		ProjectServiceHandler:  rpcserver.NewProjectService(workspace, agentManager),
-		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager, sessionReadModel),
+		SessionServiceHandler:  rpcserver.NewSessionService(workspace, agentManager),
 		TaskServiceHandler:     rpcserver.NewTaskService(taskStore, workspace, eventHub),
 		TerminalServiceHandler: rpcserver.NewTerminalService(terminalManager),
 		TerminalStreamHandler:  terminalManager,

@@ -78,8 +78,8 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 	secondSessionStarted := make(chan struct{}, 1)
 	responseValidated := make(chan struct{}, 1)
 	websocketValidated := make(chan struct{}, 1)
-	brokerUpgrader := websocket.Upgrader{}
-	broker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	relayUpgrader := websocket.Upgrader{}
+	relayAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/relay/session/start":
 			count := sessionStarts.Add(1)
@@ -100,9 +100,9 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"ok":true}`))
 		case "/api/relay/connect":
-			conn, err := brokerUpgrader.Upgrade(w, r, nil)
+			conn, err := relayUpgrader.Upgrade(w, r, nil)
 			if err != nil {
-				t.Fatalf("upgrade broker websocket: %v", err)
+				t.Fatalf("upgrade relay websocket: %v", err)
 			}
 			defer conn.Close()
 
@@ -223,12 +223,7 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 			http.NotFound(w, r)
 		}
 	}))
-	defer broker.Close()
-
-	brokerURL, err := url.Parse(broker.URL)
-	if err != nil {
-		t.Fatalf("parse broker URL: %v", err)
-	}
+	defer relayAPI.Close()
 
 	cfg, err := app.LoadConfigWithOptions("dev", "direct", app.LoadOptions{Relay: true})
 	if err != nil {
@@ -237,7 +232,7 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 	cfg.HTTP.Host = originURL.Hostname()
 	cfg.HTTP.Port = originPort
 	cfg.Relay.HeartbeatEvery = 100 * time.Millisecond
-	cfg.Relay.AllocateURL = broker.URL + "/api/relay/allocate"
+	cfg.Relay.AllocateURL = relayAPI.URL + "/api/relay/allocate"
 
 	authPath := t.TempDir() + "/relay-auth.json"
 	store := serverhttp.NewFileRelayAuthStore(authPath)
@@ -245,8 +240,9 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 		AuthUserID:                "user-1",
 		HostID:                    "host_local",
 		WorkspaceSlug:             "alice",
-		WorkspaceURL:              broker.URL,
-		BrokerBaseURL:             broker.URL,
+		WorkspaceURL:              "https://alice.hopter.dev",
+		BrokerBaseURL:             "https://deprecated-broker.example",
+		RelayBaseURL:              relayAPI.URL,
 		RelayLeaseID:              "lease-1",
 		RelayLeaseVersion:         1,
 		OAuthAccessToken:          "oauth-access-token",
@@ -287,7 +283,7 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 	select {
 	case <-responseValidated:
 	case <-time.After(5 * time.Second):
-		t.Fatal("broker did not validate HTTP response flow")
+		t.Fatal("relay API did not validate HTTP response flow")
 	}
 	select {
 	case <-originSawSignedWS:
@@ -297,7 +293,7 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 	select {
 	case <-websocketValidated:
 	case <-time.After(5 * time.Second):
-		t.Fatal("broker did not validate websocket frame flow")
+		t.Fatal("relay API did not validate websocket frame flow")
 	}
 
 	select {
@@ -316,8 +312,166 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 		t.Fatal("manager did not stop after cancellation")
 	}
 
-			if host := brokerURL.Host; host == "" {
-		t.Fatal("expected broker host to be non-empty")
+}
+
+func TestSessionStartPrefersRelayBaseURLForConnectorControl(t *testing.T) {
+	relayAPIHits := make(chan string, 1)
+	relayAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		relayAPIHits <- r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"sessionToken":      "session-token",
+			"requestSigningKey": "request-signing-key",
+			"routeGeneration":   1,
+			"sessionId":         "session-1",
+			"expiresAt":         time.Now().Add(5 * time.Minute).Unix(),
+		})
+	}))
+	defer relayAPI.Close()
+
+	deprecatedBroker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("deprecated broker URL should not receive connector control request: %s", r.URL.Path)
+	}))
+	defer deprecatedBroker.Close()
+
+	manager := NewSessionManager(app.Config{}, nil, nil)
+	if _, err := manager.startSession(context.Background(), serverhttp.RelayCredential{
+		RelayLeaseID:      "lease-1",
+		RelayLeaseVersion: 1,
+		OAuthAccessToken:  "oauth-access-token",
+		WorkspaceURL:      "https://alice.hopter.dev",
+		BrokerBaseURL:     deprecatedBroker.URL,
+		RelayBaseURL:      relayAPI.URL,
+	}); err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+
+	select {
+	case got := <-relayAPIHits:
+		if got != "/api/relay/session/start" {
+			t.Fatalf("relay API path = %q", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("relay API did not receive session start")
+	}
+}
+
+func TestSessionStartFallsBackToDeprecatedBrokerBaseURL(t *testing.T) {
+	deprecatedBrokerHits := make(chan string, 1)
+	deprecatedBroker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		deprecatedBrokerHits <- r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"sessionToken":      "session-token",
+			"requestSigningKey": "request-signing-key",
+			"routeGeneration":   1,
+			"sessionId":         "session-1",
+			"expiresAt":         time.Now().Add(5 * time.Minute).Unix(),
+		})
+	}))
+	defer deprecatedBroker.Close()
+
+	manager := NewSessionManager(app.Config{}, nil, nil)
+	if _, err := manager.startSession(context.Background(), serverhttp.RelayCredential{
+		RelayLeaseID:      "lease-1",
+		RelayLeaseVersion: 1,
+		OAuthAccessToken:  "oauth-access-token",
+		WorkspaceURL:      "https://alice.hopter.dev",
+		BrokerBaseURL:     deprecatedBroker.URL,
+	}); err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+
+	select {
+	case got := <-deprecatedBrokerHits:
+		if got != "/api/relay/session/start" {
+			t.Fatalf("deprecated broker path = %q", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("deprecated broker URL did not receive session start")
+	}
+}
+
+func TestRelayControlURLTreatsWorkspaceGatewayAsDeprecated(t *testing.T) {
+	got := relayControlURL(serverhttp.RelayCredential{
+		WorkspaceURL:  "https://my.hopter.dev",
+		BrokerBaseURL: "https://my.hopter.dev",
+	}, "/api/relay/session/start")
+
+	if got != "https://api.hopter.dev/api/relay/session/start" {
+		t.Fatalf("relay control URL = %q", got)
+	}
+}
+
+func TestSessionRefreshPrefersRelayBaseURLForConnectorControl(t *testing.T) {
+	relayAPIHits := make(chan string, 1)
+	relayAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		relayAPIHits <- r.URL.Path
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"sessionToken":      "refreshed-session-token",
+			"requestSigningKey": "request-signing-key",
+			"routeGeneration":   2,
+			"sessionId":         "session-2",
+			"expiresAt":         time.Now().Add(5 * time.Minute).Unix(),
+		})
+	}))
+	defer relayAPI.Close()
+
+	deprecatedBroker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("deprecated broker URL should not receive connector control request: %s", r.URL.Path)
+	}))
+	defer deprecatedBroker.Close()
+
+	manager := NewSessionManager(app.Config{}, nil, nil)
+	if _, err := manager.refreshSession(context.Background(), serverhttp.RelayCredential{
+		SessionToken:  "session-token",
+		WorkspaceURL:  "https://alice.hopter.dev",
+		BrokerBaseURL: deprecatedBroker.URL,
+		RelayBaseURL:  relayAPI.URL,
+	}); err != nil {
+		t.Fatalf("refresh session: %v", err)
+	}
+
+	select {
+	case got := <-relayAPIHits:
+		if got != "/api/relay/session/refresh" {
+			t.Fatalf("relay API path = %q", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("relay API did not receive session refresh")
+	}
+}
+
+func TestEnsureAllocatedLeaseStoresRelayBaseURLFromAPI(t *testing.T) {
+	relayAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/relay/allocate" {
+			t.Fatalf("relay API path = %q", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"leaseId":       "lease-1",
+			"leaseVersion":  1,
+			"workspaceSlug": "alice",
+			"workspaceURL":  "https://alice.hopter.dev",
+			"brokerBaseURL": "https://deprecated-broker.example",
+			"relayBaseURL":  "https://api.hopter.dev",
+		})
+	}))
+	defer relayAPI.Close()
+
+	store := serverhttp.NewFileRelayAuthStore(t.TempDir() + "/relay-auth.json")
+	manager := NewSessionManager(app.Config{
+		Relay: app.RelayConfig{AllocateURL: relayAPI.URL + "/api/relay/allocate"},
+	}, store, nil)
+	updated, err := manager.ensureAllocatedLease(context.Background(), serverhttp.RelayCredential{
+		WorkspaceSlug:    "alice",
+		OAuthAccessToken: "oauth-access-token",
+	})
+	if err != nil {
+		t.Fatalf("ensure allocated lease: %v", err)
+	}
+	if updated.RelayBaseURL != "https://api.hopter.dev" {
+		t.Fatalf("relay base URL = %q", updated.RelayBaseURL)
+	}
+	if updated.BrokerBaseURL != "https://deprecated-broker.example" {
+		t.Fatalf("deprecated broker base URL = %q", updated.BrokerBaseURL)
 	}
 }
 

@@ -3,41 +3,139 @@ package agents
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/sorcererxw/hopter/internal/core"
 )
 
-const DefaultBackendKey = core.BackendKeyCodex
+type AgentKey string
+
+const (
+	AgentKeyCodex     AgentKey = core.BackendKeyCodex
+	DefaultAgentKey            = string(AgentKeyCodex)
+	DefaultBackendKey          = DefaultAgentKey
+)
+
+type AgentCapabilities struct {
+	SupportsResume         bool
+	SupportsInterrupt      bool
+	SupportsApprovals      bool
+	SupportsRateLimits     bool
+	SupportsModels         bool
+	SupportsContextUsage   bool
+	SupportsReasoningTrace bool
+	SupportsLivePatches    bool
+	SupportsArtifacts      bool
+	SupportsSessionReview  bool
+	SupportsSessionFiles   bool
+	SupportsTranscript     bool
+}
 
 type ResolvedSession struct {
 	Project core.Project
 	Session core.Session
 }
 
-type Runtime interface {
+type AgentRuntime interface {
+	Key() string
+	Capabilities() AgentCapabilities
 	ListSessions(projectID string, limit uint32) ([]ResolvedSession, error)
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error)
 	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
+	ListModels(includeHidden bool) ([]core.AgentModel, error)
+	ReadAccountRateLimits() (string, error)
+	GetSessionMeta(sessionID string) (core.SessionMeta, error)
+	GetSessionReview(sessionID string) (core.SessionReview, error)
+	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
+	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
+}
+
+type Runtime = AgentRuntime
+
+type SessionReader interface {
+	GetSessionMeta(sessionID string) (core.SessionMeta, error)
+	GetSessionReview(sessionID string) (core.SessionReview, error)
+	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
+	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
 }
 
 type Manager struct {
 	workspace core.WorkspaceService
-	runtimes  map[string]Runtime
+	runtimes  map[string]AgentRuntime
 }
 
-func NewManager(workspace core.WorkspaceService, runtimes map[string]Runtime) *Manager {
-	copied := make(map[string]Runtime, len(runtimes))
+func NewManager(workspace core.WorkspaceService, runtimes map[string]AgentRuntime) *Manager {
+	copied := make(map[string]AgentRuntime, len(runtimes))
 	for key, runtime := range runtimes {
-		copied[normalizeBackendKey(key)] = runtime
+		if runtime == nil {
+			continue
+		}
+		runtimeKey := normalizeBackendKey(runtime.Key(), key)
+		copied[runtimeKey] = runtime
 	}
 	return &Manager{
 		workspace: workspace,
 		runtimes:  copied,
 	}
+}
+
+func (m *Manager) Default() (AgentRuntime, bool) {
+	return m.Get(DefaultAgentKey)
+}
+
+func (m *Manager) Get(key string) (AgentRuntime, bool) {
+	runtime, ok := m.runtimes[normalizeBackendKey(key)]
+	return runtime, ok
+}
+
+func (m *Manager) List() []AgentRuntime {
+	keys := make([]string, 0, len(m.runtimes))
+	for key := range m.runtimes {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+
+	result := make([]AgentRuntime, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, m.runtimes[key])
+	}
+	return result
+}
+
+func (m *Manager) Capabilities(backendKey string) (AgentCapabilities, bool) {
+	runtime, ok := m.Get(backendKey)
+	if !ok {
+		return AgentCapabilities{}, false
+	}
+	return runtime.Capabilities(), true
+}
+
+func (m *Manager) ListModels(includeHidden bool) ([]core.AgentModel, error) {
+	return m.ListAgentModels(DefaultAgentKey, includeHidden)
+}
+
+func (m *Manager) ListAgentModels(backendKey string, includeHidden bool) ([]core.AgentModel, error) {
+	runtime, ok := m.Get(backendKey)
+	if !ok {
+		return nil, fmt.Errorf("agent runtime %q not registered", normalizeBackendKey(backendKey))
+	}
+	return runtime.ListModels(includeHidden)
+}
+
+func (m *Manager) ReadAccountRateLimits() (string, error) {
+	return m.ReadAgentAccountRateLimits(DefaultAgentKey)
+}
+
+func (m *Manager) ReadAgentAccountRateLimits(backendKey string) (string, error) {
+	runtime, ok := m.Get(backendKey)
+	if !ok {
+		return "", fmt.Errorf("agent runtime %q not registered", normalizeBackendKey(backendKey))
+	}
+	return runtime.ReadAccountRateLimits()
 }
 
 func (m *Manager) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
@@ -87,6 +185,38 @@ func (m *Manager) GetSession(sessionID string) (core.Session, core.Project, erro
 	}
 
 	return core.Session{}, core.Project{}, fmt.Errorf("session %q not found", sessionID)
+}
+
+func (m *Manager) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
+	runtime, err := m.runtimeForSession(sessionID)
+	if err != nil {
+		return core.SessionMeta{}, err
+	}
+	return runtime.GetSessionMeta(sessionID)
+}
+
+func (m *Manager) GetSessionReview(sessionID string) (core.SessionReview, error) {
+	runtime, err := m.runtimeForSession(sessionID)
+	if err != nil {
+		return core.SessionReview{}, err
+	}
+	return runtime.GetSessionReview(sessionID)
+}
+
+func (m *Manager) GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error) {
+	runtime, err := m.runtimeForSession(input.SessionID)
+	if err != nil {
+		return core.SessionFile{}, err
+	}
+	return runtime.GetSessionFile(input)
+}
+
+func (m *Manager) ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error) {
+	runtime, err := m.runtimeForSession(input.SessionID)
+	if err != nil {
+		return core.SessionTranscriptPage{}, err
+	}
+	return runtime.ListSessionTranscript(input)
 }
 
 func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, error) {
@@ -196,6 +326,29 @@ func (m *Manager) RespondToSessionApproval(
 	}
 	updated, _ = m.normalizeSession(updated, project, backendKey)
 	return updated, nil
+}
+
+func (m *Manager) runtimeForSession(sessionID string) (AgentRuntime, error) {
+	if session, ok := m.workspace.GetSession(sessionID); ok {
+		project, ok := m.workspace.GetProject(session.ProjectID)
+		if !ok {
+			return nil, fmt.Errorf("project %q not found for session", session.ProjectID)
+		}
+		backendKey := normalizeBackendKey(session.BackendKey, project.DefaultBackend)
+		runtime, ok := m.runtimes[backendKey]
+		if !ok {
+			return nil, fmt.Errorf("agent runtime %q not registered", backendKey)
+		}
+		return runtime, nil
+	}
+
+	for _, runtime := range m.runtimes {
+		if _, _, err := runtime.GetSession(sessionID); err == nil {
+			return runtime, nil
+		}
+	}
+
+	return nil, fmt.Errorf("session %q not found", sessionID)
 }
 
 func (m *Manager) normalizeResolvedSessions(resolved []ResolvedSession) []ResolvedSession {

@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -42,6 +41,7 @@ type RelayCredential struct {
 	WorkspaceSlug             string    `json:"workspace_slug"`
 	WorkspaceURL              string    `json:"workspace_url"`
 	BrokerBaseURL             string    `json:"broker_base_url"`
+	RelayBaseURL              string    `json:"relay_base_url,omitempty"`
 	TunnelTarget              string    `json:"tunnel_target,omitempty"`
 	PrivateHostname           string    `json:"private_hostname,omitempty"`
 	RelayLeaseID              string    `json:"relay_lease_id,omitempty"`
@@ -69,6 +69,10 @@ type relayExchangeResponse struct {
 	WorkspaceSlug         string           `json:"workspaceSlug,omitempty"`
 	WorkspaceURL          string           `json:"workspaceURL,omitempty"`
 	BrokerBaseURL         string           `json:"brokerBaseURL,omitempty"`
+	RelayBaseURL          string           `json:"relayBaseURL,omitempty"`
+	RelayBaseURLSnake     string           `json:"relay_base_url,omitempty"`
+	APIRelayBaseURL       string           `json:"apiRelayBaseURL,omitempty"`
+	APIRelayBaseURLSnake  string           `json:"api_relay_base_url,omitempty"`
 	TunnelTarget          string           `json:"tunnelTarget,omitempty"`
 	RelayToken            string           `json:"relayToken,omitempty"`
 	RequestSigningKey     string           `json:"requestSigningKey,omitempty"`
@@ -105,6 +109,9 @@ type relayOAuthTokenResponse struct {
 type relayAuthPayload struct {
 	RelayCredential
 	CloudflareTunnelToken string `json:"cloudflare_tunnel_token,omitempty"`
+	RelayBaseURLCamel     string `json:"relayBaseURL,omitempty"`
+	APIRelayBaseURL       string `json:"apiRelayBaseURL,omitempty"`
+	APIRelayBaseURLSnake  string `json:"api_relay_base_url,omitempty"`
 }
 
 func (p relayAuthPayload) credential() RelayCredential {
@@ -112,6 +119,7 @@ func (p relayAuthPayload) credential() RelayCredential {
 	if credential.SessionToken == "" {
 		credential.SessionToken = p.CloudflareTunnelToken
 	}
+	credential.RelayBaseURL = firstNonEmpty(credential.RelayBaseURL, p.RelayBaseURLCamel, p.APIRelayBaseURL, p.APIRelayBaseURLSnake)
 	return credential
 }
 
@@ -150,9 +158,7 @@ func NewRelayCallbackHandler(opts RelayOptions) http.Handler {
 			return
 		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(relayCallbackHTML(store.Description(), credential.WorkspaceURL)))
+		http.Redirect(w, r, relayCallbackUIURL(credential.WorkspaceURL), http.StatusSeeOther)
 	})
 }
 
@@ -363,18 +369,19 @@ func exchangeRelayCode(ctx context.Context, opts RelayOptions, code string) (Rel
 	}
 	if decoded.RelayToken != "" {
 		return normalizeRelayCredential(opts, RelayCredential{
-			AuthUserID:        decoded.AuthUserID,
-			HostID:            decoded.HostID,
-			WorkspaceSlug:     decoded.WorkspaceSlug,
-			WorkspaceURL:      decoded.WorkspaceURL,
-			BrokerBaseURL:     decoded.BrokerBaseURL,
-			TunnelTarget:      decoded.TunnelTarget,
-			RelayToken:        decoded.RelayToken,
-			RequestSigningKey: decoded.RequestSigningKey,
-			SessionToken:      firstNonEmpty(decoded.SessionToken, decoded.ConnectorToken, decoded.CloudflareTunnelToken),
+			AuthUserID:           decoded.AuthUserID,
+			HostID:               decoded.HostID,
+			WorkspaceSlug:        decoded.WorkspaceSlug,
+			WorkspaceURL:         decoded.WorkspaceURL,
+			BrokerBaseURL:        decoded.BrokerBaseURL,
+			RelayBaseURL:         firstNonEmpty(decoded.RelayBaseURL, decoded.RelayBaseURLSnake, decoded.APIRelayBaseURL, decoded.APIRelayBaseURLSnake),
+			TunnelTarget:         decoded.TunnelTarget,
+			RelayToken:           decoded.RelayToken,
+			RequestSigningKey:    decoded.RequestSigningKey,
+			SessionToken:         firstNonEmpty(decoded.SessionToken, decoded.ConnectorToken, decoded.CloudflareTunnelToken),
 			RelayRouteGeneration: decoded.RouteGeneration,
-			RelaySessionID:    decoded.SessionID,
-			ExpiresAt:         decoded.ExpiresAt,
+			RelaySessionID:       decoded.SessionID,
+			ExpiresAt:            decoded.ExpiresAt,
 		}), nil
 	}
 	if !decoded.OK {
@@ -402,6 +409,7 @@ func relayCredentialFromCallback(r *http.Request) (RelayCredential, error) {
 		WorkspaceSlug:     strings.TrimSpace(firstNonEmpty(query.Get("workspaceSlug"), query.Get("workspace_slug"))),
 		WorkspaceURL:      strings.TrimSpace(firstNonEmpty(query.Get("workspaceURL"), query.Get("workspace_url"))),
 		BrokerBaseURL:     strings.TrimSpace(firstNonEmpty(query.Get("brokerBaseURL"), query.Get("broker_base_url"))),
+		RelayBaseURL:      strings.TrimSpace(firstNonEmpty(query.Get("relayBaseURL"), query.Get("relay_base_url"), query.Get("apiRelayBaseURL"), query.Get("api_relay_base_url"))),
 		TunnelTarget:      strings.TrimSpace(firstNonEmpty(query.Get("tunnelTarget"), query.Get("tunnel_target"))),
 		RelayToken:        relayToken,
 		RequestSigningKey: strings.TrimSpace(firstNonEmpty(query.Get("requestSigningKey"), query.Get("request_signing_key"), query.Get("brokerSecret"), query.Get("broker_secret"))),
@@ -417,7 +425,7 @@ func normalizeRelayCredential(opts RelayOptions, credential RelayCredential) Rel
 	if credential.RequestSigningKey == "" {
 		credential.RequestSigningKey = opts.RequestSigningKey
 	}
-	if credential.BrokerBaseURL == "" {
+	if credential.BrokerBaseURL == "" && credential.RelayBaseURL == "" {
 		credential.BrokerBaseURL = credential.WorkspaceURL
 	}
 	return credential
@@ -731,29 +739,11 @@ func urlWithFallback(raw string) (*url.URL, error) {
 	return target, nil
 }
 
-func relayCallbackHTML(authDescription string, workspaceURL string) string {
-	if strings.TrimSpace(workspaceURL) == "" {
-		workspaceURL = "pending allocation"
+func relayCallbackUIURL(workspaceURL string) string {
+	query := url.Values{}
+	query.Set("status", "connected")
+	if trimmed := strings.TrimSpace(workspaceURL); trimmed != "" {
+		query.Set("workspaceURL", trimmed)
 	}
-	return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hopter relay connected</title>
-  <style>
-    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080b11;color:#f4f7fb;font:16px/1.5 system-ui,sans-serif}
-    main{width:min(560px,calc(100vw - 32px));padding:28px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.06)}
-    p{color:#aab6c7} code{color:#ddecff}
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Relay login received</h1>
-    <p>Hopter stored the local relay authorization. Return to the terminal; the relay will continue automatically.</p>
-    <p>Workspace: <code>` + html.EscapeString(workspaceURL) + `</code></p>
-    <p>Auth store: <code>` + html.EscapeString(authDescription) + `</code></p>
-  </main>
-</body>
-</html>`
+	return "/relay/callback?" + query.Encode()
 }

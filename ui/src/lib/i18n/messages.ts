@@ -43,6 +43,15 @@ export const messages = {
     "login.localDevelopmentMode": "Local development mode",
     "login.localDevelopmentModeBody":
       "The rebuild currently assumes localhost-only access without a password gate.",
+    "relayCallback.connectedBody":
+      "Hopter stored the local relay authorization and can continue the relay startup.",
+    "relayCallback.connectedTitle": "Relay connected",
+    "relayCallback.openWorkspace": "Open workspace",
+    "relayCallback.pendingBody":
+      "The relay callback page is ready, but no completed callback status was provided.",
+    "relayCallback.pendingTitle": "Relay callback",
+    "relayCallback.terminalHint": "Return to the terminal to continue startup.",
+    "relayCallback.workspace": "Workspace",
     "nav.back": "Back",
     "nav.loadingThreads": "Loading threads...",
     "nav.newChat": "New chat",
@@ -406,6 +415,15 @@ export const messages = {
     "login.localDevelopmentMode": "本地开发模式",
     "login.localDevelopmentModeBody":
       "当前重建版本假设仅 localhost 访问，无密码门禁。",
+    "relayCallback.connectedBody":
+      "Hopter 已保存本地 relay 授权，可以继续启动 relay。",
+    "relayCallback.connectedTitle": "Relay 已连接",
+    "relayCallback.openWorkspace": "打开工作区",
+    "relayCallback.pendingBody":
+      "Relay callback 页面已就绪，但没有收到完成状态。",
+    "relayCallback.pendingTitle": "Relay callback",
+    "relayCallback.terminalHint": "回到终端继续启动流程。",
+    "relayCallback.workspace": "工作区",
     "nav.back": "返回",
     "nav.loadingThreads": "正在加载线程...",
     "nav.newChat": "新聊天",

@@ -16,8 +16,14 @@ import (
 type HostService struct {
 	workspace core.WorkspaceService
 	updates   core.UpdateService
+	agents    hostAgentCatalog
 	models    hostModelLister
 	quotas    hostQuotaReader
+}
+
+type hostAgentCatalog interface {
+	ListAgentModels(backendKey string, includeHidden bool) ([]core.AgentModel, error)
+	ReadAgentAccountRateLimits(backendKey string) (string, error)
 }
 
 type hostModelLister interface {
@@ -29,9 +35,15 @@ type hostQuotaReader interface {
 }
 
 func NewHostService(workspace core.WorkspaceService, updates core.UpdateService, models ...hostModelLister) *HostService {
+	var agentCatalog hostAgentCatalog
 	var modelLister hostModelLister
 	var quotaReader hostQuotaReader
 	for _, dependency := range models {
+		if agentCatalog == nil {
+			if catalog, ok := dependency.(hostAgentCatalog); ok {
+				agentCatalog = catalog
+			}
+		}
 		if modelLister == nil {
 			modelLister = dependency
 		}
@@ -44,16 +56,24 @@ func NewHostService(workspace core.WorkspaceService, updates core.UpdateService,
 	return &HostService{
 		workspace: workspace,
 		updates:   updates,
+		agents:    agentCatalog,
 		models:    modelLister,
 		quotas:    quotaReader,
 	}
 }
 
 func (s *HostService) readBackendQuota(backend core.Backend) string {
-	if backend.Key != core.BackendKeyCodex || s.quotas == nil {
+	if !backend.Available {
 		return ""
 	}
-	if !backend.Available {
+	if s.agents != nil {
+		quota, err := s.agents.ReadAgentAccountRateLimits(backend.Key)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(quota)
+	}
+	if backend.Key != core.BackendKeyCodex || s.quotas == nil {
 		return ""
 	}
 	quota, err := s.quotas.ReadAccountRateLimits()
@@ -112,16 +132,22 @@ func (s *HostService) ListModels(_ context.Context, req *connect.Request[hopterv
 	if backendKey == "" {
 		backendKey = core.BackendKeyCodex
 	}
-	if backendKey != core.BackendKeyCodex {
+	var models []core.AgentModel
+	var err error
+	if s.agents != nil {
+		models, err = s.agents.ListAgentModels(backendKey, req.Msg.GetIncludeHidden())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	} else if backendKey != core.BackendKeyCodex {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("backend %q does not expose models", backendKey))
-	}
-	if s.models == nil {
+	} else if s.models == nil {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("model service unavailable"))
-	}
-
-	models, err := s.models.ListModels(req.Msg.GetIncludeHidden())
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnavailable, fmt.Errorf("list codex models: %w", err))
+	} else {
+		models, err = s.models.ListModels(req.Msg.GetIncludeHidden())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeUnavailable, fmt.Errorf("list %s models: %w", backendKey, err))
+		}
 	}
 
 	response := &hopterv1.ListModelsResponse{

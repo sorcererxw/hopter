@@ -25,6 +25,27 @@ type fakeRuntime struct {
 	lastApprovalDecision  core.ApprovalDecision
 }
 
+func (f *fakeRuntime) Key() string {
+	return "codex"
+}
+
+func (f *fakeRuntime) Capabilities() AgentCapabilities {
+	return AgentCapabilities{
+		SupportsResume:         true,
+		SupportsInterrupt:      true,
+		SupportsApprovals:      true,
+		SupportsRateLimits:     true,
+		SupportsModels:         true,
+		SupportsContextUsage:   true,
+		SupportsReasoningTrace: true,
+		SupportsLivePatches:    true,
+		SupportsArtifacts:      true,
+		SupportsSessionReview:  true,
+		SupportsSessionFiles:   true,
+		SupportsTranscript:     true,
+	}
+}
+
 func (f *fakeRuntime) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {
 	return f.listResult, nil
 }
@@ -57,6 +78,30 @@ func (f *fakeRuntime) RespondToSessionApproval(sessionID, approvalID string, dec
 	return f.sendResult, nil
 }
 
+func (f *fakeRuntime) ListModels(includeHidden bool) ([]core.AgentModel, error) {
+	return nil, nil
+}
+
+func (f *fakeRuntime) ReadAccountRateLimits() (string, error) {
+	return "", nil
+}
+
+func (f *fakeRuntime) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
+	return core.SessionMeta{Session: f.getSession, Project: f.getProject}, nil
+}
+
+func (f *fakeRuntime) GetSessionReview(sessionID string) (core.SessionReview, error) {
+	return core.SessionReview{SessionID: sessionID}, nil
+}
+
+func (f *fakeRuntime) GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error) {
+	return core.SessionFile{SessionID: input.SessionID}, nil
+}
+
+func (f *fakeRuntime) ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error) {
+	return core.SessionTranscriptPage{SessionID: input.SessionID}, nil
+}
+
 func TestManagerCreateSessionRoutesByProjectDefaultBackend(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace, "codex")
@@ -69,7 +114,7 @@ func TestManagerCreateSessionRoutesByProjectDefaultBackend(t *testing.T) {
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -99,7 +144,7 @@ func TestManagerGetSessionStampsFallbackBackendKey(t *testing.T) {
 		},
 		getProject: project,
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -123,7 +168,7 @@ func TestManagerCreateSessionMaterializesSyntheticProject(t *testing.T) {
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -176,7 +221,7 @@ func TestManagerSendSessionInputMaterializesSyntheticProject(t *testing.T) {
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -232,7 +277,7 @@ func TestManagerSendSessionInputAllowsVisibleNonGitSyntheticProject(t *testing.T
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -270,7 +315,7 @@ func TestManagerRespondToSessionApprovalRoutesByBackend(t *testing.T) {
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 
@@ -311,7 +356,7 @@ func TestManagerInterruptSessionRoutesByBackend(t *testing.T) {
 			UpdatedAt: time.Now().UTC(),
 		},
 	}
-	manager := NewManager(workspace, map[string]Runtime{
+	manager := NewManager(workspace, map[string]AgentRuntime{
 		"codex": runtime,
 	})
 

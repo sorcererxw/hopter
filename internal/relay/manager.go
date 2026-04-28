@@ -33,17 +33,21 @@ type SessionManager struct {
 }
 
 type relayAllocationResponse struct {
-	LeaseID             string   `json:"leaseId"`
-	LeaseVersion        int      `json:"leaseVersion"`
-	WorkspaceSlug       string   `json:"workspaceSlug"`
-	WorkspaceURL        string   `json:"workspaceURL"`
-	BrokerBaseURL       string   `json:"brokerBaseURL"`
-	SessionStartPath    string   `json:"sessionStartPath"`
-	SessionRefreshPath  string   `json:"sessionRefreshPath"`
-	ConnectorWebSocketPath string `json:"connectorWebSocketPath"`
-	State               string   `json:"state"`
-	ProtocolVersion     int      `json:"protocolVersion"`
-	Capabilities        []string `json:"capabilities"`
+	LeaseID                string   `json:"leaseId"`
+	LeaseVersion           int      `json:"leaseVersion"`
+	WorkspaceSlug          string   `json:"workspaceSlug"`
+	WorkspaceURL           string   `json:"workspaceURL"`
+	BrokerBaseURL          string   `json:"brokerBaseURL"`
+	RelayBaseURL           string   `json:"relayBaseURL"`
+	RelayBaseURLSnake      string   `json:"relay_base_url"`
+	APIRelayBaseURL        string   `json:"apiRelayBaseURL"`
+	APIRelayBaseURLSnake   string   `json:"api_relay_base_url"`
+	SessionStartPath       string   `json:"sessionStartPath"`
+	SessionRefreshPath     string   `json:"sessionRefreshPath"`
+	ConnectorWebSocketPath string   `json:"connectorWebSocketPath"`
+	State                  string   `json:"state"`
+	ProtocolVersion        int      `json:"protocolVersion"`
+	Capabilities           []string `json:"capabilities"`
 }
 
 type relaySessionResponse struct {
@@ -229,6 +233,7 @@ func (m *SessionManager) ensureAllocatedLease(ctx context.Context, credential se
 	credential.WorkspaceSlug = firstNonEmpty(decoded.WorkspaceSlug, credential.WorkspaceSlug)
 	credential.WorkspaceURL = firstNonEmpty(decoded.WorkspaceURL, credential.WorkspaceURL)
 	credential.BrokerBaseURL = firstNonEmpty(decoded.BrokerBaseURL, credential.BrokerBaseURL)
+	credential.RelayBaseURL = firstNonEmpty(decoded.RelayBaseURL, decoded.RelayBaseURLSnake, decoded.APIRelayBaseURL, decoded.APIRelayBaseURLSnake, credential.RelayBaseURL)
 	credential.UpdatedAt = time.Now().UTC()
 	if err := m.store.Store(credential); err != nil {
 		return credential, err
@@ -245,7 +250,7 @@ func (m *SessionManager) startSession(ctx context.Context, credential serverhttp
 		return relaySessionResponse{}, err
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, brokerAPIURL(credential, "/api/relay/session/start"), bytes.NewReader(requestBody))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, relayControlURL(credential, "/api/relay/session/start"), bytes.NewReader(requestBody))
 	if err != nil {
 		return relaySessionResponse{}, err
 	}
@@ -257,7 +262,7 @@ func (m *SessionManager) startSession(ctx context.Context, credential serverhttp
 }
 
 func (m *SessionManager) refreshSession(ctx context.Context, credential serverhttp.RelayCredential) (relaySessionResponse, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, brokerAPIURL(credential, "/api/relay/session/refresh"), nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, relayControlURL(credential, "/api/relay/session/refresh"), nil)
 	if err != nil {
 		return relaySessionResponse{}, err
 	}
@@ -311,7 +316,7 @@ func (m *SessionManager) releaseLease(ctx context.Context, credential serverhttp
 func (m *SessionManager) serveControlConnection(ctx context.Context, credential *serverhttp.RelayCredential) error {
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+credential.SessionToken)
-	wsURL := websocketURL(brokerAPIURL(*credential, "/api/relay/connect"))
+	wsURL := websocketURL(relayControlURL(*credential, "/api/relay/connect"))
 	conn, response, err := websocket.DefaultDialer.DialContext(ctx, wsURL, header)
 	if err != nil {
 		if response != nil && response.Body != nil {
@@ -749,8 +754,13 @@ func relayHTTPOptions(cfg app.Config) serverhttp.RelayOptions {
 	}
 }
 
-func brokerAPIURL(credential serverhttp.RelayCredential, path string) string {
-	base := firstNonEmpty(strings.TrimSpace(credential.BrokerBaseURL), strings.TrimSpace(credential.WorkspaceURL), "https://my.hopter.dev")
+func relayControlURL(credential serverhttp.RelayCredential, path string) string {
+	base := firstNonEmpty(
+		strings.TrimSpace(credential.RelayBaseURL),
+		deprecatedConnectorControlBaseURL(credential.BrokerBaseURL),
+		deprecatedConnectorControlBaseURL(credential.WorkspaceURL),
+		"https://api.hopter.dev",
+	)
 	target, err := url.Parse(base)
 	if err != nil {
 		return base
@@ -758,6 +768,21 @@ func brokerAPIURL(credential serverhttp.RelayCredential, path string) string {
 	target.Path = strings.TrimRight(target.Path, "/") + path
 	target.RawQuery = ""
 	return target.String()
+}
+
+func deprecatedConnectorControlBaseURL(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return trimmed
+	}
+	if strings.EqualFold(parsed.Hostname(), "my.hopter.dev") {
+		return ""
+	}
+	return trimmed
 }
 
 func websocketURL(raw string) string {

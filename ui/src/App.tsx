@@ -39,6 +39,11 @@ const LoginRoute = lazy(() =>
     default: module.LoginRoute,
   }))
 )
+const RelayCallbackRoute = lazy(() =>
+  import("@/routes/relay-callback-route").then((module) => ({
+    default: module.RelayCallbackRoute,
+  }))
+)
 const SessionRoute = lazy(() =>
   import("@/routes/session-route").then((module) => ({
     default: module.SessionRoute,
@@ -191,6 +196,10 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="login" element={renderLazyRoute(<LoginRoute />)} />
+            <Route
+              path="relay/callback"
+              element={renderLazyRoute(<RelayCallbackRoute />)}
+            />
             <Route
               element={
                 <ProtectedRoute>

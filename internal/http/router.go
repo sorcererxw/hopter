@@ -134,6 +134,8 @@ func isUIPath(path string) bool {
 		return true
 	case path == "/login":
 		return true
+	case path == "/relay/callback":
+		return true
 	case path == "/projects/new":
 		return true
 	case path == "/tasks":

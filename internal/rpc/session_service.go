@@ -15,7 +15,7 @@ import (
 
 type SessionService struct {
 	workspace core.WorkspaceService
-	codex     sessionRuntime
+	agents    sessionRuntime
 	reader    sessionDetailReader
 }
 
@@ -37,14 +37,20 @@ type sessionDetailReader interface {
 
 func NewSessionService(
 	workspace core.WorkspaceService,
-	codexManager sessionRuntime,
-	reader sessionDetailReader,
+	agentRuntime sessionRuntime,
+	readers ...sessionDetailReader,
 ) *SessionService {
-	return &SessionService{workspace: workspace, codex: codexManager, reader: reader}
+	var reader sessionDetailReader
+	if len(readers) > 0 {
+		reader = readers[0]
+	} else if runtimeReader, ok := agentRuntime.(sessionDetailReader); ok {
+		reader = runtimeReader
+	}
+	return &SessionService{workspace: workspace, agents: agentRuntime, reader: reader}
 }
 
 func (s *SessionService) ListSessions(_ context.Context, req *connect.Request[hopterv1.ListSessionsRequest]) (*connect.Response[hopterv1.ListSessionsResponse], error) {
-	resolvedSessions, err := s.codex.ListSessions(req.Msg.GetProjectId(), req.Msg.GetLimit())
+	resolvedSessions, err := s.agents.ListSessions(req.Msg.GetProjectId(), req.Msg.GetLimit())
 	if err != nil {
 		resolvedSessions = nil
 	}
@@ -137,7 +143,7 @@ func sessionSeen(seen map[string]struct{}, session core.Session) bool {
 }
 
 func (s *SessionService) GetSession(_ context.Context, req *connect.Request[hopterv1.GetSessionRequest]) (*connect.Response[hopterv1.GetSessionResponse], error) {
-	session, project, err := s.codex.GetSession(req.Msg.GetSessionId())
+	session, project, err := s.agents.GetSession(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
 	}
@@ -147,6 +153,9 @@ func (s *SessionService) GetSession(_ context.Context, req *connect.Request[hopt
 }
 
 func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[hopterv1.GetSessionMetaRequest]) (*connect.Response[hopterv1.GetSessionMetaResponse], error) {
+	if s.reader == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("session reader unavailable"))
+	}
 	meta, err := s.reader.GetSessionMeta(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q not found", req.Msg.GetSessionId()))
@@ -157,6 +166,9 @@ func (s *SessionService) GetSessionMeta(_ context.Context, req *connect.Request[
 }
 
 func (s *SessionService) GetSessionReview(_ context.Context, req *connect.Request[hopterv1.GetSessionReviewRequest]) (*connect.Response[hopterv1.GetSessionReviewResponse], error) {
+	if s.reader == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("session reader unavailable"))
+	}
 	review, err := s.reader.GetSessionReview(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q review not found", req.Msg.GetSessionId()))
@@ -167,6 +179,9 @@ func (s *SessionService) GetSessionReview(_ context.Context, req *connect.Reques
 }
 
 func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[hopterv1.GetSessionFileRequest]) (*connect.Response[hopterv1.GetSessionFileResponse], error) {
+	if s.reader == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("session reader unavailable"))
+	}
 	file, err := s.reader.GetSessionFile(core.GetSessionFileInput{
 		SessionID: req.Msg.GetSessionId(),
 		Path:      req.Msg.GetPath(),
@@ -182,6 +197,9 @@ func (s *SessionService) GetSessionFile(_ context.Context, req *connect.Request[
 }
 
 func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.Request[hopterv1.ListSessionTranscriptRequest]) (*connect.Response[hopterv1.ListSessionTranscriptResponse], error) {
+	if s.reader == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("session reader unavailable"))
+	}
 	page, err := s.reader.ListSessionTranscript(core.ListSessionTranscriptInput{
 		SessionID:    req.Msg.GetSessionId(),
 		BeforeCursor: req.Msg.GetBeforeCursor(),
@@ -196,7 +214,7 @@ func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.R
 }
 
 func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[hopterv1.CreateSessionRequest]) (*connect.Response[hopterv1.CreateSessionResponse], error) {
-	session, err := s.codex.CreateSession(core.CreateSessionInput{
+	session, err := s.agents.CreateSession(core.CreateSessionInput{
 		ProjectID:       req.Msg.GetProjectId(),
 		BackendKey:      req.Msg.GetBackendKey(),
 		Title:           req.Msg.GetTitle(),
@@ -216,7 +234,7 @@ func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[h
 }
 
 func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Request[hopterv1.SendSessionInputRequest]) (*connect.Response[hopterv1.SendSessionInputResponse], error) {
-	session, err := s.codex.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput(), core.SessionTurnOptions{
+	session, err := s.agents.SendSessionInput(req.Msg.GetSessionId(), req.Msg.GetInput(), core.SessionTurnOptions{
 		Model:           req.Msg.GetModel(),
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
 		CodexFastMode:   req.Msg.GetCodexFastMode(),
@@ -251,7 +269,7 @@ func sessionInputAttachmentsFromProto(attachments []*hopterv1.SessionInputAttach
 }
 
 func (s *SessionService) InterruptSession(_ context.Context, req *connect.Request[hopterv1.InterruptSessionRequest]) (*connect.Response[hopterv1.InterruptSessionResponse], error) {
-	session, err := s.codex.InterruptSession(req.Msg.GetSessionId())
+	session, err := s.agents.InterruptSession(req.Msg.GetSessionId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -267,7 +285,7 @@ func (s *SessionService) RespondToSessionApproval(_ context.Context, req *connec
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	session, err := s.codex.RespondToSessionApproval(
+	session, err := s.agents.RespondToSessionApproval(
 		req.Msg.GetSessionId(),
 		req.Msg.GetApprovalId(),
 		decision,
