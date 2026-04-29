@@ -226,6 +226,8 @@ func parseInstallSource(raw string) core.InstallSource {
 		return core.InstallSourceHomebrewFormula
 	case "homebrew_cask":
 		return core.InstallSourceHomebrewCask
+	case "npm":
+		return core.InstallSourceNPM
 	case "apt":
 		return core.InstallSourceAPT
 	case "dnf":
@@ -258,7 +260,7 @@ func policyForInstallSource(source core.InstallSource) core.UpdatePolicy {
 	switch source {
 	case core.InstallSourceSnap, core.InstallSourceFlatpak:
 		return core.UpdatePolicyStoreManaged
-	case core.InstallSourceHomebrewFormula, core.InstallSourceHomebrewCask, core.InstallSourceAPT, core.InstallSourceDNF, core.InstallSourceWinget, core.InstallSourceNix, core.InstallSourceMacPorts:
+	case core.InstallSourceHomebrewFormula, core.InstallSourceHomebrewCask, core.InstallSourceNPM, core.InstallSourceAPT, core.InstallSourceDNF, core.InstallSourceWinget, core.InstallSourceNix, core.InstallSourceMacPorts:
 		return core.UpdatePolicyPackageManaged
 	default:
 		return core.UpdatePolicySelfManaged
@@ -271,6 +273,8 @@ func commandHintForInstallSource(source core.InstallSource) string {
 		return "brew upgrade hopter"
 	case core.InstallSourceHomebrewCask:
 		return "brew upgrade --cask hopter"
+	case core.InstallSourceNPM:
+		return "npm update -g hopter"
 	case core.InstallSourceAPT:
 		return "sudo apt update && sudo apt upgrade hopter"
 	case core.InstallSourceDNF:

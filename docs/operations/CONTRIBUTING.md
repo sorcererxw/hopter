@@ -98,6 +98,7 @@ Examples:
 ```bash
 go build -ldflags "-X main.version=0.4.2 -X main.installSource=direct" ./cmd/hopter
 go build -ldflags "-X main.version=0.4.2 -X main.installSource=homebrew_formula" ./cmd/hopter
+go build -ldflags "-X main.version=0.4.2 -X main.installSource=npm" ./cmd/hopter
 ```
 
 Release builds with a non-`dev` `main.version` default to `0.0.0.0:18787`.
@@ -105,18 +106,25 @@ Dev builds default to `0.0.0.0:8787`, which keeps an installed release
 independent from `make dev`. Use `--host` and `--port` for direct server
 debugging.
 
-The existing release workflow also publishes the Homebrew tap formula after the
-GitHub release job succeeds. Create or reuse `sorcererxw/tap`, then ensure
-`RELEASE_TOKEN` can push to that repository. The release workflow generates
-`Formula/hopter.rb` from the release `checksums.txt` and pushes it to that tap.
-Because this tap repo intentionally is not named `homebrew-tap`, users install
-it with an explicit remote: `brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap`.
+The release workflow creates the next `v0.0.x` tag, then GoReleaser publishes
+GitHub release assets and updates the Homebrew tap. npm packages are generated
+afterward from the `hopter-npm-<os>-<arch>` assets in the same GitHub release.
+Create or reuse `sorcererxw/tap`, then ensure `RELEASE_TOKEN` can create the
+GitHub release and push to that tap. Because this tap repo intentionally is not
+named `homebrew-tap`, users install it with an explicit remote:
+`brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap`.
+
+For npm publishing, create the public `hopter` package and the `@hopter`
+organization/scope packages, then configure `NPM_TOKEN` in GitHub Actions. The
+workflow publishes platform packages first and the `hopter` wrapper package
+last, all at the same release version.
 
 Current intended values:
 
 - `direct`
 - `homebrew_formula`
 - `homebrew_cask`
+- `npm`
 - `apt`
 - `dnf`
 - `winget`
@@ -133,7 +141,9 @@ Rules:
 Unless a signed update manifest is configured in code, `hopter` now checks the
 latest GitHub release on `sorcererxw/hopter`. Direct-install self-update expects
 the release to publish raw per-platform binaries named `hopter-<os>-<arch>`
-alongside `checksums.txt`.
+alongside `checksums.txt`. GoReleaser uses `hopter-homebrew-<os>-<arch>` assets
+for the Homebrew tap, and npm platform packages use `hopter-npm-<os>-<arch>`
+assets so their build-time `installSource` metadata stays accurate.
 
 In dev, the browser should still enter through the Go origin.
 

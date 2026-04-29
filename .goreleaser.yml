@@ -1,0 +1,125 @@
+version: 2
+
+project_name: hopter
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+builds:
+  - id: direct
+    main: ./cmd/hopter
+    binary: hopter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.installSource=direct
+
+  - id: homebrew
+    main: ./cmd/hopter
+    binary: hopter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.installSource=homebrew_formula
+
+  - id: npm
+    main: ./cmd/hopter
+    binary: hopter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.installSource=npm
+
+archives:
+  - id: direct-binary
+    ids:
+      - direct
+    formats:
+      - binary
+    name_template: "hopter-{{ .Os }}-{{ .Arch }}"
+
+  - id: homebrew-binary
+    ids:
+      - homebrew
+    formats:
+      - binary
+    name_template: "hopter-homebrew-{{ .Os }}-{{ .Arch }}"
+
+  - id: npm-binary
+    ids:
+      - npm
+    formats:
+      - binary
+    name_template: "hopter-npm-{{ .Os }}-{{ .Arch }}"
+
+  - id: direct-archive
+    ids:
+      - direct
+    formats:
+      - tar.gz
+    name_template: "hopter_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  github:
+    owner: sorcererxw
+    name: hopter
+  name_template: "hopter {{ .Tag }}"
+
+brews:
+  - name: hopter
+    ids:
+      - homebrew-binary
+    homepage: "https://github.com/sorcererxw/hopter"
+    description: "Self-hosted remote control plane for local coding agents"
+    license: "Apache-2.0"
+    url_template: "https://github.com/sorcererxw/hopter/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    directory: Formula
+    repository:
+      owner: sorcererxw
+      name: tap
+      branch: main
+      token: "{{ .Env.RELEASE_TOKEN }}"
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    commit_msg_template: "Update hopter to {{ .Tag }}"
+    install: |
+      source = Dir["hopter-homebrew-*"].first
+      bin.install source => "hopter"
+    service: |
+      run [opt_bin/"hopter", "serve"]
+      keep_alive true
+      log_path var/"log/hopter.log"
+      error_log_path var/"log/hopter.err.log"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/hopter version")

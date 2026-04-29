@@ -127,6 +127,7 @@ In the current implementation direction, `install_source` should come primarily 
 - `unknown`
 - `homebrew_formula`
 - `homebrew_cask`
+- `npm`
 - `apt`
 - `dnf`
 - `winget`
@@ -354,6 +355,7 @@ Package-managed installs still use the same manifest to detect newer versions, b
 
 - Homebrew formula: `brew upgrade hopter`
 - Homebrew cask: `brew upgrade --cask hopter`
+- npm: `npm update -g hopter`
 - APT: `sudo apt update && sudo apt upgrade hopter`
 - DNF: `sudo dnf upgrade hopter`
 - MacPorts: `sudo port selfupdate && sudo port upgrade hopter`

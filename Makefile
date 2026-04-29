@@ -1,4 +1,4 @@
-.PHONY: help dev dev-relay reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-docs validate-app-server-runtime validate-app-server-approvals validate-app-server-reasoning validate-git-actions validate-tasks-idl validate-tasks-store validate-interrupt-ui validate-update-ui validate-all
+.PHONY: help dev dev-relay reset verify-live start go-test go-run ui-dev ui-typecheck ui-build ui-lint proto proto-gen proto-lint test docs validate-go-idl validate-go-server validate-go-ui validate-go-terminal validate-go-tetris validate-transcript-ui validate-session-roundtrip validate-app-server-docs validate-app-server-runtime validate-app-server-approvals validate-app-server-reasoning validate-git-actions validate-tasks-idl validate-tasks-store validate-interrupt-ui validate-update-ui validate-goreleaser validate-npm-packages validate-all
 
 help:
 	@echo "Targets:"
@@ -34,6 +34,8 @@ help:
 	@echo "  validate-tasks-store Run Badger-backed task store validation"
 	@echo "  validate-interrupt-ui Run interrupt-button browser validation"
 	@echo "  validate-update-ui Run update-entry browser validation"
+	@echo "  validate-goreleaser Run GoReleaser release config validation"
+	@echo "  validate-npm-packages Run npm package generation validation"
 	@echo "  validate-all       Run all current validations"
 
 dev:
@@ -130,5 +132,11 @@ validate-interrupt-ui:
 
 validate-update-ui:
 	bun scripts/validate-update-ui.ts
+
+validate-goreleaser:
+	bun scripts/validate-goreleaser.ts
+
+validate-npm-packages:
+	bun scripts/validate-npm-packages.ts
 
 validate-all: docs validate-app-server-docs validate-go-idl validate-go-server validate-go-ui validate-go-tetris

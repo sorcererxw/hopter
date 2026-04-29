@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -24,8 +25,6 @@ jobs:
       release_needed: ${{ steps.scope.outputs.release_needed }}
       version: ${{ steps.version.outputs.version }}
       changed_files: ${{ steps.scope.outputs.changed_files }}
-      range_start: ${{ steps.scope.outputs.range_start }}
-      range_end: ${{ steps.scope.outputs.range_end }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -56,14 +55,12 @@ jobs:
           cat "${changed_file_list}"
 
           release_needed=false
-          if grep -Eq '^(cmd/|internal/|idl/|ui/|scripts/|Makefile$|go\.mod$|go\.sum$|\.air\.toml$)' "${changed_file_list}"; then
+          if grep -Eq '^(cmd/|internal/|idl/|ui/|scripts/|Makefile$|go\.mod$|go\.sum$|\.air\.toml$|\.goreleaser\.yml$|\.github/workflows/release\.yml$)' "${changed_file_list}"; then
             release_needed=true
           fi
 
           {
             echo "release_needed=${release_needed}"
-            echo "range_start=${before}"
-            echo "range_end=${after}"
             echo "changed_files<<EOF"
             cat "${changed_file_list}"
             echo "EOF"
@@ -91,26 +88,19 @@ jobs:
           echo "version=${next_tag}" >> "${GITHUB_OUTPUT}"
           echo "Next release tag: ${next_tag}"
 
-  build-release-assets:
-    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+  goreleaser-release:
+    name: GoReleaser Release
     needs: detect-release-scope
     if: needs.detect-release-scope.outputs.release_needed == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - goos: darwin
-            goarch: amd64
-          - goos: darwin
-            goarch: arm64
-          - goos: linux
-            goarch: amd64
-          - goos: linux
-            goarch: arm64
+    env:
+      VERSION: ${{ needs.detect-release-scope.outputs.version }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -135,121 +125,36 @@ jobs:
       - name: Build embedded UI dist
         run: pnpm --dir ui build
 
-      - name: Build release archive
-        env:
-          VERSION: ${{ needs.detect-release-scope.outputs.version }}
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          version_no_v="${VERSION#v}"
-          archive_dir="release/${GOOS}-${GOARCH}"
-          binary_name="hopter"
-          binary_asset_name="hopter-${GOOS}-${GOARCH}"
-          archive_name="hopter_${version_no_v}_${GOOS}_${GOARCH}.tar.gz"
-
-          mkdir -p "${archive_dir}"
-
-          CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" \
-            go build \
-              -trimpath \
-              -ldflags "-s -w -X main.version=${version_no_v} -X main.installSource=direct" \
-              -o "${archive_dir}/${binary_name}" \
-              ./cmd/hopter
-
-          cp "${archive_dir}/${binary_name}" "release/${binary_asset_name}"
-          tar -C "${archive_dir}" -czf "release/${archive_name}" "${binary_name}"
-
-      - name: Upload release archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            release/hopter-${{ matrix.goos }}-${{ matrix.goarch }}
-            release/*.tar.gz
-          if-no-files-found: error
-
-  publish-release:
-    name: Publish GitHub Release
-    needs:
-      - detect-release-scope
-      - build-release-assets
-    if: needs.detect-release-scope.outputs.release_needed == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download release archives
-        uses: actions/download-artifact@v4
-        with:
-          pattern: release-*
-          merge-multiple: true
-          path: release
-
-      - name: Generate checksum manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          (
-            cd release
-            sha256sum hopter-* *.tar.gz > checksums.txt
-          )
-
-      - name: Write release notes
+      - name: Create release tag
         shell: bash
         env:
-          VERSION: ${{ needs.detect-release-scope.outputs.version }}
-          RANGE_START: ${{ needs.detect-release-scope.outputs.range_start }}
-          RANGE_END: ${{ needs.detect-release-scope.outputs.range_end }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ -n "${RANGE_START}" ]]; then
-            commit_range="${RANGE_START}..${RANGE_END}"
-          else
-            commit_range="${RANGE_END}"
-          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${RELEASE_REPOSITORY}.git"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push origin "refs/tags/${VERSION}"
 
-          commit_link_prefix="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit"
-          commits="$(git log --pretty=format:"- [\`%h\`](${commit_link_prefix}/%H) %s" "${commit_range}" || true)"
-          if [[ -z "${commits}" ]]; then
-            commits="- No commits found for this release range."
-          fi
-
-          cat > release-notes.md <<EOF
-          ## Release ${VERSION}
-
-          **Repository:** ${GITHUB_REPOSITORY}
-          **Branch:** ${GITHUB_REF_NAME}
-          **Trigger SHA:** ${GITHUB_SHA}
-          **Commit range:** ${commit_range}
-
-          ### Commit history
-
-          ${commits}
-          EOF
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          repository: ${{ env.RELEASE_REPOSITORY }}
-          tag_name: ${{ needs.detect-release-scope.outputs.version }}
-          name: hopter ${{ needs.detect-release-scope.outputs.version }}
-          body_path: release-notes.md
-          generate_release_notes: false
-          files: |
-            release/*
-          token: ${{ secrets.RELEASE_TOKEN }}
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
-  publish-homebrew-tap:
-    name: Publish Homebrew Tap
+  publish-npm:
+    name: Publish npm Packages
     needs:
       - detect-release-scope
-      - build-release-assets
-      - publish-release
-    if: needs.detect-release-scope.outputs.release_needed == 'true' && needs.publish-release.result == 'success'
+      - goreleaser-release
+    if: needs.detect-release-scope.outputs.release_needed == 'true' && needs.goreleaser-release.result == 'success'
     runs-on: ubuntu-latest
     env:
-      HOMEBREW_TAP_REPOSITORY: sorcererxw/tap
       VERSION: ${{ needs.detect-release-scope.outputs.version }}
     steps:
       - name: Check out source repository
@@ -257,45 +162,56 @@ jobs:
         with:
           path: source
 
-      - name: Download release archives
-        uses: actions/download-artifact@v4
-        with:
-          pattern: release-*
-          merge-multiple: true
-          path: source/release
-
-      - name: Generate checksum manifest
-        shell: bash
-        run: |
-          set -euo pipefail
-          (
-            cd source/release
-            sha256sum hopter-* *.tar.gz > checksums.txt
-          )
-
-      - name: Update Homebrew tap formulae
+      - name: Download npm release assets
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p source/release
+          gh release download "${VERSION}" \
+            --repo "${RELEASE_REPOSITORY}" \
+            --pattern "hopter-npm-*" \
+            --dir source/release
 
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git" tap
-          bash source/scripts/generate-homebrew-formula.sh \
+      - name: Set up Node.js for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Generate npm packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash source/scripts/generate-npm-packages.sh \
             --version "${VERSION}" \
             --repo "${RELEASE_REPOSITORY}" \
-            --checksums source/release/checksums.txt \
-            --output tap/Formula/hopter.rb
+            --release-dir source/release \
+            --output npm-packages
 
-          (
-            cd tap
-            git add Formula/hopter.rb
-            if git diff --cached --quiet; then
-              echo "${HOMEBREW_TAP_REPOSITORY} formula already up to date."
-              exit 0
-            fi
-            git commit -m "Update hopter to ${VERSION}"
-            git push origin HEAD:main
-          )
+      - name: Publish npm packages
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          for package_dir in \
+            npm-packages/darwin-arm64 \
+            npm-packages/darwin-x64 \
+            npm-packages/linux-arm64 \
+            npm-packages/linux-x64 \
+            npm-packages/main
+          do
+            (
+              cd "${package_dir}"
+              package_name="$(node -p "require('./package.json').name")"
+              package_version="$(node -p "require('./package.json').version")"
+              if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+                echo "${package_name}@${package_version} already published."
+                exit 0
+              fi
+              npm publish --access public --provenance
+            )
+          done

@@ -11,11 +11,21 @@ It is not a new coding agent, a browser IDE, or a generic AI chat wrapper. Codex
 ## Install
 
 ```bash
+brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap
 brew install sorcererxw/tap/hopter
 hopter
 ```
 
+or:
+
+```bash
+npm install -g hopter
+hopter
+```
+
 Hopter starts the local server and prints the URL to open.
+
+See [`docs/README.md`](docs/README.md) for the active documentation map.
 
 ## License
 

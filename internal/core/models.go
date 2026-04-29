@@ -17,6 +17,7 @@ const (
 	InstallSourceUnknown         InstallSource = "unknown"
 	InstallSourceHomebrewFormula InstallSource = "homebrew_formula"
 	InstallSourceHomebrewCask    InstallSource = "homebrew_cask"
+	InstallSourceNPM             InstallSource = "npm"
 	InstallSourceAPT             InstallSource = "apt"
 	InstallSourceDNF             InstallSource = "dnf"
 	InstallSourceWinget          InstallSource = "winget"

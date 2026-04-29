@@ -143,6 +143,20 @@ func TestCheckUsesInjectedAvailableVersion(t *testing.T) {
 	}
 }
 
+func TestNPMInstallSourceIsPackageManaged(t *testing.T) {
+	service := NewServiceWithOptions("1.2.3", "npm", ServiceOptions{})
+	status := service.GetStatus()
+	if status.InstallSource != core.InstallSourceNPM {
+		t.Fatalf("unexpected install source: %s", status.InstallSource)
+	}
+	if status.UpdatePolicy != core.UpdatePolicyPackageManaged {
+		t.Fatalf("unexpected update policy: %s", status.UpdatePolicy)
+	}
+	if status.UpgradeCommandHint != "npm update -g hopter" {
+		t.Fatalf("unexpected command hint: %q", status.UpgradeCommandHint)
+	}
+}
+
 func TestCheckFallsBackToGitHubLatestRelease(t *testing.T) {
 	assetName := "hopter-" + currentPlatformKey()
 	checksum := strings.Repeat("b", 64)
