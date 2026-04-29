@@ -115,9 +115,9 @@ GitHub release and push to that tap. Because this tap repo intentionally is not
 named `homebrew-tap`, users install it with an explicit remote:
 `brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap`.
 
-For npm publishing, create the public `@sorcererxw/hopter` package, then configure
+For npm publishing, create the public `hopter-cli` package, then configure
 `NPM_TOKEN` in GitHub Actions. The workflow publishes only that package. npm
-package updates remain package-manager owned: `npm update -g @sorcererxw/hopter`
+package updates remain package-manager owned: `npm update -g hopter-cli`
 installs the new package version and reruns postinstall to fetch the matching
 binary.
 

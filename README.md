@@ -19,7 +19,7 @@ hopter
 or:
 
 ```bash
-npm install -g @sorcererxw/hopter
+npm install -g hopter-cli
 hopter
 ```
 

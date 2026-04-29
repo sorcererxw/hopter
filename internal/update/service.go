@@ -274,7 +274,7 @@ func commandHintForInstallSource(source core.InstallSource) string {
 	case core.InstallSourceHomebrewCask:
 		return "brew upgrade --cask hopter"
 	case core.InstallSourceNPM:
-		return "npm update -g @sorcererxw/hopter"
+		return "npm update -g hopter-cli"
 	case core.InstallSourceAPT:
 		return "sudo apt update && sudo apt upgrade hopter"
 	case core.InstallSourceDNF:

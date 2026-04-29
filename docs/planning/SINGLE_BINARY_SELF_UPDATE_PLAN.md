@@ -355,7 +355,7 @@ Package-managed installs still use the same manifest to detect newer versions, b
 
 - Homebrew formula: `brew upgrade hopter`
 - Homebrew cask: `brew upgrade --cask hopter`
-- npm: `npm update -g @sorcererxw/hopter`
+- npm: `npm update -g hopter-cli`
 - APT: `sudo apt update && sudo apt upgrade hopter`
 - DNF: `sudo dnf upgrade hopter`
 - MacPorts: `sudo port selfupdate && sudo port upgrade hopter`
