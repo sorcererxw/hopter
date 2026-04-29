@@ -44,7 +44,7 @@ async function main() {
   const mainPackage = JSON.parse(readFileSync(mainPackagePath, "utf8"));
   run.writeText("npm/main/package.json", JSON.stringify(mainPackage, null, 2));
 
-  addCheck(checks, "package name", mainPackage.name === "hopter", `name is ${mainPackage.name}`);
+  addCheck(checks, "package name", mainPackage.name === "@sorcererxw/hopter", `name is ${mainPackage.name}`);
   addCheck(checks, "package version", mainPackage.version === "0.0.7", `version is ${mainPackage.version}`);
   addCheck(checks, "bin entry", mainPackage.bin?.hopter === "bin/hopter.js", "package exposes hopter bin");
   addCheck(checks, "postinstall", mainPackage.scripts?.postinstall === "node scripts/install.js", "package downloads binary during postinstall");

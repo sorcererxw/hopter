@@ -152,7 +152,7 @@ func TestNPMInstallSourceIsPackageManaged(t *testing.T) {
 	if status.UpdatePolicy != core.UpdatePolicyPackageManaged {
 		t.Fatalf("unexpected update policy: %s", status.UpdatePolicy)
 	}
-	if status.UpgradeCommandHint != "npm update -g hopter" {
+	if status.UpgradeCommandHint != "npm update -g @sorcererxw/hopter" {
 		t.Fatalf("unexpected command hint: %q", status.UpgradeCommandHint)
 	}
 }

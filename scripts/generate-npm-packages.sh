@@ -5,7 +5,7 @@ version=""
 release_dir=""
 output=""
 repo="sorcererxw/hopter"
-package_name="hopter"
+package_name="@sorcererxw/hopter"
 
 usage() {
   cat <<'EOF'
@@ -17,7 +17,7 @@ Options:
   --release-dir   Accepted for compatibility; npm postinstall downloads from GitHub Release
   --output        Directory where the npm package folder will be generated
   --repo          GitHub repository metadata, default: sorcererxw/hopter
-  --package-name  npm package name, default: hopter
+  --package-name  npm package name, default: @sorcererxw/hopter
 EOF
 }
 
