@@ -108,16 +108,17 @@ debugging.
 
 The release workflow creates the next `v0.0.x` tag, then GoReleaser publishes
 GitHub release assets and updates the Homebrew tap. npm packages are generated
-afterward from the `hopter-npm-<os>-<arch>` assets in the same GitHub release.
+afterward as a single `hopter` package whose postinstall script downloads the
+current platform's `hopter-npm-<os>-<arch>` asset from the same GitHub release.
 Create or reuse `sorcererxw/tap`, then ensure `RELEASE_TOKEN` can create the
 GitHub release and push to that tap. Because this tap repo intentionally is not
 named `homebrew-tap`, users install it with an explicit remote:
 `brew tap --custom-remote sorcererxw/tap https://github.com/sorcererxw/tap`.
 
-For npm publishing, create the public `hopter` package and the `@hopter`
-organization/scope packages, then configure `NPM_TOKEN` in GitHub Actions. The
-workflow publishes platform packages first and the `hopter` wrapper package
-last, all at the same release version.
+For npm publishing, create the public `hopter` package, then configure
+`NPM_TOKEN` in GitHub Actions. The workflow publishes only that package. npm
+package updates remain package-manager owned: `npm update -g hopter` installs
+the new package version and reruns postinstall to fetch the matching binary.
 
 Current intended values:
 
@@ -142,8 +143,9 @@ Unless a signed update manifest is configured in code, `hopter` now checks the
 latest GitHub release on `sorcererxw/hopter`. Direct-install self-update expects
 the release to publish raw per-platform binaries named `hopter-<os>-<arch>`
 alongside `checksums.txt`. GoReleaser uses `hopter-homebrew-<os>-<arch>` assets
-for the Homebrew tap, and npm platform packages use `hopter-npm-<os>-<arch>`
-assets so their build-time `installSource` metadata stays accurate.
+for the Homebrew tap, and the npm postinstall script uses
+`hopter-npm-<os>-<arch>` assets so its build-time `installSource` metadata stays
+accurate.
 
 In dev, the browser should still enter through the Go origin.
 

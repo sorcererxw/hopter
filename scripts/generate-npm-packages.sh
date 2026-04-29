@@ -6,20 +6,18 @@ release_dir=""
 output=""
 repo="sorcererxw/hopter"
 package_name="hopter"
-binary_scope="@hopter"
 
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/generate-npm-packages.sh --version v0.0.1 --release-dir release --output dist/npm
+  scripts/generate-npm-packages.sh --version v0.0.1 --output dist/npm
 
 Options:
   --version       Release version, with or without leading v
-  --release-dir   Directory containing hopter-npm-<os>-<arch> release binaries
-  --output        Directory where npm package folders will be generated
+  --release-dir   Accepted for compatibility; npm postinstall downloads from GitHub Release
+  --output        Directory where the npm package folder will be generated
   --repo          GitHub repository metadata, default: sorcererxw/hopter
-  --package-name  Main npm package name, default: hopter
-  --binary-scope  Scope for platform binary packages, default: @hopter
+  --package-name  npm package name, default: hopter
 EOF
 }
 
@@ -45,10 +43,6 @@ while [[ $# -gt 0 ]]; do
       package_name="${2:-}"
       shift 2
       ;;
-    --binary-scope)
-      binary_scope="${2:-}"
-      shift 2
-      ;;
     -h|--help)
       usage
       exit 0
@@ -61,125 +55,31 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$version" || -z "$release_dir" || -z "$output" ]]; then
+if [[ -z "$version" || -z "$output" ]]; then
   usage >&2
   exit 2
 fi
 
-if [[ ! -d "$release_dir" ]]; then
-  echo "release directory not found: $release_dir" >&2
-  exit 1
-fi
-
 version="${version#v}"
-binary_scope="${binary_scope%/}"
-
-if [[ "$binary_scope" != @* ]]; then
-  echo "binary scope must start with @: $binary_scope" >&2
-  exit 2
-fi
-
-platform_package_name() {
-  local platform="$1"
-  printf '%s/%s' "$binary_scope" "$platform"
-}
-
-copy_binary() {
-  local asset="$1"
-  local package_dir="$2"
-  local source_path="${release_dir}/${asset}"
-  if [[ ! -f "$source_path" ]]; then
-    echo "release asset not found: $source_path" >&2
-    exit 1
-  fi
-  mkdir -p "${package_dir}/bin"
-  install -m 0755 "$source_path" "${package_dir}/bin/hopter"
-}
-
-write_platform_package() {
-  local platform="$1"
-  local npm_os="$2"
-  local npm_cpu="$3"
-  local asset="$4"
-  local package_dir="${output}/${platform}"
-  local package_full_name
-  package_full_name="$(platform_package_name "$platform")"
-
-  mkdir -p "$package_dir"
-  copy_binary "$asset" "$package_dir"
-
-  cat > "${package_dir}/package.json" <<EOF
-{
-  "name": "${package_full_name}",
-  "version": "${version}",
-  "description": "Hopter native binary for ${platform}",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/${repo}.git"
-  },
-  "os": ["${npm_os}"],
-  "cpu": ["${npm_cpu}"],
-  "files": [
-    "bin/hopter",
-    "README.md"
-  ],
-  "publishConfig": {
-    "access": "public"
-  }
-}
-EOF
-
-  cat > "${package_dir}/README.md" <<EOF
-# ${package_full_name}
-
-Native Hopter binary for ${platform}. This package is installed automatically by \`${package_name}\` as an optional platform dependency.
-EOF
-}
 
 rm -rf "$output"
-mkdir -p "$output"
-
-write_platform_package "darwin-arm64" "darwin" "arm64" "hopter-npm-darwin-arm64"
-write_platform_package "darwin-x64" "darwin" "x64" "hopter-npm-darwin-amd64"
-write_platform_package "linux-arm64" "linux" "arm64" "hopter-npm-linux-arm64"
-write_platform_package "linux-x64" "linux" "x64" "hopter-npm-linux-amd64"
-
 main_dir="${output}/main"
-mkdir -p "${main_dir}/bin"
+mkdir -p "${main_dir}/bin" "${main_dir}/scripts"
 
-darwin_arm64_package="$(platform_package_name darwin-arm64)"
-darwin_x64_package="$(platform_package_name darwin-x64)"
-linux_arm64_package="$(platform_package_name linux-arm64)"
-linux_x64_package="$(platform_package_name linux-x64)"
-
-cat > "${main_dir}/bin/hopter.js" <<EOF
+cat > "${main_dir}/bin/hopter.js" <<'EOF'
 #!/usr/bin/env node
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
 const { spawn } = require("node:child_process");
 
-const packages = {
-  "darwin-arm64": "${darwin_arm64_package}",
-  "darwin-x64": "${darwin_x64_package}",
-  "linux-arm64": "${linux_arm64_package}",
-  "linux-x64": "${linux_x64_package}",
-};
+const binaryName = process.platform === "win32" ? "hopter.exe" : "hopter";
+const binaryPath = path.join(__dirname, "..", "vendor", binaryName);
 
-const key = process.platform + "-" + process.arch;
-const packageName = packages[key];
-
-if (!packageName) {
-  console.error("hopter does not provide an npm binary for " + key + ".");
-  process.exit(1);
-}
-
-let binaryPath;
-try {
-  binaryPath = require.resolve(packageName + "/bin/hopter");
-} catch (error) {
-  console.error("The platform package " + packageName + " is missing.");
-  console.error("Reinstall hopter without omitting optional dependencies.");
+if (!fs.existsSync(binaryPath)) {
+  console.error("The Hopter native binary is missing.");
+  console.error("Run `npm rebuild hopter` or reinstall with lifecycle scripts enabled.");
   process.exit(1);
 }
 
@@ -211,6 +111,133 @@ EOF
 
 chmod 0755 "${main_dir}/bin/hopter.js"
 
+cat > "${main_dir}/scripts/install.js" <<EOF
+#!/usr/bin/env node
+"use strict";
+
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const https = require("node:https");
+const os = require("node:os");
+const path = require("node:path");
+
+const packageJson = require("../package.json");
+const repo = "${repo}";
+const tag = "v" + packageJson.version;
+const assetName = resolveAssetName();
+const baseURL = "https://github.com/" + repo + "/releases/download/" + tag;
+const checksumsURL = baseURL + "/checksums.txt";
+const assetURL = baseURL + "/" + assetName;
+const vendorDir = path.join(__dirname, "..", "vendor");
+const binaryName = process.platform === "win32" ? "hopter.exe" : "hopter";
+const finalPath = path.join(vendorDir, binaryName);
+const tempPath = path.join(vendorDir, binaryName + ".tmp-" + process.pid);
+
+function resolveAssetName() {
+  const key = process.platform + "-" + process.arch;
+  const assets = {
+    "darwin-arm64": "hopter-npm-darwin-arm64",
+    "darwin-x64": "hopter-npm-darwin-amd64",
+    "linux-arm64": "hopter-npm-linux-arm64",
+    "linux-x64": "hopter-npm-linux-amd64",
+  };
+  const asset = assets[key];
+  if (!asset) {
+    throw new Error("hopter does not provide an npm binary for " + key);
+  }
+  return asset;
+}
+
+function request(url, redirectCount = 0) {
+  if (redirectCount > 5) {
+    return Promise.reject(new Error("too many redirects while downloading " + url));
+  }
+
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: {
+        "User-Agent": "hopter-npm-install",
+      },
+    }, (response) => {
+      const location = response.headers.location;
+      if (response.statusCode >= 300 && response.statusCode < 400 && location) {
+        response.resume();
+        const nextURL = new URL(location, url).toString();
+        resolve(request(nextURL, redirectCount + 1));
+        return;
+      }
+      if (response.statusCode !== 200) {
+        response.resume();
+        reject(new Error("download failed for " + url + ": HTTP " + response.statusCode));
+        return;
+      }
+      resolve(response);
+    });
+    req.on("error", reject);
+  });
+}
+
+async function readText(url) {
+  const response = await request(url);
+  const chunks = [];
+  for await (const chunk of response) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function checksumForAsset(checksums, name) {
+  for (const line of checksums.split(/\\r?\\n/)) {
+    const fields = line.trim().split(/\\s+/);
+    if (fields.length >= 2 && fields[fields.length - 1] === name) {
+      return fields[0].toLowerCase();
+    }
+  }
+  throw new Error("checksums.txt is missing entry for " + name);
+}
+
+async function downloadFile(url, outputPath) {
+  const response = await request(url);
+  await new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(outputPath, { mode: 0o755 });
+    response.pipe(file);
+    response.on("error", reject);
+    file.on("error", reject);
+    file.on("finish", () => file.close(resolve));
+  });
+}
+
+async function main() {
+  fs.mkdirSync(vendorDir, { recursive: true });
+  const checksums = await readText(checksumsURL);
+  const expectedSHA256 = checksumForAsset(checksums, assetName);
+
+  await downloadFile(assetURL, tempPath);
+
+  const actualSHA256 = crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(tempPath))
+    .digest("hex");
+
+  if (actualSHA256 !== expectedSHA256) {
+    fs.rmSync(tempPath, { force: true });
+    throw new Error("checksum mismatch for " + assetName + ": expected " + expectedSHA256 + ", got " + actualSHA256);
+  }
+
+  fs.chmodSync(tempPath, 0o755);
+  fs.renameSync(tempPath, finalPath);
+  console.log("Installed Hopter binary " + assetName + " for " + os.platform() + "/" + os.arch());
+}
+
+main().catch((error) => {
+  fs.rmSync(tempPath, { force: true });
+  console.error(error.message);
+  process.exit(1);
+});
+EOF
+
+chmod 0755 "${main_dir}/scripts/install.js"
+
 cat > "${main_dir}/package.json" <<EOF
 {
   "name": "${package_name}",
@@ -224,16 +251,14 @@ cat > "${main_dir}/package.json" <<EOF
   "bin": {
     "hopter": "bin/hopter.js"
   },
+  "scripts": {
+    "postinstall": "node scripts/install.js"
+  },
   "files": [
     "bin/hopter.js",
+    "scripts/install.js",
     "README.md"
   ],
-  "optionalDependencies": {
-    "${darwin_arm64_package}": "${version}",
-    "${darwin_x64_package}": "${version}",
-    "${linux_arm64_package}": "${version}",
-    "${linux_x64_package}": "${version}"
-  },
   "publishConfig": {
     "access": "public"
   }
@@ -250,7 +275,7 @@ npm install -g ${package_name}
 hopter
 \`\`\`
 
-This package installs the matching native Hopter binary through optional platform packages.
+This package downloads the matching native Hopter binary from the GitHub release during npm postinstall.
 EOF
 
-echo "Generated npm packages in: $output"
+echo "Generated npm package in: $main_dir"

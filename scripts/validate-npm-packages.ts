@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 
@@ -7,13 +7,6 @@ type Check = {
   status: "pass" | "fail";
   detail: string;
 };
-
-const assets = [
-  "hopter-npm-darwin-arm64",
-  "hopter-npm-darwin-amd64",
-  "hopter-npm-linux-arm64",
-  "hopter-npm-linux-amd64",
-];
 
 function addCheck(checks: Check[], name: string, passed: boolean, detail: string) {
   checks.push({
@@ -25,23 +18,13 @@ function addCheck(checks: Check[], name: string, passed: boolean, detail: string
 
 async function main() {
   const run = createValidationRun("npm_packages");
-  const releaseDir = path.join(run.rootDir, "release");
   const outputDir = path.join(run.rootDir, "npm");
-  mkdirSync(releaseDir, { recursive: true });
-
-  for (const asset of assets) {
-    const assetPath = path.join(releaseDir, asset);
-    writeFileSync(assetPath, "#!/usr/bin/env sh\nprintf 'hopter test binary\\n'\n");
-    chmodSync(assetPath, 0o755);
-  }
 
   const generate = await runCommand([
     "bash",
     "scripts/generate-npm-packages.sh",
     "--version",
     "v0.0.7",
-    "--release-dir",
-    releaseDir,
     "--output",
     outputDir,
   ], process.cwd());
@@ -61,51 +44,40 @@ async function main() {
   const mainPackage = JSON.parse(readFileSync(mainPackagePath, "utf8"));
   run.writeText("npm/main/package.json", JSON.stringify(mainPackage, null, 2));
 
-  addCheck(checks, "main package name", mainPackage.name === "hopter", `name is ${mainPackage.name}`);
-  addCheck(checks, "main package version", mainPackage.version === "0.0.7", `version is ${mainPackage.version}`);
-  addCheck(checks, "main bin", mainPackage.bin?.hopter === "bin/hopter.js", "main package exposes hopter bin");
-  addCheck(
-    checks,
-    "optional platform deps",
-    mainPackage.optionalDependencies?.["@hopter/darwin-arm64"] === "0.0.7" &&
-      mainPackage.optionalDependencies?.["@hopter/darwin-x64"] === "0.0.7" &&
-      mainPackage.optionalDependencies?.["@hopter/linux-arm64"] === "0.0.7" &&
-      mainPackage.optionalDependencies?.["@hopter/linux-x64"] === "0.0.7",
-    "main package pins all platform optional dependencies to the release version",
-  );
+  addCheck(checks, "package name", mainPackage.name === "hopter", `name is ${mainPackage.name}`);
+  addCheck(checks, "package version", mainPackage.version === "0.0.7", `version is ${mainPackage.version}`);
+  addCheck(checks, "bin entry", mainPackage.bin?.hopter === "bin/hopter.js", "package exposes hopter bin");
+  addCheck(checks, "postinstall", mainPackage.scripts?.postinstall === "node scripts/install.js", "package downloads binary during postinstall");
+  addCheck(checks, "no optional deps", mainPackage.optionalDependencies === undefined, "package does not rely on platform npm packages");
 
-  const platformPackagePath = path.join(outputDir, "darwin-arm64", "package.json");
-  const platformPackage = JSON.parse(readFileSync(platformPackagePath, "utf8"));
-  run.writeText("npm/darwin-arm64/package.json", JSON.stringify(platformPackage, null, 2));
-  addCheck(checks, "platform package name", platformPackage.name === "@hopter/darwin-arm64", `name is ${platformPackage.name}`);
-  addCheck(checks, "platform os", platformPackage.os?.[0] === "darwin", `os is ${platformPackage.os}`);
-  addCheck(checks, "platform cpu", platformPackage.cpu?.[0] === "arm64", `cpu is ${platformPackage.cpu}`);
-
-  const nodeCheck = await runCommand(["node", "--check", path.join(outputDir, "main", "bin", "hopter.js")], process.cwd());
-  run.writeJson("commands/node-check.json", nodeCheck);
+  const wrapperCheck = await runCommand(["node", "--check", path.join(outputDir, "main", "bin", "hopter.js")], process.cwd());
+  run.writeJson("commands/node-check-wrapper.json", wrapperCheck);
   addCheck(
     checks,
     "wrapper syntax",
-    nodeCheck.exitCode === 0,
-    nodeCheck.exitCode === 0 ? "wrapper passes node syntax check" : (nodeCheck.stderr || nodeCheck.stdout).trim(),
+    wrapperCheck.exitCode === 0,
+    wrapperCheck.exitCode === 0 ? "wrapper passes node syntax check" : (wrapperCheck.stderr || wrapperCheck.stdout).trim(),
+  );
+
+  const installCheck = await runCommand(["node", "--check", path.join(outputDir, "main", "scripts", "install.js")], process.cwd());
+  run.writeJson("commands/node-check-install.json", installCheck);
+  addCheck(
+    checks,
+    "postinstall syntax",
+    installCheck.exitCode === 0,
+    installCheck.exitCode === 0 ? "postinstall script passes node syntax check" : (installCheck.stderr || installCheck.stdout).trim(),
   );
 
   const packMain = await runCommand(["npm", "pack", "--dry-run", "--json"], path.join(outputDir, "main"));
   run.writeJson("commands/npm-pack-main.json", packMain);
   addCheck(
     checks,
-    "main npm pack",
-    packMain.exitCode === 0 && packMain.stdout.includes("bin/hopter.js"),
-    packMain.exitCode === 0 ? "main package dry-run includes wrapper bin" : (packMain.stderr || packMain.stdout).trim(),
-  );
-
-  const packPlatform = await runCommand(["npm", "pack", "--dry-run", "--json"], path.join(outputDir, "darwin-arm64"));
-  run.writeJson("commands/npm-pack-darwin-arm64.json", packPlatform);
-  addCheck(
-    checks,
-    "platform npm pack",
-    packPlatform.exitCode === 0 && packPlatform.stdout.includes("bin/hopter"),
-    packPlatform.exitCode === 0 ? "platform package dry-run includes native binary" : (packPlatform.stderr || packPlatform.stdout).trim(),
+    "npm pack",
+    packMain.exitCode === 0 &&
+      packMain.stdout.includes("bin/hopter.js") &&
+      packMain.stdout.includes("scripts/install.js") &&
+      !packMain.stdout.includes("vendor/hopter"),
+    packMain.exitCode === 0 ? "package dry-run includes wrapper and postinstall script only" : (packMain.stderr || packMain.stdout).trim(),
   );
 
   const status = checks.every((check) => check.status === "pass") ? "pass" : "fail";
