@@ -38,6 +38,7 @@ func NewRouter(opts RouterOptions) (http.Handler, error) {
 	mux.HandleFunc("GET /readyz", handleReady)
 	mux.HandleFunc("GET /version", versionHandler(opts.Version, opts.UI.Mode()))
 	mux.Handle("GET /events", authGate(NewSSEHandler(opts.EventHub)))
+	mux.Handle("GET /api/file-proxy", authGate(NewFileProxyHandler(opts.Workspace)))
 	mux.Handle("GET /api/image-proxy", authGate(NewImageProxyHandler(opts.Workspace)))
 	mux.Handle("GET /api/relay/callback", NewRelayCallbackHandler(opts.Relay))
 	mux.Handle("GET /terminals/{terminalId}/stream", authGate(NewTerminalWSHandler(opts.TerminalStreamHandler)))

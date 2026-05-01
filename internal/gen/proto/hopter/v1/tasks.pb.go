@@ -1140,6 +1140,7 @@ type ListTasksRequest struct {
 	AttentionKind   *AttentionKind         `protobuf:"varint,2,opt,name=attention_kind,json=attentionKind,proto3,enum=hopter.v1.AttentionKind,oneof" json:"attention_kind,omitempty"`
 	LifecycleStatus *TaskLifecycleStatus   `protobuf:"varint,3,opt,name=lifecycle_status,json=lifecycleStatus,proto3,enum=hopter.v1.TaskLifecycleStatus,oneof" json:"lifecycle_status,omitempty"`
 	Limit           *uint32                `protobuf:"varint,4,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
+	SessionId       *string                `protobuf:"bytes,5,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1200,6 +1201,13 @@ func (x *ListTasksRequest) GetLimit() uint32 {
 		return *x.Limit
 	}
 	return 0
+}
+
+func (x *ListTasksRequest) GetSessionId() string {
+	if x != nil && x.SessionId != nil {
+		return *x.SessionId
+	}
+	return ""
 }
 
 type ListTasksResponse struct {
@@ -1358,6 +1366,7 @@ type CreateTaskRequest struct {
 	Priority        *uint32                `protobuf:"varint,4,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	InitialSubtasks []string               `protobuf:"bytes,5,rep,name=initial_subtasks,json=initialSubtasks,proto3" json:"initial_subtasks,omitempty"`
 	IdempotencyKey  string                 `protobuf:"bytes,6,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	SessionId       *string                `protobuf:"bytes,7,opt,name=session_id,json=sessionId,proto3,oneof" json:"session_id,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1430,6 +1439,13 @@ func (x *CreateTaskRequest) GetInitialSubtasks() []string {
 func (x *CreateTaskRequest) GetIdempotencyKey() string {
 	if x != nil {
 		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CreateTaskRequest) GetSessionId() string {
+	if x != nil && x.SessionId != nil {
+		return *x.SessionId
 	}
 	return ""
 }
@@ -2536,17 +2552,20 @@ const file_hopter_v1_tasks_proto_rawDesc = "" +
 	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
 	"\n" +
 	"decided_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampH\x00R\tdecidedAt\x88\x01\x01B\r\n" +
-	"\v_decided_at\"\xa8\x02\n" +
+	"\v_decided_at\"\xdb\x02\n" +
 	"\x10ListTasksRequest\x12\"\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tH\x00R\tprojectId\x88\x01\x01\x12D\n" +
 	"\x0eattention_kind\x18\x02 \x01(\x0e2\x18.hopter.v1.AttentionKindH\x01R\rattentionKind\x88\x01\x01\x12N\n" +
 	"\x10lifecycle_status\x18\x03 \x01(\x0e2\x1e.hopter.v1.TaskLifecycleStatusH\x02R\x0flifecycleStatus\x88\x01\x01\x12\x19\n" +
-	"\x05limit\x18\x04 \x01(\rH\x03R\x05limit\x88\x01\x01B\r\n" +
+	"\x05limit\x18\x04 \x01(\rH\x03R\x05limit\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"session_id\x18\x05 \x01(\tH\x04R\tsessionId\x88\x01\x01B\r\n" +
 	"\v_project_idB\x11\n" +
 	"\x0f_attention_kindB\x13\n" +
 	"\x11_lifecycle_statusB\b\n" +
-	"\x06_limit\":\n" +
+	"\x06_limitB\r\n" +
+	"\v_session_id\":\n" +
 	"\x11ListTasksResponse\x12%\n" +
 	"\x05tasks\x18\x01 \x03(\v2\x0f.hopter.v1.TaskR\x05tasks\")\n" +
 	"\x0eGetTaskRequest\x12\x17\n" +
@@ -2554,7 +2573,7 @@ const file_hopter_v1_tasks_proto_rawDesc = "" +
 	"\x0fGetTaskResponse\x12#\n" +
 	"\x04task\x18\x01 \x01(\v2\x0f.hopter.v1.TaskR\x04task\x12.\n" +
 	"\bsubtasks\x18\x02 \x03(\v2\x12.hopter.v1.SubtaskR\bsubtasks\x12;\n" +
-	"\fcurrent_gate\x18\x03 \x01(\v2\x18.hopter.v1.TaskHumanGateR\vcurrentGate\"\xe2\x01\n" +
+	"\fcurrent_gate\x18\x03 \x01(\v2\x18.hopter.v1.TaskHumanGateR\vcurrentGate\"\x95\x02\n" +
 	"\x11CreateTaskRequest\x12\x1d\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x14\n" +
@@ -2562,8 +2581,11 @@ const file_hopter_v1_tasks_proto_rawDesc = "" +
 	"\x06prompt\x18\x03 \x01(\tR\x06prompt\x12\x1f\n" +
 	"\bpriority\x18\x04 \x01(\rH\x00R\bpriority\x88\x01\x01\x12)\n" +
 	"\x10initial_subtasks\x18\x05 \x03(\tR\x0finitialSubtasks\x12'\n" +
-	"\x0fidempotency_key\x18\x06 \x01(\tR\x0eidempotencyKeyB\v\n" +
-	"\t_priority\"\xcf\x01\n" +
+	"\x0fidempotency_key\x18\x06 \x01(\tR\x0eidempotencyKey\x12\"\n" +
+	"\n" +
+	"session_id\x18\a \x01(\tH\x01R\tsessionId\x88\x01\x01B\v\n" +
+	"\t_priorityB\r\n" +
+	"\v_session_id\"\xcf\x01\n" +
 	"\x12CreateTaskResponse\x12#\n" +
 	"\x04task\x18\x01 \x01(\v2\x0f.hopter.v1.TaskR\x04task\x12;\n" +
 	"\fcurrent_gate\x18\x02 \x01(\v2\x18.hopter.v1.TaskHumanGateR\vcurrentGate\x12\x1a\n" +

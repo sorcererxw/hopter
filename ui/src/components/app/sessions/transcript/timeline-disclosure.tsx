@@ -1,30 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { ChevronRight } from "@/components/icons/hugeicons"
 
 import { cn } from "@/lib/utils"
 
-// useTranscriptDisclosure provides simple local expanded/collapsed state for static disclosure sections.
-export function useTranscriptDisclosure(defaultExpanded = false) {
-  const [expanded, setExpanded] = useState(defaultExpanded)
-  return [expanded, () => setExpanded((prev) => !prev)] as const
-}
-
-// useActivitySyncedDisclosure keeps a disclosure open while the underlying activity remains active.
-export function useActivitySyncedDisclosure(active: boolean) {
-  const [expanded, setExpanded] = useState(active)
-
-  useEffect(() => {
-    setExpanded(active)
-  }, [active])
-
-  return [expanded, () => setExpanded((prev) => !prev)] as const
-}
+import { useActivitySyncedDisclosure } from "./timeline-disclosure-state"
 
 // TranscriptDisclosureItem wraps a disclosure button together with auto-managed expanded body content.
 export function TranscriptDisclosureItem({
   active = false,
   buttonClassName,
   children,
+  disclosureKey,
   iconClassName,
   label,
   title,
@@ -32,11 +18,15 @@ export function TranscriptDisclosureItem({
   active?: boolean
   buttonClassName?: string
   children: ReactNode
+  disclosureKey?: string
   iconClassName?: string
   label: ReactNode
   title?: string
 }) {
-  const [expanded, toggleExpanded] = useActivitySyncedDisclosure(active)
+  const [expanded, toggleExpanded] = useActivitySyncedDisclosure(
+    active,
+    disclosureKey
+  )
 
   return (
     <div className="min-w-0">
@@ -49,7 +39,31 @@ export function TranscriptDisclosureItem({
       >
         {label}
       </TranscriptDisclosureButton>
-      {expanded ? children : null}
+      <TranscriptDisclosureBody expanded={expanded}>
+        {children}
+      </TranscriptDisclosureBody>
+    </div>
+  )
+}
+
+// TranscriptDisclosureBody avoids layout-property animation because transcript
+// bodies can contain markdown, syntax highlighting, and large diffs.
+export function TranscriptDisclosureBody({
+  children,
+  expanded,
+}: {
+  children: ReactNode
+  expanded: boolean
+}) {
+  return (
+    <div
+      aria-hidden={!expanded}
+      className={cn(
+        "overflow-hidden",
+        expanded ? "opacity-100" : "pointer-events-none hidden opacity-0"
+      )}
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
     </div>
   )
 }
@@ -60,6 +74,7 @@ export function TranscriptDisclosureButton({
   className,
   expanded,
   iconClassName,
+  onClick,
   ...props
 }: React.ComponentProps<"button"> & {
   expanded: boolean
@@ -69,6 +84,7 @@ export function TranscriptDisclosureButton({
     <button
       type="button"
       aria-expanded={expanded}
+      onClick={onClick}
       className={cn(
         "group inline-flex max-w-full items-center text-left transition",
         className

@@ -51,12 +51,18 @@ const (
 	// SessionServiceListSessionTranscriptProcedure is the fully-qualified name of the SessionService's
 	// ListSessionTranscript RPC.
 	SessionServiceListSessionTranscriptProcedure = "/hopter.v1.SessionService/ListSessionTranscript"
+	// SessionServiceListSessionQueueProcedure is the fully-qualified name of the SessionService's
+	// ListSessionQueue RPC.
+	SessionServiceListSessionQueueProcedure = "/hopter.v1.SessionService/ListSessionQueue"
 	// SessionServiceCreateSessionProcedure is the fully-qualified name of the SessionService's
 	// CreateSession RPC.
 	SessionServiceCreateSessionProcedure = "/hopter.v1.SessionService/CreateSession"
 	// SessionServiceSendSessionInputProcedure is the fully-qualified name of the SessionService's
 	// SendSessionInput RPC.
 	SessionServiceSendSessionInputProcedure = "/hopter.v1.SessionService/SendSessionInput"
+	// SessionServiceRollbackSessionInputProcedure is the fully-qualified name of the SessionService's
+	// RollbackSessionInput RPC.
+	SessionServiceRollbackSessionInputProcedure = "/hopter.v1.SessionService/RollbackSessionInput"
 	// SessionServiceInterruptSessionProcedure is the fully-qualified name of the SessionService's
 	// InterruptSession RPC.
 	SessionServiceInterruptSessionProcedure = "/hopter.v1.SessionService/InterruptSession"
@@ -76,8 +82,10 @@ type SessionServiceClient interface {
 	GetSessionReview(context.Context, *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error)
 	GetSessionFile(context.Context, *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error)
 	ListSessionTranscript(context.Context, *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error)
+	ListSessionQueue(context.Context, *connect.Request[v1.ListSessionQueueRequest]) (*connect.Response[v1.ListSessionQueueResponse], error)
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error)
+	RollbackSessionInput(context.Context, *connect.Request[v1.RollbackSessionInputRequest]) (*connect.Response[v1.RollbackSessionInputResponse], error)
 	InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error)
 	RespondToSessionApproval(context.Context, *connect.Request[v1.RespondToSessionApprovalRequest]) (*connect.Response[v1.RespondToSessionApprovalResponse], error)
 	ListSessionArtifacts(context.Context, *connect.Request[v1.ListSessionArtifactsRequest]) (*connect.Response[v1.ListSessionArtifactsResponse], error)
@@ -130,6 +138,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("ListSessionTranscript")),
 			connect.WithClientOptions(opts...),
 		),
+		listSessionQueue: connect.NewClient[v1.ListSessionQueueRequest, v1.ListSessionQueueResponse](
+			httpClient,
+			baseURL+SessionServiceListSessionQueueProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListSessionQueue")),
+			connect.WithClientOptions(opts...),
+		),
 		createSession: connect.NewClient[v1.CreateSessionRequest, v1.CreateSessionResponse](
 			httpClient,
 			baseURL+SessionServiceCreateSessionProcedure,
@@ -140,6 +154,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			httpClient,
 			baseURL+SessionServiceSendSessionInputProcedure,
 			connect.WithSchema(sessionServiceMethods.ByName("SendSessionInput")),
+			connect.WithClientOptions(opts...),
+		),
+		rollbackSessionInput: connect.NewClient[v1.RollbackSessionInputRequest, v1.RollbackSessionInputResponse](
+			httpClient,
+			baseURL+SessionServiceRollbackSessionInputProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("RollbackSessionInput")),
 			connect.WithClientOptions(opts...),
 		),
 		interruptSession: connect.NewClient[v1.InterruptSessionRequest, v1.InterruptSessionResponse](
@@ -171,8 +191,10 @@ type sessionServiceClient struct {
 	getSessionReview         *connect.Client[v1.GetSessionReviewRequest, v1.GetSessionReviewResponse]
 	getSessionFile           *connect.Client[v1.GetSessionFileRequest, v1.GetSessionFileResponse]
 	listSessionTranscript    *connect.Client[v1.ListSessionTranscriptRequest, v1.ListSessionTranscriptResponse]
+	listSessionQueue         *connect.Client[v1.ListSessionQueueRequest, v1.ListSessionQueueResponse]
 	createSession            *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
 	sendSessionInput         *connect.Client[v1.SendSessionInputRequest, v1.SendSessionInputResponse]
+	rollbackSessionInput     *connect.Client[v1.RollbackSessionInputRequest, v1.RollbackSessionInputResponse]
 	interruptSession         *connect.Client[v1.InterruptSessionRequest, v1.InterruptSessionResponse]
 	respondToSessionApproval *connect.Client[v1.RespondToSessionApprovalRequest, v1.RespondToSessionApprovalResponse]
 	listSessionArtifacts     *connect.Client[v1.ListSessionArtifactsRequest, v1.ListSessionArtifactsResponse]
@@ -208,6 +230,11 @@ func (c *sessionServiceClient) ListSessionTranscript(ctx context.Context, req *c
 	return c.listSessionTranscript.CallUnary(ctx, req)
 }
 
+// ListSessionQueue calls hopter.v1.SessionService.ListSessionQueue.
+func (c *sessionServiceClient) ListSessionQueue(ctx context.Context, req *connect.Request[v1.ListSessionQueueRequest]) (*connect.Response[v1.ListSessionQueueResponse], error) {
+	return c.listSessionQueue.CallUnary(ctx, req)
+}
+
 // CreateSession calls hopter.v1.SessionService.CreateSession.
 func (c *sessionServiceClient) CreateSession(ctx context.Context, req *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error) {
 	return c.createSession.CallUnary(ctx, req)
@@ -216,6 +243,11 @@ func (c *sessionServiceClient) CreateSession(ctx context.Context, req *connect.R
 // SendSessionInput calls hopter.v1.SessionService.SendSessionInput.
 func (c *sessionServiceClient) SendSessionInput(ctx context.Context, req *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error) {
 	return c.sendSessionInput.CallUnary(ctx, req)
+}
+
+// RollbackSessionInput calls hopter.v1.SessionService.RollbackSessionInput.
+func (c *sessionServiceClient) RollbackSessionInput(ctx context.Context, req *connect.Request[v1.RollbackSessionInputRequest]) (*connect.Response[v1.RollbackSessionInputResponse], error) {
+	return c.rollbackSessionInput.CallUnary(ctx, req)
 }
 
 // InterruptSession calls hopter.v1.SessionService.InterruptSession.
@@ -241,8 +273,10 @@ type SessionServiceHandler interface {
 	GetSessionReview(context.Context, *connect.Request[v1.GetSessionReviewRequest]) (*connect.Response[v1.GetSessionReviewResponse], error)
 	GetSessionFile(context.Context, *connect.Request[v1.GetSessionFileRequest]) (*connect.Response[v1.GetSessionFileResponse], error)
 	ListSessionTranscript(context.Context, *connect.Request[v1.ListSessionTranscriptRequest]) (*connect.Response[v1.ListSessionTranscriptResponse], error)
+	ListSessionQueue(context.Context, *connect.Request[v1.ListSessionQueueRequest]) (*connect.Response[v1.ListSessionQueueResponse], error)
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error)
+	RollbackSessionInput(context.Context, *connect.Request[v1.RollbackSessionInputRequest]) (*connect.Response[v1.RollbackSessionInputResponse], error)
 	InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error)
 	RespondToSessionApproval(context.Context, *connect.Request[v1.RespondToSessionApprovalRequest]) (*connect.Response[v1.RespondToSessionApprovalResponse], error)
 	ListSessionArtifacts(context.Context, *connect.Request[v1.ListSessionArtifactsRequest]) (*connect.Response[v1.ListSessionArtifactsResponse], error)
@@ -291,6 +325,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("ListSessionTranscript")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceListSessionQueueHandler := connect.NewUnaryHandler(
+		SessionServiceListSessionQueueProcedure,
+		svc.ListSessionQueue,
+		connect.WithSchema(sessionServiceMethods.ByName("ListSessionQueue")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceCreateSessionHandler := connect.NewUnaryHandler(
 		SessionServiceCreateSessionProcedure,
 		svc.CreateSession,
@@ -301,6 +341,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		SessionServiceSendSessionInputProcedure,
 		svc.SendSessionInput,
 		connect.WithSchema(sessionServiceMethods.ByName("SendSessionInput")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceRollbackSessionInputHandler := connect.NewUnaryHandler(
+		SessionServiceRollbackSessionInputProcedure,
+		svc.RollbackSessionInput,
+		connect.WithSchema(sessionServiceMethods.ByName("RollbackSessionInput")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sessionServiceInterruptSessionHandler := connect.NewUnaryHandler(
@@ -335,10 +381,14 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceGetSessionFileHandler.ServeHTTP(w, r)
 		case SessionServiceListSessionTranscriptProcedure:
 			sessionServiceListSessionTranscriptHandler.ServeHTTP(w, r)
+		case SessionServiceListSessionQueueProcedure:
+			sessionServiceListSessionQueueHandler.ServeHTTP(w, r)
 		case SessionServiceCreateSessionProcedure:
 			sessionServiceCreateSessionHandler.ServeHTTP(w, r)
 		case SessionServiceSendSessionInputProcedure:
 			sessionServiceSendSessionInputHandler.ServeHTTP(w, r)
+		case SessionServiceRollbackSessionInputProcedure:
+			sessionServiceRollbackSessionInputHandler.ServeHTTP(w, r)
 		case SessionServiceInterruptSessionProcedure:
 			sessionServiceInterruptSessionHandler.ServeHTTP(w, r)
 		case SessionServiceRespondToSessionApprovalProcedure:
@@ -378,12 +428,20 @@ func (UnimplementedSessionServiceHandler) ListSessionTranscript(context.Context,
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.SessionService.ListSessionTranscript is not implemented"))
 }
 
+func (UnimplementedSessionServiceHandler) ListSessionQueue(context.Context, *connect.Request[v1.ListSessionQueueRequest]) (*connect.Response[v1.ListSessionQueueResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.SessionService.ListSessionQueue is not implemented"))
+}
+
 func (UnimplementedSessionServiceHandler) CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.SessionService.CreateSession is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) SendSessionInput(context.Context, *connect.Request[v1.SendSessionInputRequest]) (*connect.Response[v1.SendSessionInputResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.SessionService.SendSessionInput is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) RollbackSessionInput(context.Context, *connect.Request[v1.RollbackSessionInputRequest]) (*connect.Response[v1.RollbackSessionInputResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("hopter.v1.SessionService.RollbackSessionInput is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) InterruptSession(context.Context, *connect.Request[v1.InterruptSessionRequest]) (*connect.Response[v1.InterruptSessionResponse], error) {

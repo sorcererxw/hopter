@@ -17,13 +17,18 @@ import (
 type fakeCodexClient struct {
 	listThreadsCalls   int
 	readCalls          int
+	listTurnCalls      int
 	resumeCalls        int
+	rollbackCalls      []int
 	startThreadCalls   int
 	startTurnCalls     int
 	steerTurnCalls     int
 	interruptTurnCalls []string
 
 	listResult           *ThreadListResult
+	turnListResults      []*ThreadTurnsListResult
+	turnListErr          error
+	turnListParams       []ThreadTurnsListParams
 	readResult           *ReadThreadResult
 	readResults          []*ReadThreadResult
 	listModelsResult     *ModelListResult
@@ -45,6 +50,21 @@ func readThreadResultWithTurns(turns ...ReadThreadTurn) *ReadThreadResult {
 	result := &ReadThreadResult{}
 	result.Thread.Turns = turns
 	return result
+}
+
+func agentMessageTurn(id string, text string) ReadThreadTurn {
+	return ReadThreadTurn{
+		ID:     id,
+		Status: "completed",
+		Items: []ReadThreadItem{
+			{
+				Type:  "agentMessage",
+				ID:    id + "-agent",
+				Text:  text,
+				Phase: "final_answer",
+			},
+		},
+	}
 }
 
 func (f *fakeCodexClient) Close() error { return nil }
@@ -83,6 +103,22 @@ func (f *fakeCodexClient) ReadThreadMeta(_ string) (*ReadThreadResult, error) {
 	return f.ReadThread("")
 }
 
+func (f *fakeCodexClient) ListThreadTurns(params ThreadTurnsListParams) (*ThreadTurnsListResult, error) {
+	f.listTurnCalls++
+	f.turnListParams = append(f.turnListParams, params)
+	if f.turnListErr != nil {
+		return nil, f.turnListErr
+	}
+	if len(f.turnListResults) > 0 {
+		index := f.listTurnCalls - 1
+		if index >= len(f.turnListResults) {
+			index = len(f.turnListResults) - 1
+		}
+		return f.turnListResults[index], nil
+	}
+	return &ThreadTurnsListResult{}, nil
+}
+
 func (f *fakeCodexClient) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
 	f.resumeCalls++
 	f.resumeOptions = append(f.resumeOptions, options)
@@ -92,6 +128,13 @@ func (f *fakeCodexClient) ResumeThread(threadID, cwd string, options core.Sessio
 	out := &ResumeThreadResult{}
 	out.Thread.ID = threadID
 	out.Thread.Cwd = cwd
+	return out, nil
+}
+
+func (f *fakeCodexClient) RollbackThread(threadID string, numTurns int) (*RollbackThreadResult, error) {
+	f.rollbackCalls = append(f.rollbackCalls, numTurns)
+	out := &RollbackThreadResult{}
+	out.Thread.ID = threadID
 	return out, nil
 }
 
@@ -534,6 +577,208 @@ func TestSendSessionInputRunsThroughAppServerWithExistingThread(t *testing.T) {
 	}
 }
 
+func TestSendSessionInputQueueModeWaitsForActiveTurn(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	threadID := "thread-existing"
+	activeTurnID := "turn-active"
+	running := core.SessionStateRunning
+	session, err = workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		ActiveTurnID:    &activeTurnID,
+		Status:          &running,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(ReadThreadTurn{
+			ID:     "turn-started",
+			Status: "completed",
+		}),
+	}
+	manager := NewManager(workspace)
+	manager.live[session.ID] = &liveSession{
+		project: project,
+		client:  client,
+		thread:  threadID,
+		active:  activeTurnID,
+	}
+
+	if _, err := manager.SendSessionInput(session.ID, "queued follow-up", core.SessionTurnOptions{
+		InputMode:       core.SessionInputModeQueue,
+		Model:           "gpt-5.4",
+		ReasoningEffort: "high",
+	}); err != nil {
+		t.Fatalf("SendSessionInput: %v", err)
+	}
+	if client.startTurnCalls != 0 {
+		t.Fatalf("StartTurn calls after enqueue = %d, want 0", client.startTurnCalls)
+	}
+	if client.steerTurnCalls != 0 {
+		t.Fatalf("SteerTurn calls after enqueue = %d, want 0", client.steerTurnCalls)
+	}
+
+	queued, err := manager.ListSessionQueue(session.ID)
+	if err != nil {
+		t.Fatalf("ListSessionQueue: %v", err)
+	}
+	if len(queued) != 1 {
+		t.Fatalf("queued items = %d, want 1", len(queued))
+	}
+	if queued[0].Preview != "queued follow-up" {
+		t.Fatalf("queued preview = %q", queued[0].Preview)
+	}
+	if queued[0].Model != "gpt-5.4" {
+		t.Fatalf("queued model = %q", queued[0].Model)
+	}
+
+	manager.handleNotification(session.ID, Notification{
+		Method: "turn/completed",
+		Params: json.RawMessage(`{"turn":{"id":"turn-active","status":"completed"}}`),
+	})
+
+	waitFor(t, func() bool {
+		return client.startTurnCalls == 1 && len(client.startTurnInputs) == 1
+	})
+	if client.startTurnInputs[0] != "queued follow-up" {
+		t.Fatalf("started queued input = %q", client.startTurnInputs[0])
+	}
+
+	queued, err = manager.ListSessionQueue(session.ID)
+	if err != nil {
+		t.Fatalf("ListSessionQueue after dispatch: %v", err)
+	}
+	if len(queued) != 0 {
+		t.Fatalf("queued items after dispatch = %d, want 0", len(queued))
+	}
+}
+
+func TestRollbackSessionInputDropsTargetTurnAndStartsEditedTurn(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+
+	threadID := "thread-existing"
+	completed := core.SessionStateCompleted
+	session, err = workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+		Status:          &completed,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	beforeRollback := readThreadResultWithTurns(
+		ReadThreadTurn{
+			ID:     "turn-1",
+			Status: "completed",
+			Items: []ReadThreadItem{{
+				Type:    "userMessage",
+				ID:      "user-1",
+				Content: json.RawMessage(`[{"type":"text","text":"first"}]`),
+			}},
+		},
+		ReadThreadTurn{
+			ID:     "turn-2",
+			Status: "completed",
+			Items: []ReadThreadItem{{
+				Type:    "userMessage",
+				ID:      "user-2",
+				Content: json.RawMessage(`[{"type":"text","text":"original"}]`),
+			}},
+		},
+		ReadThreadTurn{
+			ID:     "turn-3",
+			Status: "completed",
+			Items: []ReadThreadItem{{
+				Type: "agentMessage",
+				ID:   "agent-3",
+				Text: "old answer",
+			}},
+		},
+	)
+	afterEditedTurn := readThreadResultWithTurns(
+		beforeRollback.Thread.Turns[0],
+		ReadThreadTurn{
+			ID:     "turn-started",
+			Status: "completed",
+			Items: []ReadThreadItem{
+				{
+					Type:    "userMessage",
+					ID:      "user-edited",
+					Content: json.RawMessage(`[{"type":"text","text":"edited"}]`),
+				},
+				{
+					Type: "agentMessage",
+					ID:   "agent-edited",
+					Text: "edited answer",
+				},
+			},
+		},
+	)
+	client := &fakeCodexClient{
+		readResults: []*ReadThreadResult{beforeRollback, beforeRollback, afterEditedTurn},
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	result, err := manager.RollbackSessionInput(
+		session.ID,
+		core.SessionRollbackTarget{TranscriptItemID: "user-2"},
+		"edited",
+		core.SessionTurnOptions{Model: "gpt-5.4"},
+	)
+	if err != nil {
+		t.Fatalf("RollbackSessionInput: %v", err)
+	}
+	if result.DroppedTurnCount != 2 {
+		t.Fatalf("dropped turn count = %d, want 2", result.DroppedTurnCount)
+	}
+	if len(client.rollbackCalls) != 1 || client.rollbackCalls[0] != 2 {
+		t.Fatalf("rollback calls = %#v, want [2]", client.rollbackCalls)
+	}
+
+	waitFor(t, func() bool {
+		return client.startTurnCalls == 1 && client.readCalls >= 2
+	})
+	if client.startTurnInputs[0] != "edited" {
+		t.Fatalf("start turn input = %q", client.startTurnInputs[0])
+	}
+	if client.startTurnOptions[0].Model != "gpt-5.4" {
+		t.Fatalf("start turn model = %q", client.startTurnOptions[0].Model)
+	}
+}
+
 func TestGetSessionIncludesTranscriptItems(t *testing.T) {
 	workspace := core.NewInMemoryWorkspace("host", nil)
 	project := mustCreateProject(t, workspace)
@@ -739,7 +984,12 @@ func TestSessionReadModelPreservesEmittedReasoningWhenThreadReadOmitsIt(t *testi
 	read.Thread.UpdatedAt = time.Now().UTC().Unix()
 	read.Thread.Status = ThreadStatus{Type: "idle"}
 
-	client := &fakeCodexClient{readResult: read}
+	client := &fakeCodexClient{
+		readResult: read,
+		turnListResults: []*ThreadTurnsListResult{
+			{Data: read.Thread.Turns},
+		},
+	}
 	manager := NewManager(workspace)
 	manager.start = func(
 		_ context.Context,
@@ -768,6 +1018,229 @@ func TestSessionReadModelPreservesEmittedReasoningWhenThreadReadOmitsIt(t *testi
 	}
 	if page.Items[2].DisplayBody != "" {
 		t.Fatalf("preserved raw reasoning = %q, want empty", page.Items[2].DisplayBody)
+	}
+}
+
+func TestSessionReadModelListsLatestTranscriptPageFromCodexTurns(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	threadID := "thread-turns-latest"
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		SessionID: threadID,
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	metaRead := readThreadResultWithTurns()
+	metaRead.Thread.ID = threadID
+	metaRead.Thread.Cwd = project.RootPath
+	metaRead.Thread.UpdatedAt = time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC).Unix()
+	metaRead.Thread.Status = ThreadStatus{Type: "idle"}
+	olderCursor := "older-turn-page"
+	client := &fakeCodexClient{
+		readResult: metaRead,
+		turnListResults: []*ThreadTurnsListResult{
+			{
+				Data: []ReadThreadTurn{
+					agentMessageTurn("turn-2", "newest"),
+					agentMessageTurn("turn-1", "oldest"),
+				},
+				NextCursor: &olderCursor,
+			},
+		},
+	}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	reader := NewSessionReadModel(workspace, manager, manager)
+
+	page, err := reader.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID: threadID,
+		Limit:     50,
+	})
+	if err != nil {
+		t.Fatalf("ListSessionTranscript: %v", err)
+	}
+	if client.listTurnCalls != 1 {
+		t.Fatalf("ListThreadTurns calls = %d, want 1", client.listTurnCalls)
+	}
+	if got := client.turnListParams[0].ThreadID; got != threadID {
+		t.Fatalf("ThreadID = %q, want %q", got, threadID)
+	}
+	if client.turnListParams[0].Cursor != nil {
+		t.Fatalf("Cursor = %q, want nil", *client.turnListParams[0].Cursor)
+	}
+	if client.turnListParams[0].Limit == nil || *client.turnListParams[0].Limit != 50 {
+		t.Fatalf("Limit = %#v, want 50", client.turnListParams[0].Limit)
+	}
+	if client.turnListParams[0].SortDirection != "desc" {
+		t.Fatalf("SortDirection = %q, want desc", client.turnListParams[0].SortDirection)
+	}
+	if len(page.Items) != 2 {
+		t.Fatalf("page items = %d, want 2", len(page.Items))
+	}
+	if page.Items[0].Body != "oldest" || page.Items[1].Body != "newest" {
+		t.Fatalf("page item bodies = %#v, want chronological latest page", []string{page.Items[0].Body, page.Items[1].Body})
+	}
+	if !page.HasMoreBefore || page.NextBeforeCursor == "" {
+		t.Fatalf("older cursor missing: hasMore=%v cursor=%q", page.HasMoreBefore, page.NextBeforeCursor)
+	}
+}
+
+func TestSessionReadModelUsesCodexTurnsCursorForOlderTranscriptPage(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	threadID := "thread-turns-older"
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		SessionID: threadID,
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	metaRead := readThreadResultWithTurns()
+	metaRead.Thread.ID = threadID
+	metaRead.Thread.Cwd = project.RootPath
+	metaRead.Thread.UpdatedAt = time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC).Unix()
+	metaRead.Thread.Status = ThreadStatus{Type: "idle"}
+	olderCursor := "older-turn-page"
+	client := &fakeCodexClient{
+		readResult: metaRead,
+		turnListResults: []*ThreadTurnsListResult{
+			{
+				Data: []ReadThreadTurn{
+					agentMessageTurn("turn-3", "third"),
+					agentMessageTurn("turn-2", "second"),
+				},
+				NextCursor: &olderCursor,
+			},
+			{
+				Data: []ReadThreadTurn{
+					agentMessageTurn("turn-1", "first"),
+				},
+			},
+		},
+	}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	reader := NewSessionReadModel(workspace, manager, manager)
+
+	latest, err := reader.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID: threadID,
+		Limit:     50,
+	})
+	if err != nil {
+		t.Fatalf("ListSessionTranscript latest: %v", err)
+	}
+	older, err := reader.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID:    threadID,
+		Limit:        50,
+		BeforeCursor: latest.NextBeforeCursor,
+	})
+	if err != nil {
+		t.Fatalf("ListSessionTranscript older: %v", err)
+	}
+	if client.listTurnCalls != 2 {
+		t.Fatalf("ListThreadTurns calls = %d, want 2", client.listTurnCalls)
+	}
+	if client.turnListParams[1].Cursor == nil || *client.turnListParams[1].Cursor != olderCursor {
+		t.Fatalf("older Cursor = %#v, want %q", client.turnListParams[1].Cursor, olderCursor)
+	}
+	if len(older.Items) != 1 || older.Items[0].Body != "first" {
+		t.Fatalf("older page items = %#v, want first message", older.Items)
+	}
+	if older.HasMoreBefore || older.NextBeforeCursor != "" {
+		t.Fatalf("older page should terminate history: hasMore=%v cursor=%q", older.HasMoreBefore, older.NextBeforeCursor)
+	}
+}
+
+func TestSessionReadModelFallsBackToThreadReadWhenCodexTurnsListFails(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	threadID := "thread-turns-fallback"
+	session, err := workspace.CreateSession(core.CreateSessionInput{
+		SessionID: threadID,
+		ProjectID: project.ID,
+		Title:     "probe",
+		Prompt:    "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if _, err := workspace.UpdateSession(session.ID, core.SessionPatch{
+		BackendThreadID: &threadID,
+	}); err != nil {
+		t.Fatalf("UpdateSession: %v", err)
+	}
+
+	read := readThreadResultWithTurns(agentMessageTurn("turn-1", "fallback"))
+	read.Thread.ID = threadID
+	read.Thread.Cwd = project.RootPath
+	read.Thread.UpdatedAt = time.Date(2026, 4, 30, 12, 0, 0, 0, time.UTC).Unix()
+	read.Thread.Status = ThreadStatus{Type: "idle"}
+	client := &fakeCodexClient{
+		readResult:  read,
+		turnListErr: os.ErrNotExist,
+	}
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	reader := NewSessionReadModel(workspace, manager, manager)
+
+	page, err := reader.ListSessionTranscript(core.ListSessionTranscriptInput{
+		SessionID: threadID,
+		Limit:     50,
+	})
+	if err != nil {
+		t.Fatalf("ListSessionTranscript: %v", err)
+	}
+	if client.listTurnCalls != 1 {
+		t.Fatalf("ListThreadTurns calls = %d, want 1", client.listTurnCalls)
+	}
+	if len(page.Items) != 1 || page.Items[0].Body != "fallback" {
+		t.Fatalf("page items = %#v, want fallback transcript", page.Items)
 	}
 }
 

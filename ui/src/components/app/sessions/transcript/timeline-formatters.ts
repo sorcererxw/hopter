@@ -1,7 +1,9 @@
 import { type TFunction } from "i18next"
 
 import {
+  SessionTranscriptCommandActionKind,
   SessionTranscriptItemKind,
+  type SessionTranscriptCommandAction,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
 
@@ -12,7 +14,7 @@ import {
 export function formatUserMessageForDisplay(value: string) {
   // Diff-review flows can bundle multiple comments into a single synthetic user
   // message. When that happens, expand them into a numbered plain-text list
-  // rather than leaking the raw transport envelope into the chat bubble.
+  // rather than leaking the raw transport envelope into the message bubble.
   const diffComments = extractDiffCommentBodies(value)
   if (diffComments.length === 1) {
     return diffComments[0]
@@ -113,6 +115,7 @@ export function summarizeThoughtProcess(
   let reasoningCount = 0
   let toolCount = 0
   let commandCount = 0
+  let explorationCount = 0
   let fileChangeCount = 0
 
   for (const item of items) {
@@ -124,7 +127,11 @@ export function summarizeThoughtProcess(
         toolCount += 1
         break
       case SessionTranscriptItemKind.COMMAND_EXECUTION:
-        commandCount += 1
+        if (hasExplorationCommandAction(item)) {
+          explorationCount += 1
+        } else {
+          commandCount += 1
+        }
         break
       case SessionTranscriptItemKind.FILE_CHANGE:
         fileChangeCount += 1
@@ -140,6 +147,9 @@ export function summarizeThoughtProcess(
     commandCount > 0
       ? t("transcript.commandCount", { count: commandCount })
       : null,
+    explorationCount > 0
+      ? t("transcript.exploredActions", { count: explorationCount })
+      : null,
     fileChangeCount > 0
       ? t("transcript.fileChangeCount", { count: fileChangeCount })
       : null,
@@ -150,6 +160,46 @@ export function summarizeThoughtProcess(
   }
 
   return t("transcript.thoughtProcessSummary", { summary: parts.join(", ") })
+}
+
+function hasExplorationCommandAction(item: SessionTranscriptItem) {
+  return item.commandActions?.some((action) => {
+    const kind = normalizeCommandActionKind(action.kind)
+    return (
+      kind !== SessionTranscriptCommandActionKind.UNSPECIFIED &&
+      kind !== SessionTranscriptCommandActionKind.UNKNOWN
+    )
+  })
+}
+
+function normalizeCommandActionKind(
+  value: SessionTranscriptCommandAction["kind"] | string | number | undefined
+) {
+  switch (value) {
+    case SessionTranscriptCommandActionKind.READ:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ":
+    case "READ":
+    case "read":
+      return SessionTranscriptCommandActionKind.READ
+    case SessionTranscriptCommandActionKind.LIST_FILES:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES":
+    case "LIST_FILES":
+    case "listFiles":
+    case "list_files":
+      return SessionTranscriptCommandActionKind.LIST_FILES
+    case SessionTranscriptCommandActionKind.SEARCH:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH":
+    case "SEARCH":
+    case "search":
+      return SessionTranscriptCommandActionKind.SEARCH
+    case SessionTranscriptCommandActionKind.UNKNOWN:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN":
+    case "UNKNOWN":
+    case "unknown":
+      return SessionTranscriptCommandActionKind.UNKNOWN
+    default:
+      return SessionTranscriptCommandActionKind.UNSPECIFIED
+  }
 }
 
 // extractDiffCommentBodies pulls individual diff comments out of a synthetic review-wrapper prompt.

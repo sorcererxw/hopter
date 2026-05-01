@@ -61,9 +61,7 @@ export function WorkspaceTopbar({
 }: WorkspaceTopbarProps) {
   const { t } = useTranslation()
   const [commitOpen, setCommitOpen] = useState(false)
-  const [copiedItem, setCopiedItem] = useState<
-    "resume-command" | null
-  >(null)
+  const [copiedItem, setCopiedItem] = useState<"resume-command" | null>(null)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -113,6 +111,16 @@ export function WorkspaceTopbar({
   const sidebarLabel = inspectorOpen
     ? t("topbar.closeSidebar")
     : t("topbar.openSidebar")
+  const hasMobileOverflowMenuItems =
+    showCommit ||
+    showReview ||
+    showTerminal ||
+    showInspectorToggle ||
+    Boolean(resumeCommand)
+  const hasDesktopOverflowMenuItems = Boolean(resumeCommand)
+  const showMobileOverflowMenu = showOverflowMenu && hasMobileOverflowMenuItems
+  const showDesktopOverflowMenu =
+    showOverflowMenu && hasDesktopOverflowMenuItems
   const handleOverflowAction = useCallback(
     (key: string) => {
       switch (key) {
@@ -168,7 +176,7 @@ export function WorkspaceTopbar({
 
   return (
     <div
-      className="flex items-center justify-between gap-3 bg-background px-4 py-1.5 font-medium text-foreground"
+      className="flex items-center justify-between gap-3 bg-inherit px-4 py-1.5 text-foreground"
       data-testid="workspace-topbar"
       data-toolbar-mode={toolbarMode}
     >
@@ -184,7 +192,7 @@ export function WorkspaceTopbar({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {showOverflowMenu ? (
+            {showMobileOverflowMenu ? (
               <Dropdown>
                 <Dropdown.Trigger>
                   <Button
@@ -240,29 +248,29 @@ export function WorkspaceTopbar({
                       </>
                     ) : null}
                     {showInspectorToggle ? (
-                        <Dropdown.Item
-                          key="toggle-inspector"
-                          textValue={sidebarLabel}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <PanelRight className="size-3.5" />
-                            {sidebarLabel}
-                          </span>
-                        </Dropdown.Item>
+                      <Dropdown.Item
+                        key="toggle-inspector"
+                        textValue={sidebarLabel}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <PanelRight className="size-3.5" />
+                          {sidebarLabel}
+                        </span>
+                      </Dropdown.Item>
                     ) : null}
-                        {resumeCommand ? (
-                          <Dropdown.Item
-                            key="resume-command"
-                            textValue={t("topbar.resumeInCodex")}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <Terminal className="size-3.5" />
-                              {copiedItem === "resume-command"
-                                ? t("topbar.codexCommandCopied")
-                                : t("topbar.resumeInCodex")}
-                            </span>
-                          </Dropdown.Item>
-                        ) : null}
+                    {resumeCommand ? (
+                      <Dropdown.Item
+                        key="resume-command"
+                        textValue={t("topbar.resumeInCodex")}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Terminal className="size-3.5" />
+                          {copiedItem === "resume-command"
+                            ? t("topbar.codexCommandCopied")
+                            : t("topbar.resumeInCodex")}
+                        </span>
+                      </Dropdown.Item>
+                    ) : null}
                   </Dropdown.Menu>
                 </Dropdown.Popover>
               </Dropdown>
@@ -277,7 +285,7 @@ export function WorkspaceTopbar({
             {projectName ? (
               <span className="truncate text-muted">{projectName}</span>
             ) : null}
-            {showOverflowMenu ? (
+            {showDesktopOverflowMenu ? (
               <Dropdown>
                 <Dropdown.Trigger>
                   <Button
@@ -333,7 +341,7 @@ export function WorkspaceTopbar({
                       className="fixed inset-0 z-40"
                       onClick={() => setCommitOpen(false)}
                     />
-                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-overlay py-1 shadow-lg">
+                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-xl border border-border bg-surface py-1 shadow-lg shadow-black/5">
                       <CommitMenuItem
                         onClick={() => {
                           setCommitOpen(false)
@@ -361,7 +369,9 @@ export function WorkspaceTopbar({
                 type="button"
                 variant={showCommit ? "ghost" : "secondary"}
                 onPress={onOpenReview}
-                className={cn(showCommit ? "text-muted" : "text-foreground")}
+                className={cn(
+                  showCommit ? "text-muted" : "text-foreground"
+                )}
               >
                 {t("topbar.review")}
               </Button>
@@ -385,7 +395,9 @@ export function WorkspaceTopbar({
                 isIconOnly
                 onPress={onToggleInspector}
                 aria-label={sidebarLabel}
-                className={cn(inspectorOpen ? "text-foreground" : "text-muted")}
+                className={cn(
+                  inspectorOpen ? "text-foreground" : "text-muted"
+                )}
               >
                 <PanelRight className="size-3.5" />
               </Button>

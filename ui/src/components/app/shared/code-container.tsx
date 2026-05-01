@@ -1,8 +1,7 @@
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react"
+import SimpleBar from "simplebar-react"
 
 import { cn } from "@/lib/utils"
-
-import { workspaceScrollbarClassName } from "./style-classnames"
 
 type CodeContainerProps<T extends ElementType = "div"> = {
   as?: T
@@ -21,13 +20,14 @@ export function CodeContainer<T extends ElementType = "div">({
   return (
     <Component
       className={cn(
-        workspaceScrollbarClassName,
-        "max-w-full overflow-x-auto rounded-lg border border-border bg-surface px-4 py-3 font-mono text-sm leading-6 text-foreground",
+        "max-w-full overflow-hidden rounded-2xl border border-border bg-surface-secondary px-4 py-3 font-mono text-sm leading-6 text-foreground shadow-sm shadow-black/5",
         className
       )}
       {...props}
     >
-      {children}
+      <SimpleBar autoHide className="max-h-[inherit] max-w-full">
+        {children}
+      </SimpleBar>
     </Component>
   )
 }

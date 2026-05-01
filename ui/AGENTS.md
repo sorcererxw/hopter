@@ -14,8 +14,8 @@ The workspace shell uses **three semantic postures**. Do not reintroduce route-l
    - width: `< 640px`
    - target devices: phone portrait
    - shell behavior:
-     - thread list is the entry page
-     - thread detail is a second-level page
+     - session list is the entry page
+     - session detail is a second-level page
      - top-left toolbar action is `Back`
 
 2. `compact`
@@ -27,7 +27,7 @@ The workspace shell uses **three semantic postures**. Do not reintroduce route-l
      - rail hidden: desktop toolbar mode
      - rail visible: mobile toolbar mode
      - top-left toolbar action is rail toggle
-     - thread switching must not automatically collapse the rail
+     - session switching must not automatically collapse the rail
 
 3. `wide`
    - width: `>= 1024px`
@@ -37,7 +37,7 @@ The workspace shell uses **three semantic postures**. Do not reintroduce route-l
      - desktop toolbar mode
      - left rail is visible by default but can be hidden
      - top-left toolbar action is rail toggle
-     - thread switching must not automatically collapse the rail
+     - session switching must not automatically collapse the rail
 
 ## Ownership rules
 
@@ -71,7 +71,7 @@ Avoid overlay-specific names such as `sidebarOpen` once the same state applies t
 
 ## Route rules
 
-- `/` on `phone` shows the thread list, not the home workspace pane.
+- `/` on `phone` shows the session list, not the home workspace pane.
 - `/sessions/:sessionId` on `phone` shows the detail page with a back action.
 - Non-phone routes keep the same URL model. The shell changes, not the route tree.
 
@@ -80,9 +80,9 @@ Avoid overlay-specific names such as `sidebarOpen` once the same state applies t
 Phone detail back action must:
 
 1. navigate to `/`
-2. reliably return the user to the thread list
+2. reliably return the user to the session list
 
-Do not wire the phone back button to browser-history semantics. In this product, the phone detail back button is an in-app return to the thread list.
+Do not wire the phone back button to browser-history semantics. In this product, the phone detail back button is an in-app return to the session list.
 
 ## Inspector rules
 
@@ -142,7 +142,6 @@ Avoid ad hoc sizes in app-layer code.
 
 ### Weight scale
 
-- Default readable UI baseline should be `font-medium` where the surface is meant to be actively read.
 - Use normal inherited weight for child text when the container already carries `font-medium`.
 - Reserve heavier emphasis for real semantic emphasis only. Do not stack extra `font-medium` on children just to make them "feel clearer".
 

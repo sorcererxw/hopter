@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ const (
 	maxSessionCacheBytes      = 32 << 20
 	maxCacheEntryBytes        = 1 << 20
 	lazyCursorPrefix          = "lazy:"
+	codexTurnsCursorKind      = "codex-turns-page"
 )
 
 type sessionReadFallback interface {
@@ -39,8 +41,10 @@ type SessionReadModel struct {
 }
 
 type transcriptCursor struct {
-	SnapshotUnixMilli int64 `json:"snapshotUnixMilli"`
-	BeforeIndex       int   `json:"beforeIndex"`
+	SnapshotUnixMilli int64  `json:"snapshotUnixMilli"`
+	BeforeIndex       int    `json:"beforeIndex"`
+	Kind              string `json:"kind,omitempty"`
+	CodexNextCursor   string `json:"codexNextCursor,omitempty"`
 }
 
 func NewSessionReadModel(
@@ -124,6 +128,12 @@ func (m *SessionReadModel) ListSessionTranscript(input core.ListSessionTranscrip
 	}
 	if cursor, ok := decodeTranscriptCursor(beforeCursor); ok && cursor.SnapshotUnixMilli != snapshotUnixMilli(meta.Session.UpdatedAt) {
 		beforeCursor = ""
+	} else if ok && cursor.CodexNextCursor != "" {
+		page, err := m.loadTranscriptPageFromCodexTurnsCursor(meta, limit, beforeCursor, cursor.CodexNextCursor)
+		if err != nil {
+			return core.SessionTranscriptPage{}, err
+		}
+		return page, nil
 	}
 
 	if page, ok := m.getCachedPage(meta.Session.ID, meta.Session.UpdatedAt, beforeCursor, limit); ok {
@@ -163,14 +173,18 @@ func (m *SessionReadModel) loadLatestTranscriptPage(meta core.SessionMeta, limit
 		return pages[""], nil
 	}
 
-	read, err := m.readCodexTranscript(meta.Session.ID, meta.Project, meta.Session.BackendThreadID)
+	page, err := m.loadTranscriptPageFromCodexTurnsCursor(meta, limit, "", "")
 	if err != nil {
-		return core.SessionTranscriptPage{}, err
+		read, readErr := m.readCodexTranscript(meta.Session.ID, meta.Project, meta.Session.BackendThreadID)
+		if readErr != nil {
+			return core.SessionTranscriptPage{}, readErr
+		}
+		items := normalizeReadThreadItemsForPage(read)
+		items = m.supplementCodexTranscriptItems(meta.Session.ID, meta.Project, items)
+		pages := m.cacheTranscriptPages(meta, items, limit)
+		return pages[""], nil
 	}
-	items := normalizeReadThreadItemsForPage(read)
-	items = m.supplementCodexTranscriptItems(meta.Session.ID, meta.Project, items)
-	pages := m.cacheTranscriptPages(meta, items, limit)
-	return pages[""], nil
+	return page, nil
 }
 
 func (m *SessionReadModel) loadAndCacheTranscriptPages(meta core.SessionMeta, limit uint32) (map[string]core.SessionTranscriptPage, error) {
@@ -257,18 +271,10 @@ func (m *SessionReadModel) readCodexMeta(
 		session := sessionFromThread(thread, project, local, hasLocal)
 		session.BackendThreadID = threadID
 		session.ContextWindowUsage = sessionContextWindowUsageFromRead(read)
-		if session.ContextWindowUsage == nil {
-			fullRead, err := m.readThreadWithSingleflight(
-				"thread-read-live:"+sessionID+":"+threadID,
-				func() (*ReadThreadResult, error) {
-					return live.client.ReadThread(threadID)
-				},
+		if session.ContextWindowUsage == nil && live.contextWindowUsage != nil {
+			session.ContextWindowUsage = cloneSessionContextWindowUsage(
+				live.contextWindowUsage,
 			)
-			if err == nil {
-				session.ContextWindowUsage = sessionContextWindowUsageFromRead(
-					fullRead,
-				)
-			}
 		}
 		if session.ContextWindowUsage == nil {
 			session.ContextWindowUsage = sessionContextWindowUsageFromSessionPath(
@@ -317,12 +323,6 @@ func (m *SessionReadModel) readCodexMeta(
 	session := sessionFromThread(thread, project, local, hasLocal)
 	session.BackendThreadID = threadID
 	session.ContextWindowUsage = sessionContextWindowUsageFromRead(read)
-	if session.ContextWindowUsage == nil {
-		fullRead, err := m.readCodexTranscript(sessionID, project, threadID)
-		if err == nil {
-			session.ContextWindowUsage = sessionContextWindowUsageFromRead(fullRead)
-		}
-	}
 	if session.ContextWindowUsage == nil {
 		session.ContextWindowUsage = sessionContextWindowUsageFromSessionPath(
 			read.Thread.Path,
@@ -420,6 +420,134 @@ func (m *SessionReadModel) readCodexTranscriptItems(sessionID string, project co
 	items := normalizeReadThreadItemsForPage(read)
 	items = m.supplementCodexTranscriptItems(sessionID, project, items)
 	return items, nil
+}
+
+func (m *SessionReadModel) loadTranscriptPageFromCodexTurnsCursor(
+	meta core.SessionMeta,
+	limit uint32,
+	requestCursor string,
+	codexCursor string,
+) (core.SessionTranscriptPage, error) {
+	result, err := m.listCodexThreadTurns(meta.Session.ID, meta.Project, meta.Session.BackendThreadID, codexCursor, limit)
+	if err != nil {
+		return core.SessionTranscriptPage{}, err
+	}
+
+	items := normalizeThreadTurnsForPage(result.Data, "desc")
+	if strings.TrimSpace(codexCursor) == "" {
+		items = m.supplementCodexTranscriptItems(meta.Session.ID, meta.Project, items)
+	}
+
+	pages := m.cacheTranscriptPagesFromCodexTurns(
+		meta,
+		items,
+		limit,
+		optionalStringValue(result.NextCursor),
+		requestCursor,
+	)
+	if page, ok := pages[requestCursor]; ok {
+		return page, nil
+	}
+	return pages[""], nil
+}
+
+func normalizeThreadTurnsForPage(
+	turns []ReadThreadTurn,
+	sortDirection string,
+) []core.SessionTranscriptItem {
+	orderedTurns := append([]ReadThreadTurn(nil), turns...)
+	if strings.EqualFold(strings.TrimSpace(sortDirection), "desc") {
+		slices.Reverse(orderedTurns)
+	}
+
+	read := &ReadThreadResult{}
+	read.Thread.Turns = orderedTurns
+	return normalizeReadThreadItemsForPage(read)
+}
+
+func (m *SessionReadModel) cacheTranscriptPagesFromCodexTurns(
+	meta core.SessionMeta,
+	items []core.SessionTranscriptItem,
+	limit uint32,
+	codexNextCursor string,
+	initialRequestCursor string,
+) map[string]core.SessionTranscriptPage {
+	limit = normalizeTranscriptPageSize(limit)
+	pages := buildTranscriptPagesWithCodexCursor(
+		meta.Session.ID,
+		meta.Project.ID,
+		meta.Session.UpdatedAt,
+		items,
+		limit,
+		codexNextCursor,
+		initialRequestCursor,
+	)
+	for requestCursor, page := range pages {
+		m.cacheTranscriptPage(meta.Session.ID, meta.Session.UpdatedAt, requestCursor, limit, page)
+	}
+	return pages
+}
+
+func (m *SessionReadModel) listCodexThreadTurns(
+	sessionID string,
+	project core.Project,
+	threadID string,
+	cursor string,
+	limit uint32,
+) (*ThreadTurnsListResult, error) {
+	threadID = strings.TrimSpace(threadID)
+	if threadID == "" {
+		return nil, fmt.Errorf("session %q is missing backend thread id", sessionID)
+	}
+
+	pageSize := int(normalizeTranscriptPageSize(limit))
+	params := ThreadTurnsListParams{
+		ThreadID:      threadID,
+		Limit:         &pageSize,
+		SortDirection: "desc",
+	}
+	if normalizedCursor := strings.TrimSpace(cursor); normalizedCursor != "" {
+		params.Cursor = &normalizedCursor
+	}
+
+	if live := m.manager.liveSession(sessionID); live != nil && live.thread == threadID {
+		return m.listThreadTurnsWithSingleflight(
+			"thread-turns-live:"+sessionID+":"+threadID+":"+cursor+":"+strconv.Itoa(pageSize),
+			func() (*ThreadTurnsListResult, error) {
+				return live.client.ListThreadTurns(params)
+			},
+		)
+	}
+
+	return m.listThreadTurnsWithSingleflight(
+		"thread-turns:"+project.RootPath+":"+threadID+":"+cursor+":"+strconv.Itoa(pageSize),
+		func() (*ThreadTurnsListResult, error) {
+			client, err := m.manager.start(context.Background(), project.RootPath, nil, nil, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			defer client.Close()
+
+			return client.ListThreadTurns(params)
+		},
+	)
+}
+
+func (m *SessionReadModel) listThreadTurnsWithSingleflight(
+	key string,
+	list func() (*ThreadTurnsListResult, error),
+) (*ThreadTurnsListResult, error) {
+	value, err, _ := m.group.Do(key, func() (any, error) {
+		return list()
+	})
+	if err != nil {
+		return nil, err
+	}
+	result, ok := value.(*ThreadTurnsListResult)
+	if !ok {
+		return nil, fmt.Errorf("thread turns list singleflight returned %T", value)
+	}
+	return result, nil
 }
 
 func (m *SessionReadModel) supplementCodexTranscriptItems(
@@ -556,6 +684,82 @@ func buildTranscriptPages(
 	return pages
 }
 
+func buildTranscriptPagesWithCodexCursor(
+	sessionID string,
+	projectID string,
+	snapshot time.Time,
+	items []core.SessionTranscriptItem,
+	limit uint32,
+	codexNextCursor string,
+	initialRequestCursor string,
+) map[string]core.SessionTranscriptPage {
+	pageSize := int(normalizeTranscriptPageSize(limit))
+	if pageSize <= 0 {
+		pageSize = defaultTranscriptPageSize
+	}
+
+	pages := make(map[string]core.SessionTranscriptPage)
+	end := len(items)
+	requestCursor := initialRequestCursor
+	for {
+		start := end - pageSize
+		if start < 0 {
+			start = 0
+		}
+		pageItems := append([]core.SessionTranscriptItem(nil), items[start:end]...)
+		hasMoreBefore := start > 0 || strings.TrimSpace(codexNextCursor) != ""
+		nextBeforeCursor := ""
+		if start > 0 {
+			nextBeforeCursor = encodeTranscriptCursor(transcriptCursor{
+				SnapshotUnixMilli: snapshotUnixMilli(snapshot),
+				BeforeIndex:       start,
+				Kind:              codexTurnsCursorKind,
+			})
+		} else if strings.TrimSpace(codexNextCursor) != "" {
+			nextBeforeCursor = encodeTranscriptCursor(transcriptCursor{
+				SnapshotUnixMilli: snapshotUnixMilli(snapshot),
+				Kind:              codexTurnsCursorKind,
+				CodexNextCursor:   strings.TrimSpace(codexNextCursor),
+			})
+		}
+		pages[requestCursor] = core.SessionTranscriptPage{
+			SessionID:         sessionID,
+			ProjectID:         projectID,
+			Items:             pageItems,
+			NextBeforeCursor:  nextBeforeCursor,
+			HasMoreBefore:     hasMoreBefore,
+			SnapshotUpdatedAt: snapshot,
+		}
+		if start <= 0 {
+			break
+		}
+		end = start
+		requestCursor = nextBeforeCursor
+	}
+	if len(items) == 0 {
+		pages[requestCursor] = core.SessionTranscriptPage{
+			SessionID:         sessionID,
+			ProjectID:         projectID,
+			Items:             nil,
+			NextBeforeCursor:  nextBeforeCursorForCodexCursor(snapshot, codexNextCursor),
+			HasMoreBefore:     strings.TrimSpace(codexNextCursor) != "",
+			SnapshotUpdatedAt: snapshot,
+		}
+	}
+	return pages
+}
+
+func nextBeforeCursorForCodexCursor(snapshot time.Time, codexNextCursor string) string {
+	if strings.TrimSpace(codexNextCursor) == "" {
+		return ""
+	}
+	return encodeTranscriptCursor(transcriptCursor{
+		SnapshotUnixMilli: snapshotUnixMilli(snapshot),
+		Kind:              codexTurnsCursorKind,
+		CodexNextCursor:   strings.TrimSpace(codexNextCursor),
+	})
+}
+
 func metaCacheKey(sessionID string) string {
 	return "meta:" + strings.TrimSpace(sessionID)
 }
@@ -595,6 +799,9 @@ func decodeTranscriptCursor(value string) (transcriptCursor, bool) {
 		return transcriptCursor{}, false
 	}
 	if cursor.BeforeIndex < 0 {
+		return transcriptCursor{}, false
+	}
+	if cursor.BeforeIndex == 0 && strings.TrimSpace(cursor.CodexNextCursor) == "" && strings.TrimSpace(cursor.Kind) == codexTurnsCursorKind {
 		return transcriptCursor{}, false
 	}
 	return cursor, true
@@ -684,4 +891,11 @@ func (m *SessionReadModel) cacheTranscriptPage(sessionID string, snapshot time.T
 		return
 	}
 	m.pageCache.Set(pageCacheKey(sessionID, snapshot, requestCursor, limit), cloneTranscriptPage(page), size)
+}
+
+func optionalStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }

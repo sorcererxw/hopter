@@ -227,7 +227,7 @@ export function SessionTerminalDrawer({
       >
         <div className="h-1 w-14 rounded-full bg-border" />
       </div>
-      <div className="flex h-[calc(100%-0.5rem)] min-h-0 flex-col text-sm font-medium text-foreground">
+      <div className="flex h-[calc(100%-0.5rem)] min-h-0 flex-col text-sm text-foreground">
         <div
           className="flex items-center justify-between gap-3 border-b border-border px-4 py-2"
           data-testid="session-terminal-header"

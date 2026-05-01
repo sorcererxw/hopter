@@ -19,6 +19,10 @@ type fakeRuntime struct {
 	lastSendID            string
 	lastSendText          string
 	lastSendOptions       []core.SessionTurnOptions
+	lastRollbackID        string
+	lastRollbackTarget    core.SessionRollbackTarget
+	lastRollbackText      string
+	lastRollbackOptions   []core.SessionTurnOptions
 	lastInterruptID       string
 	lastApprovalID        string
 	lastApprovalSessionID string
@@ -64,6 +68,19 @@ func (f *fakeRuntime) SendSessionInput(sessionID, input string, options ...core.
 	f.lastSendText = input
 	f.lastSendOptions = append([]core.SessionTurnOptions(nil), options...)
 	return f.sendResult, nil
+}
+
+func (f *fakeRuntime) RollbackSessionInput(
+	sessionID string,
+	target core.SessionRollbackTarget,
+	input string,
+	options ...core.SessionTurnOptions,
+) (core.SessionRollbackResult, error) {
+	f.lastRollbackID = sessionID
+	f.lastRollbackTarget = target
+	f.lastRollbackText = input
+	f.lastRollbackOptions = append([]core.SessionTurnOptions(nil), options...)
+	return core.SessionRollbackResult{Session: f.sendResult}, nil
 }
 
 func (f *fakeRuntime) InterruptSession(sessionID string) (core.Session, error) {

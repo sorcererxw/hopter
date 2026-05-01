@@ -107,15 +107,33 @@ type SessionTranscriptAttachment struct {
 	ContentType string
 }
 
+type SessionTranscriptCommandActionKind string
+
+const (
+	SessionTranscriptCommandActionKindRead      SessionTranscriptCommandActionKind = "read"
+	SessionTranscriptCommandActionKindListFiles SessionTranscriptCommandActionKind = "list_files"
+	SessionTranscriptCommandActionKindSearch    SessionTranscriptCommandActionKind = "search"
+	SessionTranscriptCommandActionKindUnknown   SessionTranscriptCommandActionKind = "unknown"
+)
+
+type SessionTranscriptCommandAction struct {
+	Kind    SessionTranscriptCommandActionKind
+	Command string
+	Name    string
+	Path    string
+	Query   string
+}
+
 type SessionTranscriptItem struct {
-	ID          string
-	OrderKey    string
-	Kind        SessionTranscriptItemKind
-	Title       string
-	Body        string
-	Status      string
-	DisplayBody string
-	Attachments []SessionTranscriptAttachment
+	ID             string
+	OrderKey       string
+	Kind           SessionTranscriptItemKind
+	Title          string
+	Body           string
+	Status         string
+	DisplayBody    string
+	Attachments    []SessionTranscriptAttachment
+	CommandActions []SessionTranscriptCommandAction
 }
 
 type Backend struct {
@@ -442,11 +460,42 @@ type SessionInputAttachment struct {
 	ContentType string
 }
 
+type SessionInputMode string
+
+const (
+	SessionInputModeGuide SessionInputMode = "guide"
+	SessionInputModeQueue SessionInputMode = "queue"
+)
+
 type SessionTurnOptions struct {
 	Model           string
 	ReasoningEffort string
 	CodexFastMode   bool
 	Attachments     []SessionInputAttachment
+	InputMode       SessionInputMode
+}
+
+type SessionQueueItem struct {
+	ID              string
+	SessionID       string
+	Input           string
+	Preview         string
+	Position        uint32
+	Model           string
+	ReasoningEffort string
+	CodexFastMode   bool
+	Attachments     []SessionInputAttachment
+	CreatedAt       time.Time
+}
+
+type SessionRollbackTarget struct {
+	TranscriptItemID string
+	OrderKey         string
+}
+
+type SessionRollbackResult struct {
+	Session          Session
+	DroppedTurnCount uint32
 }
 
 type SessionPatch struct {

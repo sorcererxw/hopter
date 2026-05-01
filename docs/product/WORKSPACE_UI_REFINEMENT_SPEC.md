@@ -46,7 +46,7 @@ The product should feel like a calm, durable control surface for ongoing work.
 
 It should not feel like:
 
-- a generic AI chat shell
+- a generic AI messaging shell
 - a card-heavy SaaS admin
 - a terminal cosplay UI
 - a pile of default dark theme components
@@ -64,7 +64,7 @@ The visual posture is:
 
 ### What stays
 
-- The initial shell can still be a blank chat-oriented entry state.
+- The initial shell can still be a blank session-oriented entry state.
 - The workspace remains session-first.
 - Desktop and large screens keep a left rail plus right workspace.
 - The composer remains the main action surface.
@@ -85,7 +85,7 @@ All interaction rules should be designed against three device classes.
 
 Characteristics:
 
-- thread list and thread view are separate pages
+- session list and session view are separate pages
 - topbar is restructured for one-handed use
 - all secondary actions collapse aggressively
 - selector interactions should prefer bottom sheets
@@ -118,7 +118,7 @@ Characteristics:
 ## Global shell rules
 
 1. On large screens, the left rail is persistent.
-2. On phones, the thread list is the entry page and a thread becomes an independent page.
+2. On phones, the session list is the entry page and a session becomes an independent page.
 3. The composer is fixed to the bottom on all device classes.
 4. Main content scrolls behind the composer.
 5. The composer must read as a clear foreground layer, never as a broken overlap.
@@ -143,13 +143,13 @@ Topbar uses a left-right split.
 
 ### Left side
 
-- thread title
+- session title
 - project name
 - overflow menu trigger (`...`) for context actions
 
 Layout rule:
 
-- thread title and project name are inline on large screens
+- session title and project name are inline on large screens
 - if space becomes tight, title truncates before primary actions are removed
 
 ### Right side
@@ -198,9 +198,9 @@ It is a different layout.
 
 ### Left side
 
-- back button to thread list
+- back button to session list
 - two-line title stack
-  - primary line: thread title
+  - primary line: session title
   - secondary line: project name
 
 ### Right side
@@ -225,7 +225,7 @@ The rail should return to being navigation, not a metadata panel.
 
 ### Rail item content
 
-Each thread row should show only:
+Each session row should show only:
 
 - status icon
 - title
@@ -242,7 +242,7 @@ Each thread row should show only:
 
 - use the leading status icon as the default signal
 - show stronger treatment only for special states
-- do not make every thread row shout
+- do not make every session row shout
 
 ## Composer spec
 
@@ -403,7 +403,7 @@ At minimum, support better visual treatment for:
 
 Small screens should not use one spacing rule for every message.
 
-### Normal chat messages
+### Normal messages
 
 - more compact
 - faster scan rhythm

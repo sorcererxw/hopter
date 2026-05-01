@@ -71,6 +71,24 @@ The workspace should optimize for session re-entry, attention, approval, and
 follow-up input. It should not make repo administration or terminal output the
 default center of gravity.
 
+### Thread
+
+Thread is the Codex app-server protocol object behind a Hopter session. Hopter
+may store a backend thread id and call raw `thread/*` methods, but users should
+not have to understand or choose threads in the product UI.
+
+### Chat
+
+Chat is only the message-style interaction pattern inside a session. It is not a
+separate product object, route, storage model, or navigation label.
+
+## Product Language
+
+Use **session** for user-facing product copy and Hopter-owned API concepts.
+Use **thread** only at the Codex protocol boundary and in adapter internals that
+directly mirror Codex app-server shapes. Use **chat** only as descriptive
+language for the composer/transcript interaction style, not as an entity name.
+
 ## Workspace UI
 
 The main UI is a workspace shell:

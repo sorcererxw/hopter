@@ -133,6 +133,7 @@ type Snapshot struct {
 
 type CreateTaskInput struct {
 	ProjectID       string
+	SessionID       string
 	Title           string
 	Prompt          string
 	Priority        uint32
@@ -149,6 +150,7 @@ type CreateSubtaskInput struct {
 
 type ListFilter struct {
 	ProjectID       string
+	SessionID       string
 	AttentionKind   AttentionKind
 	LifecycleStatus LifecycleStatus
 	Limit           uint32

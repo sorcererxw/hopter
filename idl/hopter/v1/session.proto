@@ -14,8 +14,10 @@ service SessionService {
   rpc GetSessionReview(GetSessionReviewRequest) returns (GetSessionReviewResponse);
   rpc GetSessionFile(GetSessionFileRequest) returns (GetSessionFileResponse);
   rpc ListSessionTranscript(ListSessionTranscriptRequest) returns (ListSessionTranscriptResponse);
+  rpc ListSessionQueue(ListSessionQueueRequest) returns (ListSessionQueueResponse);
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc SendSessionInput(SendSessionInputRequest) returns (SendSessionInputResponse);
+  rpc RollbackSessionInput(RollbackSessionInputRequest) returns (RollbackSessionInputResponse);
   rpc InterruptSession(InterruptSessionRequest) returns (InterruptSessionResponse);
   rpc RespondToSessionApproval(RespondToSessionApprovalRequest) returns (RespondToSessionApprovalResponse);
   rpc ListSessionArtifacts(ListSessionArtifactsRequest) returns (ListSessionArtifactsResponse);
@@ -69,6 +71,12 @@ message SessionContextWindowUsage {
   uint64 last_tokens = 3;
 }
 
+enum SessionInputMode {
+  SESSION_INPUT_MODE_UNSPECIFIED = 0;
+  SESSION_INPUT_MODE_GUIDE = 1;
+  SESSION_INPUT_MODE_QUEUE = 2;
+}
+
 enum SessionTranscriptItemKind {
   SESSION_TRANSCRIPT_ITEM_KIND_UNSPECIFIED = 0;
   SESSION_TRANSCRIPT_ITEM_KIND_USER_MESSAGE = 1;
@@ -85,6 +93,14 @@ enum SessionTranscriptAttachmentKind {
   SESSION_TRANSCRIPT_ATTACHMENT_KIND_FILE = 2;
 }
 
+enum SessionTranscriptCommandActionKind {
+  SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNSPECIFIED = 0;
+  SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ = 1;
+  SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES = 2;
+  SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH = 3;
+  SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN = 4;
+}
+
 message SessionTranscriptAttachment {
   string id = 1;
   SessionTranscriptAttachmentKind kind = 2;
@@ -92,6 +108,14 @@ message SessionTranscriptAttachment {
   string path = 4;
   string url = 5;
   string content_type = 6;
+}
+
+message SessionTranscriptCommandAction {
+  SessionTranscriptCommandActionKind kind = 1;
+  string command = 2;
+  string name = 3;
+  string path = 4;
+  string query = 5;
 }
 
 message SessionTranscriptItem {
@@ -103,6 +127,7 @@ message SessionTranscriptItem {
   string display_body = 6;
   repeated SessionTranscriptAttachment attachments = 7;
   string order_key = 8;
+  repeated SessionTranscriptCommandAction command_actions = 9;
 }
 
 message SessionListItem {
@@ -214,6 +239,27 @@ message ListSessionTranscriptResponse {
   SessionTranscriptPage page = 1;
 }
 
+message SessionQueueItem {
+  string id = 1;
+  string session_id = 2;
+  string input = 3;
+  string preview = 4;
+  uint32 position = 5;
+  optional string model = 6;
+  optional string reasoning_effort = 7;
+  optional bool codex_fast_mode = 8;
+  repeated SessionInputAttachment attachments = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message ListSessionQueueRequest {
+  string session_id = 1;
+}
+
+message ListSessionQueueResponse {
+  repeated SessionQueueItem items = 1;
+}
+
 message CreateSessionRequest {
   string project_id = 1;
   optional string title = 2;
@@ -236,12 +282,31 @@ message SendSessionInputRequest {
   optional string reasoning_effort = 4;
   optional bool codex_fast_mode = 5;
   repeated SessionInputAttachment attachments = 6;
+  SessionInputMode mode = 7;
 }
 
 message SendSessionInputResponse {
   bool accepted = 1;
   string session_id = 2;
   google.protobuf.Timestamp updated_at = 3;
+}
+
+message RollbackSessionInputRequest {
+  string session_id = 1;
+  string transcript_item_id = 2;
+  string order_key = 3;
+  string input = 4;
+  optional string model = 5;
+  optional string reasoning_effort = 6;
+  optional bool codex_fast_mode = 7;
+  repeated SessionInputAttachment attachments = 8;
+}
+
+message RollbackSessionInputResponse {
+  bool accepted = 1;
+  string session_id = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  uint32 dropped_turn_count = 4;
 }
 
 message SessionInputAttachment {

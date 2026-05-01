@@ -20,10 +20,12 @@ export const queryKeys = {
     ["project-git-status", projectId] as const,
   tasks: (projectId?: string) =>
     ["tasks", { projectId: projectId ?? null }] as const,
+  sessionTasks: (sessionId: string) => ["tasks", "session", sessionId] as const,
   task: (taskId: string) => ["task", taskId] as const,
   sessions: (projectId?: string) =>
     ["sessions", { projectId: projectId ?? null }] as const,
   sessionMeta: (sessionId: string) => ["session-meta", sessionId] as const,
+  sessionQueue: (sessionId: string) => ["session-queue", sessionId] as const,
   sessionArtifacts: (sessionId: string) =>
     ["session-artifacts", sessionId] as const,
   sessionReview: (sessionId: string) => ["session-review", sessionId] as const,

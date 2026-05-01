@@ -44,6 +44,8 @@ type SessionLivePatchEnvelope = {
 
 type SessionTranscriptItemEnvelope = {
   attachments?: unknown[]
+  commandActions?: unknown[]
+  command_actions?: unknown[]
   id?: string
   orderKey?: string
   order_key?: string
@@ -57,6 +59,7 @@ type SessionTranscriptItemEnvelope = {
 
 type CachedTranscriptItem = {
   attachments: unknown[]
+  commandActions: unknown[]
   id: string
   orderKey: string
   kind: number
@@ -117,11 +120,21 @@ export function applyWorkspaceEventInvalidation(
     }
     case WorkspaceEventType.TASKS_CHANGED:
       client.invalidateQueries({ queryKey: queryKeys.tasks() })
+      if (sessionId) {
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionTasks(sessionId),
+        })
+      }
       return
     case WorkspaceEventType.TASK_CHANGED:
     case WorkspaceEventType.TASK_ATTENTION_REQUIRED: {
       const taskId = event.taskId || event.task_id
       client.invalidateQueries({ queryKey: queryKeys.tasks() })
+      if (sessionId) {
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionTasks(sessionId),
+        })
+      }
       if (taskId) {
         client.invalidateQueries({ queryKey: queryKeys.task(taskId) })
       }
@@ -135,6 +148,9 @@ export function applyWorkspaceEventInvalidation(
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       if (sessionId) {
         client.invalidateQueries({ queryKey: queryKeys.sessionMeta(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionQueue(sessionId),
+        })
         client.invalidateQueries({
           queryKey: queryKeys.sessionArtifacts(sessionId),
         })
@@ -151,6 +167,9 @@ export function applyWorkspaceEventInvalidation(
       client.invalidateQueries({ queryKey: queryKeys.sessions() })
       if (sessionId) {
         client.invalidateQueries({ queryKey: queryKeys.sessionMeta(sessionId) })
+        client.invalidateQueries({
+          queryKey: queryKeys.sessionQueue(sessionId),
+        })
         client.invalidateQueries({
           queryKey: queryKeys.sessionArtifacts(sessionId),
         })
@@ -240,6 +259,10 @@ function applySessionLivePatch(
               items[index].orderKey ||
               normalizedPatchItem?.orderKey ||
               fallbackOrderKey,
+            commandActions:
+              normalizedPatchItem?.commandActions ??
+              items[index].commandActions ??
+              [],
             status:
               normalizedPatchItem?.status || items[index].status || "streaming",
             title: normalizedPatchItem?.title || items[index].title,
@@ -260,6 +283,7 @@ function applySessionLivePatch(
             displayBody:
               displayBodyDelta || (itemKind === 2 ? initialBody : ""),
             attachments: [],
+            commandActions: normalizedPatchItem?.commandActions ?? [],
             status: normalizedPatchItem?.status || "streaming",
           })
         }
@@ -353,6 +377,7 @@ function normalizeTranscriptItemEnvelope(
     displayBody:
       item.displayBody || item.display_body || (kind === 2 ? body : ""),
     attachments: item.attachments || [],
+    commandActions: item.commandActions || item.command_actions || [],
     status: item.status || fallback.status || "",
   }
 }

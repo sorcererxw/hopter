@@ -90,7 +90,7 @@ export function HomeWorkspacePane() {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
       <WorkspacePageToolbar
         forceBack={isPhoneCompose}
         showOverflowMenu={false}
@@ -100,7 +100,7 @@ export function HomeWorkspacePane() {
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-8">
         <div className="w-full max-w-180">
           <div className="mb-8 text-center">
-            <h2 className="text-4xl leading-tight font-medium tracking-tight text-foreground">
+            <h2 className="text-4xl leading-tight text-foreground">
               {t("home.startNewSession")}
             </h2>
           </div>
@@ -113,9 +113,7 @@ export function HomeWorkspacePane() {
               <div className="min-w-0">
                 <Tooltip isOpen={projectSelectOpen ? false : undefined}>
                   <Tooltip.Trigger className="min-w-0">
-                    <Dropdown
-                      onOpenChange={setProjectSelectOpen}
-                    >
+                    <Dropdown onOpenChange={setProjectSelectOpen}>
                       <span className="inline-flex min-w-0 rounded-full">
                         <Dropdown.Trigger
                           isDisabled={
@@ -243,9 +241,7 @@ export function HomeWorkspacePane() {
                 prompt: normalizedPrompt,
                 reasoningEffort,
                 title:
-                  deriveTitle(rawInput) ||
-                  attachments[0]?.label ||
-                  undefined,
+                  deriveTitle(rawInput) || attachments[0]?.label || undefined,
               })
 
               setPrompt("")

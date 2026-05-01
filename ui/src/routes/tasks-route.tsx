@@ -186,7 +186,7 @@ export function TasksRoute() {
                 <div className="mb-3 flex size-10 items-center justify-center rounded-(--radius) bg-surface-secondary text-muted">
                   <ListChecks className="size-5" />
                 </div>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-sm text-foreground">
                   {t("tasks.emptyTitle")}
                 </p>
                 <p className="mt-1 max-w-60 text-sm text-muted">
@@ -209,7 +209,7 @@ export function TasksRoute() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <h2 className="truncate text-sm font-medium">
+                        <h2 className="truncate text-sm">
                           {task.title || t("tasks.untitled")}
                         </h2>
                         <span

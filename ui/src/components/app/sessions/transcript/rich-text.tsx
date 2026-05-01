@@ -6,7 +6,7 @@ import type {
   ReactElement,
   ReactNode,
 } from "react"
-import { Check, Copy } from "@/components/icons/hugeicons"
+import { Copy, Tick02 } from "@/components/icons/hugeicons"
 
 import {
   inlineCodeClassName,
@@ -18,7 +18,7 @@ import {
 import { useMCPServers } from "@/features/host/use-host-mcp-servers"
 import { useHostSkill } from "@/features/host/use-host-skill"
 import type { HighlightLanguage } from "@/lib/shiki/highlighter"
-import { cn } from "@/lib/utils"
+import { cn, resolveLocalFileProxyHref } from "@/lib/utils"
 
 type SessionRichTextProps = {
   text: string
@@ -192,7 +192,7 @@ export function SessionRichText({
               alt={alt}
               fallback={
                 <span
-                  className="inline-flex items-center rounded-md bg-surface px-1 py-0.5 text-xs text-muted"
+                  className="inline-flex items-center rounded-md border border-border bg-surface-secondary px-1 py-0.5 text-xs text-muted"
                   {...props}
                 >
                   {typeof alt === "string" && alt.trim().length > 0
@@ -200,7 +200,7 @@ export function SessionRichText({
                     : t("transcript.image")}
                 </span>
               }
-              className="inline-block max-w-full rounded-md border border-border"
+              className="inline-block max-w-full rounded-xl border border-border"
               {...props}
             />
           ),
@@ -218,7 +218,7 @@ export function SessionRichText({
                 "my-3 max-w-full overflow-x-auto"
               )}
             >
-              <table className="min-w-full border-separate border-spacing-0 border border-border text-left text-sm">
+              <table className="min-w-full border-separate border-spacing-0 rounded-2xl border border-border bg-surface text-left text-sm">
                 {children}
               </table>
             </div>
@@ -230,13 +230,13 @@ export function SessionRichText({
             </td>
           ),
           th: ({ children }) => (
-            <th className="border-r border-b border-border bg-surface-tertiary px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
+            <th className="border-r border-b border-border bg-surface-secondary px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
               {children}
             </th>
           ),
           thead: ({ children }) => <thead>{children}</thead>,
           tr: ({ children }) => (
-            <tr className="bg-background even:bg-surface-tertiary/20 [&:last-child>td]:border-b-0 [&:last-child>th]:border-b-0">
+            <tr className="bg-surface even:bg-surface-secondary/60 [&:last-child>td]:border-b-0 [&:last-child>th]:border-b-0">
               {children}
             </tr>
           ),
@@ -487,7 +487,23 @@ function MarkdownLink({
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+        className="text-foreground underline decoration-border underline-offset-4 transition hover:text-muted"
+        {...props}
+      >
+        {children}
+      </a>
+    )
+  }
+
+  const fileProxyHref = resolveLocalFileProxyHref(localPathFromHref(href))
+  if (fileProxyHref) {
+    return (
+      <a
+        href={fileProxyHref}
+        target="_blank"
+        rel="noreferrer"
+        title={localPathFromHref(href)}
+        className="text-foreground underline decoration-border underline-offset-4 transition hover:text-muted"
         {...props}
       >
         {children}
@@ -508,7 +524,7 @@ function MarkdownLink({
         event.preventDefault()
         onLocalPathClick(href, label)
       }}
-      className="font-mono text-foreground underline decoration-border underline-offset-4 transition hover:text-foreground/80"
+      className="font-mono text-foreground underline decoration-border underline-offset-4 transition hover:text-muted"
       {...props}
     >
       {children}
@@ -624,8 +640,8 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   }, [code])
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
-      <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border bg-surface-tertiary px-3 py-1.5">
+    <div className="my-3 min-w-0 overflow-hidden rounded-2xl border border-border bg-transparent shadow-none">
+      <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
         <div className="font-mono text-xs text-muted">
           {languageLabel || "text"}
         </div>
@@ -639,7 +655,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
           data-testid="session-code-copy"
         >
           {copied ? (
-            <Check className="size-3.5" />
+            <Tick02 className="size-3.5" />
           ) : (
             <Copy className="size-3.5" />
           )}
@@ -648,7 +664,7 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
       </div>
       <ShikiCodeFrame
         code={displayCode}
-        className="[&>div]:rounded-none [&>div]:border-0"
+        className="[&_pre]:bg-transparent [&>div]:rounded-none [&>div]:border-0 [&>div]:bg-transparent [&>div]:shadow-none"
         language={highlightLanguage}
         showLineNumbers={false}
       />

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -501,6 +503,77 @@ func TestEnsureAllocatedLeaseBackfillsAuthUserIDForStoredLease(t *testing.T) {
 	}
 	if stored.AuthUserID != "alice" {
 		t.Fatalf("stored auth user id = %q, want alice", stored.AuthUserID)
+	}
+}
+
+func TestSessionManagerUsesUnixSocketWhenLocalPortDisabled(t *testing.T) {
+	socketPath := os.TempDir() + "/hopter-" + strconv.FormatInt(time.Now().UnixNano(), 10) + ".sock"
+	listener, err := net.Listen("unix", socketPath)
+	if err != nil {
+		t.Fatalf("listen unix socket: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(socketPath) })
+
+	upgrader := websocket.Upgrader{}
+	server := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/hello":
+			_, _ = w.Write([]byte("ok"))
+		case "/ws":
+			conn, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				t.Fatalf("upgrade websocket: %v", err)
+			}
+			defer conn.Close()
+			messageType, data, err := conn.ReadMessage()
+			if err != nil {
+				t.Fatalf("read websocket: %v", err)
+			}
+			if err := conn.WriteMessage(messageType, append([]byte("echo:"), data...)); err != nil {
+				t.Fatalf("write websocket: %v", err)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	})}
+	go func() {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			t.Errorf("serve unix socket: %v", err)
+		}
+	}()
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_ = server.Shutdown(ctx)
+	})
+
+	manager := NewSessionManager(app.Config{
+		HTTP: app.HTTPConfig{Local: false, SocketPath: socketPath},
+	}, nil, nil)
+
+	response, err := manager.localClient.Get(localTargetURL(manager.localBaseURL, "/hello", ""))
+	if err != nil {
+		t.Fatalf("get through unix socket: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", response.StatusCode)
+	}
+
+	conn, _, err := manager.localDialer.DialContext(context.Background(), websocketURL(localTargetURL(manager.localBaseURL, "/ws", "")), nil)
+	if err != nil {
+		t.Fatalf("dial websocket through unix socket: %v", err)
+	}
+	defer conn.Close()
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
+		t.Fatalf("write websocket: %v", err)
+	}
+	_, data, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("read websocket: %v", err)
+	}
+	if string(data) != "echo:ping" {
+		t.Fatalf("websocket response = %q, want echo:ping", string(data))
 	}
 }
 

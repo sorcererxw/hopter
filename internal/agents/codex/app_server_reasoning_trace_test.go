@@ -106,7 +106,12 @@ func TestSessionReadModelRecoversReasoningMarkerFromAppServerTrace(t *testing.T)
 	read.Thread.UpdatedAt = time.Now().UTC().Unix()
 	read.Thread.Status = ThreadStatus{Type: "idle"}
 
-	client := &fakeCodexClient{readResult: read}
+	client := &fakeCodexClient{
+		readResult: read,
+		turnListResults: []*ThreadTurnsListResult{
+			{Data: read.Thread.Turns},
+		},
+	}
 	manager := NewManager(workspace)
 	manager.start = func(
 		_ context.Context,

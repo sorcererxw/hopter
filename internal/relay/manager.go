@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,6 +28,8 @@ type SessionManager struct {
 	store        serverhttp.RelayAuthStore
 	verifier     *serverhttp.RelayRequestVerifier
 	localBaseURL string
+	localClient  *http.Client
+	localDialer  *websocket.Dialer
 
 	readyOnce sync.Once
 	readyCh   chan struct{}
@@ -68,6 +71,7 @@ type activeControlConnection struct {
 	cancel        context.CancelFunc
 	conn          *websocket.Conn
 	localBaseURL  string
+	localDialer   *websocket.Dialer
 	sendMu        sync.Mutex
 	httpBodiesMu  sync.Mutex
 	httpBodies    map[string]*io.PipeWriter
@@ -77,11 +81,14 @@ type activeControlConnection struct {
 }
 
 func NewSessionManager(cfg app.Config, store serverhttp.RelayAuthStore, verifier *serverhttp.RelayRequestVerifier) *SessionManager {
+	localBaseURL, localClient, localDialer := localOrigin(cfg.HTTP)
 	return &SessionManager{
 		cfg:          cfg,
 		store:        store,
 		verifier:     verifier,
-		localBaseURL: localOriginBaseURL(cfg.HTTP),
+		localBaseURL: localBaseURL,
+		localClient:  localClient,
+		localDialer:  localDialer,
 		readyCh:      make(chan struct{}),
 	}
 }
@@ -374,9 +381,10 @@ func (m *SessionManager) serveControlConnection(ctx context.Context, credential 
 		cancel:        cancel,
 		conn:          conn,
 		localBaseURL:  m.localBaseURL,
+		localDialer:   m.localDialer,
 		httpBodies:    make(map[string]*io.PipeWriter),
 		socketStreams: make(map[string]*websocket.Conn),
-		httpClient:    &http.Client{},
+		httpClient:    m.localClient,
 	}
 
 	errCh := make(chan error, 1)
@@ -603,7 +611,11 @@ func (c *activeControlConnection) handleWebSocketConnect(message relaycontract.W
 		headers.Set(key, value)
 	}
 	target := websocketURL(localTargetURL(c.localBaseURL, message.Path, message.Query))
-	conn, _, err := websocket.DefaultDialer.DialContext(c.ctx, target, headers)
+	dialer := c.localDialer
+	if dialer == nil {
+		dialer = websocket.DefaultDialer
+	}
+	conn, _, err := dialer.DialContext(c.ctx, target, headers)
 	if err != nil {
 		return c.sendJSON(relaycontract.WebSocketRejectMessage{
 			Type:     relaycontract.RelayMessageTypeWebsocketReject,
@@ -808,6 +820,22 @@ func websocketURL(raw string) string {
 		return "ws://" + strings.TrimPrefix(raw, "http://")
 	}
 	return raw
+}
+
+func localOrigin(cfg app.HTTPConfig) (string, *http.Client, *websocket.Dialer) {
+	if !cfg.Local && strings.TrimSpace(cfg.SocketPath) != "" {
+		socketPath := cfg.SocketPath
+		dialContext := func(ctx context.Context, _ string, _ string) (net.Conn, error) {
+			var dialer net.Dialer
+			return dialer.DialContext(ctx, "unix", socketPath)
+		}
+		wsDialer := *websocket.DefaultDialer
+		wsDialer.NetDialContext = dialContext
+		return "http://hopter.local", &http.Client{
+			Transport: &http.Transport{DialContext: dialContext},
+		}, &wsDialer
+	}
+	return localOriginBaseURL(cfg), &http.Client{}, websocket.DefaultDialer
 }
 
 func localOriginBaseURL(cfg app.HTTPConfig) string {

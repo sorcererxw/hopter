@@ -14,15 +14,18 @@ import (
 )
 
 const (
-	defaultHTTPHost        = "0.0.0.0"
+	defaultHTTPHost        = "127.0.0.1"
 	defaultDevHTTPPort     = 8787
 	defaultReleaseHTTPPort = 18787
+	defaultSocketFileName  = "hopter.sock"
 	defaultHostID          = "host_local"
 )
 
 type HTTPConfig struct {
-	Host string
-	Port int
+	Host       string
+	Port       int
+	Local      bool
+	SocketPath string
 }
 
 func (c HTTPConfig) Addr() string {
@@ -61,14 +64,13 @@ type Config struct {
 type LoadOptions struct {
 	Host        string
 	Port        int
+	Local       *bool
 	DevProxyURL string
 	Relay       bool
-	ResetAuth   bool
 }
 
 type RelayConfig struct {
 	Enabled           bool
-	ResetAuth         bool
 	AuthURL           string
 	ExchangeURL       string
 	AllocateURL       string
@@ -96,8 +98,10 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 		InstallSource: firstNonEmpty(strings.TrimSpace(installSource), "direct"),
 		HostID:        defaultHostID,
 		HTTP: HTTPConfig{
-			Host: firstNonEmpty(strings.TrimSpace(opts.Host), defaultHTTPHost),
-			Port: defaultHTTPPortForVersion(resolvedVersion),
+			Host:       firstNonEmpty(strings.TrimSpace(opts.Host), defaultHTTPHost),
+			Port:       defaultHTTPPortForVersion(resolvedVersion),
+			Local:      true,
+			SocketPath: defaultControlSocketPath(),
 		},
 		UI: UIConfig{
 			DevProxyURL: devProxyURL,
@@ -108,7 +112,6 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 	}
 	cfg.Relay = RelayConfig{
 		Enabled:           opts.Relay,
-		ResetAuth:         opts.ResetAuth,
 		AuthURL:           firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_AUTH_URL")), "https://hopter.dev/login"),
 		ExchangeURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_EXCHANGE_URL")), "https://api.hopter.dev/api/relay/exchange"),
 		AllocateURL:       firstNonEmpty(strings.TrimSpace(os.Getenv("HOPTER_RELAY_ALLOCATE_URL")), "https://api.hopter.dev/api/relay/allocate"),
@@ -126,6 +129,9 @@ func LoadConfigWithOptions(version string, installSource string, opts LoadOption
 
 	if opts.Port != 0 {
 		cfg.HTTP.Port = opts.Port
+	}
+	if opts.Local != nil {
+		cfg.HTTP.Local = *opts.Local
 	}
 
 	if cfg.HTTP.Port < 1 || cfg.HTTP.Port > 65535 {
@@ -159,6 +165,10 @@ func defaultStateHome() string {
 		return ".hopter"
 	}
 	return filepath.Join(home, ".hopter")
+}
+
+func defaultControlSocketPath() string {
+	return filepath.Join(defaultStateHome(), defaultSocketFileName)
 }
 
 func defaultRelayAuthPath() string {

@@ -139,6 +139,7 @@ func (s *BadgerStore) CreateTask(ctx context.Context, input CreateTaskInput) (Sn
 	task := Task{
 		ID:              "task_" + uuid.NewString(),
 		ProjectID:       strings.TrimSpace(input.ProjectID),
+		SessionID:       strings.TrimSpace(input.SessionID),
 		Title:           title,
 		Prompt:          prompt,
 		Priority:        input.Priority,
@@ -147,6 +148,9 @@ func (s *BadgerStore) CreateTask(ctx context.Context, input CreateTaskInput) (Sn
 		CommitStatus:    CommitNotReady,
 		CreatedAt:       now,
 		UpdatedAt:       now,
+	}
+	if task.SessionID != "" {
+		task.LifecycleStatus = LifecycleWaiting
 	}
 
 	subtasks := make([]Subtask, 0, len(input.InitialSubtasks))
@@ -277,6 +281,9 @@ func (s *BadgerStore) ListTasks(ctx context.Context, filter ListFilter) ([]Task,
 			if filter.ProjectID != "" && task.ProjectID != filter.ProjectID {
 				continue
 			}
+			if filter.SessionID != "" && task.SessionID != filter.SessionID {
+				continue
+			}
 			if filter.AttentionKind != "" && task.AttentionKind != filter.AttentionKind {
 				continue
 			}
@@ -291,6 +298,9 @@ func (s *BadgerStore) ListTasks(ctx context.Context, filter ListFilter) ([]Task,
 		return nil, err
 	}
 	sort.Slice(tasks, func(i, j int) bool {
+		if filter.SessionID != "" {
+			return tasks[i].CreatedAt.Before(tasks[j].CreatedAt)
+		}
 		return tasks[i].UpdatedAt.After(tasks[j].UpdatedAt)
 	})
 	if filter.Limit > 0 && len(tasks) > int(filter.Limit) {

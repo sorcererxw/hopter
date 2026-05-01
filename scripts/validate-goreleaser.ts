@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 
@@ -45,6 +45,14 @@ async function main() {
     "goreleaser check",
     goreleaser.exitCode === 0,
     goreleaser.exitCode === 0 ? "GoReleaser accepted .goreleaser.yml" : (goreleaser.stderr || goreleaser.stdout).trim(),
+  );
+
+  const goreleaserConfig = readFileSync(".goreleaser.yml", "utf8");
+  addCheck(
+    checks,
+    "homebrew service command",
+    goreleaserConfig.includes('run [opt_bin/"hopter", "server"]'),
+    "Homebrew service runs the canonical server command",
   );
 
   const status = checks.every((check) => check.status === "pass") ? "pass" : "fail";

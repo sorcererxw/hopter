@@ -2,26 +2,17 @@
 set -euo pipefail
 
 relay_mode=0
-reset_auth=0
 for arg in "$@"; do
   case "${arg}" in
     --relay)
       relay_mode=1
       ;;
-    --reset-auth)
-      reset_auth=1
-      ;;
     *)
-      echo "usage: $0 [--relay] [--reset-auth]" >&2
+      echo "usage: $0 [--relay]" >&2
       exit 2
       ;;
   esac
 done
-
-if [[ "${reset_auth}" == "1" && "${relay_mode}" != "1" ]]; then
-  echo "--reset-auth requires --relay" >&2
-  exit 2
-fi
 
 if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -32,9 +23,6 @@ if [[ "${HOPTER_DEV_FOREGROUND:-}" != "1" && -z "${TMUX:-}" && ! -t 0 ]]; then
   dev_command="HOPTER_DEV_FOREGROUND=1 bash scripts/dev.sh"
   if [[ "${relay_mode}" == "1" ]]; then
     dev_command="${dev_command} --relay"
-  fi
-  if [[ "${reset_auth}" == "1" ]]; then
-    dev_command="${dev_command} --reset-auth"
   fi
 
   has_listener() {

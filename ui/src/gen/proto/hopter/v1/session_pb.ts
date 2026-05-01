@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file hopter/v1/session.proto.
  */
 export const file_hopter_v1_session: GenFile = /*@__PURE__*/
-  fileDesc("Chdob3B0ZXIvdjEvc2Vzc2lvbi5wcm90bxIJaG9wdGVyLnYxIsAFCgdTZXNzaW9uEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiYKB3Byb2plY3QYAyABKAsyFS5ob3B0ZXIudjEuUHJvamVjdFJlZhIoCgZzdGF0dXMYBCABKA4yGC5ob3B0ZXIudjEuU2Vzc2lvblN0YXR1cxIPCgdzdW1tYXJ5GAUgASgJEhoKEmF0dGVudGlvbl9yZXF1aXJlZBgGIAEoCBIYChBhdHRlbnRpb25fcmVhc29uGAcgASgJEhcKD2xhc3RfaW5wdXRfaGludBgIIAEoCRIuCgp1cGRhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCglhcnRpZmFjdHMYCiADKAsyFi5ob3B0ZXIudjEuQXJ0aWZhY3RSZWYSOgoQdHJhbnNjcmlwdF9pdGVtcxgLIAMoCzIgLmhvcHRlci52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SEwoLYmFja2VuZF9rZXkYDCABKAkSIAoTcGVuZGluZ19hcHByb3ZhbF9pZBgNIAEoCUgAiAEBEhwKD3ByZWZlcnJlZF9tb2RlbBgOIAEoCUgBiAEBEicKGnByZWZlcnJlZF9yZWFzb25pbmdfZWZmb3J0GA8gASgJSAKIAQESJgoZcHJlZmVycmVkX2NvZGV4X2Zhc3RfbW9kZRgQIAEoCEgDiAEBEkIKFGNvbnRleHRfd2luZG93X3VzYWdlGBEgASgLMiQuaG9wdGVyLnYxLlNlc3Npb25Db250ZXh0V2luZG93VXNhZ2VCFgoUX3BlbmRpbmdfYXBwcm92YWxfaWRCEgoQX3ByZWZlcnJlZF9tb2RlbEIdChtfcHJlZmVycmVkX3JlYXNvbmluZ19lZmZvcnRCHAoaX3ByZWZlcnJlZF9jb2RleF9mYXN0X21vZGUi2AUKC1Nlc3Npb25NZXRhEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiYKB3Byb2plY3QYAyABKAsyFS5ob3B0ZXIudjEuUHJvamVjdFJlZhIoCgZzdGF0dXMYBCABKA4yGC5ob3B0ZXIudjEuU2Vzc2lvblN0YXR1cxIPCgdzdW1tYXJ5GAUgASgJEhoKEmF0dGVudGlvbl9yZXF1aXJlZBgGIAEoCBIYChBhdHRlbnRpb25fcmVhc29uGAcgASgJEhcKD2xhc3RfaW5wdXRfaGludBgIIAEoCRIuCgp1cGRhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCglhcnRpZmFjdHMYCiADKAsyFi5ob3B0ZXIudjEuQXJ0aWZhY3RSZWYSEwoLYmFja2VuZF9rZXkYCyABKAkSFwoPaGFzX21vcmVfYmVmb3JlGAwgASgIEh0KFWxhdGVzdF9wYWdlX3NpemVfaGludBgNIAEoDRIWCg5yZXN1bWVfY29tbWFuZBgOIAEoCRIgChNwZW5kaW5nX2FwcHJvdmFsX2lkGA8gASgJSACIAQESHAoPcHJlZmVycmVkX21vZGVsGBAgASgJSAGIAQESJwoacHJlZmVycmVkX3JlYXNvbmluZ19lZmZvcnQYESABKAlIAogBARImChlwcmVmZXJyZWRfY29kZXhfZmFzdF9tb2RlGBIgASgISAOIAQESQgoUY29udGV4dF93aW5kb3dfdXNhZ2UYEyABKAsyJC5ob3B0ZXIudjEuU2Vzc2lvbkNvbnRleHRXaW5kb3dVc2FnZUIWChRfcGVuZGluZ19hcHByb3ZhbF9pZEISChBfcHJlZmVycmVkX21vZGVsQh0KG19wcmVmZXJyZWRfcmVhc29uaW5nX2VmZm9ydEIcChpfcHJlZmVycmVkX2NvZGV4X2Zhc3RfbW9kZSJbChlTZXNzaW9uQ29udGV4dFdpbmRvd1VzYWdlEhMKC3VzZWRfdG9rZW5zGAEgASgEEhQKDHRvdGFsX3Rva2VucxgCIAEoBBITCgtsYXN0X3Rva2VucxgDIAEoBCKjAQobU2Vzc2lvblRyYW5zY3JpcHRBdHRhY2htZW50EgoKAmlkGAEgASgJEjgKBGtpbmQYAiABKA4yKi5ob3B0ZXIudjEuU2Vzc2lvblRyYW5zY3JpcHRBdHRhY2htZW50S2luZBINCgVsYWJlbBgDIAEoCRIMCgRwYXRoGAQgASgJEgsKA3VybBgFIAEoCRIUCgxjb250ZW50X3R5cGUYBiABKAki6gEKFVNlc3Npb25UcmFuc2NyaXB0SXRlbRIKCgJpZBgBIAEoCRIyCgRraW5kGAIgASgOMiQuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0SXRlbUtpbmQSDQoFdGl0bGUYAyABKAkSDAoEYm9keRgEIAEoCRIOCgZzdGF0dXMYBSABKAkSFAoMZGlzcGxheV9ib2R5GAYgASgJEjsKC2F0dGFjaG1lbnRzGAcgAygLMiYuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0QXR0YWNobWVudBIRCglvcmRlcl9rZXkYCCABKAki3wEKD1Nlc3Npb25MaXN0SXRlbRIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRImCgdwcm9qZWN0GAMgASgLMhUuaG9wdGVyLnYxLlByb2plY3RSZWYSKAoGc3RhdHVzGAQgASgOMhguaG9wdGVyLnYxLlNlc3Npb25TdGF0dXMSLgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSYXR0ZW50aW9uX3JlcXVpcmVkGAYgASgIEhMKC2JhY2tlbmRfa2V5GAcgASgJIlsKE0xpc3RTZXNzaW9uc1JlcXVlc3QSFwoKcHJvamVjdF9pZBgBIAEoCUgAiAEBEhIKBWxpbWl0GAIgASgNSAGIAQFCDQoLX3Byb2plY3RfaWRCCAoGX2xpbWl0IkQKFExpc3RTZXNzaW9uc1Jlc3BvbnNlEiwKCHNlc3Npb25zGAEgAygLMhouaG9wdGVyLnYxLlNlc3Npb25MaXN0SXRlbSInChFHZXRTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIjkKEkdldFNlc3Npb25SZXNwb25zZRIjCgdzZXNzaW9uGAEgASgLMhIuaG9wdGVyLnYxLlNlc3Npb24iKwoVR2V0U2Vzc2lvbk1ldGFSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiQQoWR2V0U2Vzc2lvbk1ldGFSZXNwb25zZRInCgdzZXNzaW9uGAEgASgLMhYuaG9wdGVyLnYxLlNlc3Npb25NZXRhIqABChFTZXNzaW9uUmV2aWV3RmlsZRIMCgRwYXRoGAEgASgJEgwKBGtpbmQYAiABKAkSFgoJbW92ZV9wYXRoGAMgASgJSACIAQESEQoJYWRkaXRpb25zGAQgASgNEhEKCWRlbGV0aW9ucxgFIAEoDRIMCgRkaWZmGAYgASgJEhUKDWRpc3BsYXlfbGFiZWwYByABKAlCDAoKX21vdmVfcGF0aCKAAgoNU2Vzc2lvblJldmlldxISCgpzZXNzaW9uX2lkGAEgASgJEhIKCnByb2plY3RfaWQYAiABKAkSEQoJYXZhaWxhYmxlGAMgASgIEg8KB3R1cm5faWQYBCABKAkSDgoGcmVhc29uGAUgASgJEhIKCmZ1bGxfcGF0Y2gYBiABKAkSKwoFZmlsZXMYByADKAsyHC5ob3B0ZXIudjEuU2Vzc2lvblJldmlld0ZpbGUSMAoMZ2VuZXJhdGVkX2F0GAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIgChhwZW5kaW5nX3R1cm5faW5fcHJvZ3Jlc3MYCSABKAgiLQoXR2V0U2Vzc2lvblJldmlld1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJEChhHZXRTZXNzaW9uUmV2aWV3UmVzcG9uc2USKAoGcmV2aWV3GAEgASgLMhguaG9wdGVyLnYxLlNlc3Npb25SZXZpZXcilwIKC1Nlc3Npb25GaWxlEhIKCnNlc3Npb25faWQYASABKAkSEgoKcHJvamVjdF9pZBgCIAEoCRIRCglhdmFpbGFibGUYAyABKAgSFgoOcmVxdWVzdGVkX3BhdGgYBCABKAkSFgoOY2Fub25pY2FsX3BhdGgYBSABKAkSFAoMZGlzcGxheV9wYXRoGAYgASgJEg8KB2NvbnRlbnQYByABKAkSDgoGcmVhc29uGAggASgJEhEKCXRydW5jYXRlZBgJIAEoCBIRCglpc19iaW5hcnkYCiABKAgSEgoKbGluZV9jb3VudBgLIAEoDRIUCgxpbml0aWFsX2xpbmUYDCABKA0SFgoOaW5pdGlhbF9jb2x1bW4YDSABKA0idQoVR2V0U2Vzc2lvbkZpbGVSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSDAoEcGF0aBgCIAEoCRIRCgRsaW5lGAMgASgNSACIAQESEwoGY29sdW1uGAQgASgNSAGIAQFCBwoFX2xpbmVCCQoHX2NvbHVtbiI+ChZHZXRTZXNzaW9uRmlsZVJlc3BvbnNlEiQKBGZpbGUYASABKAsyFi5ob3B0ZXIudjEuU2Vzc2lvbkZpbGUifgocTGlzdFNlc3Npb25UcmFuc2NyaXB0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhoKDWJlZm9yZV9jdXJzb3IYAiABKAlIAIgBARISCgVsaW1pdBgDIAEoDUgBiAEBQhAKDl9iZWZvcmVfY3Vyc29yQggKBl9saW1pdCLSAQoVU2Vzc2lvblRyYW5zY3JpcHRQYWdlEi8KBWl0ZW1zGAEgAygLMiAuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0SXRlbRIfChJuZXh0X2JlZm9yZV9jdXJzb3IYAiABKAlIAIgBARIXCg9oYXNfbW9yZV9iZWZvcmUYAyABKAgSNwoTc25hcHNob3RfdXBkYXRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCFQoTX25leHRfYmVmb3JlX2N1cnNvciJPCh1MaXN0U2Vzc2lvblRyYW5zY3JpcHRSZXNwb25zZRIuCgRwYWdlGAEgASgLMiAuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0UGFnZSK+AgoUQ3JlYXRlU2Vzc2lvblJlcXVlc3QSEgoKcHJvamVjdF9pZBgBIAEoCRISCgV0aXRsZRgCIAEoCUgAiAEBEg4KBnByb21wdBgDIAEoCRIYCgtiYWNrZW5kX2tleRgEIAEoCUgBiAEBEhIKBW1vZGVsGAUgASgJSAKIAQESHQoQcmVhc29uaW5nX2VmZm9ydBgGIAEoCUgDiAEBEhwKD2NvZGV4X2Zhc3RfbW9kZRgHIAEoCEgEiAEBEjYKC2F0dGFjaG1lbnRzGAggAygLMiEuaG9wdGVyLnYxLlNlc3Npb25JbnB1dEF0dGFjaG1lbnRCCAoGX3RpdGxlQg4KDF9iYWNrZW5kX2tleUIICgZfbW9kZWxCEwoRX3JlYXNvbmluZ19lZmZvcnRCEgoQX2NvZGV4X2Zhc3RfbW9kZSI8ChVDcmVhdGVTZXNzaW9uUmVzcG9uc2USIwoHc2Vzc2lvbhgBIAEoCzISLmhvcHRlci52MS5TZXNzaW9uIvgBChdTZW5kU2Vzc2lvbklucHV0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEg0KBWlucHV0GAIgASgJEhIKBW1vZGVsGAMgASgJSACIAQESHQoQcmVhc29uaW5nX2VmZm9ydBgEIAEoCUgBiAEBEhwKD2NvZGV4X2Zhc3RfbW9kZRgFIAEoCEgCiAEBEjYKC2F0dGFjaG1lbnRzGAYgAygLMiEuaG9wdGVyLnYxLlNlc3Npb25JbnB1dEF0dGFjaG1lbnRCCAoGX21vZGVsQhMKEV9yZWFzb25pbmdfZWZmb3J0QhIKEF9jb2RleF9mYXN0X21vZGUicAoYU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiSgoWU2Vzc2lvbklucHV0QXR0YWNobWVudBINCgVsYWJlbBgBIAEoCRILCgN1cmwYAiABKAkSFAoMY29udGVudF90eXBlGAMgASgJIi0KF0ludGVycnVwdFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkicAoYSW50ZXJydXB0U2Vzc2lvblJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAimwEKH1Jlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRITCgthcHByb3ZhbF9pZBgCIAEoCRItCghkZWNpc2lvbhgDIAEoDjIbLmhvcHRlci52MS5BcHByb3ZhbERlY2lzaW9uEhQKB2NvbW1lbnQYBCABKAlIAIgBAUIKCghfY29tbWVudCJ4CiBSZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjEKG0xpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIkkKHExpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2USKQoJYXJ0aWZhY3RzGAEgAygLMhYuaG9wdGVyLnYxLkFydGlmYWN0UmVmKuICChlTZXNzaW9uVHJhbnNjcmlwdEl0ZW1LaW5kEiwKKFNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfVU5TUEVDSUZJRUQQABItCilTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1VTRVJfTUVTU0FHRRABEi4KKlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfQUdFTlRfTUVTU0FHRRACEioKJlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfUkVBU09OSU5HEAMSKgomU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9UT09MX0NBTEwQBBIyCi5TRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX0NPTU1BTkRfRVhFQ1VUSU9OEAUSLAooU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9GSUxFX0NIQU5HRRAGKrABCh9TZXNzaW9uVHJhbnNjcmlwdEF0dGFjaG1lbnRLaW5kEjIKLlNFU1NJT05fVFJBTlNDUklQVF9BVFRBQ0hNRU5UX0tJTkRfVU5TUEVDSUZJRUQQABIsCihTRVNTSU9OX1RSQU5TQ1JJUFRfQVRUQUNITUVOVF9LSU5EX0lNQUdFEAESKwonU0VTU0lPTl9UUkFOU0NSSVBUX0FUVEFDSE1FTlRfS0lORF9GSUxFEAIyjwgKDlNlc3Npb25TZXJ2aWNlEk8KDExpc3RTZXNzaW9ucxIeLmhvcHRlci52MS5MaXN0U2Vzc2lvbnNSZXF1ZXN0Gh8uaG9wdGVyLnYxLkxpc3RTZXNzaW9uc1Jlc3BvbnNlEkkKCkdldFNlc3Npb24SHC5ob3B0ZXIudjEuR2V0U2Vzc2lvblJlcXVlc3QaHS5ob3B0ZXIudjEuR2V0U2Vzc2lvblJlc3BvbnNlElUKDkdldFNlc3Npb25NZXRhEiAuaG9wdGVyLnYxLkdldFNlc3Npb25NZXRhUmVxdWVzdBohLmhvcHRlci52MS5HZXRTZXNzaW9uTWV0YVJlc3BvbnNlElsKEEdldFNlc3Npb25SZXZpZXcSIi5ob3B0ZXIudjEuR2V0U2Vzc2lvblJldmlld1JlcXVlc3QaIy5ob3B0ZXIudjEuR2V0U2Vzc2lvblJldmlld1Jlc3BvbnNlElUKDkdldFNlc3Npb25GaWxlEiAuaG9wdGVyLnYxLkdldFNlc3Npb25GaWxlUmVxdWVzdBohLmhvcHRlci52MS5HZXRTZXNzaW9uRmlsZVJlc3BvbnNlEmoKFUxpc3RTZXNzaW9uVHJhbnNjcmlwdBInLmhvcHRlci52MS5MaXN0U2Vzc2lvblRyYW5zY3JpcHRSZXF1ZXN0GiguaG9wdGVyLnYxLkxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlc3BvbnNlElIKDUNyZWF0ZVNlc3Npb24SHy5ob3B0ZXIudjEuQ3JlYXRlU2Vzc2lvblJlcXVlc3QaIC5ob3B0ZXIudjEuQ3JlYXRlU2Vzc2lvblJlc3BvbnNlElsKEFNlbmRTZXNzaW9uSW5wdXQSIi5ob3B0ZXIudjEuU2VuZFNlc3Npb25JbnB1dFJlcXVlc3QaIy5ob3B0ZXIudjEuU2VuZFNlc3Npb25JbnB1dFJlc3BvbnNlElsKEEludGVycnVwdFNlc3Npb24SIi5ob3B0ZXIudjEuSW50ZXJydXB0U2Vzc2lvblJlcXVlc3QaIy5ob3B0ZXIudjEuSW50ZXJydXB0U2Vzc2lvblJlc3BvbnNlEnMKGFJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbBIqLmhvcHRlci52MS5SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXF1ZXN0GisuaG9wdGVyLnYxLlJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlc3BvbnNlEmcKFExpc3RTZXNzaW9uQXJ0aWZhY3RzEiYuaG9wdGVyLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVxdWVzdBonLmhvcHRlci52MS5MaXN0U2Vzc2lvbkFydGlmYWN0c1Jlc3BvbnNlQqYBCg1jb20uaG9wdGVyLnYxQgxTZXNzaW9uUHJvdG9QAVpCZ2l0aHViLmNvbS9zb3JjZXJlcnh3L2hvcHRlci9pbnRlcm5hbC9nZW4vcHJvdG8vaG9wdGVyL3YxO2hvcHRlcnYxogIDSFhYqgIJSG9wdGVyLlYxygIJSG9wdGVyXFYx4gIVSG9wdGVyXFYxXEdQQk1ldGFkYXRh6gIKSG9wdGVyOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp, file_hopter_v1_common]);
+  fileDesc("Chdob3B0ZXIvdjEvc2Vzc2lvbi5wcm90bxIJaG9wdGVyLnYxIsAFCgdTZXNzaW9uEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiYKB3Byb2plY3QYAyABKAsyFS5ob3B0ZXIudjEuUHJvamVjdFJlZhIoCgZzdGF0dXMYBCABKA4yGC5ob3B0ZXIudjEuU2Vzc2lvblN0YXR1cxIPCgdzdW1tYXJ5GAUgASgJEhoKEmF0dGVudGlvbl9yZXF1aXJlZBgGIAEoCBIYChBhdHRlbnRpb25fcmVhc29uGAcgASgJEhcKD2xhc3RfaW5wdXRfaGludBgIIAEoCRIuCgp1cGRhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCglhcnRpZmFjdHMYCiADKAsyFi5ob3B0ZXIudjEuQXJ0aWZhY3RSZWYSOgoQdHJhbnNjcmlwdF9pdGVtcxgLIAMoCzIgLmhvcHRlci52MS5TZXNzaW9uVHJhbnNjcmlwdEl0ZW0SEwoLYmFja2VuZF9rZXkYDCABKAkSIAoTcGVuZGluZ19hcHByb3ZhbF9pZBgNIAEoCUgAiAEBEhwKD3ByZWZlcnJlZF9tb2RlbBgOIAEoCUgBiAEBEicKGnByZWZlcnJlZF9yZWFzb25pbmdfZWZmb3J0GA8gASgJSAKIAQESJgoZcHJlZmVycmVkX2NvZGV4X2Zhc3RfbW9kZRgQIAEoCEgDiAEBEkIKFGNvbnRleHRfd2luZG93X3VzYWdlGBEgASgLMiQuaG9wdGVyLnYxLlNlc3Npb25Db250ZXh0V2luZG93VXNhZ2VCFgoUX3BlbmRpbmdfYXBwcm92YWxfaWRCEgoQX3ByZWZlcnJlZF9tb2RlbEIdChtfcHJlZmVycmVkX3JlYXNvbmluZ19lZmZvcnRCHAoaX3ByZWZlcnJlZF9jb2RleF9mYXN0X21vZGUi2AUKC1Nlc3Npb25NZXRhEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiYKB3Byb2plY3QYAyABKAsyFS5ob3B0ZXIudjEuUHJvamVjdFJlZhIoCgZzdGF0dXMYBCABKA4yGC5ob3B0ZXIudjEuU2Vzc2lvblN0YXR1cxIPCgdzdW1tYXJ5GAUgASgJEhoKEmF0dGVudGlvbl9yZXF1aXJlZBgGIAEoCBIYChBhdHRlbnRpb25fcmVhc29uGAcgASgJEhcKD2xhc3RfaW5wdXRfaGludBgIIAEoCRIuCgp1cGRhdGVkX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIpCglhcnRpZmFjdHMYCiADKAsyFi5ob3B0ZXIudjEuQXJ0aWZhY3RSZWYSEwoLYmFja2VuZF9rZXkYCyABKAkSFwoPaGFzX21vcmVfYmVmb3JlGAwgASgIEh0KFWxhdGVzdF9wYWdlX3NpemVfaGludBgNIAEoDRIWCg5yZXN1bWVfY29tbWFuZBgOIAEoCRIgChNwZW5kaW5nX2FwcHJvdmFsX2lkGA8gASgJSACIAQESHAoPcHJlZmVycmVkX21vZGVsGBAgASgJSAGIAQESJwoacHJlZmVycmVkX3JlYXNvbmluZ19lZmZvcnQYESABKAlIAogBARImChlwcmVmZXJyZWRfY29kZXhfZmFzdF9tb2RlGBIgASgISAOIAQESQgoUY29udGV4dF93aW5kb3dfdXNhZ2UYEyABKAsyJC5ob3B0ZXIudjEuU2Vzc2lvbkNvbnRleHRXaW5kb3dVc2FnZUIWChRfcGVuZGluZ19hcHByb3ZhbF9pZEISChBfcHJlZmVycmVkX21vZGVsQh0KG19wcmVmZXJyZWRfcmVhc29uaW5nX2VmZm9ydEIcChpfcHJlZmVycmVkX2NvZGV4X2Zhc3RfbW9kZSJbChlTZXNzaW9uQ29udGV4dFdpbmRvd1VzYWdlEhMKC3VzZWRfdG9rZW5zGAEgASgEEhQKDHRvdGFsX3Rva2VucxgCIAEoBBITCgtsYXN0X3Rva2VucxgDIAEoBCKjAQobU2Vzc2lvblRyYW5zY3JpcHRBdHRhY2htZW50EgoKAmlkGAEgASgJEjgKBGtpbmQYAiABKA4yKi5ob3B0ZXIudjEuU2Vzc2lvblRyYW5zY3JpcHRBdHRhY2htZW50S2luZBINCgVsYWJlbBgDIAEoCRIMCgRwYXRoGAQgASgJEgsKA3VybBgFIAEoCRIUCgxjb250ZW50X3R5cGUYBiABKAkimQEKHlNlc3Npb25UcmFuc2NyaXB0Q29tbWFuZEFjdGlvbhI7CgRraW5kGAEgASgOMi0uaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0Q29tbWFuZEFjdGlvbktpbmQSDwoHY29tbWFuZBgCIAEoCRIMCgRuYW1lGAMgASgJEgwKBHBhdGgYBCABKAkSDQoFcXVlcnkYBSABKAkirgIKFVNlc3Npb25UcmFuc2NyaXB0SXRlbRIKCgJpZBgBIAEoCRIyCgRraW5kGAIgASgOMiQuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0SXRlbUtpbmQSDQoFdGl0bGUYAyABKAkSDAoEYm9keRgEIAEoCRIOCgZzdGF0dXMYBSABKAkSFAoMZGlzcGxheV9ib2R5GAYgASgJEjsKC2F0dGFjaG1lbnRzGAcgAygLMiYuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0QXR0YWNobWVudBIRCglvcmRlcl9rZXkYCCABKAkSQgoPY29tbWFuZF9hY3Rpb25zGAkgAygLMikuaG9wdGVyLnYxLlNlc3Npb25UcmFuc2NyaXB0Q29tbWFuZEFjdGlvbiLfAQoPU2Vzc2lvbkxpc3RJdGVtEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEiYKB3Byb2plY3QYAyABKAsyFS5ob3B0ZXIudjEuUHJvamVjdFJlZhIoCgZzdGF0dXMYBCABKA4yGC5ob3B0ZXIudjEuU2Vzc2lvblN0YXR1cxIuCgp1cGRhdGVkX2F0GAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJhdHRlbnRpb25fcmVxdWlyZWQYBiABKAgSEwoLYmFja2VuZF9rZXkYByABKAkiWwoTTGlzdFNlc3Npb25zUmVxdWVzdBIXCgpwcm9qZWN0X2lkGAEgASgJSACIAQESEgoFbGltaXQYAiABKA1IAYgBAUINCgtfcHJvamVjdF9pZEIICgZfbGltaXQiRAoUTGlzdFNlc3Npb25zUmVzcG9uc2USLAoIc2Vzc2lvbnMYASADKAsyGi5ob3B0ZXIudjEuU2Vzc2lvbkxpc3RJdGVtIicKEUdldFNlc3Npb25SZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiOQoSR2V0U2Vzc2lvblJlc3BvbnNlEiMKB3Nlc3Npb24YASABKAsyEi5ob3B0ZXIudjEuU2Vzc2lvbiIrChVHZXRTZXNzaW9uTWV0YVJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJBChZHZXRTZXNzaW9uTWV0YVJlc3BvbnNlEicKB3Nlc3Npb24YASABKAsyFi5ob3B0ZXIudjEuU2Vzc2lvbk1ldGEioAEKEVNlc3Npb25SZXZpZXdGaWxlEgwKBHBhdGgYASABKAkSDAoEa2luZBgCIAEoCRIWCgltb3ZlX3BhdGgYAyABKAlIAIgBARIRCglhZGRpdGlvbnMYBCABKA0SEQoJZGVsZXRpb25zGAUgASgNEgwKBGRpZmYYBiABKAkSFQoNZGlzcGxheV9sYWJlbBgHIAEoCUIMCgpfbW92ZV9wYXRoIoACCg1TZXNzaW9uUmV2aWV3EhIKCnNlc3Npb25faWQYASABKAkSEgoKcHJvamVjdF9pZBgCIAEoCRIRCglhdmFpbGFibGUYAyABKAgSDwoHdHVybl9pZBgEIAEoCRIOCgZyZWFzb24YBSABKAkSEgoKZnVsbF9wYXRjaBgGIAEoCRIrCgVmaWxlcxgHIAMoCzIcLmhvcHRlci52MS5TZXNzaW9uUmV2aWV3RmlsZRIwCgxnZW5lcmF0ZWRfYXQYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiAKGHBlbmRpbmdfdHVybl9pbl9wcm9ncmVzcxgJIAEoCCItChdHZXRTZXNzaW9uUmV2aWV3UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJIkQKGEdldFNlc3Npb25SZXZpZXdSZXNwb25zZRIoCgZyZXZpZXcYASABKAsyGC5ob3B0ZXIudjEuU2Vzc2lvblJldmlldyKXAgoLU2Vzc2lvbkZpbGUSEgoKc2Vzc2lvbl9pZBgBIAEoCRISCgpwcm9qZWN0X2lkGAIgASgJEhEKCWF2YWlsYWJsZRgDIAEoCBIWCg5yZXF1ZXN0ZWRfcGF0aBgEIAEoCRIWCg5jYW5vbmljYWxfcGF0aBgFIAEoCRIUCgxkaXNwbGF5X3BhdGgYBiABKAkSDwoHY29udGVudBgHIAEoCRIOCgZyZWFzb24YCCABKAkSEQoJdHJ1bmNhdGVkGAkgASgIEhEKCWlzX2JpbmFyeRgKIAEoCBISCgpsaW5lX2NvdW50GAsgASgNEhQKDGluaXRpYWxfbGluZRgMIAEoDRIWCg5pbml0aWFsX2NvbHVtbhgNIAEoDSJ1ChVHZXRTZXNzaW9uRmlsZVJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRIMCgRwYXRoGAIgASgJEhEKBGxpbmUYAyABKA1IAIgBARITCgZjb2x1bW4YBCABKA1IAYgBAUIHCgVfbGluZUIJCgdfY29sdW1uIj4KFkdldFNlc3Npb25GaWxlUmVzcG9uc2USJAoEZmlsZRgBIAEoCzIWLmhvcHRlci52MS5TZXNzaW9uRmlsZSJ+ChxMaXN0U2Vzc2lvblRyYW5zY3JpcHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSGgoNYmVmb3JlX2N1cnNvchgCIAEoCUgAiAEBEhIKBWxpbWl0GAMgASgNSAGIAQFCEAoOX2JlZm9yZV9jdXJzb3JCCAoGX2xpbWl0ItIBChVTZXNzaW9uVHJhbnNjcmlwdFBhZ2USLwoFaXRlbXMYASADKAsyIC5ob3B0ZXIudjEuU2Vzc2lvblRyYW5zY3JpcHRJdGVtEh8KEm5leHRfYmVmb3JlX2N1cnNvchgCIAEoCUgAiAEBEhcKD2hhc19tb3JlX2JlZm9yZRgDIAEoCBI3ChNzbmFwc2hvdF91cGRhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIVChNfbmV4dF9iZWZvcmVfY3Vyc29yIk8KHUxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlc3BvbnNlEi4KBHBhZ2UYASABKAsyIC5ob3B0ZXIudjEuU2Vzc2lvblRyYW5zY3JpcHRQYWdlItACChBTZXNzaW9uUXVldWVJdGVtEgoKAmlkGAEgASgJEhIKCnNlc3Npb25faWQYAiABKAkSDQoFaW5wdXQYAyABKAkSDwoHcHJldmlldxgEIAEoCRIQCghwb3NpdGlvbhgFIAEoDRISCgVtb2RlbBgGIAEoCUgAiAEBEh0KEHJlYXNvbmluZ19lZmZvcnQYByABKAlIAYgBARIcCg9jb2RleF9mYXN0X21vZGUYCCABKAhIAogBARI2CgthdHRhY2htZW50cxgJIAMoCzIhLmhvcHRlci52MS5TZXNzaW9uSW5wdXRBdHRhY2htZW50Ei4KCmNyZWF0ZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQggKBl9tb2RlbEITChFfcmVhc29uaW5nX2VmZm9ydEISChBfY29kZXhfZmFzdF9tb2RlIi0KF0xpc3RTZXNzaW9uUXVldWVSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkiRgoYTGlzdFNlc3Npb25RdWV1ZVJlc3BvbnNlEioKBWl0ZW1zGAEgAygLMhsuaG9wdGVyLnYxLlNlc3Npb25RdWV1ZUl0ZW0ivgIKFENyZWF0ZVNlc3Npb25SZXF1ZXN0EhIKCnByb2plY3RfaWQYASABKAkSEgoFdGl0bGUYAiABKAlIAIgBARIOCgZwcm9tcHQYAyABKAkSGAoLYmFja2VuZF9rZXkYBCABKAlIAYgBARISCgVtb2RlbBgFIAEoCUgCiAEBEh0KEHJlYXNvbmluZ19lZmZvcnQYBiABKAlIA4gBARIcCg9jb2RleF9mYXN0X21vZGUYByABKAhIBIgBARI2CgthdHRhY2htZW50cxgIIAMoCzIhLmhvcHRlci52MS5TZXNzaW9uSW5wdXRBdHRhY2htZW50QggKBl90aXRsZUIOCgxfYmFja2VuZF9rZXlCCAoGX21vZGVsQhMKEV9yZWFzb25pbmdfZWZmb3J0QhIKEF9jb2RleF9mYXN0X21vZGUiPAoVQ3JlYXRlU2Vzc2lvblJlc3BvbnNlEiMKB3Nlc3Npb24YASABKAsyEi5ob3B0ZXIudjEuU2Vzc2lvbiKjAgoXU2VuZFNlc3Npb25JbnB1dFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRINCgVpbnB1dBgCIAEoCRISCgVtb2RlbBgDIAEoCUgAiAEBEh0KEHJlYXNvbmluZ19lZmZvcnQYBCABKAlIAYgBARIcCg9jb2RleF9mYXN0X21vZGUYBSABKAhIAogBARI2CgthdHRhY2htZW50cxgGIAMoCzIhLmhvcHRlci52MS5TZXNzaW9uSW5wdXRBdHRhY2htZW50EikKBG1vZGUYByABKA4yGy5ob3B0ZXIudjEuU2Vzc2lvbklucHV0TW9kZUIICgZfbW9kZWxCEwoRX3JlYXNvbmluZ19lZmZvcnRCEgoQX2NvZGV4X2Zhc3RfbW9kZSJwChhTZW5kU2Vzc2lvbklucHV0UmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgSEgoKc2Vzc2lvbl9pZBgCIAEoCRIuCgp1cGRhdGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKrAgobUm9sbGJhY2tTZXNzaW9uSW5wdXRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSGgoSdHJhbnNjcmlwdF9pdGVtX2lkGAIgASgJEhEKCW9yZGVyX2tleRgDIAEoCRINCgVpbnB1dBgEIAEoCRISCgVtb2RlbBgFIAEoCUgAiAEBEh0KEHJlYXNvbmluZ19lZmZvcnQYBiABKAlIAYgBARIcCg9jb2RleF9mYXN0X21vZGUYByABKAhIAogBARI2CgthdHRhY2htZW50cxgIIAMoCzIhLmhvcHRlci52MS5TZXNzaW9uSW5wdXRBdHRhY2htZW50QggKBl9tb2RlbEITChFfcmVhc29uaW5nX2VmZm9ydEISChBfY29kZXhfZmFzdF9tb2RlIpABChxSb2xsYmFja1Nlc3Npb25JbnB1dFJlc3BvbnNlEhAKCGFjY2VwdGVkGAEgASgIEhIKCnNlc3Npb25faWQYAiABKAkSLgoKdXBkYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZHJvcHBlZF90dXJuX2NvdW50GAQgASgNIkoKFlNlc3Npb25JbnB1dEF0dGFjaG1lbnQSDQoFbGFiZWwYASABKAkSCwoDdXJsGAIgASgJEhQKDGNvbnRlbnRfdHlwZRgDIAEoCSItChdJbnRlcnJ1cHRTZXNzaW9uUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJInAKGEludGVycnVwdFNlc3Npb25SZXNwb25zZRIQCghhY2NlcHRlZBgBIAEoCBISCgpzZXNzaW9uX2lkGAIgASgJEi4KCnVwZGF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpsBCh9SZXNwb25kVG9TZXNzaW9uQXBwcm92YWxSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEwoLYXBwcm92YWxfaWQYAiABKAkSLQoIZGVjaXNpb24YAyABKA4yGy5ob3B0ZXIudjEuQXBwcm92YWxEZWNpc2lvbhIUCgdjb21tZW50GAQgASgJSACIAQFCCgoIX2NvbW1lbnQieAogUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsUmVzcG9uc2USEAoIYWNjZXB0ZWQYASABKAgSEgoKc2Vzc2lvbl9pZBgCIAEoCRIuCgp1cGRhdGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIxChtMaXN0U2Vzc2lvbkFydGlmYWN0c1JlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCSJJChxMaXN0U2Vzc2lvbkFydGlmYWN0c1Jlc3BvbnNlEikKCWFydGlmYWN0cxgBIAMoCzIWLmhvcHRlci52MS5BcnRpZmFjdFJlZipyChBTZXNzaW9uSW5wdXRNb2RlEiIKHlNFU1NJT05fSU5QVVRfTU9ERV9VTlNQRUNJRklFRBAAEhwKGFNFU1NJT05fSU5QVVRfTU9ERV9HVUlERRABEhwKGFNFU1NJT05fSU5QVVRfTU9ERV9RVUVVRRACKuICChlTZXNzaW9uVHJhbnNjcmlwdEl0ZW1LaW5kEiwKKFNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfVU5TUEVDSUZJRUQQABItCilTRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX1VTRVJfTUVTU0FHRRABEi4KKlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfQUdFTlRfTUVTU0FHRRACEioKJlNFU1NJT05fVFJBTlNDUklQVF9JVEVNX0tJTkRfUkVBU09OSU5HEAMSKgomU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9UT09MX0NBTEwQBBIyCi5TRVNTSU9OX1RSQU5TQ1JJUFRfSVRFTV9LSU5EX0NPTU1BTkRfRVhFQ1VUSU9OEAUSLAooU0VTU0lPTl9UUkFOU0NSSVBUX0lURU1fS0lORF9GSUxFX0NIQU5HRRAGKrABCh9TZXNzaW9uVHJhbnNjcmlwdEF0dGFjaG1lbnRLaW5kEjIKLlNFU1NJT05fVFJBTlNDUklQVF9BVFRBQ0hNRU5UX0tJTkRfVU5TUEVDSUZJRUQQABIsCihTRVNTSU9OX1RSQU5TQ1JJUFRfQVRUQUNITUVOVF9LSU5EX0lNQUdFEAESKwonU0VTU0lPTl9UUkFOU0NSSVBUX0FUVEFDSE1FTlRfS0lORF9GSUxFEAIqqwIKIlNlc3Npb25UcmFuc2NyaXB0Q29tbWFuZEFjdGlvbktpbmQSNgoyU0VTU0lPTl9UUkFOU0NSSVBUX0NPTU1BTkRfQUNUSU9OX0tJTkRfVU5TUEVDSUZJRUQQABIvCitTRVNTSU9OX1RSQU5TQ1JJUFRfQ09NTUFORF9BQ1RJT05fS0lORF9SRUFEEAESNQoxU0VTU0lPTl9UUkFOU0NSSVBUX0NPTU1BTkRfQUNUSU9OX0tJTkRfTElTVF9GSUxFUxACEjEKLVNFU1NJT05fVFJBTlNDUklQVF9DT01NQU5EX0FDVElPTl9LSU5EX1NFQVJDSBADEjIKLlNFU1NJT05fVFJBTlNDUklQVF9DT01NQU5EX0FDVElPTl9LSU5EX1VOS05PV04QBDLVCQoOU2Vzc2lvblNlcnZpY2USTwoMTGlzdFNlc3Npb25zEh4uaG9wdGVyLnYxLkxpc3RTZXNzaW9uc1JlcXVlc3QaHy5ob3B0ZXIudjEuTGlzdFNlc3Npb25zUmVzcG9uc2USSQoKR2V0U2Vzc2lvbhIcLmhvcHRlci52MS5HZXRTZXNzaW9uUmVxdWVzdBodLmhvcHRlci52MS5HZXRTZXNzaW9uUmVzcG9uc2USVQoOR2V0U2Vzc2lvbk1ldGESIC5ob3B0ZXIudjEuR2V0U2Vzc2lvbk1ldGFSZXF1ZXN0GiEuaG9wdGVyLnYxLkdldFNlc3Npb25NZXRhUmVzcG9uc2USWwoQR2V0U2Vzc2lvblJldmlldxIiLmhvcHRlci52MS5HZXRTZXNzaW9uUmV2aWV3UmVxdWVzdBojLmhvcHRlci52MS5HZXRTZXNzaW9uUmV2aWV3UmVzcG9uc2USVQoOR2V0U2Vzc2lvbkZpbGUSIC5ob3B0ZXIudjEuR2V0U2Vzc2lvbkZpbGVSZXF1ZXN0GiEuaG9wdGVyLnYxLkdldFNlc3Npb25GaWxlUmVzcG9uc2USagoVTGlzdFNlc3Npb25UcmFuc2NyaXB0EicuaG9wdGVyLnYxLkxpc3RTZXNzaW9uVHJhbnNjcmlwdFJlcXVlc3QaKC5ob3B0ZXIudjEuTGlzdFNlc3Npb25UcmFuc2NyaXB0UmVzcG9uc2USWwoQTGlzdFNlc3Npb25RdWV1ZRIiLmhvcHRlci52MS5MaXN0U2Vzc2lvblF1ZXVlUmVxdWVzdBojLmhvcHRlci52MS5MaXN0U2Vzc2lvblF1ZXVlUmVzcG9uc2USUgoNQ3JlYXRlU2Vzc2lvbhIfLmhvcHRlci52MS5DcmVhdGVTZXNzaW9uUmVxdWVzdBogLmhvcHRlci52MS5DcmVhdGVTZXNzaW9uUmVzcG9uc2USWwoQU2VuZFNlc3Npb25JbnB1dBIiLmhvcHRlci52MS5TZW5kU2Vzc2lvbklucHV0UmVxdWVzdBojLmhvcHRlci52MS5TZW5kU2Vzc2lvbklucHV0UmVzcG9uc2USZwoUUm9sbGJhY2tTZXNzaW9uSW5wdXQSJi5ob3B0ZXIudjEuUm9sbGJhY2tTZXNzaW9uSW5wdXRSZXF1ZXN0GicuaG9wdGVyLnYxLlJvbGxiYWNrU2Vzc2lvbklucHV0UmVzcG9uc2USWwoQSW50ZXJydXB0U2Vzc2lvbhIiLmhvcHRlci52MS5JbnRlcnJ1cHRTZXNzaW9uUmVxdWVzdBojLmhvcHRlci52MS5JbnRlcnJ1cHRTZXNzaW9uUmVzcG9uc2UScwoYUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsEiouaG9wdGVyLnYxLlJlc3BvbmRUb1Nlc3Npb25BcHByb3ZhbFJlcXVlc3QaKy5ob3B0ZXIudjEuUmVzcG9uZFRvU2Vzc2lvbkFwcHJvdmFsUmVzcG9uc2USZwoUTGlzdFNlc3Npb25BcnRpZmFjdHMSJi5ob3B0ZXIudjEuTGlzdFNlc3Npb25BcnRpZmFjdHNSZXF1ZXN0GicuaG9wdGVyLnYxLkxpc3RTZXNzaW9uQXJ0aWZhY3RzUmVzcG9uc2VCpgEKDWNvbS5ob3B0ZXIudjFCDFNlc3Npb25Qcm90b1ABWkJnaXRodWIuY29tL3NvcmNlcmVyeHcvaG9wdGVyL2ludGVybmFsL2dlbi9wcm90by9ob3B0ZXIvdjE7aG9wdGVydjGiAgNIWFiqAglIb3B0ZXIuVjHKAglIb3B0ZXJcVjHiAhVIb3B0ZXJcVjFcR1BCTWV0YWRhdGHqAgpIb3B0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_hopter_v1_common]);
 
 /**
  * @generated from message hopter.v1.Session
@@ -290,6 +290,43 @@ export const SessionTranscriptAttachmentSchema: GenMessage<SessionTranscriptAtta
   messageDesc(file_hopter_v1_session, 3);
 
 /**
+ * @generated from message hopter.v1.SessionTranscriptCommandAction
+ */
+export type SessionTranscriptCommandAction = Message<"hopter.v1.SessionTranscriptCommandAction"> & {
+  /**
+   * @generated from field: hopter.v1.SessionTranscriptCommandActionKind kind = 1;
+   */
+  kind: SessionTranscriptCommandActionKind;
+
+  /**
+   * @generated from field: string command = 2;
+   */
+  command: string;
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string path = 4;
+   */
+  path: string;
+
+  /**
+   * @generated from field: string query = 5;
+   */
+  query: string;
+};
+
+/**
+ * Describes the message hopter.v1.SessionTranscriptCommandAction.
+ * Use `create(SessionTranscriptCommandActionSchema)` to create a new message.
+ */
+export const SessionTranscriptCommandActionSchema: GenMessage<SessionTranscriptCommandAction> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 4);
+
+/**
  * @generated from message hopter.v1.SessionTranscriptItem
  */
 export type SessionTranscriptItem = Message<"hopter.v1.SessionTranscriptItem"> & {
@@ -332,6 +369,11 @@ export type SessionTranscriptItem = Message<"hopter.v1.SessionTranscriptItem"> &
    * @generated from field: string order_key = 8;
    */
   orderKey: string;
+
+  /**
+   * @generated from field: repeated hopter.v1.SessionTranscriptCommandAction command_actions = 9;
+   */
+  commandActions: SessionTranscriptCommandAction[];
 };
 
 /**
@@ -339,7 +381,7 @@ export type SessionTranscriptItem = Message<"hopter.v1.SessionTranscriptItem"> &
  * Use `create(SessionTranscriptItemSchema)` to create a new message.
  */
 export const SessionTranscriptItemSchema: GenMessage<SessionTranscriptItem> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 4);
+  messageDesc(file_hopter_v1_session, 5);
 
 /**
  * @generated from message hopter.v1.SessionListItem
@@ -386,7 +428,7 @@ export type SessionListItem = Message<"hopter.v1.SessionListItem"> & {
  * Use `create(SessionListItemSchema)` to create a new message.
  */
 export const SessionListItemSchema: GenMessage<SessionListItem> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 5);
+  messageDesc(file_hopter_v1_session, 6);
 
 /**
  * @generated from message hopter.v1.ListSessionsRequest
@@ -408,7 +450,7 @@ export type ListSessionsRequest = Message<"hopter.v1.ListSessionsRequest"> & {
  * Use `create(ListSessionsRequestSchema)` to create a new message.
  */
 export const ListSessionsRequestSchema: GenMessage<ListSessionsRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 6);
+  messageDesc(file_hopter_v1_session, 7);
 
 /**
  * @generated from message hopter.v1.ListSessionsResponse
@@ -425,7 +467,7 @@ export type ListSessionsResponse = Message<"hopter.v1.ListSessionsResponse"> & {
  * Use `create(ListSessionsResponseSchema)` to create a new message.
  */
 export const ListSessionsResponseSchema: GenMessage<ListSessionsResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 7);
+  messageDesc(file_hopter_v1_session, 8);
 
 /**
  * @generated from message hopter.v1.GetSessionRequest
@@ -442,7 +484,7 @@ export type GetSessionRequest = Message<"hopter.v1.GetSessionRequest"> & {
  * Use `create(GetSessionRequestSchema)` to create a new message.
  */
 export const GetSessionRequestSchema: GenMessage<GetSessionRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 8);
+  messageDesc(file_hopter_v1_session, 9);
 
 /**
  * @generated from message hopter.v1.GetSessionResponse
@@ -459,7 +501,7 @@ export type GetSessionResponse = Message<"hopter.v1.GetSessionResponse"> & {
  * Use `create(GetSessionResponseSchema)` to create a new message.
  */
 export const GetSessionResponseSchema: GenMessage<GetSessionResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 9);
+  messageDesc(file_hopter_v1_session, 10);
 
 /**
  * @generated from message hopter.v1.GetSessionMetaRequest
@@ -476,7 +518,7 @@ export type GetSessionMetaRequest = Message<"hopter.v1.GetSessionMetaRequest"> &
  * Use `create(GetSessionMetaRequestSchema)` to create a new message.
  */
 export const GetSessionMetaRequestSchema: GenMessage<GetSessionMetaRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 10);
+  messageDesc(file_hopter_v1_session, 11);
 
 /**
  * @generated from message hopter.v1.GetSessionMetaResponse
@@ -493,7 +535,7 @@ export type GetSessionMetaResponse = Message<"hopter.v1.GetSessionMetaResponse">
  * Use `create(GetSessionMetaResponseSchema)` to create a new message.
  */
 export const GetSessionMetaResponseSchema: GenMessage<GetSessionMetaResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 11);
+  messageDesc(file_hopter_v1_session, 12);
 
 /**
  * @generated from message hopter.v1.SessionReviewFile
@@ -540,7 +582,7 @@ export type SessionReviewFile = Message<"hopter.v1.SessionReviewFile"> & {
  * Use `create(SessionReviewFileSchema)` to create a new message.
  */
 export const SessionReviewFileSchema: GenMessage<SessionReviewFile> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 12);
+  messageDesc(file_hopter_v1_session, 13);
 
 /**
  * @generated from message hopter.v1.SessionReview
@@ -597,7 +639,7 @@ export type SessionReview = Message<"hopter.v1.SessionReview"> & {
  * Use `create(SessionReviewSchema)` to create a new message.
  */
 export const SessionReviewSchema: GenMessage<SessionReview> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 13);
+  messageDesc(file_hopter_v1_session, 14);
 
 /**
  * @generated from message hopter.v1.GetSessionReviewRequest
@@ -614,7 +656,7 @@ export type GetSessionReviewRequest = Message<"hopter.v1.GetSessionReviewRequest
  * Use `create(GetSessionReviewRequestSchema)` to create a new message.
  */
 export const GetSessionReviewRequestSchema: GenMessage<GetSessionReviewRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 14);
+  messageDesc(file_hopter_v1_session, 15);
 
 /**
  * @generated from message hopter.v1.GetSessionReviewResponse
@@ -631,7 +673,7 @@ export type GetSessionReviewResponse = Message<"hopter.v1.GetSessionReviewRespon
  * Use `create(GetSessionReviewResponseSchema)` to create a new message.
  */
 export const GetSessionReviewResponseSchema: GenMessage<GetSessionReviewResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 15);
+  messageDesc(file_hopter_v1_session, 16);
 
 /**
  * @generated from message hopter.v1.SessionFile
@@ -708,7 +750,7 @@ export type SessionFile = Message<"hopter.v1.SessionFile"> & {
  * Use `create(SessionFileSchema)` to create a new message.
  */
 export const SessionFileSchema: GenMessage<SessionFile> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 16);
+  messageDesc(file_hopter_v1_session, 17);
 
 /**
  * @generated from message hopter.v1.GetSessionFileRequest
@@ -740,7 +782,7 @@ export type GetSessionFileRequest = Message<"hopter.v1.GetSessionFileRequest"> &
  * Use `create(GetSessionFileRequestSchema)` to create a new message.
  */
 export const GetSessionFileRequestSchema: GenMessage<GetSessionFileRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 17);
+  messageDesc(file_hopter_v1_session, 18);
 
 /**
  * @generated from message hopter.v1.GetSessionFileResponse
@@ -757,7 +799,7 @@ export type GetSessionFileResponse = Message<"hopter.v1.GetSessionFileResponse">
  * Use `create(GetSessionFileResponseSchema)` to create a new message.
  */
 export const GetSessionFileResponseSchema: GenMessage<GetSessionFileResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 18);
+  messageDesc(file_hopter_v1_session, 19);
 
 /**
  * @generated from message hopter.v1.ListSessionTranscriptRequest
@@ -784,7 +826,7 @@ export type ListSessionTranscriptRequest = Message<"hopter.v1.ListSessionTranscr
  * Use `create(ListSessionTranscriptRequestSchema)` to create a new message.
  */
 export const ListSessionTranscriptRequestSchema: GenMessage<ListSessionTranscriptRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 19);
+  messageDesc(file_hopter_v1_session, 20);
 
 /**
  * @generated from message hopter.v1.SessionTranscriptPage
@@ -816,7 +858,7 @@ export type SessionTranscriptPage = Message<"hopter.v1.SessionTranscriptPage"> &
  * Use `create(SessionTranscriptPageSchema)` to create a new message.
  */
 export const SessionTranscriptPageSchema: GenMessage<SessionTranscriptPage> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 20);
+  messageDesc(file_hopter_v1_session, 21);
 
 /**
  * @generated from message hopter.v1.ListSessionTranscriptResponse
@@ -833,7 +875,103 @@ export type ListSessionTranscriptResponse = Message<"hopter.v1.ListSessionTransc
  * Use `create(ListSessionTranscriptResponseSchema)` to create a new message.
  */
 export const ListSessionTranscriptResponseSchema: GenMessage<ListSessionTranscriptResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 21);
+  messageDesc(file_hopter_v1_session, 22);
+
+/**
+ * @generated from message hopter.v1.SessionQueueItem
+ */
+export type SessionQueueItem = Message<"hopter.v1.SessionQueueItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
+
+  /**
+   * @generated from field: string input = 3;
+   */
+  input: string;
+
+  /**
+   * @generated from field: string preview = 4;
+   */
+  preview: string;
+
+  /**
+   * @generated from field: uint32 position = 5;
+   */
+  position: number;
+
+  /**
+   * @generated from field: optional string model = 6;
+   */
+  model?: string | undefined;
+
+  /**
+   * @generated from field: optional string reasoning_effort = 7;
+   */
+  reasoningEffort?: string | undefined;
+
+  /**
+   * @generated from field: optional bool codex_fast_mode = 8;
+   */
+  codexFastMode?: boolean | undefined;
+
+  /**
+   * @generated from field: repeated hopter.v1.SessionInputAttachment attachments = 9;
+   */
+  attachments: SessionInputAttachment[];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 10;
+   */
+  createdAt?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message hopter.v1.SessionQueueItem.
+ * Use `create(SessionQueueItemSchema)` to create a new message.
+ */
+export const SessionQueueItemSchema: GenMessage<SessionQueueItem> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 23);
+
+/**
+ * @generated from message hopter.v1.ListSessionQueueRequest
+ */
+export type ListSessionQueueRequest = Message<"hopter.v1.ListSessionQueueRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+};
+
+/**
+ * Describes the message hopter.v1.ListSessionQueueRequest.
+ * Use `create(ListSessionQueueRequestSchema)` to create a new message.
+ */
+export const ListSessionQueueRequestSchema: GenMessage<ListSessionQueueRequest> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 24);
+
+/**
+ * @generated from message hopter.v1.ListSessionQueueResponse
+ */
+export type ListSessionQueueResponse = Message<"hopter.v1.ListSessionQueueResponse"> & {
+  /**
+   * @generated from field: repeated hopter.v1.SessionQueueItem items = 1;
+   */
+  items: SessionQueueItem[];
+};
+
+/**
+ * Describes the message hopter.v1.ListSessionQueueResponse.
+ * Use `create(ListSessionQueueResponseSchema)` to create a new message.
+ */
+export const ListSessionQueueResponseSchema: GenMessage<ListSessionQueueResponse> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 25);
 
 /**
  * @generated from message hopter.v1.CreateSessionRequest
@@ -885,7 +1023,7 @@ export type CreateSessionRequest = Message<"hopter.v1.CreateSessionRequest"> & {
  * Use `create(CreateSessionRequestSchema)` to create a new message.
  */
 export const CreateSessionRequestSchema: GenMessage<CreateSessionRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 22);
+  messageDesc(file_hopter_v1_session, 26);
 
 /**
  * @generated from message hopter.v1.CreateSessionResponse
@@ -902,7 +1040,7 @@ export type CreateSessionResponse = Message<"hopter.v1.CreateSessionResponse"> &
  * Use `create(CreateSessionResponseSchema)` to create a new message.
  */
 export const CreateSessionResponseSchema: GenMessage<CreateSessionResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 23);
+  messageDesc(file_hopter_v1_session, 27);
 
 /**
  * @generated from message hopter.v1.SendSessionInputRequest
@@ -937,6 +1075,11 @@ export type SendSessionInputRequest = Message<"hopter.v1.SendSessionInputRequest
    * @generated from field: repeated hopter.v1.SessionInputAttachment attachments = 6;
    */
   attachments: SessionInputAttachment[];
+
+  /**
+   * @generated from field: hopter.v1.SessionInputMode mode = 7;
+   */
+  mode: SessionInputMode;
 };
 
 /**
@@ -944,7 +1087,7 @@ export type SendSessionInputRequest = Message<"hopter.v1.SendSessionInputRequest
  * Use `create(SendSessionInputRequestSchema)` to create a new message.
  */
 export const SendSessionInputRequestSchema: GenMessage<SendSessionInputRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 24);
+  messageDesc(file_hopter_v1_session, 28);
 
 /**
  * @generated from message hopter.v1.SendSessionInputResponse
@@ -971,7 +1114,91 @@ export type SendSessionInputResponse = Message<"hopter.v1.SendSessionInputRespon
  * Use `create(SendSessionInputResponseSchema)` to create a new message.
  */
 export const SendSessionInputResponseSchema: GenMessage<SendSessionInputResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 25);
+  messageDesc(file_hopter_v1_session, 29);
+
+/**
+ * @generated from message hopter.v1.RollbackSessionInputRequest
+ */
+export type RollbackSessionInputRequest = Message<"hopter.v1.RollbackSessionInputRequest"> & {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId: string;
+
+  /**
+   * @generated from field: string transcript_item_id = 2;
+   */
+  transcriptItemId: string;
+
+  /**
+   * @generated from field: string order_key = 3;
+   */
+  orderKey: string;
+
+  /**
+   * @generated from field: string input = 4;
+   */
+  input: string;
+
+  /**
+   * @generated from field: optional string model = 5;
+   */
+  model?: string | undefined;
+
+  /**
+   * @generated from field: optional string reasoning_effort = 6;
+   */
+  reasoningEffort?: string | undefined;
+
+  /**
+   * @generated from field: optional bool codex_fast_mode = 7;
+   */
+  codexFastMode?: boolean | undefined;
+
+  /**
+   * @generated from field: repeated hopter.v1.SessionInputAttachment attachments = 8;
+   */
+  attachments: SessionInputAttachment[];
+};
+
+/**
+ * Describes the message hopter.v1.RollbackSessionInputRequest.
+ * Use `create(RollbackSessionInputRequestSchema)` to create a new message.
+ */
+export const RollbackSessionInputRequestSchema: GenMessage<RollbackSessionInputRequest> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 30);
+
+/**
+ * @generated from message hopter.v1.RollbackSessionInputResponse
+ */
+export type RollbackSessionInputResponse = Message<"hopter.v1.RollbackSessionInputResponse"> & {
+  /**
+   * @generated from field: bool accepted = 1;
+   */
+  accepted: boolean;
+
+  /**
+   * @generated from field: string session_id = 2;
+   */
+  sessionId: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 3;
+   */
+  updatedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: uint32 dropped_turn_count = 4;
+   */
+  droppedTurnCount: number;
+};
+
+/**
+ * Describes the message hopter.v1.RollbackSessionInputResponse.
+ * Use `create(RollbackSessionInputResponseSchema)` to create a new message.
+ */
+export const RollbackSessionInputResponseSchema: GenMessage<RollbackSessionInputResponse> = /*@__PURE__*/
+  messageDesc(file_hopter_v1_session, 31);
 
 /**
  * @generated from message hopter.v1.SessionInputAttachment
@@ -998,7 +1225,7 @@ export type SessionInputAttachment = Message<"hopter.v1.SessionInputAttachment">
  * Use `create(SessionInputAttachmentSchema)` to create a new message.
  */
 export const SessionInputAttachmentSchema: GenMessage<SessionInputAttachment> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 26);
+  messageDesc(file_hopter_v1_session, 32);
 
 /**
  * @generated from message hopter.v1.InterruptSessionRequest
@@ -1015,7 +1242,7 @@ export type InterruptSessionRequest = Message<"hopter.v1.InterruptSessionRequest
  * Use `create(InterruptSessionRequestSchema)` to create a new message.
  */
 export const InterruptSessionRequestSchema: GenMessage<InterruptSessionRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 27);
+  messageDesc(file_hopter_v1_session, 33);
 
 /**
  * @generated from message hopter.v1.InterruptSessionResponse
@@ -1042,7 +1269,7 @@ export type InterruptSessionResponse = Message<"hopter.v1.InterruptSessionRespon
  * Use `create(InterruptSessionResponseSchema)` to create a new message.
  */
 export const InterruptSessionResponseSchema: GenMessage<InterruptSessionResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 28);
+  messageDesc(file_hopter_v1_session, 34);
 
 /**
  * @generated from message hopter.v1.RespondToSessionApprovalRequest
@@ -1074,7 +1301,7 @@ export type RespondToSessionApprovalRequest = Message<"hopter.v1.RespondToSessio
  * Use `create(RespondToSessionApprovalRequestSchema)` to create a new message.
  */
 export const RespondToSessionApprovalRequestSchema: GenMessage<RespondToSessionApprovalRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 29);
+  messageDesc(file_hopter_v1_session, 35);
 
 /**
  * @generated from message hopter.v1.RespondToSessionApprovalResponse
@@ -1101,7 +1328,7 @@ export type RespondToSessionApprovalResponse = Message<"hopter.v1.RespondToSessi
  * Use `create(RespondToSessionApprovalResponseSchema)` to create a new message.
  */
 export const RespondToSessionApprovalResponseSchema: GenMessage<RespondToSessionApprovalResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 30);
+  messageDesc(file_hopter_v1_session, 36);
 
 /**
  * @generated from message hopter.v1.ListSessionArtifactsRequest
@@ -1118,7 +1345,7 @@ export type ListSessionArtifactsRequest = Message<"hopter.v1.ListSessionArtifact
  * Use `create(ListSessionArtifactsRequestSchema)` to create a new message.
  */
 export const ListSessionArtifactsRequestSchema: GenMessage<ListSessionArtifactsRequest> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 31);
+  messageDesc(file_hopter_v1_session, 37);
 
 /**
  * @generated from message hopter.v1.ListSessionArtifactsResponse
@@ -1135,7 +1362,33 @@ export type ListSessionArtifactsResponse = Message<"hopter.v1.ListSessionArtifac
  * Use `create(ListSessionArtifactsResponseSchema)` to create a new message.
  */
 export const ListSessionArtifactsResponseSchema: GenMessage<ListSessionArtifactsResponse> = /*@__PURE__*/
-  messageDesc(file_hopter_v1_session, 32);
+  messageDesc(file_hopter_v1_session, 38);
+
+/**
+ * @generated from enum hopter.v1.SessionInputMode
+ */
+export enum SessionInputMode {
+  /**
+   * @generated from enum value: SESSION_INPUT_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SESSION_INPUT_MODE_GUIDE = 1;
+   */
+  GUIDE = 1,
+
+  /**
+   * @generated from enum value: SESSION_INPUT_MODE_QUEUE = 2;
+   */
+  QUEUE = 2,
+}
+
+/**
+ * Describes the enum hopter.v1.SessionInputMode.
+ */
+export const SessionInputModeSchema: GenEnum<SessionInputMode> = /*@__PURE__*/
+  enumDesc(file_hopter_v1_session, 0);
 
 /**
  * @generated from enum hopter.v1.SessionTranscriptItemKind
@@ -1181,7 +1434,7 @@ export enum SessionTranscriptItemKind {
  * Describes the enum hopter.v1.SessionTranscriptItemKind.
  */
 export const SessionTranscriptItemKindSchema: GenEnum<SessionTranscriptItemKind> = /*@__PURE__*/
-  enumDesc(file_hopter_v1_session, 0);
+  enumDesc(file_hopter_v1_session, 1);
 
 /**
  * @generated from enum hopter.v1.SessionTranscriptAttachmentKind
@@ -1207,7 +1460,43 @@ export enum SessionTranscriptAttachmentKind {
  * Describes the enum hopter.v1.SessionTranscriptAttachmentKind.
  */
 export const SessionTranscriptAttachmentKindSchema: GenEnum<SessionTranscriptAttachmentKind> = /*@__PURE__*/
-  enumDesc(file_hopter_v1_session, 1);
+  enumDesc(file_hopter_v1_session, 2);
+
+/**
+ * @generated from enum hopter.v1.SessionTranscriptCommandActionKind
+ */
+export enum SessionTranscriptCommandActionKind {
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES = 2;
+   */
+  LIST_FILES = 2,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH = 3;
+   */
+  SEARCH = 3,
+
+  /**
+   * @generated from enum value: SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN = 4;
+   */
+  UNKNOWN = 4,
+}
+
+/**
+ * Describes the enum hopter.v1.SessionTranscriptCommandActionKind.
+ */
+export const SessionTranscriptCommandActionKindSchema: GenEnum<SessionTranscriptCommandActionKind> = /*@__PURE__*/
+  enumDesc(file_hopter_v1_session, 3);
 
 /**
  * @generated from service hopter.v1.SessionService
@@ -1262,6 +1551,14 @@ export const SessionService: GenService<{
     output: typeof ListSessionTranscriptResponseSchema;
   },
   /**
+   * @generated from rpc hopter.v1.SessionService.ListSessionQueue
+   */
+  listSessionQueue: {
+    methodKind: "unary";
+    input: typeof ListSessionQueueRequestSchema;
+    output: typeof ListSessionQueueResponseSchema;
+  },
+  /**
    * @generated from rpc hopter.v1.SessionService.CreateSession
    */
   createSession: {
@@ -1276,6 +1573,14 @@ export const SessionService: GenService<{
     methodKind: "unary";
     input: typeof SendSessionInputRequestSchema;
     output: typeof SendSessionInputResponseSchema;
+  },
+  /**
+   * @generated from rpc hopter.v1.SessionService.RollbackSessionInput
+   */
+  rollbackSessionInput: {
+    methodKind: "unary";
+    input: typeof RollbackSessionInputRequestSchema;
+    output: typeof RollbackSessionInputResponseSchema;
   },
   /**
    * @generated from rpc hopter.v1.SessionService.InterruptSession

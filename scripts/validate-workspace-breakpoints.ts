@@ -249,7 +249,7 @@ async function main() {
       name: "phone list posture",
       status: "pass",
       detail:
-        "phone home route renders the thread list as the entry page and tapping a thread returns cleanly to the list",
+        "phone home route renders the session list as the entry page and tapping a session returns cleanly to the list",
     });
 
     await page.close();
@@ -277,7 +277,7 @@ async function main() {
       name: "phone detail back fallback",
       status: "pass",
       detail:
-        "phone detail route uses a deterministic back action to the thread list",
+        "phone detail route uses a deterministic back action to the session list",
     });
 
     await page.close();
@@ -330,7 +330,7 @@ async function main() {
       name: "compact open posture",
       status: "pass",
       detail:
-        "compact shell switches to mobile toolbar mode while the inline rail is open, keeps the rail visible across thread navigation, and collapses cleanly back to desktop mode",
+        "compact shell switches to mobile toolbar mode while the inline rail is open, keeps the rail visible across session navigation, and collapses cleanly back to desktop mode",
     });
 
     await page.close();

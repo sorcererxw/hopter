@@ -6,7 +6,10 @@ var version = "dev"
 var installSource = "direct"
 
 func main() {
-	if err := newRootApp(version, installSource).Run(os.Args); err != nil {
+	cmd := newRootCommand(version, installSource)
+	cmd.SetArgs(os.Args[1:])
+	if err := cmd.Execute(); err != nil {
+		_, _ = os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(1)
 	}
 }

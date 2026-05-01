@@ -3,7 +3,7 @@ tmp_dir = "tmp/air"
 
 [build]
 cmd = "go build -o ./tmp/air/hopter ./cmd/hopter"
-entrypoint = ["./tmp/air/hopter", "--host", "0.0.0.0", "--port", "8787", "--dev-proxy-url", "http://127.0.0.1:5173"]
+entrypoint = ["./tmp/air/hopter", "--port", "8787", "--dev-proxy-url", "http://127.0.0.1:5173"]
 include_ext = ["go"]
 exclude_dir = ["tmp", "storage", "ui", "node_modules", ".git"]
 delay = 300

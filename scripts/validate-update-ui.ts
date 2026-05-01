@@ -35,8 +35,6 @@ async function waitForHttp(
 function spawnServer(binaryPath: string, port: number) {
   return Bun.spawn([
     binaryPath,
-    "--host",
-    "127.0.0.1",
     "--port",
     String(port),
     "--dev-proxy-url",

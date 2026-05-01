@@ -32,6 +32,12 @@ type fakeSessionRuntime struct {
 		input     string
 		options   []core.SessionTurnOptions
 	}
+	rollbackCall struct {
+		sessionID string
+		target    core.SessionRollbackTarget
+		input     string
+		options   []core.SessionTurnOptions
+	}
 }
 
 type fakeSessionDetailReader struct {
@@ -65,6 +71,25 @@ func (f *fakeSessionRuntime) SendSessionInput(sessionID, input string, options .
 	f.sendCall.input = input
 	f.sendCall.options = append([]core.SessionTurnOptions(nil), options...)
 	return core.Session{}, nil
+}
+
+func (f *fakeSessionRuntime) RollbackSessionInput(
+	sessionID string,
+	target core.SessionRollbackTarget,
+	input string,
+	options ...core.SessionTurnOptions,
+) (core.SessionRollbackResult, error) {
+	f.rollbackCall.sessionID = sessionID
+	f.rollbackCall.target = target
+	f.rollbackCall.input = input
+	f.rollbackCall.options = append([]core.SessionTurnOptions(nil), options...)
+	return core.SessionRollbackResult{
+		Session: core.Session{
+			ID:        sessionID,
+			UpdatedAt: time.Now().UTC(),
+		},
+		DroppedTurnCount: 2,
+	}, nil
 }
 
 func (f *fakeSessionRuntime) InterruptSession(sessionID string) (core.Session, error) {

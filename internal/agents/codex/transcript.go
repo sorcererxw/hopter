@@ -226,11 +226,12 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 			return core.SessionTranscriptItem{}, false
 		}
 		return core.SessionTranscriptItem{
-			ID:     item.ID,
-			Kind:   core.SessionTranscriptItemKindCommandExecution,
-			Title:  "Command",
-			Body:   body,
-			Status: strings.TrimSpace(item.Status),
+			ID:             item.ID,
+			Kind:           core.SessionTranscriptItemKindCommandExecution,
+			Title:          "Command",
+			Body:           body,
+			Status:         strings.TrimSpace(item.Status),
+			CommandActions: mapCommandActions(item),
 		}, true
 	case "fileChange":
 		body := formatFileChangeWithOptions(item, opts.includeFileDiff)
@@ -246,6 +247,55 @@ func normalizeThreadItemWithOptions(item ReadThreadItem, opts transcriptNormaliz
 		}, true
 	default:
 		return core.SessionTranscriptItem{}, false
+	}
+}
+
+func mapCommandActions(item ReadThreadItem) []core.SessionTranscriptCommandAction {
+	actions := item.CommandActions
+	if len(actions) == 0 {
+		actions = item.ParsedCmd
+	}
+	if len(actions) == 0 {
+		actions = item.ParsedCmdCamel
+	}
+	if len(actions) == 0 {
+		return nil
+	}
+
+	mapped := make([]core.SessionTranscriptCommandAction, 0, len(actions))
+	for _, action := range actions {
+		kind := mapCommandActionKind(action.Type)
+		if kind == "" {
+			continue
+		}
+		command := strings.TrimSpace(action.Command)
+		if command == "" {
+			command = strings.TrimSpace(action.Cmd)
+		}
+		mapped = append(mapped, core.SessionTranscriptCommandAction{
+			Kind:    kind,
+			Command: command,
+			Name:    strings.TrimSpace(action.Name),
+			Path:    strings.TrimSpace(action.Path),
+			Query:   strings.TrimSpace(action.Query),
+		})
+	}
+
+	return mapped
+}
+
+func mapCommandActionKind(value string) core.SessionTranscriptCommandActionKind {
+	switch strings.TrimSpace(value) {
+	case "read":
+		return core.SessionTranscriptCommandActionKindRead
+	case "listFiles", "list_files":
+		return core.SessionTranscriptCommandActionKindListFiles
+	case "search":
+		return core.SessionTranscriptCommandActionKindSearch
+	case "unknown":
+		return core.SessionTranscriptCommandActionKindUnknown
+	default:
+		return ""
 	}
 }
 

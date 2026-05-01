@@ -6,7 +6,6 @@ import {
   getRepoRoot,
   localHttpUrl,
   nextDevStateLastError,
-  normalizeLocalhostHost,
   nowIso,
   summarizeErrorLine,
   waitForHttpOk,
@@ -17,13 +16,11 @@ const repoRoot = getRepoRoot()
 const sessionId = `dev-${Date.now()}`
 
 const uiDevHost = "0.0.0.0"
-const goDevHost = uiDevHost
-const uiDevProxyHost = normalizeLocalhostHost(uiDevHost)
+const goDevHost = "127.0.0.1"
 const uiDevProxyUrl = localHttpUrl(uiDevHost, 5173)
 const healthUrl = "http://127.0.0.1:8787/healthz"
 const devArgs = process.argv.slice(2)
 const relayMode = devArgs.includes("--relay")
-const resetAuth = devArgs.includes("--reset-auth")
 
 let viteProc: ReturnType<typeof spawn> | null = null
 let goProc: ReturnType<typeof spawn> | null = null
@@ -296,9 +293,6 @@ function resolveGoRunner() {
   const args = ["run", "github.com/air-verse/air@latest", "-c", ".air.toml"]
   if (relayMode) {
     args.push("--", "--relay")
-    if (resetAuth) {
-      args.push("--reset-auth")
-    }
   }
 
   return {
@@ -308,14 +302,13 @@ function resolveGoRunner() {
 }
 
 async function startGoLoop() {
-  printConsoleLine("supervisor", `starting go hot reload loop${relayMode ? ` with relay enabled${resetAuth ? " and auth reset" : ""}` : ""}`)
+  printConsoleLine("supervisor", `starting go hot reload loop${relayMode ? " with relay enabled" : ""}`)
   appendDevLog(
     "supervisor",
     {
       event: "go_loop_starting",
       proxyUrl: uiDevProxyUrl,
       relay: relayMode,
-      resetAuth,
     },
     repoRoot
   )

@@ -69,6 +69,37 @@ func TestBadgerStoreCreateGetListTask(t *testing.T) {
 	if len(listed) != 1 || listed[0].ID != created.Task.ID {
 		t.Fatalf("ListTasks() = %#v", listed)
 	}
+
+	queued, err := store.CreateTask(context.Background(), CreateTaskInput{
+		ProjectID: "proj_1",
+		SessionID: "sess_1",
+		Prompt:    "Queue this in the session",
+	})
+	if err != nil {
+		t.Fatalf("CreateTask() queued error = %v", err)
+	}
+	if queued.Task.SessionID != "sess_1" {
+		t.Fatalf("CreateTask() queued session id = %q", queued.Task.SessionID)
+	}
+	if queued.Task.LifecycleStatus != LifecycleWaiting {
+		t.Fatalf("CreateTask() queued lifecycle = %q", queued.Task.LifecycleStatus)
+	}
+
+	listed, err = store.ListTasks(context.Background(), ListFilter{SessionID: "sess_1"})
+	if err != nil {
+		t.Fatalf("ListTasks() by session error = %v", err)
+	}
+	if len(listed) != 1 || listed[0].ID != queued.Task.ID {
+		t.Fatalf("ListTasks() by session = %#v", listed)
+	}
+
+	listed, err = store.ListTasks(context.Background(), ListFilter{SessionID: "sess_other"})
+	if err != nil {
+		t.Fatalf("ListTasks() by other session error = %v", err)
+	}
+	if len(listed) != 0 {
+		t.Fatalf("ListTasks() by other session = %#v", listed)
+	}
 }
 
 func TestBadgerStoreCreateSubtask(t *testing.T) {

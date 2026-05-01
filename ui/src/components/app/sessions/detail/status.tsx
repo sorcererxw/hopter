@@ -20,16 +20,24 @@ export function SessionConnectionBlock({
 
   return (
     <section
-      className={cn("rounded-lg border px-4 py-3", display.containerClassName)}
+      className={cn(
+        "rounded-2xl border px-4 py-3 shadow-sm",
+        display.containerClassName
+      )}
       data-testid="session-connection-block"
       aria-label={display.title}
     >
-      <div className={cn("text-sm font-medium", display.titleClassName)}>
+      <div
+        className={cn(
+          "text-xs font-semibold uppercase",
+          display.titleClassName
+        )}
+      >
         {display.title}
       </div>
       <p
         className={cn(
-          "mt-1 text-base leading-6 font-medium",
+          "mt-2 text-sm leading-6 font-medium",
           display.bodyClassName
         )}
       >
@@ -54,7 +62,7 @@ function getConnectionDisplay(
         containerClassName: "border-border bg-surface",
         detail: t("session.connectingDetail"),
         title: t("session.connecting"),
-        titleClassName: "text-foreground",
+        titleClassName: "text-muted",
       }
     case "reconnecting":
       return {
@@ -108,20 +116,22 @@ export function SessionAttentionBlock({
   return (
     <section
       className={cn(
-        "rounded-lg border px-4 py-3",
+        "rounded-2xl border px-4 py-3 shadow-sm",
         attention.containerClassName
       )}
       data-testid="session-attention-block"
       aria-label={attention.title}
     >
-      <div className={cn("mb-1 text-sm font-medium", attention.titleClassName)}>
+      <div
+        className={cn(
+          "mb-1 text-xs font-semibold uppercase",
+          attention.titleClassName
+        )}
+      >
         {attention.title}
       </div>
       <p
-        className={cn(
-          "text-base leading-7 font-medium",
-          attention.bodyClassName
-        )}
+        className={cn("text-sm leading-6 font-medium", attention.bodyClassName)}
       >
         {attention.body}
       </p>
@@ -134,7 +144,7 @@ export function SessionAttentionBlock({
         <div className="mt-3 flex gap-2">
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-3 font-medium text-emerald-700 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-100"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-100"
             disabled={responding}
             onClick={onApprove}
           >
@@ -142,7 +152,7 @@ export function SessionAttentionBlock({
           </button>
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-transparent px-3 font-medium text-foreground transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-border bg-surface px-3 text-sm font-medium text-foreground transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={responding}
             onClick={onReject}
           >

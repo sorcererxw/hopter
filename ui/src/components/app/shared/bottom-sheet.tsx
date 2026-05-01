@@ -51,7 +51,7 @@ export function BottomSheet({
           "animate-in duration-200 slide-in-from-bottom"
         )}
       >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-overlay px-4 py-3 text-sm font-medium text-foreground">
+        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-overlay px-4 py-3 text-sm text-foreground">
           <span className="text-foreground">{title}</span>
           <Button
             type="button"
@@ -85,7 +85,7 @@ export function BottomSheetItem({
       variant="ghost"
       className={cn(
         "flex w-full items-center px-4 py-3 text-base text-foreground",
-        active ? "bg-surface-tertiary font-medium" : "hover:bg-surface-tertiary"
+        active ? "bg-surface-tertiary" : "hover:bg-surface-tertiary"
       )}
     >
       {children}

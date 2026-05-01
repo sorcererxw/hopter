@@ -1,4 +1,5 @@
 import {
+  SessionTranscriptCommandActionKind,
   SessionTranscriptItemKind,
   type SessionTranscriptItem,
 } from "@/gen/proto/hopter/v1/session_pb"
@@ -34,6 +35,16 @@ export type TimelineItem =
   | {
       items: SessionTranscriptItem[]
       key: string
+      kind: "exploration-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "tool-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
       kind: "thought-group"
     }
 
@@ -47,6 +58,16 @@ type ThoughtProcessDisplayItem =
       items: SessionTranscriptItem[]
       key: string
       kind: "command-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "exploration-group"
+    }
+  | {
+      items: SessionTranscriptItem[]
+      key: string
+      kind: "tool-group"
     }
 
 // isTranscriptActivityItem narrows generic feed items to transcript-backed activity rows.
@@ -207,7 +228,7 @@ function groupTimelineItems(items: ActivityItem[]): TimelineItem[] {
   return timelineItems
 }
 
-// buildThoughtProcessItems groups consecutive completed commands inside a thought-process run.
+// buildThoughtProcessItems groups consecutive completed commands and tools inside a thought-process run.
 function buildThoughtProcessItems(
   items: SessionTranscriptItem[]
 ): ThoughtProcessDisplayItem[] {
@@ -218,6 +239,35 @@ function buildThoughtProcessItems(
     const current = items[cursor]
     if (!current) {
       cursor += 1
+      continue
+    }
+
+    if (shouldGroupCompletedExploration(current)) {
+      const explorationItems: SessionTranscriptItem[] = []
+
+      while (cursor < items.length) {
+        const next = items[cursor]
+        if (!next || !shouldGroupCompletedExploration(next)) {
+          break
+        }
+
+        explorationItems.push(next)
+        cursor += 1
+      }
+
+      if (explorationItems.length > 1) {
+        displayItems.push({
+          items: explorationItems,
+          key: explorationGroupKey(explorationItems),
+          kind: "exploration-group",
+        })
+      } else if (explorationItems[0]) {
+        displayItems.push({
+          item: explorationItems[0],
+          key: explorationItems[0].id,
+          kind: "transcript",
+        })
+      }
       continue
     }
 
@@ -244,6 +294,35 @@ function buildThoughtProcessItems(
         displayItems.push({
           item: commandItems[0],
           key: commandItems[0].id,
+          kind: "transcript",
+        })
+      }
+      continue
+    }
+
+    if (shouldGroupCompletedToolCall(current)) {
+      const toolItems: SessionTranscriptItem[] = []
+
+      while (cursor < items.length) {
+        const next = items[cursor]
+        if (!next || !shouldGroupCompletedToolCall(next)) {
+          break
+        }
+
+        toolItems.push(next)
+        cursor += 1
+      }
+
+      if (toolItems.length > 1) {
+        displayItems.push({
+          items: toolItems,
+          key: toolCallGroupKey(toolItems),
+          kind: "tool-group",
+        })
+      } else if (toolItems[0]) {
+        displayItems.push({
+          item: toolItems[0],
+          key: toolItems[0].id,
           kind: "transcript",
         })
       }
@@ -397,7 +476,62 @@ function isActiveReasoningStatus(status: string) {
 function shouldGroupCompletedCommandExecution(item: SessionTranscriptItem) {
   return (
     item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION &&
+    !hasExplorationCommandAction(item) &&
     !isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  )
+}
+
+function shouldGroupCompletedExploration(item: SessionTranscriptItem) {
+  return (
+    item.kind === SessionTranscriptItemKind.COMMAND_EXECUTION &&
+    hasExplorationCommandAction(item) &&
+    !isActiveCommandExecutionStatus(commandExecutionStatus(item))
+  )
+}
+
+function hasExplorationCommandAction(item: SessionTranscriptItem) {
+  return item.commandActions?.some((action) => {
+    const kind = normalizeCommandActionKind(action.kind)
+    return (
+      kind !== SessionTranscriptCommandActionKind.UNSPECIFIED &&
+      kind !== SessionTranscriptCommandActionKind.UNKNOWN
+    )
+  })
+}
+
+function normalizeCommandActionKind(value: string | number | undefined) {
+  switch (value) {
+    case SessionTranscriptCommandActionKind.READ:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ":
+    case "READ":
+    case "read":
+      return SessionTranscriptCommandActionKind.READ
+    case SessionTranscriptCommandActionKind.LIST_FILES:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES":
+    case "LIST_FILES":
+    case "listFiles":
+    case "list_files":
+      return SessionTranscriptCommandActionKind.LIST_FILES
+    case SessionTranscriptCommandActionKind.SEARCH:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH":
+    case "SEARCH":
+    case "search":
+      return SessionTranscriptCommandActionKind.SEARCH
+    case SessionTranscriptCommandActionKind.UNKNOWN:
+    case "SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN":
+    case "UNKNOWN":
+    case "unknown":
+      return SessionTranscriptCommandActionKind.UNKNOWN
+    default:
+      return SessionTranscriptCommandActionKind.UNSPECIFIED
+  }
+}
+
+// shouldGroupCompletedToolCall decides whether a tool call can join a collapsed completed-tool group.
+function shouldGroupCompletedToolCall(item: SessionTranscriptItem) {
+  return (
+    item.kind === SessionTranscriptItemKind.TOOL_CALL &&
+    !isActiveToolCallStatus(item.status)
   )
 }
 
@@ -439,15 +573,24 @@ function isActiveToolCallStatus(status: string) {
 // commandExecutionGroupKey builds a stable key for a grouped block of completed commands.
 function commandExecutionGroupKey(items: SessionTranscriptItem[]) {
   const first = items[0]?.id ?? "start"
-  const last = items.at(-1)?.id ?? "end"
-  return `command-group:${first}:${last}:${items.length}`
+  return `command-group:${first}`
+}
+
+function explorationGroupKey(items: SessionTranscriptItem[]) {
+  const first = items[0]?.id ?? "start"
+  return `exploration-group:${first}`
+}
+
+// toolCallGroupKey builds a stable key for a grouped block of completed tool calls.
+function toolCallGroupKey(items: SessionTranscriptItem[]) {
+  const first = items[0]?.id ?? "start"
+  return `tool-group:${first}`
 }
 
 // thoughtProcessGroupKey builds a stable key for a collapsed thought-process run.
 function thoughtProcessGroupKey(items: SessionTranscriptItem[]) {
   const first = items[0]?.id ?? "start"
-  const last = items.at(-1)?.id ?? "end"
-  return `thought-group:${first}:${last}:${items.length}`
+  return `thought-group:${first}`
 }
 
 // parseCommandExecutionDetail extracts command, status, and output sections from the semi-structured body text.

@@ -83,3 +83,35 @@ export function resolveImageSource(rawValue?: string | null) {
     src,
   }
 }
+
+export function resolveLocalFileProxyHref(rawValue?: string | null) {
+  if (!rawValue) {
+    return ""
+  }
+
+  const src = rawValue.trim()
+  if (!src || src.startsWith("/api/file-proxy")) {
+    return src
+  }
+
+  if (src.startsWith("file://")) {
+    const filesystemPath = filePathFromFileUrl(src)
+    return isLikelyFilesystemPath(filesystemPath)
+      ? `/api/file-proxy?path=${encodeURIComponent(filesystemPath)}`
+      : ""
+  }
+
+  if (isLikelyFilesystemPath(src)) {
+    return `/api/file-proxy?path=${encodeURIComponent(src)}`
+  }
+
+  return ""
+}
+
+function filePathFromFileUrl(value: string) {
+  try {
+    return decodeURI(new URL(value).pathname)
+  } catch {
+    return value.replace(/^file:\/\//, "")
+  }
+}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"connectrpc.com/connect"
 
@@ -25,6 +27,7 @@ func NewTaskService(store tasks.Store, workspace core.WorkspaceService, eventSin
 func (s *TaskService) ListTasks(ctx context.Context, req *connect.Request[hopterv1.ListTasksRequest]) (*connect.Response[hopterv1.ListTasksResponse], error) {
 	filter := tasks.ListFilter{
 		ProjectID:       req.Msg.GetProjectId(),
+		SessionID:       req.Msg.GetSessionId(),
 		AttentionKind:   attentionKindFromProto(req.Msg.GetAttentionKind()),
 		LifecycleStatus: lifecycleStatusFromProto(req.Msg.GetLifecycleStatus()),
 		Limit:           req.Msg.GetLimit(),
@@ -53,11 +56,12 @@ func (s *TaskService) GetTask(ctx context.Context, req *connect.Request[hopterv1
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req *connect.Request[hopterv1.CreateTaskRequest]) (*connect.Response[hopterv1.CreateTaskResponse], error) {
-	if _, ok := s.workspace.GetProject(req.Msg.GetProjectId()); !ok {
+	if _, ok := s.resolveTaskProject(req.Msg.GetProjectId()); !ok {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project %q not found", req.Msg.GetProjectId()))
 	}
 	snapshot, err := s.store.CreateTask(ctx, tasks.CreateTaskInput{
 		ProjectID:       req.Msg.GetProjectId(),
+		SessionID:       req.Msg.GetSessionId(),
 		Title:           req.Msg.GetTitle(),
 		Prompt:          req.Msg.GetPrompt(),
 		Priority:        req.Msg.GetPriority(),
@@ -107,12 +111,14 @@ func (s *TaskService) publishTaskChanged(task tasks.Task) {
 	s.eventSink.Publish(core.Event{
 		Kind:      core.EventTasksChanged,
 		ProjectID: task.ProjectID,
+		SessionID: task.SessionID,
 		TaskID:    task.ID,
 		Summary:   task.Title,
 	})
 	s.eventSink.Publish(core.Event{
 		Kind:      core.EventTaskChanged,
 		ProjectID: task.ProjectID,
+		SessionID: task.SessionID,
 		TaskID:    task.ID,
 		Summary:   task.Title,
 	})
@@ -203,7 +209,7 @@ func (s *TaskService) CancelTask(ctx context.Context, req *connect.Request[hopte
 }
 
 func (s *TaskService) taskToProto(task tasks.Task) *hopterv1.Task {
-	project, _ := s.workspace.GetProject(task.ProjectID)
+	project, _ := s.resolveTaskProject(task.ProjectID)
 	return &hopterv1.Task{
 		Id:                    task.ID,
 		Project:               projectRef(project),
@@ -221,6 +227,39 @@ func (s *TaskService) taskToProto(task tasks.Task) *hopterv1.Task {
 		UpdatedAt:             timestamp(task.UpdatedAt),
 		CompletedAt:           optionalTimestamp(task.CompletedAt),
 	}
+}
+
+func (s *TaskService) resolveTaskProject(projectID string) (core.Project, bool) {
+	if project, ok := s.workspace.GetProject(projectID); ok {
+		return project, true
+	}
+
+	trimmedProjectID := strings.TrimSpace(projectID)
+	if !strings.HasPrefix(trimmedProjectID, "cwd:") {
+		return core.Project{}, false
+	}
+
+	rootPath := strings.TrimSpace(strings.TrimPrefix(trimmedProjectID, "cwd:"))
+	if rootPath == "" {
+		return core.Project{}, false
+	}
+
+	metadata, err := s.workspace.GetPathMetadata(rootPath)
+	if err != nil || !metadata.IsAllowed || !metadata.IsDirectory {
+		return core.Project{}, false
+	}
+
+	name := filepath.Base(metadata.CanonicalPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = metadata.CanonicalPath
+	}
+
+	return core.Project{
+		ID:             trimmedProjectID,
+		Name:           name,
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: core.BackendKeyCodex,
+	}, true
 }
 
 func subtasksToProto(subtasks []tasks.Subtask) []*hopterv1.Subtask {

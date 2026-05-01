@@ -74,6 +74,7 @@ Do **not** build a heavy persistent mirror of Codex session history in the backe
 - relay: deferred
 - terminal: deferred
 - main concept name: **project**, not binding
+- main work object name: **session**
 - main UI shape:
   - left session rail
   - right workspace pane
@@ -82,6 +83,22 @@ Do **not** build a heavy persistent mirror of Codex session history in the backe
   - `/sessions/:sessionId`
   - `/projects/new`
   - `/settings`
+
+## Product language
+
+Use these concepts consistently:
+
+- **Session** is the product object users create, select, resume, steer,
+  approve, and review. User-facing UI, routes, docs, and Connect APIs should
+  say session.
+- **Thread** is a Codex app-server protocol and storage concept. Use thread
+  only when naming or describing raw `thread/*` methods, app-server payloads,
+  backend thread ids, or adapter internals that directly mirror Codex.
+- **Chat** is an interaction style, not a product object. Avoid naming product
+  surfaces, actions, routes, persisted data, or UI labels chat.
+
+If a value crosses the Codex boundary, map it explicitly: Hopter session ↔
+Codex thread. Do not leak Codex thread terminology into product-facing copy.
 
 ## UI / UX rules
 
@@ -105,36 +122,8 @@ Do not make timeline the default focus.
 ### Allowed color sources (in order of preference)
 
 1. **HeroUI semantic tokens** — `bg-background`, `text-foreground`, `bg-surface`, `bg-overlay`, `text-muted`, `bg-accent`, `bg-surface-secondary`, `border-border`, etc.
-2. **Workspace design tokens** — `bg-ws-*`, `text-ws-*`, `border-ws-*` (defined in `@theme inline` in `index.css`)
-3. **Tailwind palette utilities** — `text-zinc-400`, `text-sky-400`, `text-amber-400`, etc. for specific semantic tones (e.g. syntax highlighting, status indicators)
-4. **Arbitrary values as last resort** — only for values that have no token equivalent (e.g. `shadow-[...]`, complex `calc()`, `min(...)` expressions)
-
-### Workspace token reference (`ws-*`)
-
-| Token | Resolves to |
-|---|---|
-| `bg-ws-page` | `--workspace-page-bg` (#0f0f0f) |
-| `bg-ws-sidebar` | `--workspace-sidebar-bg` (#141414) |
-| `bg-ws-panel` | `--workspace-panel-bg` (#1e1e1e) |
-| `bg-ws-surface` | `--workspace-surface-bg` (#1a1a1a) |
-| `bg-ws-elevated` | `--workspace-elevated-bg` (#242424) |
-| `bg-ws-hover` | `--workspace-hover-bg` (rgba white/7%) |
-| `bg-ws-hover-soft` | `--workspace-hover-bg-soft` (rgba white/4%) |
-| `bg-ws-active` | `--workspace-active-bg` (rgba white/10%) |
-| `bg-ws-tag` | `--workspace-tag-bg` (rgba white/6%) |
-| `bg-ws-tool` | `--workspace-tool-bg` (rgba white/4%) |
-| `text-ws-text` | `--workspace-text-primary` (#e0e0e0) |
-| `text-ws-text-sub` | `--workspace-text-secondary` (#888) |
-| `text-ws-text-muted` | `--workspace-text-muted` (#555) |
-| `text-ws-text-off` | `--workspace-text-disabled` (#3a3a3a) |
-| `border-ws-border` | `--workspace-border` (rgba white/7%) |
-| `border-ws-border-strong` | `--workspace-border-strong` (rgba white/12%) |
-| `border-ws-tag-border` | `--workspace-tag-border` (rgba white/8%) |
-| `border-ws-tool-border` | `--workspace-tool-border` (rgba white/7%) |
-| `border-ws-thread` | `--workspace-thread-guide` (rgba white/8%) |
-| `border-ws-code` | `--workspace-inline-code-text` (#63b7ff) |
-| `bg-picker` | `--picker-selection` (#2a5cb8) |
-| `bg-picker-hover` | `--picker-selection-hover` (#1e4fa0) |
+2. **Tailwind palette utilities** — `text-zinc-400`, `text-sky-400`, `text-amber-400`, etc. for specific semantic tones (e.g. syntax highlighting, status indicators)
+3. **Arbitrary values as last resort** — only for values that have no token equivalent (e.g. `shadow-[...]`, complex `calc()`, `min(...)` expressions)
 
 ### Spacing / size rules
 
@@ -147,7 +136,8 @@ Do not make timeline the default focus.
 ### Prohibited patterns
 
 - ❌ Hard-coded hex colors in className: `text-[#888]`, `bg-[#1e1e1e]`
-- ❌ CSS var arbitrary syntax when a ws-token exists: `text-[var(--workspace-text-primary)]`
+- ❌ Workspace-prefixed color utilities such as `bg-ws-*`, `text-ws-*`, or `border-ws-*`; use HeroUI semantic utilities instead.
+- ❌ CSS var arbitrary syntax when a semantic utility exists: `text-[var(--foreground)]`
 - ❌ Non-standard opacity fractions: `white/7`, `white/8`, `white/12`
 - ❌ Legacy pre-HeroUI color utilities after the HeroUI migration; use the HeroUI surface, overlay, segment, danger, field, focus, and muted utility families instead.
 

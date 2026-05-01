@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { ApprovalDecision } from "@/gen/proto/hopter/v1/common_pb"
-import type { SessionTranscriptPage } from "@/gen/proto/hopter/v1/session_pb"
+import {
+  SessionInputMode,
+  type SessionTranscriptPage,
+} from "@/gen/proto/hopter/v1/session_pb"
 import { sessionClient } from "@/lib/connect/clients"
 import { queryKeys } from "@/lib/query/keys"
 
@@ -20,9 +23,15 @@ type SendSessionInput = {
   attachments?: SessionInputAttachment[]
   codexFastMode?: boolean
   input: string
+  mode?: "guide" | "queue"
   model?: string
   reasoningEffort?: string
   sessionId: string
+}
+
+type RollbackSessionInput = SendSessionInput & {
+  orderKey: string
+  transcriptItemId: string
 }
 
 type SessionInputAttachment = {
@@ -81,6 +90,23 @@ export function useSessionMeta(sessionId?: string) {
 
       const response = await sessionClient.getSessionMeta({ sessionId })
       return response.session
+    },
+    refetchInterval: false,
+    refetchIntervalInBackground: false,
+  })
+}
+
+export function useSessionQueue(sessionId?: string, enabled = true) {
+  return useQuery({
+    enabled: Boolean(sessionId) && enabled,
+    queryKey: queryKeys.sessionQueue(sessionId ?? "pending"),
+    queryFn: async () => {
+      if (!sessionId) {
+        throw new Error("sessionId is required")
+      }
+
+      const response = await sessionClient.listSessionQueue({ sessionId })
+      return response.items
     },
     refetchInterval: false,
     refetchIntervalInBackground: false,
@@ -205,6 +231,7 @@ function normalizeSessionTranscriptPage(
       status: item.status,
       displayBody: item.displayBody,
       attachments: item.attachments,
+      commandActions: item.commandActions,
       orderKey: item.orderKey,
     })),
     nextBeforeCursor: page.nextBeforeCursor,
@@ -264,6 +291,7 @@ export function useSendSessionInput() {
       attachments,
       codexFastMode,
       model,
+      mode,
       reasoningEffort,
       sessionId,
     }: SendSessionInput) => {
@@ -271,6 +299,8 @@ export function useSendSessionInput() {
         input,
         attachments,
         codexFastMode,
+        mode:
+          mode === "queue" ? SessionInputMode.QUEUE : SessionInputMode.GUIDE,
         model,
         reasoningEffort,
         sessionId,
@@ -279,6 +309,46 @@ export function useSendSessionInput() {
     onSuccess: async (_response, variables) => {
       // Sending input changes both the session list metadata and the transcript,
       // so refresh both even if the server will also stream patches later.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionMeta(variables.sessionId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionTranscript(variables.sessionId),
+      })
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessionQueue(variables.sessionId),
+      })
+    },
+  })
+}
+
+export function useRollbackSessionInput() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      input,
+      attachments,
+      codexFastMode,
+      model,
+      orderKey,
+      reasoningEffort,
+      sessionId,
+      transcriptItemId,
+    }: RollbackSessionInput) => {
+      return sessionClient.rollbackSessionInput({
+        input,
+        attachments,
+        codexFastMode,
+        model,
+        orderKey,
+        reasoningEffort,
+        sessionId,
+        transcriptItemId,
+      })
+    },
+    onSuccess: async (_response, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.sessions() })
       await queryClient.invalidateQueries({
         queryKey: queryKeys.sessionMeta(variables.sessionId),

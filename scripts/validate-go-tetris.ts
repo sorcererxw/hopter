@@ -184,7 +184,7 @@ async function main(): Promise<void> {
   const repoPath = createTempRepo();
   run.writeText("repo-path.txt", `${repoPath}\n`);
 
-  const server = Bun.spawn([binaryPath, "--host", "127.0.0.1", "--port", String(PORT)], {
+  const server = Bun.spawn([binaryPath, "--port", String(PORT)], {
     cwd: process.cwd(),
     stdout: "pipe",
     stderr: "pipe",

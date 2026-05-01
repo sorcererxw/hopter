@@ -170,6 +170,7 @@ message ListTasksRequest {
   optional AttentionKind attention_kind = 2;
   optional TaskLifecycleStatus lifecycle_status = 3;
   optional uint32 limit = 4;
+  optional string session_id = 5;
 }
 
 message ListTasksResponse {
@@ -193,6 +194,7 @@ message CreateTaskRequest {
   optional uint32 priority = 4;
   repeated string initial_subtasks = 5;
   string idempotency_key = 6;
+  optional string session_id = 7;
 }
 
 message CreateTaskResponse {

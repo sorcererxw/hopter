@@ -100,7 +100,7 @@ async function main(): Promise<void> {
   const fixture = createFixture();
   run.writeJson("fixture.json", fixture);
 
-  const serverArgs = [binaryPath, "--host", "127.0.0.1", "--port", String(PORT)];
+  const serverArgs = [binaryPath, "--port", String(PORT)];
   const server =
     typeof Bun !== "undefined"
       ? Bun.spawn(serverArgs, {

@@ -3,7 +3,6 @@ import path from "node:path";
 import { createValidationRun, runCommand } from "./lib/validation.ts";
 import { checkRequiredPaths, combineValidationStatus, renderValidationSummary, type ValidationCheck } from "./lib/rebuild-validation.ts";
 
-const serverHost = "127.0.0.1";
 const serverPort = "8787";
 const serverBaseUrl = `http://127.0.0.1:${serverPort}`;
 const HEALTH_URL = `${serverBaseUrl}/healthz`;
@@ -91,7 +90,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const server = Bun.spawn([binaryPath, "--host", serverHost, "--port", serverPort], {
+  const server = Bun.spawn([binaryPath, "--port", serverPort], {
     cwd: process.cwd(),
     stdout: "pipe",
     stderr: "pipe",

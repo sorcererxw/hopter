@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +24,7 @@ type Manager struct {
 	workspace       core.WorkspaceService
 	eventSink       core.EventSink
 	live            map[string]*liveSession
+	queueSeq        uint64
 	start           clientStarter
 	threadListMu    sync.Mutex
 	threadListCache map[string]threadListCacheEntry
@@ -57,6 +59,7 @@ type liveSession struct {
 	reasoningDrafts     map[string]*reasoningDraft
 	pendingApproval     *pendingApproval
 	contextWindowUsage  *core.SessionContextWindowUsage
+	queue               []queuedSessionInput
 }
 
 type reasoningDraft struct {
@@ -64,6 +67,13 @@ type reasoningDraft struct {
 	raw                 string
 	pendingSummaryBreak bool
 	turnID              string
+}
+
+type queuedSessionInput struct {
+	ID        string
+	Input     string
+	Options   core.SessionTurnOptions
+	CreatedAt time.Time
 }
 
 type liveSessionKey struct {
@@ -92,7 +102,9 @@ type codexClient interface {
 	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
 	ReadThread(threadID string) (*ReadThreadResult, error)
 	ReadThreadMeta(threadID string) (*ReadThreadResult, error)
+	ListThreadTurns(params ThreadTurnsListParams) (*ThreadTurnsListResult, error)
 	ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error)
+	RollbackThread(threadID string, numTurns int) (*RollbackThreadResult, error)
 	RespondToApproval(rawID json.RawMessage, result any) error
 	StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error)
 	StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error)
@@ -411,6 +423,16 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 
 func (m *Manager) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {
 	turnOptions := firstTurnOptions(options...)
+	if turnOptions.InputMode == core.SessionInputModeQueue {
+		queued, enqueued, err := m.enqueueSessionInput(sessionID, input, turnOptions)
+		if err != nil {
+			return core.Session{}, err
+		}
+		if enqueued {
+			return queued, nil
+		}
+	}
+
 	if session, ok := m.workspace.GetSession(sessionID); ok {
 		updated, err := m.workspace.SendSessionInput(sessionID, input)
 		if err != nil {
@@ -448,6 +470,197 @@ func (m *Manager) SendSessionInput(sessionID, input string, options ...core.Sess
 	session.UpdatedAt = time.Now().UTC()
 	go m.dispatchInput(project, sessionID, session.BackendThreadID, input, turnOptions)
 	return session, nil
+}
+
+func (m *Manager) ListSessionQueue(sessionID string) ([]core.SessionQueueItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	live := m.live[sessionID]
+	if live == nil || len(live.queue) == 0 {
+		return nil, nil
+	}
+
+	items := make([]core.SessionQueueItem, 0, len(live.queue))
+	for index, queued := range live.queue {
+		items = append(items, sessionQueueItemFromQueued(sessionID, queued, uint32(index+1)))
+	}
+	return items, nil
+}
+
+func (m *Manager) enqueueSessionInput(
+	sessionID string,
+	input string,
+	options core.SessionTurnOptions,
+) (core.Session, bool, error) {
+	if strings.TrimSpace(input) == "" && len(options.Attachments) == 0 {
+		return core.Session{}, false, fmt.Errorf("input is required")
+	}
+
+	m.mu.Lock()
+	live := m.live[sessionID]
+	if live == nil || strings.TrimSpace(live.active) == "" {
+		m.mu.Unlock()
+		return core.Session{}, false, nil
+	}
+
+	m.queueSeq++
+	queued := queuedSessionInput{
+		ID:        fmt.Sprintf("queue_%d", m.queueSeq),
+		Input:     input,
+		Options:   options,
+		CreatedAt: time.Now().UTC(),
+	}
+	live.queue = append(live.queue, queued)
+	projectID := live.project.ID
+	m.mu.Unlock()
+
+	m.publishSessionQueueChanged(sessionID, projectID)
+	if session, ok := m.workspace.GetSession(sessionID); ok {
+		return session, true, nil
+	}
+	return core.Session{
+		ID:        sessionID,
+		ProjectID: projectID,
+		Status:    core.SessionStateRunning,
+		UpdatedAt: time.Now().UTC(),
+	}, true, nil
+}
+
+func sessionQueueItemFromQueued(sessionID string, queued queuedSessionInput, position uint32) core.SessionQueueItem {
+	input := strings.TrimSpace(queued.Input)
+	preview := truncate(input, 120)
+	if preview == "" && len(queued.Options.Attachments) > 0 {
+		preview = truncate(strings.TrimSpace(queued.Options.Attachments[0].Label), 120)
+	}
+	return core.SessionQueueItem{
+		ID:              queued.ID,
+		SessionID:       sessionID,
+		Input:           queued.Input,
+		Preview:         preview,
+		Position:        position,
+		Model:           strings.TrimSpace(queued.Options.Model),
+		ReasoningEffort: strings.TrimSpace(queued.Options.ReasoningEffort),
+		CodexFastMode:   queued.Options.CodexFastMode,
+		Attachments:     append([]core.SessionInputAttachment(nil), queued.Options.Attachments...),
+		CreatedAt:       queued.CreatedAt,
+	}
+}
+
+func (m *Manager) popNextQueuedInput(sessionID string) (queuedSessionInput, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	live := m.live[sessionID]
+	if live == nil || len(live.queue) == 0 {
+		return queuedSessionInput{}, false
+	}
+
+	next := live.queue[0]
+	copy(live.queue, live.queue[1:])
+	live.queue = live.queue[:len(live.queue)-1]
+	return next, true
+}
+
+func (m *Manager) RollbackSessionInput(
+	sessionID string,
+	target core.SessionRollbackTarget,
+	input string,
+	options ...core.SessionTurnOptions,
+) (core.SessionRollbackResult, error) {
+	turnOptions := firstTurnOptions(options...)
+	if strings.TrimSpace(input) == "" && len(turnOptions.Attachments) == 0 {
+		return core.SessionRollbackResult{}, fmt.Errorf("input is required")
+	}
+
+	var (
+		session core.Session
+		project core.Project
+		err     error
+	)
+	if local, ok := m.workspace.GetSession(sessionID); ok {
+		session = local
+		var found bool
+		project, found = m.workspace.GetProject(local.ProjectID)
+		if !found {
+			return core.SessionRollbackResult{}, fmt.Errorf("project %q not found for session", local.ProjectID)
+		}
+	} else {
+		session, project, err = m.GetSession(sessionID)
+		if err != nil {
+			return core.SessionRollbackResult{}, err
+		}
+	}
+	if isRollbackBlockedSessionState(session.Status) {
+		return core.SessionRollbackResult{}, fmt.Errorf("session %q is running; interrupt or wait before rolling back", sessionID)
+	}
+
+	threadID := strings.TrimSpace(session.BackendThreadID)
+	if threadID == "" {
+		return core.SessionRollbackResult{}, fmt.Errorf("session %q has no Codex thread to roll back", sessionID)
+	}
+
+	live, err := m.ensureLiveSession(sessionID, project, threadID, turnOptions)
+	if err != nil {
+		return core.SessionRollbackResult{}, fmt.Errorf("resume codex thread for rollback: %w", err)
+	}
+
+	read, err := live.client.ReadThread(threadID)
+	if err != nil {
+		return core.SessionRollbackResult{}, fmt.Errorf("read codex thread for rollback: %w", err)
+	}
+	targetTurnIndex, err := rollbackTurnIndex(read, target)
+	if err != nil {
+		return core.SessionRollbackResult{}, err
+	}
+
+	droppedTurnCount := len(read.Thread.Turns) - targetTurnIndex
+	if droppedTurnCount <= 0 {
+		return core.SessionRollbackResult{}, fmt.Errorf("selected message is not rollbackable")
+	}
+	if _, err := live.client.RollbackThread(threadID, droppedTurnCount); err != nil {
+		return core.SessionRollbackResult{}, fmt.Errorf("rollback codex thread: %w", err)
+	}
+
+	active := ""
+	pendingApprovalID := ""
+	running := core.SessionStateRunning
+	summary := "Codex rolled back the selected message and is processing the edited input..."
+	rolledRead := *read
+	rolledRead.Thread.Turns = append([]ReadThreadTurn(nil), read.Thread.Turns[:targetTurnIndex]...)
+	canonical := normalizeTranscriptItems(&rolledRead)
+	updated, err := m.workspace.UpdateSession(sessionID, core.SessionPatch{
+		PendingApprovalID:        &pendingApprovalID,
+		ActiveTurnID:             &active,
+		Status:                   &running,
+		Summary:                  &summary,
+		TranscriptItems:          &canonical,
+		PreferredModel:           stringPtr(strings.TrimSpace(turnOptions.Model)),
+		PreferredReasoningEffort: stringPtr(strings.TrimSpace(turnOptions.ReasoningEffort)),
+		PreferredCodexFastMode:   boolPtr(turnOptions.CodexFastMode),
+	})
+	if err != nil {
+		return core.SessionRollbackResult{}, err
+	}
+
+	m.mu.Lock()
+	if current := m.live[sessionID]; current != nil {
+		current.active = ""
+		current.optimisticSummary = summary
+		current.optimisticStatus = running
+		current.optimisticUpdatedAt = time.Now().UTC()
+		current.pendingApproval = nil
+		current.draftItemID = ""
+		current.draftText = ""
+		current.reasoningDrafts = nil
+	}
+	m.mu.Unlock()
+
+	go m.dispatchInput(project, sessionID, threadID, input, turnOptions)
+	return core.SessionRollbackResult{
+		Session:          updated,
+		DroppedTurnCount: uint32(droppedTurnCount),
+	}, nil
 }
 
 func stringPtr(value string) *string {
@@ -611,8 +824,13 @@ func firstTurnOptions(options ...core.SessionTurnOptions) core.SessionTurnOption
 
 func (m *Manager) executeTurn(project core.Project, sessionID, threadID, input, runningSummary string, options core.SessionTurnOptions) {
 	userItem := userTranscriptItem(input, options.Attachments)
+	lastInputHint := truncate(strings.TrimSpace(input), 120)
 	m.updateWorkspaceSession(sessionID, core.SessionPatch{
-		AppendTranscriptItems: &[]core.SessionTranscriptItem{userItem},
+		LastInputHint:            &lastInputHint,
+		PreferredModel:           stringPtr(strings.TrimSpace(options.Model)),
+		PreferredReasoningEffort: stringPtr(strings.TrimSpace(options.ReasoningEffort)),
+		PreferredCodexFastMode:   boolPtr(options.CodexFastMode),
+		AppendTranscriptItems:    &[]core.SessionTranscriptItem{userItem},
 	})
 
 	var (
@@ -758,6 +976,12 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 			}
 		}
 
+		nextQueued, hasQueued := m.popNextQueuedInput(sessionID)
+		if hasQueued && live != nil {
+			status = core.SessionStateRunning
+			summary = "Codex completed the turn. Starting queued input..."
+		}
+
 		m.updateWorkspaceSession(sessionID, core.SessionPatch{
 			PendingApprovalID: &approvalID,
 			ActiveTurnID:      &active,
@@ -771,6 +995,10 @@ func (m *Manager) handleNotification(sessionID string, notification Notification
 				Summary:         summary,
 				RequiresRefetch: true,
 			})
+		}
+		if hasQueued && live != nil {
+			m.publishSessionQueueChanged(sessionID, live.project.ID)
+			go m.dispatchInput(live.project, sessionID, live.thread, nextQueued.Input, nextQueued.Options)
 		}
 	case "error":
 		m.failSession(sessionID, errors.New("codex emitted an error notification"))
@@ -1269,6 +1497,18 @@ func (m *Manager) publishLivePatch(sessionID, projectID string, patch core.Sessi
 		SessionID: sessionID,
 		Summary:   summary,
 		LivePatch: &patch,
+	})
+}
+
+func (m *Manager) publishSessionQueueChanged(sessionID, projectID string) {
+	if m.eventSink == nil {
+		return
+	}
+	m.eventSink.Publish(core.Event{
+		Kind:      core.EventSessionChanged,
+		ProjectID: projectID,
+		SessionID: sessionID,
+		Summary:   "Session queue changed.",
 	})
 }
 
@@ -2131,6 +2371,78 @@ func finalSessionState(turnStatus string, fallback core.SessionState) core.Sessi
 		}
 		return fallback
 	}
+}
+
+func isRollbackBlockedSessionState(status core.SessionState) bool {
+	switch status {
+	case core.SessionStatePending, core.SessionStateRunning, core.SessionStateWaitingApproval:
+		return true
+	default:
+		return false
+	}
+}
+
+func rollbackTurnIndex(read *ReadThreadResult, target core.SessionRollbackTarget) (int, error) {
+	if read == nil || len(read.Thread.Turns) == 0 {
+		return 0, fmt.Errorf("session transcript has no turns to roll back")
+	}
+
+	itemID := strings.TrimSpace(target.TranscriptItemID)
+	if itemID != "" {
+		for turnIndex, turn := range read.Thread.Turns {
+			for _, item := range turn.Items {
+				if strings.TrimSpace(item.ID) != itemID {
+					continue
+				}
+				if item.Type != "userMessage" {
+					return 0, fmt.Errorf("only user messages can be edited with rollback")
+				}
+				return turnIndex, nil
+			}
+		}
+	}
+
+	if turnIndex, ok := transcriptTurnIndexFromOrderKey(target.OrderKey); ok {
+		if turnIndex < 0 || turnIndex >= len(read.Thread.Turns) {
+			return 0, fmt.Errorf("selected message is outside the current transcript")
+		}
+		turn := read.Thread.Turns[turnIndex]
+		if itemID != "" {
+			for _, item := range turn.Items {
+				if strings.TrimSpace(item.ID) == itemID {
+					if item.Type != "userMessage" {
+						return 0, fmt.Errorf("only user messages can be edited with rollback")
+					}
+					return turnIndex, nil
+				}
+			}
+			return 0, fmt.Errorf("selected message is not present in the target turn")
+		}
+		for _, item := range turn.Items {
+			if item.Type == "userMessage" {
+				return turnIndex, nil
+			}
+		}
+		return 0, fmt.Errorf("target turn does not contain a user message")
+	}
+
+	return 0, fmt.Errorf("selected message was not found in the current transcript")
+}
+
+func transcriptTurnIndexFromOrderKey(orderKey string) (int, bool) {
+	orderKey = strings.TrimSpace(orderKey)
+	if orderKey == "" || strings.HasPrefix(orderKey, "local:") || strings.HasPrefix(orderKey, "live:") {
+		return 0, false
+	}
+	prefix, _, ok := strings.Cut(orderKey, ":")
+	if !ok {
+		return 0, false
+	}
+	value, err := strconv.Atoi(prefix)
+	if err != nil {
+		return 0, false
+	}
+	return value, true
 }
 
 func projectForThread(projects []core.Project, cwd string) (core.Project, bool) {

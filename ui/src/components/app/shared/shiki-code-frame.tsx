@@ -102,23 +102,23 @@ export function ShikiCodeFrame({
                 key={`${lineNumber}-${line}`}
                 className={cn(
                   "flex items-start px-0 transition",
-                  highlighted ? "bg-amber-300/10" : "hover:bg-surface-tertiary"
+                  highlighted ? "bg-amber-300/10" : null
                 )}
                 data-line-number={lineNumber}
               >
-              {showLineNumbers ? (
-                <div
-                  className={cn(
-                    "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted select-none",
-                    highlighted ? "text-amber-100" : null
-                  )}
-                >
-                  {lineNumber}
-                </div>
-              ) : null}
-              <pre className="m-0 flex-1 pr-4 font-mono leading-6 whitespace-pre-wrap text-foreground">
-                {line || " "}
-              </pre>
+                {showLineNumbers ? (
+                  <div
+                    className={cn(
+                      "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted select-none",
+                      highlighted ? "text-amber-100" : null
+                    )}
+                  >
+                    {lineNumber}
+                  </div>
+                ) : null}
+                <pre className="m-0 flex-1 pr-4 font-mono leading-6 whitespace-pre-wrap text-foreground">
+                  {line || " "}
+                </pre>
               </div>
             )
           })}
@@ -139,7 +139,7 @@ export function ShikiCodeFrame({
               key={`${lineNumber}-${line.map((token) => token.content).join("")}`}
               className={cn(
                 "flex items-start px-0 transition",
-                highlighted ? "bg-amber-300/10" : "hover:bg-surface-tertiary"
+                highlighted ? "bg-amber-300/10" : null
               )}
               data-line-number={lineNumber}
             >

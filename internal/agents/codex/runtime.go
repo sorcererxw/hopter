@@ -68,6 +68,19 @@ func (r *Runtime) SendSessionInput(sessionID, input string, options ...core.Sess
 	return r.manager.SendSessionInput(sessionID, input, options...)
 }
 
+func (r *Runtime) RollbackSessionInput(
+	sessionID string,
+	target core.SessionRollbackTarget,
+	input string,
+	options ...core.SessionTurnOptions,
+) (core.SessionRollbackResult, error) {
+	return r.manager.RollbackSessionInput(sessionID, target, input, options...)
+}
+
+func (r *Runtime) ListSessionQueue(sessionID string) ([]core.SessionQueueItem, error) {
+	return r.manager.ListSessionQueue(sessionID)
+}
+
 func (r *Runtime) InterruptSession(sessionID string) (core.Session, error) {
 	return r.manager.InterruptSession(sessionID)
 }

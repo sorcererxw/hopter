@@ -122,7 +122,7 @@ export function ProjectGitActionDialog({
             data-testid="project-git-action-dialog"
           >
             <Modal.Header className="flex flex-col gap-2">
-              <Modal.Heading className="font-heading text-base leading-none font-medium">
+              <Modal.Heading className="font-heading text-base leading-none">
                 {t("git.commitRepositoryChanges")}
               </Modal.Heading>
               <Description className="text-sm text-muted">
@@ -164,7 +164,7 @@ export function ProjectGitActionDialog({
                   ]}
                 />
 
-                <label className="mt-4 block text-sm font-medium text-foreground">
+                <label className="mt-4 block text-sm text-foreground">
                   {t("git.commitMessage")}
                   <input
                     className="mt-2 h-9 w-full rounded-lg border border-field-border bg-transparent px-3 text-sm outline-none focus-visible:border-focus focus-visible:ring-3 focus-visible:ring-focus/50"
@@ -175,7 +175,7 @@ export function ProjectGitActionDialog({
                 </label>
 
                 <div className="mt-4">
-                  <div className="mb-2 text-sm font-medium text-foreground">
+                  <div className="mb-2 text-sm text-foreground">
                     {t("git.filesToCommit")}
                   </div>
                   <FileList files={status.files} />
@@ -320,7 +320,7 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
         >
           <span
             className={cn(
-              "w-20 shrink-0 text-xs font-medium",
+              "w-20 shrink-0 text-xs",
               file.status === GitFileStatus.CONFLICTED
                 ? "text-danger"
                 : "text-muted"
@@ -345,7 +345,7 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
 function PanelMessage({ body, title }: { body: string; title: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface px-4 py-6 text-center">
-      <div className="font-medium text-foreground">{title}</div>
+      <div className="text-foreground">{title}</div>
       <div className="mt-1 text-sm text-muted">{body}</div>
     </div>
   )

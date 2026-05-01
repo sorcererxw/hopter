@@ -212,10 +212,10 @@ async function run() {
     const homeLooksHealthy =
       pageText?.includes("Start building") ||
       pageText?.includes("Start a new session") ||
-      pageText?.includes("Loading threads") ||
+      pageText?.includes("Loading sessions") ||
       pageText?.includes("The shell is ready") ||
       pageText?.includes("New Session") ||
-      pageText?.includes("New Thread") ||
+      pageText?.includes("New session") ||
       pageText?.includes("开始新会话") ||
       pageText?.includes("新会话")
 

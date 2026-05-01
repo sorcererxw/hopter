@@ -18,7 +18,7 @@ func TestLoadConfigUsesDevDefaultPort(t *testing.T) {
 	}
 }
 
-func TestLoadConfigUsesWildcardDefaultHost(t *testing.T) {
+func TestLoadConfigUsesLocalhostDefaultHost(t *testing.T) {
 	clearConfigEnv(t)
 
 	cfg, err := LoadConfig("dev", "direct")
@@ -26,8 +26,41 @@ func TestLoadConfigUsesWildcardDefaultHost(t *testing.T) {
 		t.Fatalf("LoadConfig returned error: %v", err)
 	}
 
-	if cfg.HTTP.Host != "0.0.0.0" {
-		t.Fatalf("HTTP.Host = %q, want 0.0.0.0", cfg.HTTP.Host)
+	if cfg.HTTP.Host != "127.0.0.1" {
+		t.Fatalf("HTTP.Host = %q, want 127.0.0.1", cfg.HTTP.Host)
+	}
+}
+
+func TestLoadConfigEnablesLocalPortByDefault(t *testing.T) {
+	clearConfigEnv(t)
+
+	cfg, err := LoadConfig("dev", "direct")
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	if !cfg.HTTP.Local {
+		t.Fatal("HTTP.Local = false, want true")
+	}
+	if cfg.HTTP.SocketPath == "" {
+		t.Fatal("HTTP.SocketPath is empty")
+	}
+}
+
+func TestLoadConfigCanDisableLocalPort(t *testing.T) {
+	clearConfigEnv(t)
+
+	local := false
+	cfg, err := LoadConfigWithOptions("dev", "direct", LoadOptions{Local: &local})
+	if err != nil {
+		t.Fatalf("LoadConfig returned error: %v", err)
+	}
+
+	if cfg.HTTP.Local {
+		t.Fatal("HTTP.Local = true, want false")
+	}
+	if cfg.HTTP.SocketPath == "" {
+		t.Fatal("HTTP.SocketPath is empty")
 	}
 }
 

@@ -117,7 +117,7 @@ brews:
       source = Dir["hopter-homebrew-*"].first
       bin.install source => "hopter"
     service: |
-      run [opt_bin/"hopter", "serve"]
+      run [opt_bin/"hopter", "server"]
       keep_alive true
       log_path var/"log/hopter.log"
       error_log_path var/"log/hopter.err.log"

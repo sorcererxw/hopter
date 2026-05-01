@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"io"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,10 +13,29 @@ import (
 	serverhttp "github.com/sorcererxw/hopter/internal/http"
 )
 
-func TestRunServeRequiresRelayForResetAuth(t *testing.T) {
-	err := runServe("dev", "direct", serveOptions{resetAuth: true}, ioDiscard{})
-	if err == nil || err.Error() != "--reset-auth requires --relay" {
-		t.Fatalf("err = %v, want reset-auth validation", err)
+func TestRootHelpShowsPublicCommandSurface(t *testing.T) {
+	output := commandOutput(t, newRootCommand("dev", "direct"), "--help")
+
+	for _, want := range []string{"server", "stop", "doctor", "--background", "--local", "--relay", "--port"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("help output missing %q:\n%s", want, output)
+		}
+	}
+	for _, notWant := range []string{"completion", "status", "--host", "--no-open", "--service", "--reset-auth", "--dev-proxy-url"} {
+		if strings.Contains(output, notWant) {
+			t.Fatalf("help output unexpectedly contains %q:\n%s", notWant, output)
+		}
+	}
+}
+
+func TestServerHelpHidesDeveloperOnlyFlags(t *testing.T) {
+	output := commandOutput(t, newRootCommand("dev", "direct"), "server", "--help")
+
+	if !strings.Contains(output, "--background") || !strings.Contains(output, "--relay") {
+		t.Fatalf("server help missing expected public flags:\n%s", output)
+	}
+	if strings.Contains(output, "--dev-proxy-url") {
+		t.Fatalf("server help exposes hidden dev proxy flag:\n%s", output)
 	}
 }
 
@@ -38,6 +58,23 @@ func TestRelayLoginURLUsesOAuthAuthorizeRedirect(t *testing.T) {
 	if !strings.Contains(loginURL, "exchangeURL=") {
 		t.Fatalf("loginURL = %q, missing exchangeURL", loginURL)
 	}
+}
+
+func commandOutput(t *testing.T, cmd interface {
+	SetArgs([]string)
+	SetOut(io.Writer)
+	SetErr(io.Writer)
+	Execute() error
+}, args ...string) string {
+	t.Helper()
+	var output bytes.Buffer
+	cmd.SetArgs(args)
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute(%v): %v\n%s", args, err, output.String())
+	}
+	return output.String()
 }
 
 func TestStartRelayWithStoredAuthStartsSessionManager(t *testing.T) {
@@ -126,10 +163,4 @@ func (m *fakeRelaySessionManager) Run(ctx context.Context, credential serverhttp
 
 func (m *fakeRelaySessionManager) Ready() <-chan struct{} {
 	return m.readyCh
-}
-
-type ioDiscard struct{}
-
-func (ioDiscard) Write(p []byte) (int, error) {
-	return len(p), nil
 }

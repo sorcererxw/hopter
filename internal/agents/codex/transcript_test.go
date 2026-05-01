@@ -147,6 +147,98 @@ func TestNormalizeUserMessageRedactsSyncedDataImageURL(t *testing.T) {
 	}
 }
 
+func TestNormalizeCommandExecutionUsesCommandActions(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type:    "commandExecution",
+		ID:      "cmd-read",
+		Command: "/bin/zsh -lc \"sed -n '1,20p' AGENTS.md\"",
+		Status:  "completed",
+		CommandActions: []ReadThreadCommandAction{
+			{
+				Type:    "read",
+				Command: "sed -n '1,20p' AGENTS.md",
+				Name:    "AGENTS.md",
+				Path:    "AGENTS.md",
+			},
+		},
+	})
+	if !ok {
+		t.Fatalf("command execution was not normalized")
+	}
+	if len(item.CommandActions) != 1 {
+		t.Fatalf("command actions = %d, want 1", len(item.CommandActions))
+	}
+	action := item.CommandActions[0]
+	if action.Kind != core.SessionTranscriptCommandActionKindRead {
+		t.Fatalf("action kind = %q, want read", action.Kind)
+	}
+	if action.Command != "sed -n '1,20p' AGENTS.md" {
+		t.Fatalf("action command = %q", action.Command)
+	}
+	if action.Name != "AGENTS.md" || action.Path != "AGENTS.md" {
+		t.Fatalf("action target = name %q path %q", action.Name, action.Path)
+	}
+}
+
+func TestNormalizeCommandExecutionFallsBackToParsedCmdMetadata(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type:    "commandExecution",
+		ID:      "cmd-list",
+		Command: "/bin/zsh -lc 'ls -la .omx'",
+		Status:  "completed",
+		ParsedCmd: []ReadThreadCommandAction{
+			{
+				Type: "list_files",
+				Cmd:  "ls -la .omx",
+				Path: ".omx",
+			},
+		},
+	})
+	if !ok {
+		t.Fatalf("command execution was not normalized")
+	}
+	if len(item.CommandActions) != 1 {
+		t.Fatalf("command actions = %d, want 1", len(item.CommandActions))
+	}
+	action := item.CommandActions[0]
+	if action.Kind != core.SessionTranscriptCommandActionKindListFiles {
+		t.Fatalf("action kind = %q, want list_files", action.Kind)
+	}
+	if action.Command != "ls -la .omx" || action.Path != ".omx" {
+		t.Fatalf("action = %#v", action)
+	}
+}
+
+func TestNormalizeCommandExecutionFallsBackToParsedCmdCamelMetadata(t *testing.T) {
+	item, ok := normalizeThreadItem(ReadThreadItem{
+		Type:    "commandExecution",
+		ID:      "cmd-search",
+		Command: "/bin/zsh -lc 'rg -n commandActions internal'",
+		Status:  "completed",
+		ParsedCmdCamel: []ReadThreadCommandAction{
+			{
+				Type:  "search",
+				Cmd:   "rg -n commandActions internal",
+				Query: "commandActions",
+				Path:  "internal",
+			},
+		},
+	})
+	if !ok {
+		t.Fatalf("command execution was not normalized")
+	}
+	if len(item.CommandActions) != 1 {
+		t.Fatalf("command actions = %d, want 1", len(item.CommandActions))
+	}
+	action := item.CommandActions[0]
+	if action.Kind != core.SessionTranscriptCommandActionKindSearch {
+		t.Fatalf("action kind = %q, want search", action.Kind)
+	}
+	if action.Command != "rg -n commandActions internal" || action.Query != "commandActions" || action.Path != "internal" {
+		t.Fatalf("action = %#v", action)
+	}
+}
+
 func TestNormalizeUserMessageRedactsDataImageURLInsideTextPart(t *testing.T) {
 	item, ok := normalizeThreadItem(ReadThreadItem{
 		Type: "userMessage",

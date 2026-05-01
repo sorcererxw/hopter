@@ -158,15 +158,42 @@ func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.Ses
 		})
 	}
 
+	commandActions := make([]*hopterv1.SessionTranscriptCommandAction, 0, len(item.CommandActions))
+	for _, action := range item.CommandActions {
+		commandActions = append(commandActions, &hopterv1.SessionTranscriptCommandAction{
+			Kind:    mapTranscriptCommandActionKind(action.Kind),
+			Command: action.Command,
+			Name:    action.Name,
+			Path:    action.Path,
+			Query:   action.Query,
+		})
+	}
+
 	return &hopterv1.SessionTranscriptItem{
-		Id:          item.ID,
-		Kind:        mapTranscriptItemKind(item.Kind),
-		Title:       item.Title,
-		Body:        item.Body,
-		Status:      item.Status,
-		DisplayBody: item.DisplayBody,
-		Attachments: attachments,
-		OrderKey:    item.OrderKey,
+		Id:             item.ID,
+		Kind:           mapTranscriptItemKind(item.Kind),
+		Title:          item.Title,
+		Body:           item.Body,
+		Status:         item.Status,
+		DisplayBody:    item.DisplayBody,
+		Attachments:    attachments,
+		OrderKey:       item.OrderKey,
+		CommandActions: commandActions,
+	}
+}
+
+func mapTranscriptCommandActionKind(kind core.SessionTranscriptCommandActionKind) hopterv1.SessionTranscriptCommandActionKind {
+	switch kind {
+	case core.SessionTranscriptCommandActionKindRead:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ
+	case core.SessionTranscriptCommandActionKindListFiles:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES
+	case core.SessionTranscriptCommandActionKindSearch:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH
+	case core.SessionTranscriptCommandActionKindUnknown:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN
+	default:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNSPECIFIED
 	}
 }
 

@@ -369,15 +369,42 @@ func sessionTranscriptItemToProto(item core.SessionTranscriptItem) *hopterv1.Ses
 		})
 	}
 
+	commandActions := make([]*hopterv1.SessionTranscriptCommandAction, 0, len(item.CommandActions))
+	for _, action := range item.CommandActions {
+		commandActions = append(commandActions, &hopterv1.SessionTranscriptCommandAction{
+			Kind:    mapTranscriptCommandActionKind(action.Kind),
+			Command: validUTF8(action.Command),
+			Name:    validUTF8(action.Name),
+			Path:    validUTF8(action.Path),
+			Query:   validUTF8(action.Query),
+		})
+	}
+
 	return &hopterv1.SessionTranscriptItem{
-		Id:          validUTF8(item.ID),
-		Kind:        mapTranscriptItemKind(item.Kind),
-		Title:       validUTF8(item.Title),
-		Body:        validUTF8(item.Body),
-		Status:      validUTF8(item.Status),
-		DisplayBody: validUTF8(item.DisplayBody),
-		Attachments: attachments,
-		OrderKey:    validUTF8(item.OrderKey),
+		Id:             validUTF8(item.ID),
+		Kind:           mapTranscriptItemKind(item.Kind),
+		Title:          validUTF8(item.Title),
+		Body:           validUTF8(item.Body),
+		Status:         validUTF8(item.Status),
+		DisplayBody:    validUTF8(item.DisplayBody),
+		Attachments:    attachments,
+		OrderKey:       validUTF8(item.OrderKey),
+		CommandActions: commandActions,
+	}
+}
+
+func mapTranscriptCommandActionKind(kind core.SessionTranscriptCommandActionKind) hopterv1.SessionTranscriptCommandActionKind {
+	switch kind {
+	case core.SessionTranscriptCommandActionKindRead:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_READ
+	case core.SessionTranscriptCommandActionKindListFiles:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_LIST_FILES
+	case core.SessionTranscriptCommandActionKindSearch:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_SEARCH
+	case core.SessionTranscriptCommandActionKindUnknown:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNKNOWN
+	default:
+		return hopterv1.SessionTranscriptCommandActionKind_SESSION_TRANSCRIPT_COMMAND_ACTION_KIND_UNSPECIFIED
 	}
 }
 

@@ -13,6 +13,7 @@ import {
   CheckmarkSquare01Icon,
   CircleIcon,
   Copy01Icon,
+  Edit02Icon as HugeEdit02Icon,
   File01Icon,
   FileImageIcon,
   FileSearchIcon,
@@ -110,6 +111,7 @@ export const Folder = createHugeIcon(Folder01Icon)
 export const FolderOpen = createHugeIcon(Folder02Icon)
 export const Tick02 = createHugeIcon(Tick02Icon)
 export const Settings = createHugeIcon(Settings01Icon)
+export const Edit02Icon = createHugeIcon(HugeEdit02Icon)
 export const SquarePen = createHugeIcon(PenTool01Icon)
 export const X = createHugeIcon(Cancel01Icon)
 export const PanelRightClose = createHugeIcon(PanelRightCloseIcon)

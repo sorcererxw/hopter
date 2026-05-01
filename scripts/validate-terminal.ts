@@ -216,7 +216,7 @@ async function main() {
       );
     }
 
-    const server = Bun.spawn([binaryPath, "--host", "127.0.0.1", "--port", String(port)], {
+    const server = Bun.spawn([binaryPath, "--port", String(port)], {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",

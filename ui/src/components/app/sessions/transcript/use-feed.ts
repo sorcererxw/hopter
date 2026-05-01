@@ -98,9 +98,12 @@ export function useSessionTranscriptFeed({
     () => buildSessionDetail(sessionMeta, transcriptPages),
     [sessionMeta, transcriptPages]
   )
+  const sessionIsActive = Boolean(
+    session && shouldShowThinkingState(session.status)
+  )
   const transcriptItems = useMemo(() => {
-    return (session?.transcriptItems ?? []).filter(
-      (item) => isDisplayableTranscriptItem(item)
+    return (session?.transcriptItems ?? []).filter((item) =>
+      isDisplayableTranscriptItem(item)
     )
   }, [session?.transcriptItems])
   const showPendingInputHint = useMemo(() => {
@@ -196,9 +199,6 @@ export function useSessionTranscriptFeed({
     transcriptPages[0]?.hasMoreBefore ?? sessionMeta?.hasMoreBefore ?? false
   const isLoadingInitialTranscript =
     latestTranscriptQuery.isLoading && activityItems.length === 0
-  const latestTranscriptSnapshotKey = transcriptPageSnapshotKey(
-    latestTranscriptQuery.data
-  )
   const latestTranscriptHasMoreBefore =
     latestTranscriptQuery.data?.hasMoreBefore ?? false
   const latestTranscriptBeforeCursor =
@@ -224,11 +224,13 @@ export function useSessionTranscriptFeed({
 
       const currentSnapshotKey = transcriptPageSnapshotKey(current.at(-1))
       if (currentSnapshotKey !== latestSnapshotKey) {
-        // Snapshot drift means the server rebuilt the latest page. Drop local
-        // pagination state and rebuild from the fresh latest snapshot.
-        prependSnapshotRef.current = null
-        setIsFetchingPreviousPage(false)
-        return [latestPage]
+        // Snapshot drift is expected when new output lands. Replace only the
+        // latest page so already loaded history and the reader's scroll context
+        // remain stable while the newest snapshot reconciles.
+        return [
+          ...current.slice(0, -1),
+          mergeLatestTranscriptPage(current.at(-1), latestPage),
+        ]
       }
 
       return [
@@ -298,10 +300,16 @@ export function useSessionTranscriptFeed({
       lastActivityCountRef.current = nextCount
       lastActivitySignatureRef.current = scrollAnchorActivitySignature
       return
-    } else if (activityChanged && shouldStickToBottomRef.current) {
+    } else if (
+      activityChanged &&
+      shouldStickToBottomRef.current &&
+      isTranscriptPinnedToBottom(container)
+    ) {
       // Only auto-follow new output while the user is still effectively pinned
       // to the bottom. Manual upward scroll disables this until they return.
       scheduleTranscriptStickToBottom("instant")
+    } else if (activityChanged) {
+      updateTranscriptBottomState(container)
     }
 
     lastSessionIdRef.current = sessionId
@@ -334,11 +342,15 @@ export function useSessionTranscriptFeed({
         previousScrollHeight - container.scrollTop - container.clientHeight
       const nextScrollHeight = container.scrollHeight
       const grew = nextScrollHeight > previousScrollHeight
-      const wasPinnedBeforeGrowth =
-        previousDistanceFromBottom < 120 || shouldStickToBottomRef.current
+      const wasPinnedBeforeGrowth = previousDistanceFromBottom < 120
       lastScrollHeightRef.current = nextScrollHeight
 
-      if (!grew || prependSnapshotRef.current || !wasPinnedBeforeGrowth) {
+      if (
+        !grew ||
+        prependSnapshotRef.current ||
+        !wasPinnedBeforeGrowth ||
+        !sessionIsActive
+      ) {
         updateTranscriptBottomState(container)
         return
       }
@@ -351,7 +363,7 @@ export function useSessionTranscriptFeed({
     observer.observe(content)
 
     return () => observer.disconnect()
-  }, [sessionId, transcriptVisible])
+  }, [sessionId, sessionIsActive, transcriptVisible])
 
   useEffect(() => {
     return () => {
@@ -385,93 +397,81 @@ export function useSessionTranscriptFeed({
   }, [transcriptPageCount, transcriptPages])
 
   useEffect(() => {
-    if (
-      !latestTranscriptHasMoreBefore ||
-      !latestTranscriptBeforeCursor ||
-      !latestTranscriptSnapshotKey
-    ) {
+    if (!latestTranscriptHasMoreBefore || !latestTranscriptBeforeCursor) {
       setIsFetchingPreviousPage(false)
+    }
+  }, [latestTranscriptBeforeCursor, latestTranscriptHasMoreBefore])
+
+  async function fetchPreviousTranscriptPage() {
+    const oldestPage = transcriptPages[0] ?? latestTranscriptQuery.data
+    const cursor = oldestPage?.nextBeforeCursor ?? ""
+    const snapshotKey = transcriptPageSnapshotKey(oldestPage)
+    if (
+      isFetchingPreviousPage ||
+      !oldestPage?.hasMoreBefore ||
+      !cursor ||
+      !snapshotKey
+    ) {
       return
     }
 
-    let cancelled = false
     setIsFetchingPreviousPage(true)
+    try {
+      const page = await fetchSessionTranscriptPage(sessionId, cursor)
+      if (!page || transcriptPageSnapshotKey(page) !== snapshotKey) {
+        return
+      }
 
-    async function loadHistory() {
-      let cursor = latestTranscriptBeforeCursor
-
-      try {
-        while (cursor && !cancelled) {
-          const page = await fetchSessionTranscriptPage(sessionId, cursor)
-          if (cancelled || !page) {
-            return
-          }
-          if (transcriptPageSnapshotKey(page) !== latestTranscriptSnapshotKey) {
-            return
-          }
-
-          const container = transcriptScrollRef.current
-          if (container) {
-            prependSnapshotRef.current = {
-              scrollHeight: container.scrollHeight,
-            }
-          }
-
-          setTranscriptPages((current) => {
-            const currentIds = new Set(
-              current.flatMap((existing) =>
-                (existing.items ?? []).map((item) => item.id)
-              )
-            )
-            // Deduplicate against already loaded pages because history fetches
-            // can overlap with the latest snapshot during server reconciliation.
-            const nextItems = (page.items ?? []).filter(
-              (item) => !currentIds.has(item.id)
-            )
-
-            if (nextItems.length === 0) {
-              return current
-            }
-
-            return [
-              {
-                ...page,
-                items: nextItems,
-              } as SessionTranscriptPage,
-              ...current,
-            ]
-          })
-
-          if (!page.hasMoreBefore || !page.nextBeforeCursor) {
-            return
-          }
-
-          cursor = page.nextBeforeCursor
-        }
-      } finally {
-        if (!cancelled) {
-          setIsFetchingPreviousPage(false)
+      const container = transcriptScrollRef.current
+      if (container) {
+        prependSnapshotRef.current = {
+          scrollHeight: container.scrollHeight,
         }
       }
-    }
 
-    void loadHistory()
+      setTranscriptPages((current) => {
+        const currentIds = new Set(
+          current.flatMap((existing) =>
+            (existing.items ?? []).map((item) => item.id)
+          )
+        )
+        // Deduplicate against already loaded pages because history fetches can
+        // overlap with the latest snapshot during server reconciliation.
+        const nextItems = (page.items ?? []).filter(
+          (item) => !currentIds.has(item.id)
+        )
 
-    return () => {
-      cancelled = true
+        if (nextItems.length === 0) {
+          return current
+        }
+
+        return [
+          {
+            ...page,
+            items: nextItems,
+          } as SessionTranscriptPage,
+          ...current,
+        ]
+      })
+    } finally {
+      setIsFetchingPreviousPage(false)
     }
-  }, [
-    latestTranscriptBeforeCursor,
-    latestTranscriptHasMoreBefore,
-    sessionId,
-    latestTranscriptSnapshotKey,
-  ])
+  }
 
   function handleTranscriptScroll() {
     const container = transcriptScrollRef.current
     if (!container) {
       return
     }
+    if (
+      container.scrollTop < 160 &&
+      !suppressHistoryFetchRef.current &&
+      hasUnloadedTranscriptHistory &&
+      !isFetchingPreviousPage
+    ) {
+      void fetchPreviousTranscriptPage()
+    }
+
     const scrolledUp =
       container.scrollTop < lastTranscriptScrollTopRef.current - 24
     if (autoStickInProgressRef.current) {
@@ -510,10 +510,7 @@ export function useSessionTranscriptFeed({
 
     shouldStickToBottomRef.current = true
     setTranscriptAwayFromBottom(false)
-    container.scrollTo({
-      top: transcriptBottomScrollTop(container),
-      behavior: "smooth",
-    })
+    stickTranscriptToBottom(container)
   }
 
   function cancelScheduledTranscriptStick() {
@@ -545,8 +542,7 @@ export function useSessionTranscriptFeed({
     autoStickInProgressRef.current = true
 
     if (mode === "instant") {
-      let remainingTicks = 14
-      const step = () => {
+      const frame = window.requestAnimationFrame(() => {
         const container = transcriptScrollRef.current
         if (!container || (!force && !shouldStickToBottomRef.current)) {
           autoStickInProgressRef.current = false
@@ -557,20 +553,12 @@ export function useSessionTranscriptFeed({
         }
 
         stickTranscriptToBottom(container, "instant")
-        remainingTicks -= 1
-
-        if (remainingTicks > 0) {
-          pendingStickTimerRef.current = window.setTimeout(step, 40)
-          return
-        }
-
         suppressHistoryFetchRef.current = false
         autoStickInProgressRef.current = false
         pendingStickFrameRef.current = []
         pendingStickTimerRef.current = null
-      }
+      })
 
-      const frame = window.requestAnimationFrame(step)
       pendingStickFrameRef.current = [frame]
       return
     }
@@ -604,6 +592,12 @@ export function useSessionTranscriptFeed({
     const shouldStick = distanceFromBottom < 120
     shouldStickToBottomRef.current = shouldStick
     setTranscriptAwayFromBottom(distanceFromBottom > 160)
+  }
+
+  function isTranscriptPinnedToBottom(container: HTMLDivElement) {
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight
+    return distanceFromBottom < 120
   }
 
   function stickTranscriptToBottom(

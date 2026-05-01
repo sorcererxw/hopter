@@ -69,7 +69,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t("search.placeholder")}
-                className="h-auto border-0 bg-transparent px-0 py-0 text-base font-medium text-foreground shadow-none focus-visible:ring-0"
+                className="h-auto border-0 bg-transparent px-0 py-0 text-base text-foreground shadow-none focus-visible:ring-0"
                 fullWidth
                 variant="secondary"
               />
@@ -84,8 +84,8 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                   <SectionLabel>{t("search.quickActions")}</SectionLabel>
                   <ActionRow
                     icon={SquarePen}
-                    label={t("search.newThread")}
-                    detail={t("search.newThreadDetail")}
+                    label={t("search.newSession")}
+                    detail={t("search.newSessionDetail")}
                     onClick={() => closeAndNavigate("/")}
                   />
                   <ActionRow
@@ -111,7 +111,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
 
               {filtered.sessions.length > 0 ? (
                 <div className="mt-3 space-y-2">
-                  <SectionLabel>{t("search.threads")}</SectionLabel>
+                  <SectionLabel>{t("search.sessions")}</SectionLabel>
                   {filtered.sessions.map((session) => (
                     <button
                       key={session.id}
@@ -122,7 +122,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                       className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-surface-tertiary"
                     >
                       <div className="min-w-0">
-                        <div className="truncate font-medium">
+                        <div className="truncate">
                           {session.title}
                         </div>
                         <div className="mt-1 text-muted">
@@ -146,7 +146,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                       className="flex w-full items-start justify-between rounded-lg border border-transparent px-3 py-2.5 text-left transition hover:border-border hover:bg-surface-tertiary"
                     >
                       <div className="min-w-0">
-                        <div className="truncate font-medium">
+                        <div className="truncate">
                           {project.name}
                         </div>
                         <div className="mt-1 truncate text-muted">

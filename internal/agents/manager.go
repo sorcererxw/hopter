@@ -44,6 +44,7 @@ type AgentRuntime interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error)
+	RollbackSessionInput(sessionID string, target core.SessionRollbackTarget, input string, options ...core.SessionTurnOptions) (core.SessionRollbackResult, error)
 	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 	ListModels(includeHidden bool) ([]core.AgentModel, error)
@@ -61,6 +62,10 @@ type SessionReader interface {
 	GetSessionReview(sessionID string) (core.SessionReview, error)
 	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
 	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
+}
+
+type SessionQueueReader interface {
+	ListSessionQueue(sessionID string) ([]core.SessionQueueItem, error)
 }
 
 type Manager struct {
@@ -219,6 +224,28 @@ func (m *Manager) ListSessionTranscript(input core.ListSessionTranscriptInput) (
 	return runtime.ListSessionTranscript(input)
 }
 
+func (m *Manager) ListSessionQueue(sessionID string) ([]core.SessionQueueItem, error) {
+	runtime, err := m.runtimeForSession(sessionID)
+	if err != nil {
+		for _, runtime := range m.runtimes {
+			reader, ok := runtime.(SessionQueueReader)
+			if !ok {
+				continue
+			}
+			items, queueErr := reader.ListSessionQueue(sessionID)
+			if queueErr == nil {
+				return items, nil
+			}
+		}
+		return nil, err
+	}
+	reader, ok := runtime.(SessionQueueReader)
+	if !ok {
+		return nil, fmt.Errorf("runtime %q does not expose a session queue", runtime.Key())
+	}
+	return reader.ListSessionQueue(sessionID)
+}
+
 func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, error) {
 	project, err := m.resolveProject(input.ProjectID, input.BackendKey)
 	if err != nil {
@@ -265,6 +292,40 @@ func (m *Manager) SendSessionInput(sessionID, input string, options ...core.Sess
 	}
 	updated, _ = m.normalizeSession(updated, project, backendKey)
 	return updated, nil
+}
+
+func (m *Manager) RollbackSessionInput(
+	sessionID string,
+	target core.SessionRollbackTarget,
+	input string,
+	options ...core.SessionTurnOptions,
+) (core.SessionRollbackResult, error) {
+	session, ok := m.workspace.GetSession(sessionID)
+	if !ok {
+		resolved, project, err := m.GetSession(sessionID)
+		if err != nil {
+			return core.SessionRollbackResult{}, err
+		}
+		session = resolved
+		if strings.TrimSpace(session.ProjectID) == "" {
+			session.ProjectID = project.ID
+		}
+	}
+	project, err := m.resolveProject(session.ProjectID, session.BackendKey)
+	if err != nil {
+		return core.SessionRollbackResult{}, err
+	}
+	backendKey := normalizeBackendKey(session.BackendKey, project.DefaultBackend)
+	runtime, ok := m.runtimes[backendKey]
+	if !ok {
+		return core.SessionRollbackResult{}, fmt.Errorf("backend runtime %q not registered", backendKey)
+	}
+	result, err := runtime.RollbackSessionInput(sessionID, target, input, options...)
+	if err != nil {
+		return core.SessionRollbackResult{}, err
+	}
+	result.Session, _ = m.normalizeSession(result.Session, project, backendKey)
+	return result, nil
 }
 
 func (m *Manager) InterruptSession(sessionID string) (core.Session, error) {

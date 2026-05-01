@@ -12,7 +12,7 @@ export function SidebarPane({
   return (
     <div
       className={cn(
-        "flex w-[248px] shrink-0 flex-col border-r border-border bg-background",
+        "flex h-full w-full shrink-0 flex-col border-r border-border bg-background-secondary text-foreground",
         className
       )}
       {...props}

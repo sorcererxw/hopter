@@ -9,11 +9,17 @@ import {
   type ClipboardEvent,
   type Key,
   type KeyboardEvent,
+  type Ref,
 } from "react"
 import { useTranslation } from "react-i18next"
 import { Node, mergeAttributes } from "@tiptap/core"
 import Placeholder from "@tiptap/extension-placeholder"
-import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react"
+import {
+  EditorContent,
+  useEditor,
+  type Editor,
+  type JSONContent,
+} from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import {
   ArrowUp02Icon,
@@ -21,6 +27,7 @@ import {
   ChevronDown,
   LoaderCircle,
   AttachmentIcon,
+  ListChecks,
   Square,
   X,
   Zap,
@@ -48,7 +55,12 @@ import type { AgentModel, SkillSummary } from "@/gen/proto/hopter/v1/host_pb"
 import { cn } from "@/lib/utils"
 
 import type { SessionComposerSelection } from "./selection"
-import { SessionImage, stableDropdownPopoverClassName } from "@/components/app/shared"
+import {
+  SessionImage,
+  stableDropdownPopoverClassName,
+  workspaceCardClassName,
+  workspaceContentWidthClassName,
+} from "@/components/app/shared"
 
 const MAX_SKILL_SUGGESTIONS = 8
 const DEFAULT_MODEL = "gpt-5.4"
@@ -111,7 +123,10 @@ type SessionComposerSubmitOptions = {
   model: string
   rawInput: string
   reasoningEffort: string
+  submissionMode: SessionComposerSubmissionMode
 }
+
+export type SessionComposerSubmissionMode = "guide" | "queue"
 
 type SessionComposerProps = {
   busy?: boolean
@@ -120,8 +135,9 @@ type SessionComposerProps = {
   interruptMode?: boolean
   initialSelection?: Partial<SessionComposerSelection>
   placeholder: string
-  placement?: "sticky" | "inline"
+  placement?: "sticky" | "docked" | "overlay" | "inline"
   composerTestId?: string
+  containerRef?: Ref<HTMLDivElement>
   footerStart?: ReactNode
   inputTestId?: string
   projectLabel?: string
@@ -129,10 +145,14 @@ type SessionComposerProps = {
   settingsLabel?: string
   onInterrupt?: () => Promise<void> | void
   onSelectionChange?: (selection: SessionComposerSelection) => void
+  onSubmissionModeChange?: (mode: SessionComposerSubmissionMode) => void
   onSubmit: (options: SessionComposerSubmitOptions) => Promise<void> | void
   onValueChange: (value: string) => void
   interruptTestId?: string
   selectionKey?: string
+  showSubmissionMode?: boolean
+  submissionMode?: SessionComposerSubmissionMode
+  topContent?: ReactNode
   submitTestId?: string
   value: string
 }
@@ -165,14 +185,19 @@ export function SessionComposer({
   placeholder,
   placement = "sticky",
   composerTestId,
+  containerRef,
   footerStart,
   inputTestId,
   onInterrupt,
   onSelectionChange,
+  onSubmissionModeChange,
   onSubmit,
   onValueChange,
   interruptTestId,
   selectionKey,
+  showSubmissionMode = false,
+  submissionMode = "guide",
+  topContent,
   submitTestId,
   value,
 }: SessionComposerProps) {
@@ -209,7 +234,9 @@ export function SessionComposer({
   const sendShortcutLabel = formatComposerSendShortcutPreference(sendShortcut)
   const sendButtonTooltip = interruptMode
     ? t("composer.interruptTurnShortcut")
-    : t("composer.sendMessageShortcut", { shortcut: sendShortcutLabel })
+    : showSubmissionMode && submissionMode === "queue"
+      ? t("composer.queueModeSendShortcut", { shortcut: sendShortcutLabel })
+      : t("composer.sendMessageShortcut", { shortcut: sendShortcutLabel })
   const modelOptions = codexModelsQuery.data ?? []
   const selectedModelOption =
     modelOptions.find((option) => modelValue(option) === selectedModel) ??
@@ -438,6 +465,7 @@ export function SessionComposer({
       model: effectiveModel,
       rawInput,
       reasoningEffort: effectiveReasoningEffort,
+      submissionMode: showSubmissionMode ? submissionMode : "guide",
     })
     setAttachments([])
     setAttachmentError("")
@@ -600,12 +628,23 @@ export function SessionComposer({
       <div
         className={cn(
           placement === "sticky"
-            ? "sticky bottom-0 z-20 bg-background px-6 pb-3 md:pb-4"
-            : "w-full"
+            ? "sticky bottom-0 z-20 px-4 pb-3 sm:px-6 md:pb-4"
+            : placement === "docked"
+              ? "shrink-0 px-4 pb-3 sm:px-6 md:pb-4"
+              : placement === "overlay"
+                ? "pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-3 sm:px-6 md:pb-4"
+                : "w-full"
         )}
         data-testid={composerTestId}
+        ref={containerRef}
       >
-        <div className="mx-auto max-w-[720px]">
+        <div
+          className={cn(
+            workspaceContentWidthClassName,
+            "min-w-0",
+            placement === "overlay" && "pointer-events-auto"
+          )}
+        >
           <div className="relative">
             {showSkillSuggestionState ? (
               <SkillSuggestionPopover
@@ -618,7 +657,14 @@ export function SessionComposer({
               />
             ) : null}
 
-            <Card className="overflow-hidden rounded-2xl border border-border bg-overlay">
+            {topContent ? <div className="mb-2">{topContent}</div> : null}
+
+            <Card
+              className={cn(
+                "w-full max-w-full min-w-0 overflow-hidden",
+                workspaceCardClassName
+              )}
+            >
               <Card.Content>
                 <div className="relative min-h-14">
                   <EditorContent
@@ -638,14 +684,14 @@ export function SessionComposer({
                         {attachments.map((attachment) => (
                           <div
                             key={attachment.id}
-                            className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-surface-secondary px-2 py-1 text-xs text-foreground"
+                            className="flex max-w-full items-center gap-2 rounded-xl border border-border bg-background px-2 py-1 text-xs text-foreground"
                           >
                             <SessionImage
                               src={attachment.url}
                               alt=""
                               className="size-6 rounded-md object-cover"
                               fallback={
-                                <span className="inline-flex size-6 items-center justify-center rounded-md bg-surface text-xs font-medium text-muted">
+                                <span className="inline-flex size-6 items-center justify-center rounded-md border border-border bg-surface-secondary text-xs font-medium text-muted">
                                   +
                                 </span>
                               }
@@ -708,6 +754,14 @@ export function SessionComposer({
                   <div className="flex min-w-0 items-center justify-end gap-1">
                     <ContextWindowIndicator t={t} usage={contextWindowUsage} />
 
+                    {showSubmissionMode ? (
+                      <SubmissionModeControl
+                        mode={submissionMode}
+                        onModeChange={(mode) => onSubmissionModeChange?.(mode)}
+                        t={t}
+                      />
+                    ) : null}
+
                     <AgentSelectionDropdown
                       aria-label={t("composer.agentSelection")}
                       codexFastMode={codexFastMode}
@@ -754,7 +808,10 @@ export function SessionComposer({
                             aria-label={
                               interruptMode
                                 ? t("composer.interruptTurn")
-                                : t("composer.sendMessage")
+                                : showSubmissionMode &&
+                                    submissionMode === "queue"
+                                  ? t("composer.queueModeSubmit")
+                                  : t("composer.sendMessage")
                             }
                             data-testid={
                               interruptMode ? interruptTestId : submitTestId
@@ -770,6 +827,9 @@ export function SessionComposer({
                               <LoaderCircle className="size-4 animate-spin" />
                             ) : interruptMode ? (
                               <Square className="size-3.5 fill-current" />
+                            ) : showSubmissionMode &&
+                              submissionMode === "queue" ? (
+                              <ListChecks className="size-4" />
                             ) : (
                               <ArrowUp02Icon className="size-4" />
                             )}
@@ -788,6 +848,53 @@ export function SessionComposer({
         </div>
       </div>
     </>
+  )
+}
+
+function SubmissionModeControl({
+  mode,
+  onModeChange,
+  t,
+}: {
+  mode: SessionComposerSubmissionMode
+  onModeChange: (mode: SessionComposerSubmissionMode) => void
+  t: ReturnType<typeof useTranslation>["t"]
+}) {
+  return (
+    <div
+      aria-label={t("composer.submissionMode")}
+      className="inline-flex items-center rounded-full border border-border bg-surface-secondary p-0.5 text-xs font-medium"
+      role="group"
+    >
+      <button
+        type="button"
+        aria-pressed={mode === "guide"}
+        className={cn(
+          "inline-flex h-7 items-center gap-1 rounded-full px-2 transition",
+          mode === "guide"
+            ? "bg-surface-tertiary text-foreground"
+            : "text-muted hover:text-foreground"
+        )}
+        onClick={() => onModeChange("guide")}
+      >
+        <Zap className="size-3.5" />
+        <span>{t("composer.guideMode")}</span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={mode === "queue"}
+        className={cn(
+          "inline-flex h-7 items-center gap-1 rounded-full px-2 transition",
+          mode === "queue"
+            ? "bg-surface-tertiary text-foreground"
+            : "text-muted hover:text-foreground"
+        )}
+        onClick={() => onModeChange("queue")}
+      >
+        <ListChecks className="size-3.5" />
+        <span>{t("composer.queueMode")}</span>
+      </button>
+    </div>
   )
 }
 
@@ -847,7 +954,7 @@ function ContextWindowIndicator({
         showArrow
       >
         <div className="space-y-3 text-center">
-          <div className="text-sm font-medium">
+          <div className="text-sm">
             {t("composer.contextWindow")}
           </div>
           <div className="text-sm leading-snug">
@@ -1127,7 +1234,9 @@ function tiptapContentToText(
   return childText
 }
 
-function getActiveSkillMatchFromEditor(editor: Editor | null): SkillMentionMatch | null {
+function getActiveSkillMatchFromEditor(
+  editor: Editor | null
+): SkillMentionMatch | null {
   if (!editor) {
     return null
   }
@@ -1224,8 +1333,7 @@ function AgentSelectionDropdown({
   const positionFreezeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   )
-  const [shouldUpdateMenuPosition, setShouldUpdateMenuPosition] =
-    useState(true)
+  const [shouldUpdateMenuPosition, setShouldUpdateMenuPosition] = useState(true)
   const selectedModelLabel =
     modelOptions.find((option) => option.value === modelValue)?.label ??
     modelValue

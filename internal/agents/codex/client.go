@@ -90,6 +90,19 @@ type ThreadListResult struct {
 	NextCursor *string        `json:"nextCursor"`
 }
 
+type ThreadTurnsListParams struct {
+	ThreadID      string  `json:"threadId"`
+	Cursor        *string `json:"cursor,omitempty"`
+	Limit         *int    `json:"limit,omitempty"`
+	SortDirection string  `json:"sortDirection,omitempty"`
+}
+
+type ThreadTurnsListResult struct {
+	Data            []ReadThreadTurn `json:"data"`
+	NextCursor      *string          `json:"nextCursor,omitempty"`
+	BackwardsCursor *string          `json:"backwardsCursor,omitempty"`
+}
+
 type ModelReasoningEffortRecord struct {
 	ReasoningEffort string `json:"reasoningEffort"`
 	Description     string `json:"description"`
@@ -136,30 +149,42 @@ type ReadThreadFileChange struct {
 	} `json:"kind"`
 }
 
+type ReadThreadCommandAction struct {
+	Type    string `json:"type"`
+	Command string `json:"command"`
+	Cmd     string `json:"cmd"`
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Query   string `json:"query"`
+}
+
 type ReadThreadError struct {
 	Message string `json:"message"`
 }
 
 type ReadThreadItem struct {
-	Type             string                 `json:"type"`
-	ID               string                 `json:"id"`
-	Text             string                 `json:"text"`
-	Phase            string                 `json:"phase"`
-	Status           string                 `json:"status"`
-	Server           string                 `json:"server"`
-	Tool             string                 `json:"tool"`
-	Command          string                 `json:"command"`
-	AggregatedOutput string                 `json:"aggregatedOutput"`
-	Source           string                 `json:"source"`
-	ProcessID        string                 `json:"processId"`
-	ExitCode         *int                   `json:"exitCode"`
-	DurationMs       int64                  `json:"durationMs"`
-	Arguments        json.RawMessage        `json:"arguments"`
-	Result           json.RawMessage        `json:"result"`
-	Error            *ReadThreadError       `json:"error"`
-	Content          json.RawMessage        `json:"content"`
-	Summary          json.RawMessage        `json:"summary"`
-	Changes          []ReadThreadFileChange `json:"changes"`
+	Type             string                    `json:"type"`
+	ID               string                    `json:"id"`
+	Text             string                    `json:"text"`
+	Phase            string                    `json:"phase"`
+	Status           string                    `json:"status"`
+	Server           string                    `json:"server"`
+	Tool             string                    `json:"tool"`
+	Command          string                    `json:"command"`
+	CommandActions   []ReadThreadCommandAction `json:"commandActions"`
+	ParsedCmd        []ReadThreadCommandAction `json:"parsed_cmd"`
+	ParsedCmdCamel   []ReadThreadCommandAction `json:"parsedCmd"`
+	AggregatedOutput string                    `json:"aggregatedOutput"`
+	Source           string                    `json:"source"`
+	ProcessID        string                    `json:"processId"`
+	ExitCode         *int                      `json:"exitCode"`
+	DurationMs       int64                     `json:"durationMs"`
+	Arguments        json.RawMessage           `json:"arguments"`
+	Result           json.RawMessage           `json:"result"`
+	Error            *ReadThreadError          `json:"error"`
+	Content          json.RawMessage           `json:"content"`
+	Summary          json.RawMessage           `json:"summary"`
+	Changes          []ReadThreadFileChange    `json:"changes"`
 }
 
 type ReadThreadTurn struct {
@@ -202,6 +227,25 @@ type ReadThreadResult struct {
 type ResumeThreadResult struct {
 	Thread ThreadRecord `json:"thread"`
 	Cwd    string       `json:"cwd"`
+}
+
+type RollbackThreadResult struct {
+	Thread struct {
+		ID            string                     `json:"id"`
+		ForkedFromID  *string                    `json:"forkedFromId"`
+		Preview       string                     `json:"preview"`
+		Ephemeral     bool                       `json:"ephemeral"`
+		ModelProvider string                     `json:"modelProvider"`
+		CreatedAt     int64                      `json:"createdAt"`
+		UpdatedAt     int64                      `json:"updatedAt"`
+		Status        ThreadStatus               `json:"status"`
+		Path          *string                    `json:"path"`
+		Cwd           string                     `json:"cwd"`
+		CLIVersion    string                     `json:"cliVersion"`
+		Name          *string                    `json:"name"`
+		TokenUsage    *protocol.ThreadTokenUsage `json:"tokenUsage,omitempty"`
+		Turns         []ReadThreadTurn           `json:"turns"`
+	} `json:"thread"`
 }
 
 func Start(
@@ -355,6 +399,19 @@ func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOpti
 	return &out, nil
 }
 
+func (c *Client) RollbackThread(threadID string, numTurns int) (*RollbackThreadResult, error) {
+	params := protocol.ThreadRollbackParams{
+		ThreadID: threadID,
+		NumTurns: numTurns,
+	}
+
+	var out RollbackThreadResult
+	if err := c.call(protocolMethodThreadRollback, params, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *Client) StartTurn(threadID string, text string, options core.SessionTurnOptions) (*StartTurnResult, error) {
 	params := protocol.TurnStartParams{
 		ThreadID:       threadID,
@@ -450,6 +507,14 @@ func (c *Client) ReadThread(threadID string) (*ReadThreadResult, error) {
 
 func (c *Client) ReadThreadMeta(threadID string) (*ReadThreadResult, error) {
 	return c.readThread(threadID, false)
+}
+
+func (c *Client) ListThreadTurns(params ThreadTurnsListParams) (*ThreadTurnsListResult, error) {
+	var out ThreadTurnsListResult
+	if err := c.call(protocolMethodThreadTurnsList, params, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func optionalString(value string) *string {
@@ -766,7 +831,9 @@ const (
 	protocolMethodThreadList                          = "thread/list"
 	protocolMethodThreadRead                          = "thread/read"
 	protocolMethodThreadResume                        = "thread/resume"
+	protocolMethodThreadRollback                      = "thread/rollback"
 	protocolMethodThreadStart                         = "thread/start"
+	protocolMethodThreadTurnsList                     = "thread/turns/list"
 	protocolMethodTurnInterrupt                       = "turn/interrupt"
 	protocolMethodTurnStart                           = "turn/start"
 	protocolMethodTurnSteer                           = "turn/steer"

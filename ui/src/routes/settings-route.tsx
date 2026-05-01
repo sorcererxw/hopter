@@ -5,7 +5,10 @@ import { Navigate, useLocation } from "react-router-dom"
 import { Tick02, ChevronDown } from "@/components/icons/hugeicons"
 import { Label, ListBox, Select } from "@heroui/react"
 
-import { SimplebarScrollArea } from "@/components/app/shared"
+import {
+  SimplebarScrollArea,
+  workspaceSoftCardClassName,
+} from "@/components/app/shared"
 import { WorkspacePageToolbar } from "@/components/app/workspace"
 import { useTheme } from "@/components/theme-provider"
 import { useBackends } from "@/features/host/use-host-backends"
@@ -83,7 +86,7 @@ function SettingsSection({
 }) {
   return (
     <section id={id} className="scroll-mt-16">
-      <h2 className="mb-3 text-2xl leading-tight text-foreground">{title}</h2>
+      <h2 className="mb-3 text-base leading-tight text-foreground">{title}</h2>
       {children}
     </section>
   )
@@ -103,9 +106,7 @@ function SettingsRow({
       <div className="min-w-0 flex-1">
         <div className="text-sm text-foreground">{label}</div>
         {description ? (
-          <div className="mt-0.5 text-sm text-muted">
-            {description}
-          </div>
+          <div className="mt-0.5 text-sm text-muted">{description}</div>
         ) : null}
       </div>
       <div className="shrink-0">{action}</div>
@@ -166,7 +167,7 @@ function SettingsSelect({
           <ChevronDown className="size-4 text-muted" />
         </Select.Indicator>
       </Select.Trigger>
-      <Select.Popover className="min-w-40 rounded-2xl bg-overlay p-1 shadow-2xl">
+      <Select.Popover className="min-w-40 rounded-2xl border border-border bg-overlay p-1 shadow-2xl">
         <ListBox>
           {options.map((option) => (
             <ListBox.Item
@@ -256,7 +257,12 @@ export function SettingsRoute() {
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10">
           <SettingsSection id="general" title={t("app.settings.general")}>
-            <div className="divide-y divide-border rounded-lg border border-border">
+            <div
+              className={cn(
+                "divide-y divide-border overflow-hidden",
+                workspaceSoftCardClassName
+              )}
+            >
               <SettingsRow
                 label={t("app.settings.hostStatus")}
                 description={t("app.settings.hostStatusDescription")}
@@ -343,20 +349,32 @@ export function SettingsRoute() {
 
           <SettingsSection id="agents" title={t("app.settings.agents")}>
             {backendsLoading ? (
-              <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
+              <div
+                className={cn(
+                  "py-8 text-center text-sm text-muted",
+                  workspaceSoftCardClassName
+                )}
+              >
                 {t("app.settings.loadingBackends")}
               </div>
             ) : !backends || backends.length === 0 ? (
-              <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
+              <div
+                className={cn(
+                  "py-8 text-center text-sm text-muted",
+                  workspaceSoftCardClassName
+                )}
+              >
                 {t("app.settings.noBackends")}
               </div>
             ) : (
-              <div className="divide-y divide-border rounded-lg border border-border">
+              <div
+                className={cn(
+                  "divide-y divide-border overflow-hidden",
+                  workspaceSoftCardClassName
+                )}
+              >
                 {backends.map((backend) => (
-                  <div
-                    key={backend.backendKey}
-                    className="px-4 py-3"
-                  >
+                  <div key={backend.backendKey} className="px-4 py-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm text-foreground">
@@ -364,9 +382,9 @@ export function SettingsRoute() {
                         </div>
                         <div className="mt-1 text-xs text-muted">
                           {t("app.settings.planQuota")}:{" "}
-                            <span className="text-muted">
-                              {backendQuotaLabel(backend, t)}
-                            </span>
+                          <span className="text-muted">
+                            {backendQuotaLabel(backend, t)}
+                          </span>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 text-sm">

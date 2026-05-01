@@ -1,18 +1,24 @@
 import { useTranslation } from "react-i18next"
+import {
+  workspaceSoftCardClassName,
+  workspaceTintedCardClassName,
+} from "@/components/app/shared"
 import { LoaderCircle } from "@/components/icons/hugeicons"
 import { cn } from "@/lib/utils"
 
 import type { ActivityItem } from "./activity"
+import type { SessionTranscriptItem } from "@/gen/proto/hopter/v1/session_pb"
 import {
   CommandExecutionGroupEntry,
+  ExplorationGroupEntry,
   ThoughtProcessGroupEntry,
+  ToolCallGroupEntry,
   TranscriptEntry,
 } from "./timeline-entries"
 import { CompletedMessageChangedFiles } from "./timeline-file-changes"
 import {
   buildTimelineItems,
   completedMessageFileChanges,
-  isAssistantReplyAfterUserMessage,
   shouldAttachFileChangesToCompletedMessage,
   type TimelineItem,
 } from "./timeline-model"
@@ -25,14 +31,18 @@ import { SessionRichText } from "./rich-text"
 // timeline-entries.tsx rather than here.
 export function TranscriptTimeline({
   items,
-  isFetchingPreviousPage,
   isLoadingInitialTranscript,
+  onEditUserMessage,
   onSelectPath,
+  projectRootPath,
+  showTopLoadingIndicator,
 }: {
   items: ActivityItem[]
-  isFetchingPreviousPage: boolean
   isLoadingInitialTranscript: boolean
+  onEditUserMessage?: (item: SessionTranscriptItem) => void
   onSelectPath: (path: string) => void
+  projectRootPath?: string
+  showTopLoadingIndicator: boolean
 }) {
   const { t } = useTranslation()
   const timelineItems = buildTimelineItems(items)
@@ -40,7 +50,10 @@ export function TranscriptTimeline({
   if (timelineItems.length === 0 && !isLoadingInitialTranscript) {
     return (
       <div
-        className="rounded-lg border border-border bg-surface px-4 py-6 text-sm text-muted"
+        className={cn(
+          "px-4 py-6 text-sm text-muted",
+          workspaceSoftCardClassName
+        )}
         data-testid="session-transcript-empty"
       >
         {t("transcript.empty")}
@@ -50,10 +63,10 @@ export function TranscriptTimeline({
 
   return (
     <div
-      className="relative flex flex-col gap-2"
+      className="relative flex flex-col gap-3"
       data-testid="session-transcript"
     >
-      {isFetchingPreviousPage ? <TranscriptLoadingRow /> : null}
+      {showTopLoadingIndicator ? <TranscriptLoadingRow /> : null}
       {timelineItems.map((item, index) => {
         const previousItem = timelineItems[index - 1]
         const nextItem = timelineItems[index + 1]
@@ -61,7 +74,9 @@ export function TranscriptTimeline({
         // following completed assistant reply so the turn reads like a single
         // "answer + changed files" unit instead of two disjoint rows.
         const renderedItem = renderTimelineItem(item, {
+          onEditUserMessage,
           onSelectPath,
+          projectRootPath,
           suppressStandaloneFileChanges:
             shouldAttachFileChangesToCompletedMessage(item, nextItem),
         })
@@ -78,21 +93,13 @@ export function TranscriptTimeline({
         }
 
         return (
-          <div
-            key={item.key}
-            data-index={index}
-            className={cn(
-              // Add breathing room when an assistant turn starts after a user
-              // prompt so conversational turn boundaries stay readable.
-              "min-w-0",
-              index > 0 &&
-                isAssistantReplyAfterUserMessage(previousItem, item) &&
-                "mt-4"
-            )}
-          >
+          <div key={item.key} data-index={index} className="min-w-0">
             {renderedItem}
             {attachedFileChanges.length > 0 ? (
-              <CompletedMessageChangedFiles items={attachedFileChanges} />
+              <CompletedMessageChangedFiles
+                items={attachedFileChanges}
+                projectRootPath={projectRootPath}
+              />
             ) : null}
           </div>
         )
@@ -105,6 +112,8 @@ function renderTimelineItem(
   item: TimelineItem,
   handlers: {
     onSelectPath: (path: string) => void
+    onEditUserMessage?: (item: SessionTranscriptItem) => void
+    projectRootPath?: string
     suppressStandaloneFileChanges?: boolean
   }
 ) {
@@ -117,7 +126,9 @@ function renderTimelineItem(
       return (
         <TranscriptEntry
           item={item.item}
+          onEditUserMessage={handlers.onEditUserMessage}
           onSelectPath={handlers.onSelectPath}
+          projectRootPath={handlers.projectRootPath}
         />
       )
     case "round-status":
@@ -132,12 +143,27 @@ function renderTimelineItem(
     case "thinking":
       return <ThinkingEntry />
     case "command-group":
-      return <CommandExecutionGroupEntry items={item.items} />
+      return (
+        <CommandExecutionGroupEntry
+          items={item.items}
+          projectRootPath={handlers.projectRootPath}
+        />
+      )
+    case "exploration-group":
+      return (
+        <ExplorationGroupEntry
+          items={item.items}
+          projectRootPath={handlers.projectRootPath}
+        />
+      )
+    case "tool-group":
+      return <ToolCallGroupEntry items={item.items} />
     case "thought-group":
       return (
         <ThoughtProcessGroupEntry
           items={item.items}
           onSelectPath={handlers.onSelectPath}
+          projectRootPath={handlers.projectRootPath}
           suppressFileChanges={handlers.suppressStandaloneFileChanges === true}
         />
       )
@@ -150,12 +176,10 @@ function TranscriptLoadingRow() {
   // visually neutral so it does not compete with actual session content.
   return (
     <div
-      className="pointer-events-none flex items-center justify-center py-3"
+      className="pointer-events-none flex items-center justify-center"
       data-testid="session-transcript-loading"
     >
-      <div className="inline-flex size-8 items-center justify-center rounded-full border border-border bg-surface/90 text-muted shadow-sm">
-        <LoaderCircle className="size-4 animate-spin" />
-      </div>
+      <LoaderCircle className="size-4 animate-spin text-muted" />
     </div>
   )
 }
@@ -164,7 +188,7 @@ function TranscriptLoadingRow() {
 export function InitialTranscriptLoader() {
   return (
     <div
-      className="inline-flex size-12 items-center justify-center rounded-full border border-border bg-surface/90 text-muted shadow-sm"
+      className="inline-flex items-center justify-center text-muted"
       data-testid="session-transcript-loading-initial"
     >
       <LoaderCircle className="size-5 animate-spin" />
@@ -189,14 +213,17 @@ function PendingInputEntry({
   onSelectPath: (path: string) => void
   text: string
 }) {
-  // Optimistic pending input is rendered as a user bubble so the transcript
-  // feels chat-like even before the backend echoes the canonical user message.
+  // Optimistic pending input is rendered as a user bubble before the backend
+  // echoes the canonical user message.
   return (
     <div className="flex justify-end" data-testid="session-transcript-pending">
       <div className="max-w-[85%]">
         <SessionRichText
           text={text}
-          className="rounded-lg bg-surface-tertiary px-3 py-2.5 leading-6"
+          className={cn(
+            "px-4 py-3 leading-6 text-foreground",
+            workspaceTintedCardClassName
+          )}
           markdown={false}
           onLocalPathClick={onSelectPath}
         />
@@ -232,7 +259,12 @@ function RoundStatusEntry({
   // pretending to be agent/user messages.
   return (
     <div className="min-w-0" data-testid="session-transcript-round-status">
-      <div className="min-w-0 rounded-lg border border-border bg-surface px-4 py-3 text-muted">
+      <div
+        className={cn(
+          "min-w-0 px-4 py-3 text-muted",
+          workspaceSoftCardClassName
+        )}
+      >
         <div className="flex items-center gap-2">
           <span
             className={cn(

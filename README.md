@@ -23,7 +23,28 @@ npm install -g hopter-cli
 hopter
 ```
 
-Hopter starts the local server and prints the URL to open.
+Hopter starts the local server and opens the browser when run from an
+interactive terminal.
+
+Useful commands:
+
+```bash
+hopter                         # run the local server in the foreground
+hopter server --background     # run the same server in the background
+hopter stop                    # stop the background server
+hopter doctor                  # static checks and recovery suggestions
+hopter server --relay          # start with hosted relay login
+hopter server --relay --local=false
+                               # run without a localhost browser port
+```
+
+Homebrew users can also run Hopter as a user service:
+
+```bash
+brew services start hopter
+hopter doctor
+brew services stop hopter
+```
 
 See [`docs/README.md`](docs/README.md) for the active documentation map.
 

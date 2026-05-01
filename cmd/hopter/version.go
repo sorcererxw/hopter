@@ -3,15 +3,18 @@ package main
 import (
 	"fmt"
 
-	"github.com/urfave/cli/v2"
+	"github.com/spf13/cobra"
 )
 
-func newVersionCmd(version string) *cli.Command {
-	return &cli.Command{
-		Name:  "version",
-		Usage: "Print the hopter version",
-		Action: func(c *cli.Context) error {
-			_, err := fmt.Fprintln(c.App.Writer, version)
+func newVersionCmd(version string) *cobra.Command {
+	return &cobra.Command{
+		Use:           "version",
+		Short:         "Print the hopter version",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Args:          cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := fmt.Fprintln(cmd.OutOrStdout(), version)
 			return err
 		},
 	}

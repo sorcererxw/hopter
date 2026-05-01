@@ -24,6 +24,7 @@ type sessionRuntime interface {
 	GetSession(sessionID string) (core.Session, core.Project, error)
 	CreateSession(input core.CreateSessionInput) (core.Session, error)
 	SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error)
+	RollbackSessionInput(sessionID string, target core.SessionRollbackTarget, input string, options ...core.SessionTurnOptions) (core.SessionRollbackResult, error)
 	InterruptSession(sessionID string) (core.Session, error)
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 }
@@ -33,6 +34,10 @@ type sessionDetailReader interface {
 	GetSessionReview(sessionID string) (core.SessionReview, error)
 	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
 	ListSessionTranscript(input core.ListSessionTranscriptInput) (core.SessionTranscriptPage, error)
+}
+
+type sessionQueueReader interface {
+	ListSessionQueue(sessionID string) ([]core.SessionQueueItem, error)
 }
 
 func NewSessionService(
@@ -213,6 +218,22 @@ func (s *SessionService) ListSessionTranscript(_ context.Context, req *connect.R
 	}), nil
 }
 
+func (s *SessionService) ListSessionQueue(_ context.Context, req *connect.Request[hopterv1.ListSessionQueueRequest]) (*connect.Response[hopterv1.ListSessionQueueResponse], error) {
+	reader, ok := s.agents.(sessionQueueReader)
+	if !ok {
+		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("session queue reader unavailable"))
+	}
+	items, err := reader.ListSessionQueue(req.Msg.GetSessionId())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("session %q queue not found", req.Msg.GetSessionId()))
+	}
+	response := &hopterv1.ListSessionQueueResponse{Items: make([]*hopterv1.SessionQueueItem, 0, len(items))}
+	for _, item := range items {
+		response.Items = append(response.Items, sessionQueueItemToProto(item))
+	}
+	return connect.NewResponse(response), nil
+}
+
 func (s *SessionService) CreateSession(_ context.Context, req *connect.Request[hopterv1.CreateSessionRequest]) (*connect.Response[hopterv1.CreateSessionResponse], error) {
 	session, err := s.agents.CreateSession(core.CreateSessionInput{
 		ProjectID:       req.Msg.GetProjectId(),
@@ -239,6 +260,7 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 		ReasoningEffort: req.Msg.GetReasoningEffort(),
 		CodexFastMode:   req.Msg.GetCodexFastMode(),
 		Attachments:     sessionInputAttachmentsFromProto(req.Msg.GetAttachments()),
+		InputMode:       sessionInputModeFromProto(req.Msg.GetMode()),
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -247,6 +269,32 @@ func (s *SessionService) SendSessionInput(_ context.Context, req *connect.Reques
 		Accepted:  true,
 		SessionId: session.ID,
 		UpdatedAt: timestamp(session.UpdatedAt),
+	}), nil
+}
+
+func (s *SessionService) RollbackSessionInput(_ context.Context, req *connect.Request[hopterv1.RollbackSessionInputRequest]) (*connect.Response[hopterv1.RollbackSessionInputResponse], error) {
+	result, err := s.agents.RollbackSessionInput(
+		req.Msg.GetSessionId(),
+		core.SessionRollbackTarget{
+			TranscriptItemID: req.Msg.GetTranscriptItemId(),
+			OrderKey:         req.Msg.GetOrderKey(),
+		},
+		req.Msg.GetInput(),
+		core.SessionTurnOptions{
+			Model:           req.Msg.GetModel(),
+			ReasoningEffort: req.Msg.GetReasoningEffort(),
+			CodexFastMode:   req.Msg.GetCodexFastMode(),
+			Attachments:     sessionInputAttachmentsFromProto(req.Msg.GetAttachments()),
+		},
+	)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	return connect.NewResponse(&hopterv1.RollbackSessionInputResponse{
+		Accepted:         true,
+		SessionId:        result.Session.ID,
+		UpdatedAt:        timestamp(result.Session.UpdatedAt),
+		DroppedTurnCount: result.DroppedTurnCount,
 	}), nil
 }
 
@@ -263,6 +311,50 @@ func sessionInputAttachmentsFromProto(attachments []*hopterv1.SessionInputAttach
 			Label:       strings.TrimSpace(attachment.GetLabel()),
 			URL:         strings.TrimSpace(attachment.GetUrl()),
 			ContentType: strings.TrimSpace(attachment.GetContentType()),
+		})
+	}
+	return result
+}
+
+func sessionInputModeFromProto(mode hopterv1.SessionInputMode) core.SessionInputMode {
+	switch mode {
+	case hopterv1.SessionInputMode_SESSION_INPUT_MODE_QUEUE:
+		return core.SessionInputModeQueue
+	default:
+		return core.SessionInputModeGuide
+	}
+}
+
+func sessionQueueItemToProto(item core.SessionQueueItem) *hopterv1.SessionQueueItem {
+	out := &hopterv1.SessionQueueItem{
+		Id:          validUTF8(item.ID),
+		SessionId:   validUTF8(item.SessionID),
+		Input:       validUTF8(item.Input),
+		Preview:     validUTF8(item.Preview),
+		Position:    item.Position,
+		Attachments: sessionInputAttachmentsToProto(item.Attachments),
+		CreatedAt:   timestamp(item.CreatedAt),
+	}
+	if model := strings.TrimSpace(item.Model); model != "" {
+		out.Model = &model
+	}
+	if effort := strings.TrimSpace(item.ReasoningEffort); effort != "" {
+		out.ReasoningEffort = &effort
+	}
+	out.CodexFastMode = &item.CodexFastMode
+	return out
+}
+
+func sessionInputAttachmentsToProto(attachments []core.SessionInputAttachment) []*hopterv1.SessionInputAttachment {
+	if len(attachments) == 0 {
+		return nil
+	}
+	result := make([]*hopterv1.SessionInputAttachment, 0, len(attachments))
+	for _, attachment := range attachments {
+		result = append(result, &hopterv1.SessionInputAttachment{
+			Label:       validUTF8(strings.TrimSpace(attachment.Label)),
+			Url:         validUTF8(strings.TrimSpace(attachment.URL)),
+			ContentType: validUTF8(strings.TrimSpace(attachment.ContentType)),
 		})
 	}
 	return result

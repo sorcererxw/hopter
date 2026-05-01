@@ -30,6 +30,8 @@ smallest document that answers your question, then drill down only when needed.
 
 Feature plans under [`docs/planning/`](planning/) are scoped proposals unless the active Go rebuild task list says they are in the current milestone. Deferred plans, including terminal and relay-adjacent work, must not override the Go-first, Codex-first architecture in `AGENTS.md`.
 
+- Codex transcript pagination: [`docs/planning/CODEX_TURN_PAGINATION_TRANSCRIPT_PLAN.md`](planning/CODEX_TURN_PAGINATION_TRANSCRIPT_PLAN.md)
+
 ## Historical Archive
 
 Old Bun-first v1 planning, specs, validation matrices, and handoff notes are archived under [`docs/archive/bun-first-v1/`](archive/bun-first-v1/). They are historical evidence only and are not active implementation guidance.

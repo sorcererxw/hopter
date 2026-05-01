@@ -146,7 +146,8 @@ function ArtifactPreviewPanel({
         )
       }
       return {
-        contentType: response.headers.get("content-type") || artifact.contentType,
+        contentType:
+          response.headers.get("content-type") || artifact.contentType,
         text: await response.text(),
       }
     },
@@ -312,15 +313,19 @@ function renderTextArtifactPreview(
           ) : null}
         </div>
       ) : (
-        <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || t("artifact.changedFilesFallback")}
+        <CodeContainer>
+          <pre className="whitespace-pre-wrap">
+            {text.trim() || t("artifact.changedFilesFallback")}
+          </pre>
         </CodeContainer>
       )
     case ArtifactKind.TEST_RESULT:
     case ArtifactKind.LOG:
       return (
-        <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || t("artifact.contentFallback")}
+        <CodeContainer>
+          <pre className="whitespace-pre-wrap">
+            {text.trim() || t("artifact.contentFallback")}
+          </pre>
         </CodeContainer>
       )
     case ArtifactKind.OTHER:
@@ -329,8 +334,10 @@ function renderTextArtifactPreview(
       return looksLikeMarkdown(text) ? (
         <SessionRichText text={text.trim() || t("artifact.contentFallback")} />
       ) : (
-        <CodeContainer as="pre" className="whitespace-pre-wrap">
-          {text.trim() || t("artifact.contentFallback")}
+        <CodeContainer>
+          <pre className="whitespace-pre-wrap">
+            {text.trim() || t("artifact.contentFallback")}
+          </pre>
         </CodeContainer>
       )
   }
