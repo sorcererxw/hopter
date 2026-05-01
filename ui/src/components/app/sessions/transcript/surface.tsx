@@ -183,98 +183,95 @@ export function SessionTranscriptSurface({
   ])
 
   return (
-    <div className="relative min-h-0 flex-1 bg-background">
-      <ScrollShadow
-        ref={transcriptScrollRef}
-        onScroll={handleTranscriptScroll}
-        className={cn(
-          "relative flex h-full flex-col py-0",
-          hiddenScrollbarClassName
-        )}
-        orientation="vertical"
-        size={64}
-      >
-        <div
-          className={cn(
-            "flex-1 px-4 transition-opacity duration-200 ease-out sm:px-6",
-            transcriptVisible ? "opacity-100" : "opacity-0"
-          )}
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
+      <div className="relative min-h-0 flex-1">
+        <ScrollShadow
+          ref={transcriptScrollRef}
+          onScroll={handleTranscriptScroll}
+          className={cn("h-full py-0", hiddenScrollbarClassName)}
+          orientation="vertical"
+          size={64}
         >
           <div
-            ref={transcriptContentRef}
             className={cn(
-              workspaceContentWidthClassName,
-              "space-y-4 py-4 sm:py-6"
+              "px-4 transition-opacity duration-200 ease-out sm:px-6",
+              transcriptVisible ? "opacity-100" : "opacity-0"
             )}
           >
-            <SessionConnectionBlock state={eventStreamState} />
+            <div
+              ref={transcriptContentRef}
+              className={cn(
+                workspaceContentWidthClassName,
+                "space-y-4 py-4 sm:py-6"
+              )}
+            >
+              <SessionConnectionBlock state={eventStreamState} />
 
-            <SessionAttentionBlock
-              onApprove={onApprove}
-              onReject={onReject}
-              responding={respondingToApproval}
-              session={session}
-            />
+              <SessionAttentionBlock
+                onApprove={onApprove}
+                onReject={onReject}
+                responding={respondingToApproval}
+                session={session}
+              />
 
-            <TranscriptTimeline
-              items={activityItems}
-              showTopLoadingIndicator={
-                hasUnloadedTranscriptHistory || isFetchingPreviousPage
-              }
-              isLoadingInitialTranscript={isLoadingInitialTranscript}
-              onEditUserMessage={onEditUserMessage}
-              onSelectPath={ignoreLocalPathClick}
-              projectRootPath={session.project?.rootPath}
-            />
-            {/* Artifacts stay below the conversational timeline because the product
-            prioritizes status/summary/input over file output browsing. */}
-            <SessionArtifactWorkspace
-              artifacts={session.artifacts}
-              sessionId={sessionId}
-            />
+              <TranscriptTimeline
+                items={activityItems}
+                showTopLoadingIndicator={
+                  hasUnloadedTranscriptHistory || isFetchingPreviousPage
+                }
+                isLoadingInitialTranscript={isLoadingInitialTranscript}
+                onEditUserMessage={onEditUserMessage}
+                onSelectPath={ignoreLocalPathClick}
+                projectRootPath={session.project?.rootPath}
+              />
+              {/* Artifacts stay below the conversational timeline because the product
+              prioritizes status/summary/input over file output browsing. */}
+              <SessionArtifactWorkspace
+                artifacts={session.artifacts}
+                sessionId={sessionId}
+              />
+            </div>
           </div>
-        </div>
-        {stickyFooter ? (
-          <div className="sticky bottom-0 z-20 mt-auto px-4 pb-3 sm:px-6 md:pb-4">
-            {stickyFooter}
-          </div>
-        ) : null}
+        </ScrollShadow>
         {!transcriptVisible ? (
           <div className="pointer-events-none absolute inset-x-0 top-0 flex min-h-full items-center justify-center">
             <InitialTranscriptLoader />
           </div>
         ) : null}
-      </ScrollShadow>
-      <div
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute inset-y-2 right-2 z-20 w-1 transition-opacity duration-150",
-          overlayScrollbar.visible ? "opacity-100" : "opacity-0"
-        )}
-      >
         <div
-          className="absolute w-full rounded-full [background:var(--scrollbar)]"
-          style={{
-            height: overlayScrollbar.height,
-            transform: `translateY(${overlayScrollbar.top - OVERLAY_SCROLLBAR_TRACK_INSET}px)`,
-          }}
-        />
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute inset-y-2 right-2 z-20 w-1 transition-opacity duration-150",
+            overlayScrollbar.visible ? "opacity-100" : "opacity-0"
+          )}
+        >
+          <div
+            className="absolute w-full rounded-full [background:var(--scrollbar)]"
+            style={{
+              height: overlayScrollbar.height,
+              transform: `translateY(${overlayScrollbar.top - OVERLAY_SCROLLBAR_TRACK_INSET}px)`,
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          aria-label={t("transcript.scrollLatest")}
+          aria-hidden={!transcriptVisible || !transcriptAwayFromBottom}
+          tabIndex={transcriptVisible && transcriptAwayFromBottom ? 0 : -1}
+          className={cn(
+            "absolute bottom-4 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm shadow-black/5 transition-[opacity,background-color] duration-200 ease-out hover:bg-surface-tertiary",
+            transcriptVisible && transcriptAwayFromBottom
+              ? "opacity-100"
+              : "pointer-events-none opacity-0"
+          )}
+          onClick={onScrollToBottom}
+        >
+          <ArrowDown className="size-4" />
+        </button>
       </div>
-      <button
-        type="button"
-        aria-label={t("transcript.scrollLatest")}
-        aria-hidden={!transcriptVisible || !transcriptAwayFromBottom}
-        tabIndex={transcriptVisible && transcriptAwayFromBottom ? 0 : -1}
-        className={cn(
-          "absolute bottom-4 left-1/2 z-30 flex size-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-sm shadow-black/5 transition-[opacity,background-color] duration-200 ease-out hover:bg-surface-tertiary",
-          transcriptVisible && transcriptAwayFromBottom
-            ? "opacity-100"
-            : "pointer-events-none opacity-0"
-        )}
-        onClick={onScrollToBottom}
-      >
-        <ArrowDown className="size-4" />
-      </button>
+      {stickyFooter ? (
+        <div className="px-4 pb-3 sm:px-6 md:pb-4">{stickyFooter}</div>
+      ) : null}
     </div>
   )
 }

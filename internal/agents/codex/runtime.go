@@ -100,6 +100,10 @@ func (r *Runtime) ReadAccountRateLimits() (string, error) {
 	return r.manager.ReadAccountRateLimits()
 }
 
+func (r *Runtime) ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error) {
+	return r.manager.ReadAccountRateLimitStatus()
+}
+
 func (r *Runtime) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
 	if r.reader == nil {
 		return core.SessionMeta{}, fmt.Errorf("codex session reader unavailable")

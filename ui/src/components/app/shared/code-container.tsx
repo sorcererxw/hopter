@@ -20,7 +20,7 @@ export function CodeContainer<T extends ElementType = "div">({
   return (
     <Component
       className={cn(
-        "max-w-full overflow-hidden rounded-2xl border border-border bg-surface-secondary px-4 py-3 font-mono text-sm leading-6 text-foreground shadow-sm shadow-black/5",
+        "max-w-full overflow-hidden rounded-lg border border-border bg-surface-secondary px-4 py-3 font-mono text-sm leading-6 text-foreground shadow-sm shadow-black/5",
         className
       )}
       {...props}

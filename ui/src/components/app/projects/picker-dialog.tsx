@@ -70,7 +70,7 @@ export function ProjectPickerDialog({ open }: { open: boolean }) {
         <Modal.Container size="cover">
           <Modal.Dialog
             data-testid="project-picker-dialog-shell"
-            className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-base text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
+            className="inset-0 flex h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 items-center justify-center gap-0 rounded-none border-0 bg-transparent p-4 text-foreground ring-0 sm:max-w-none md:p-6 lg:p-8"
           >
             <ProjectPickerContent
               onProjectOpened={(projectId) => {
@@ -237,7 +237,7 @@ function ProjectPickerContent({
       data-testid={standalone ? "project-picker-page" : "project-picker-dialog"}
       className={cn(
         "flex h-full min-h-0 w-full flex-col overflow-hidden bg-overlay",
-        standalone ? "" : "max-w-7xl rounded-xl border border-border"
+        standalone ? "" : "max-w-7xl rounded-lg border border-border"
       )}
     >
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -319,7 +319,7 @@ function ListView({
         {!standalone ? <col className="w-1/6" /> : null}
       </colgroup>
       {!standalone ? (
-        <thead className="text-sm font-normal text-muted">
+        <thead className="text-sm text-muted">
           <tr className="border-b border-border">
             <th className="sticky top-0 bg-overlay px-6 py-4 text-left">
               {t("projectPicker.name")}
@@ -348,7 +348,9 @@ function ListView({
                 // Single click previews eligibility in the footer; double click
                 // navigates into directories for faster repo discovery.
                 "cursor-pointer transition",
-                selected ? "bg-surface-tertiary" : "hover:bg-surface-tertiary"
+                selected
+                  ? "bg-surface-tertiary"
+                  : "bg-surface-tertiary/0 hover:bg-surface-tertiary"
               )}
             >
               <td className="px-6 py-4">

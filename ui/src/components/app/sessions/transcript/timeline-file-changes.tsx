@@ -120,7 +120,7 @@ function FileChangeRow({
   return (
     <div className="min-w-0">
       <TranscriptDisclosureItem
-        buttonClassName="w-full gap-2 text-base text-muted hover:text-foreground"
+        buttonClassName="w-full gap-2 text-muted hover:text-foreground"
         disclosureKey={`file-change:${change.disclosureKey}`}
         iconClassName="size-3"
         label={
@@ -176,7 +176,9 @@ function CompletedMessageChangedFileRow({
         iconClassName="size-3"
         label={
           <>
-            <span className="min-w-0 break-all text-foreground">{pathLabel}</span>
+            <span className="min-w-0 break-all text-foreground">
+              {pathLabel}
+            </span>
             <span className="flex shrink-0 items-center gap-1 font-sans text-sm tabular-nums">
               <span className={DIFF_ADD_CLASS}>+{change.additions}</span>
               <span className={DIFF_DELETE_CLASS}>-{change.deletions}</span>
@@ -313,20 +315,20 @@ function normalizeSingleFilePatch(
 
   if (!trimmed || !/^@@ /m.test(trimmed)) {
     if (deletedLike) {
-		const deletedPatch = buildDeletedFilePatchFromRawDiff(
-			trimmed,
-			filePath,
-			options?.projectRootPath
-		)
-		if (deletedPatch) {
-			return deletedPatch
-		}
-		return buildDeletedFileFallbackPatch(
-			filePath,
-			options?.deletedFallbackLabel || "Deleted file content unavailable.",
-			options?.projectRootPath
-		)
-	}
+      const deletedPatch = buildDeletedFilePatchFromRawDiff(
+        trimmed,
+        filePath,
+        options?.projectRootPath
+      )
+      if (deletedPatch) {
+        return deletedPatch
+      }
+      return buildDeletedFileFallbackPatch(
+        filePath,
+        options?.deletedFallbackLabel || "Deleted file content unavailable.",
+        options?.projectRootPath
+      )
+    }
     return undefined
   }
 

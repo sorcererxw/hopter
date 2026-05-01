@@ -144,7 +144,7 @@ export function SessionRichText({
   return (
     <div
       className={cn(
-        "min-w-0 text-base leading-6 font-medium break-words whitespace-normal text-foreground",
+        "min-w-0 leading-6 break-words whitespace-normal text-foreground",
         isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
@@ -192,7 +192,7 @@ export function SessionRichText({
               alt={alt}
               fallback={
                 <span
-                  className="inline-flex items-center rounded-md border border-border bg-surface-secondary px-1 py-0.5 text-xs text-muted"
+                  className="inline-flex items-center rounded-md border border-border bg-surface-secondary px-1 py-0.5 text-sm text-muted"
                   {...props}
                 >
                   {typeof alt === "string" && alt.trim().length > 0
@@ -200,7 +200,7 @@ export function SessionRichText({
                     : t("transcript.image")}
                 </span>
               }
-              className="inline-block max-w-full rounded-xl border border-border"
+              className="inline-block max-w-full rounded-lg border border-border"
               {...props}
             />
           ),
@@ -218,7 +218,7 @@ export function SessionRichText({
                 "my-3 max-w-full overflow-x-auto"
               )}
             >
-              <table className="min-w-full border-separate border-spacing-0 rounded-2xl border border-border bg-surface text-left text-sm">
+              <table className="min-w-full border-separate border-spacing-0 rounded-lg border border-border bg-surface text-left text-sm">
                 {children}
               </table>
             </div>
@@ -230,7 +230,7 @@ export function SessionRichText({
             </td>
           ),
           th: ({ children }) => (
-            <th className="border-r border-b border-border bg-surface-secondary px-3 py-2 text-left font-semibold text-foreground last:border-r-0">
+            <th className="border-r border-b border-border bg-surface-secondary px-3 py-2 text-left font-bold text-foreground last:border-r-0">
               {children}
             </th>
           ),
@@ -270,7 +270,7 @@ function PlainRichText({
   return (
     <div
       className={cn(
-        "min-w-0 text-base leading-6 font-medium break-words whitespace-normal text-foreground",
+        "min-w-0 leading-6 break-words whitespace-normal text-foreground",
         isLongForm ? "space-y-3" : "space-y-2",
         className
       )}
@@ -640,15 +640,15 @@ function CodeBlock({ code, language }: { code: string; language?: string }) {
   }, [code])
 
   return (
-    <div className="my-3 min-w-0 overflow-hidden rounded-2xl border border-border bg-transparent shadow-none">
+    <div className="my-3 min-w-0 overflow-hidden rounded-lg border border-border bg-transparent shadow-none">
       <div className="flex min-h-9 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
-        <div className="font-mono text-xs text-muted">
+        <div className="font-mono text-sm text-muted">
           {languageLabel || "text"}
         </div>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition hover:bg-surface-tertiary hover:text-foreground"
+          className="inline-flex items-center gap-1 rounded-md bg-surface-tertiary/0 px-2 py-1 text-sm text-muted transition hover:bg-surface-tertiary hover:text-foreground"
           aria-label={
             copied ? t("transcript.copied") : t("transcript.copyCode")
           }

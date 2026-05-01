@@ -109,7 +109,7 @@ export function ShikiCodeFrame({
                 {showLineNumbers ? (
                   <div
                     className={cn(
-                      "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted select-none",
+                      "w-14 shrink-0 pr-4 text-right font-mono text-sm leading-6 text-muted select-none",
                       highlighted ? "text-amber-100" : null
                     )}
                   >
@@ -146,7 +146,7 @@ export function ShikiCodeFrame({
               {showLineNumbers ? (
                 <div
                   className={cn(
-                    "w-14 shrink-0 pr-4 text-right font-mono text-xs leading-6 text-muted select-none",
+                    "w-14 shrink-0 pr-4 text-right font-mono text-sm leading-6 text-muted select-none",
                     highlighted ? "text-amber-100" : null
                   )}
                 >

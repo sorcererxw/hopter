@@ -49,11 +49,11 @@ export function RailRow({
   const isInteractive =
     interactive || Boolean(to || onClick || ariaExpanded !== undefined)
   const rowClassName = cn(
-    "group flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-left text-base leading-6 text-current transition select-none",
+    "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left leading-6 text-current transition select-none",
     fullWidth ? "w-full" : "w-fit",
     isInteractive ? "cursor-pointer" : undefined,
     hoverable
-      ? "hover:bg-background-tertiary active:bg-background-tertiary"
+      ? "bg-background-tertiary/0 hover:bg-background-tertiary active:bg-background-tertiary"
       : undefined,
     className
   )

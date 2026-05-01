@@ -49,6 +49,7 @@ type AgentRuntime interface {
 	RespondToSessionApproval(sessionID, approvalID string, decision core.ApprovalDecision) (core.Session, error)
 	ListModels(includeHidden bool) ([]core.AgentModel, error)
 	ReadAccountRateLimits() (string, error)
+	ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error)
 	GetSessionMeta(sessionID string) (core.SessionMeta, error)
 	GetSessionReview(sessionID string) (core.SessionReview, error)
 	GetSessionFile(input core.GetSessionFileInput) (core.SessionFile, error)
@@ -141,6 +142,14 @@ func (m *Manager) ReadAgentAccountRateLimits(backendKey string) (string, error) 
 		return "", fmt.Errorf("agent runtime %q not registered", normalizeBackendKey(backendKey))
 	}
 	return runtime.ReadAccountRateLimits()
+}
+
+func (m *Manager) ReadAgentAccountRateLimitStatus(backendKey string) (core.AgentAccountRateLimits, error) {
+	runtime, ok := m.Get(backendKey)
+	if !ok {
+		return core.AgentAccountRateLimits{}, fmt.Errorf("agent runtime %q not registered", normalizeBackendKey(backendKey))
+	}
+	return runtime.ReadAccountRateLimitStatus()
 }
 
 func (m *Manager) ListSessions(projectID string, limit uint32) ([]ResolvedSession, error) {

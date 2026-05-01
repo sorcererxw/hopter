@@ -209,7 +209,7 @@ export function WorkspaceLayout({ children }: PropsWithChildren) {
                     // collapses width instead of switching to a drawer model.
                     "h-full min-h-0 shrink-0 overflow-hidden transition-[opacity,transform] duration-150 ease-out",
                     railVisible
-                      ? "w-[248px] translate-x-0 opacity-100"
+                      ? "w-64 translate-x-0 opacity-100"
                       : "pointer-events-none w-0 -translate-x-2 opacity-0"
                   )}
                   data-testid="workspace-rail-pane"

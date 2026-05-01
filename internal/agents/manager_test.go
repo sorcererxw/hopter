@@ -103,6 +103,10 @@ func (f *fakeRuntime) ReadAccountRateLimits() (string, error) {
 	return "", nil
 }
 
+func (f *fakeRuntime) ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error) {
+	return core.AgentAccountRateLimits{}, nil
+}
+
 func (f *fakeRuntime) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
 	return core.SessionMeta{Session: f.getSession, Project: f.getProject}, nil
 }

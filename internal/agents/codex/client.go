@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	codexsdk "github.com/pmenglund/codex-sdk-go"
 	"github.com/pmenglund/codex-sdk-go/protocol"
@@ -194,10 +196,12 @@ type ReadThreadTurn struct {
 }
 
 type readAccountRateLimitsResponse struct {
-	RateLimits accountRateLimits `json:"rateLimits"`
+	RateLimits          accountRateLimits            `json:"rateLimits"`
+	RateLimitsByLimitID map[string]accountRateLimits `json:"rateLimitsByLimitId"`
 }
 
 type accountRateLimits struct {
+	LimitID   *string                   `json:"limitId"`
 	Credits   *protocol.CreditsSnapshot `json:"credits"`
 	LimitName *string                   `json:"limitName"`
 	PlanType  interface{}               `json:"planType"`
@@ -375,7 +379,15 @@ func (c *Client) ReadAccountRateLimits() (string, error) {
 	if err := c.call(protocolMethodAccountRateLimitsRead, nil, &out); err != nil {
 		return "", err
 	}
-	return accountRateLimitsSummary(out.RateLimits), nil
+	return accountRateLimitsResponseSummary(out), nil
+}
+
+func (c *Client) ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error) {
+	var out readAccountRateLimitsResponse
+	if err := c.call(protocolMethodAccountRateLimitsRead, nil, &out); err != nil {
+		return core.AgentAccountRateLimits{}, err
+	}
+	return accountRateLimitsResponseStatus(out), nil
 }
 
 func (c *Client) ResumeThread(threadID, cwd string, options core.SessionTurnOptions) (*ResumeThreadResult, error) {
@@ -524,34 +536,193 @@ func optionalString(value string) *string {
 	return &value
 }
 
-func accountRateLimitsSummary(rateLimits accountRateLimits) string {
+func accountRateLimitsResponseSummary(response readAccountRateLimitsResponse) string {
+	if len(response.RateLimitsByLimitID) == 0 {
+		return accountRateLimitsSummary(response.RateLimits, false)
+	}
+
+	primaryID := strings.TrimSpace(pointerValue(response.RateLimits.LimitID))
+	if primaryID == "" {
+		primaryID = "codex"
+	}
+	parts := make([]string, 0, len(response.RateLimitsByLimitID))
+	if primary, ok := response.RateLimitsByLimitID[primaryID]; ok {
+		if summary := accountRateLimitsSummary(primary, false); summary != "" {
+			parts = append(parts, summary)
+		}
+	}
+
+	ids := make([]string, 0, len(response.RateLimitsByLimitID))
+	for id := range response.RateLimitsByLimitID {
+		if id != primaryID {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		bucket := response.RateLimitsByLimitID[id]
+		if summary := accountRateLimitsSummary(bucket, true); summary != "" {
+			parts = append(parts, summary)
+		}
+	}
+
+	return strings.Join(parts, " · ")
+}
+
+func accountRateLimitsResponseStatus(response readAccountRateLimitsResponse) core.AgentAccountRateLimits {
+	primaryID := strings.TrimSpace(pointerValue(response.RateLimits.LimitID))
+	if primaryID == "" {
+		primaryID = "codex"
+	}
+
+	status := core.AgentAccountRateLimits{
+		PlanType: formatPlanType(response.RateLimits.PlanType),
+	}
+	if len(response.RateLimitsByLimitID) == 0 {
+		status.Windows = accountRateLimitWindows(response.RateLimits, false)
+		return status
+	}
+
+	if primary, ok := response.RateLimitsByLimitID[primaryID]; ok {
+		if status.PlanType == "" {
+			status.PlanType = formatPlanType(primary.PlanType)
+		}
+		status.Windows = append(status.Windows, accountRateLimitWindows(primary, false)...)
+	}
+
+	ids := make([]string, 0, len(response.RateLimitsByLimitID))
+	for id := range response.RateLimitsByLimitID {
+		if id != primaryID {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		status.Windows = append(status.Windows, accountRateLimitWindows(response.RateLimitsByLimitID[id], true)...)
+	}
+	return status
+}
+
+func accountRateLimitWindows(rateLimits accountRateLimits, includeName bool) []core.AgentRateLimitWindow {
+	name := ""
+	if includeName {
+		name = strings.TrimSpace(pointerValue(rateLimits.LimitName))
+		if name == "" {
+			name = strings.TrimSpace(pointerValue(rateLimits.LimitID))
+		}
+	}
+	windows := make([]core.AgentRateLimitWindow, 0, 2)
+	if window := accountRateLimitWindow(rateLimits.Primary, name); window != nil {
+		windows = append(windows, *window)
+	}
+	if window := accountRateLimitWindow(rateLimits.Secondary, name); window != nil {
+		windows = append(windows, *window)
+	}
+	return windows
+}
+
+func accountRateLimitWindow(window *protocol.RateLimitWindow, label string) *core.AgentRateLimitWindow {
+	if window == nil {
+		return nil
+	}
+	if window.UsedPercent == 0 && window.ResetsAt == nil && window.WindowDurationMins == nil {
+		return nil
+	}
+	result := core.AgentRateLimitWindow{
+		Label:       label,
+		UsedPercent: uint32(max(window.UsedPercent, 0)),
+	}
+	if window.WindowDurationMins != nil && *window.WindowDurationMins > 0 {
+		result.WindowDurationMins = uint32(*window.WindowDurationMins)
+	}
+	if window.ResetsAt != nil && *window.ResetsAt > 0 {
+		result.ResetsAt = time.Unix(int64(*window.ResetsAt), 0)
+	}
+	return &result
+}
+
+func accountRateLimitsSummary(rateLimits accountRateLimits, includeName bool) string {
+	parts := make([]string, 0, 4)
+	if plan := formatPlanType(rateLimits.PlanType); plan != "" && !includeName {
+		parts = append(parts, plan)
+	}
+
+	if includeName {
+		if name := strings.TrimSpace(pointerValue(rateLimits.LimitName)); name != "" {
+			parts = append(parts, name)
+		} else if id := strings.TrimSpace(pointerValue(rateLimits.LimitID)); id != "" {
+			parts = append(parts, id)
+		}
+	}
+
 	if rateLimits.Credits != nil {
 		if rateLimits.Credits.Unlimited {
-			return "Unlimited"
+			parts = append(parts, "unlimited credits")
 		}
-		if rateLimits.Credits.Balance != nil {
+		if rateLimits.Credits.HasCredits && rateLimits.Credits.Balance != nil {
 			if balance := strings.TrimSpace(*rateLimits.Credits.Balance); balance != "" {
-				return "Balance " + balance
+				parts = append(parts, "credits "+balance)
 			}
 		}
-		if !rateLimits.Credits.HasCredits {
-			return "No credits"
+		if len(parts) == 0 && !rateLimits.Credits.HasCredits {
+			parts = append(parts, "no credits")
 		}
 	}
 
 	if rateLimits.Primary != nil && (rateLimits.Primary.UsedPercent > 0 || rateLimits.Primary.ResetsAt != nil || rateLimits.Primary.WindowDurationMins != nil) {
-		return fmt.Sprintf("Primary used %d%%", rateLimits.Primary.UsedPercent)
+		parts = append(parts, formatRateLimitWindow(rateLimits.Primary))
 	}
 	if rateLimits.Secondary != nil && (rateLimits.Secondary.UsedPercent > 0 || rateLimits.Secondary.ResetsAt != nil || rateLimits.Secondary.WindowDurationMins != nil) {
-		return fmt.Sprintf("Secondary used %d%%", rateLimits.Secondary.UsedPercent)
+		parts = append(parts, formatRateLimitWindow(rateLimits.Secondary))
 	}
-	if rateLimits.PlanType != nil {
-		return fmt.Sprintf("%v", rateLimits.PlanType)
-	}
-	if rateLimits.LimitName != nil {
+
+	if len(parts) == 0 && rateLimits.LimitName != nil {
 		return strings.TrimSpace(*rateLimits.LimitName)
 	}
-	return ""
+	return strings.Join(parts, " · ")
+}
+
+func formatRateLimitWindow(window *protocol.RateLimitWindow) string {
+	prefix := "window"
+	if window != nil && window.WindowDurationMins != nil {
+		prefix = formatWindowDuration(*window.WindowDurationMins)
+	}
+	return fmt.Sprintf("%s %d%% used", prefix, window.UsedPercent)
+}
+
+func formatWindowDuration(minutes int) string {
+	if minutes <= 0 {
+		return "window"
+	}
+	if minutes%10080 == 0 {
+		weeks := minutes / 10080
+		if weeks == 1 {
+			return "7d"
+		}
+		return fmt.Sprintf("%dw", weeks)
+	}
+	if minutes%1440 == 0 {
+		return fmt.Sprintf("%dd", minutes/1440)
+	}
+	if minutes%60 == 0 {
+		return fmt.Sprintf("%dh", minutes/60)
+	}
+	return fmt.Sprintf("%dm", minutes)
+}
+
+func formatPlanType(planType interface{}) string {
+	plan := strings.TrimSpace(fmt.Sprintf("%v", planType))
+	if plan == "" || plan == "<nil>" {
+		return ""
+	}
+	return strings.ToUpper(plan[:1]) + plan[1:]
+}
+
+func pointerValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func (c *Client) readThread(threadID string, includeTurns bool) (*ReadThreadResult, error) {

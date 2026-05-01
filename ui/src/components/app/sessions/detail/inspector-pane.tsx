@@ -1,5 +1,10 @@
 import { useTranslation } from "react-i18next"
-import { LoaderCircle, PanelRightClose, PanelRightOpen, X } from "@/components/icons/hugeicons"
+import {
+  LoaderCircle,
+  PanelRightClose,
+  PanelRightOpen,
+  X,
+} from "@/components/icons/hugeicons"
 import { Button } from "@heroui/react"
 
 import { ShikiCodeFrame } from "@/components/app/shared"
@@ -48,7 +53,7 @@ export function SessionInspectorPane({
   return (
     <aside
       className={cn(
-        "flex min-h-0 shrink-0 flex-col bg-surface text-sm font-medium text-foreground",
+        "flex min-h-0 shrink-0 flex-col bg-surface text-sm text-foreground",
         mobile ? "h-full w-full" : "h-full"
       )}
       data-testid="session-inspector-pane"
@@ -171,11 +176,11 @@ function FilePanel({
         <div className="truncate font-mono text-foreground">
           {file.displayPath || file.requestedPath}
         </div>
-        <div className="mt-1 truncate text-xs text-muted">
+        <div className="mt-1 truncate text-sm text-muted">
           {file.canonicalPath}
         </div>
         {file.truncated ? (
-          <div className="mt-2 text-xs text-amber-200/80">
+          <div className="mt-2 text-sm text-amber-200/80">
             {t("inspector.previewTruncated")}
           </div>
         ) : null}
@@ -230,7 +235,7 @@ function ReviewPanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {review.pendingTurnInProgress ? (
-        <div className="border-b border-border bg-surface-secondary px-4 py-2 text-xs text-muted">
+        <div className="border-b border-border bg-surface-secondary px-4 py-2 text-sm text-muted">
           {t("inspector.newerTurnRunningDetail")}
         </div>
       ) : null}
@@ -245,7 +250,7 @@ function ReviewPanel({
       ) : (
         <div className="flex min-h-0 flex-1">
           <div className="flex w-56 shrink-0 flex-col border-r border-border bg-overlay">
-            <div className="border-b border-border px-3 py-2 text-xs tracking-wide text-muted uppercase">
+            <div className="border-b border-border px-3 py-2 text-sm tracking-wide text-muted uppercase">
               {t("inspector.changedFiles")}
             </div>
             <div className="min-h-0 flex-1 overflow-auto p-2">
@@ -259,17 +264,17 @@ function ReviewPanel({
                       "flex w-full items-start gap-2 rounded-md px-2 py-2 text-left transition",
                       selectedFile?.path === file.path
                         ? "bg-surface-tertiary text-foreground"
-                        : "text-muted hover:bg-surface-tertiary hover:text-foreground"
+                        : "bg-surface-tertiary/0 text-muted hover:bg-surface-tertiary hover:text-foreground"
                     )}
                   >
-                    <span className="shrink-0 text-xs tracking-wide text-muted uppercase">
+                    <span className="shrink-0 text-sm tracking-wide text-muted uppercase">
                       {file.kind}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-mono text-xs text-foreground">
+                      <div className="truncate font-mono text-sm text-foreground">
                         {file.path}
                       </div>
-                      <div className="mt-1 text-xs text-muted">
+                      <div className="mt-1 text-sm text-muted">
                         +{file.additions} -{file.deletions}
                       </div>
                     </div>
@@ -286,7 +291,7 @@ function ReviewPanel({
                   <div className="truncate font-mono text-foreground">
                     {selectedFile.path}
                   </div>
-                  <div className="mt-1 text-xs text-muted">
+                  <div className="mt-1 text-sm text-muted">
                     {selectedFile.kind} · +{selectedFile.additions} -
                     {selectedFile.deletions}
                   </div>
@@ -326,7 +331,7 @@ function PanelLoading({ label }: { label: string }) {
 function PanelEmpty({ label }: { label: string }) {
   return (
     <div className="flex h-full items-center justify-center px-6">
-      <div className="max-w-sm rounded-lg border border-dashed border-border bg-surface-tertiary px-5 py-4 text-center leading-6 font-normal text-muted">
+      <div className="max-w-sm rounded-lg border border-dashed border-border bg-surface-tertiary px-5 py-4 text-center leading-6 text-muted">
         {label}
       </div>
     </div>
@@ -347,10 +352,10 @@ function PanelMessage({
   return (
     <div className="flex h-full items-center justify-center px-6">
       <div className="max-w-md rounded-lg border border-border bg-surface px-5 py-4">
-        <div className="text-base text-foreground">{title}</div>
-        <div className="mt-2 leading-6 font-normal text-muted">{body}</div>
+        <div className="text-foreground">{title}</div>
+        <div className="mt-2 leading-6 text-muted">{body}</div>
         {visibleMeta.length > 0 ? (
-          <div className="mt-3 space-y-1 text-xs leading-5 text-muted">
+          <div className="mt-3 space-y-1 text-sm leading-5 text-muted">
             {visibleMeta.map((item) => (
               <div key={item}>{item}</div>
             ))}
@@ -399,7 +404,7 @@ function ViewButton({
       variant={active ? "secondary" : "ghost"}
       size="sm"
       className={cn(
-        "h-6 gap-1 px-2.5 text-xs",
+        "h-6 gap-1 px-2.5 text-sm",
         active ? "text-foreground" : "text-muted"
       )}
     >

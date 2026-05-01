@@ -95,12 +95,12 @@ export function TasksRoute() {
       <div className="min-h-0 flex-1 overflow-hidden">
         <section className="mx-auto min-h-0 max-w-3xl overflow-y-auto p-4">
           <form className="group mb-5" onSubmit={handleSubmit}>
-            <div className="rounded-(--radius) border border-border bg-field/30 transition-colors">
+            <div className="rounded-lg border border-border bg-field/30 transition-colors">
               <TextArea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder={t("tasks.placeholder")}
-                className="min-h-28 rounded-(--radius) border-0 bg-transparent focus-visible:outline-none [&[data-focused='true']]:!border-border [&:focus]:!border-border [&[data-focus-visible='true']]:!border-border [&[data-focused='true']]:bg-transparent [&:focus]:bg-transparent [&[data-focus-visible='true']]:bg-transparent [&[data-focused='true']]:shadow-none [&:focus]:shadow-none [&[data-focus-visible='true']]:shadow-none"
+                className="min-h-28 rounded-lg border-0 bg-transparent focus:!border-border focus:bg-transparent focus:shadow-none focus-visible:outline-none [&[data-focus-visible='true']]:!border-border [&[data-focus-visible='true']]:bg-transparent [&[data-focus-visible='true']]:shadow-none [&[data-focused='true']]:!border-border [&[data-focused='true']]:bg-transparent [&[data-focused='true']]:shadow-none"
                 fullWidth
                 variant="secondary"
               />
@@ -126,11 +126,13 @@ export function TasksRoute() {
                       <ChevronDown className="size-4 text-muted" />
                     </Select.Indicator>
                   </Select.Trigger>
-                  <Select.Popover className="min-w-40 rounded-(--radius) bg-overlay p-1 shadow-2xl">
+                  <Select.Popover className="min-w-40 rounded-lg bg-overlay p-1 shadow-2xl">
                     <ListBox
                       selectionMode="single"
                       selectedKeys={
-                        selectedProjectId ? new Set([selectedProjectId]) : new Set()
+                        selectedProjectId
+                          ? new Set([selectedProjectId])
+                          : new Set()
                       }
                     >
                       {(projects ?? []).map((project) => (
@@ -182,8 +184,8 @@ export function TasksRoute() {
             {!tasksQuery.isLoading &&
             !tasksQuery.isError &&
             (tasksQuery.data?.length ?? 0) === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-(--radius) px-6 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-(--radius) bg-surface-secondary text-muted">
+              <div className="flex min-h-64 flex-col items-center justify-center rounded-lg px-6 text-center">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-surface-secondary text-muted">
                   <ListChecks className="size-5" />
                 </div>
                 <p className="text-sm text-foreground">
@@ -199,7 +201,7 @@ export function TasksRoute() {
               return (
                 <article
                   key={task.id}
-                  className="rounded-(--radius) border border-border bg-surface p-3"
+                  className="rounded-lg border border-border bg-surface p-3"
                 >
                   <div className="flex items-start gap-3">
                     {done ? (
@@ -214,7 +216,7 @@ export function TasksRoute() {
                         </h2>
                         <span
                           className={cn(
-                            "rounded-(--radius) border border-border px-1.5 py-0.5 text-xs text-muted",
+                            "rounded-lg border border-border px-1.5 py-0.5 text-sm text-muted",
                             task.lifecycleStatus ===
                               TaskLifecycleStatus.BLOCKED && "text-amber-400"
                           )}
@@ -222,12 +224,12 @@ export function TasksRoute() {
                           {formatTaskStatus(task.lifecycleStatus, t)}
                         </span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-muted">
+                      <p className="mt-1 truncate text-sm text-muted">
                         {task.project?.name || t("tasks.project")} ·{" "}
                         {formatUpdatedAt(task.updatedAt, resolvedLocale)}
                       </p>
                       {task.diagnostics.length > 0 ? (
-                        <p className="mt-2 text-xs text-muted">
+                        <p className="mt-2 text-sm text-muted">
                           {task.diagnostics[0]?.message}
                         </p>
                       ) : null}

@@ -24,6 +24,7 @@ type HostService struct {
 type hostAgentCatalog interface {
 	ListAgentModels(backendKey string, includeHidden bool) ([]core.AgentModel, error)
 	ReadAgentAccountRateLimits(backendKey string) (string, error)
+	ReadAgentAccountRateLimitStatus(backendKey string) (core.AgentAccountRateLimits, error)
 }
 
 type hostModelLister interface {
@@ -88,12 +89,39 @@ func (s *HostService) mapBackendStatus(backend core.Backend) *hopterv1.BackendSt
 	if quota := s.readBackendQuota(backend); quota != "" {
 		version = quota
 	}
+	quotaStatus := s.readBackendQuotaStatus(backend)
 	return &hopterv1.BackendStatus{
-		BackendKey: backend.Key,
-		Available:  backend.Available,
-		Version:    version,
-		Reason:     backend.Reason,
+		BackendKey:       backend.Key,
+		Available:        backend.Available,
+		Version:          version,
+		Reason:           backend.Reason,
+		PlanType:         quotaStatus.PlanType,
+		RateLimitWindows: mapBackendRateLimitWindows(quotaStatus.Windows),
 	}
+}
+
+func (s *HostService) readBackendQuotaStatus(backend core.Backend) core.AgentAccountRateLimits {
+	if !backend.Available || s.agents == nil {
+		return core.AgentAccountRateLimits{}
+	}
+	status, err := s.agents.ReadAgentAccountRateLimitStatus(backend.Key)
+	if err != nil {
+		return core.AgentAccountRateLimits{}
+	}
+	return status
+}
+
+func mapBackendRateLimitWindows(windows []core.AgentRateLimitWindow) []*hopterv1.BackendRateLimitWindow {
+	result := make([]*hopterv1.BackendRateLimitWindow, 0, len(windows))
+	for _, window := range windows {
+		result = append(result, &hopterv1.BackendRateLimitWindow{
+			Label:              window.Label,
+			UsedPercent:        window.UsedPercent,
+			WindowDurationMins: window.WindowDurationMins,
+			ResetsAt:           timestamp(window.ResetsAt),
+		})
+	}
+	return result
 }
 
 func (s *HostService) GetHostStatus(_ context.Context, _ *connect.Request[hopterv1.GetHostStatusRequest]) (*connect.Response[hopterv1.GetHostStatusResponse], error) {

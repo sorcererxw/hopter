@@ -206,14 +206,17 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
 
   const updateControl = getUpdateControl(updateStatus, applyUpdate.isPending)
   const railMutedTextClass = "text-muted"
-  const railNavRowClass = "text-muted hover:bg-background-tertiary"
+  const railNavRowClass =
+    "text-muted bg-background-tertiary/0 hover:bg-background-tertiary"
   const railActiveNavClass = "bg-background-tertiary text-foreground"
   const railActionCardClass =
     "border border-border bg-surface py-2.5 text-foreground shadow-sm shadow-black/5 hover:bg-background-tertiary"
   const railDirectoryRowClass =
-    "pr-10 text-muted group-hover:bg-background-tertiary hover:bg-background-tertiary"
-  const railSessionRowClass = "text-muted hover:bg-background-tertiary"
-  const railMutedRowHoverClass = "text-muted hover:bg-background-tertiary"
+    "pr-10 text-muted bg-background-tertiary/0 group-hover:bg-background-tertiary hover:bg-background-tertiary"
+  const railSessionRowClass =
+    "text-muted bg-background-tertiary/0 hover:bg-background-tertiary"
+  const railMutedRowHoverClass =
+    "text-muted bg-background-tertiary/0 hover:bg-background-tertiary"
   const railRootClass = "bg-background-secondary text-foreground"
 
   async function handleApplyUpdate() {
@@ -244,9 +247,9 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
     <Modal isOpen={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="cover">
-          <Modal.Dialog className="relative grid w-full max-w-[calc(100%-2rem)] gap-6 rounded-3xl bg-surface p-6 text-sm text-foreground ring-1 ring-border/60 outline-none sm:max-w-md">
+          <Modal.Dialog className="relative grid w-full max-w-[calc(100%-2rem)] gap-6 rounded-lg bg-surface p-6 text-sm text-foreground ring-1 ring-border/60 outline-none sm:max-w-md">
             <Modal.Header className="flex flex-col gap-2">
-              <Modal.Heading className="text-base leading-none font-medium">
+              <Modal.Heading className="leading-none">
                 {t("rail.upgradeDialogTitle")}
               </Modal.Heading>
               <Description className={cn("text-sm", railMutedTextClass)}>
@@ -256,14 +259,14 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
             <Modal.CloseTrigger
               aria-label="Close"
               className={cn(
-                "absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg transition hover:bg-surface-tertiary",
+                "absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg bg-surface-tertiary/0 transition hover:bg-surface-tertiary",
                 railMutedTextClass,
                 "hover:text-foreground"
               )}
             >
               <X className="size-4" />
             </Modal.CloseTrigger>
-            <div className="rounded-xl border border-border bg-background p-3 font-mono text-xs text-foreground">
+            <div className="rounded-lg border border-border bg-background p-3 font-mono text-sm text-foreground">
               {updateStatus?.upgradeCommandHint || t("rail.noUpgradeCommand")}
             </div>
             <Modal.Footer className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -324,10 +327,10 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
 
   return (
     <div
-      className={cn("flex h-full flex-col text-base", railRootClass)}
+      className={cn("flex h-full flex-col", railRootClass)}
       data-testid="session-rail"
     >
-      <div className="shrink-0 px-2 pt-2 font-medium">
+      <div className="shrink-0 px-2 pt-2">
         <ul className="flex flex-col gap-2">
           <li>{newSessionRow}</li>
         </ul>
@@ -337,7 +340,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
         <ScrollShadow
           onScroll={handleRailScroll}
           className={cn(
-            "h-full px-2 py-3 font-medium",
+            "h-full px-2 py-3",
             railScrolling
               ? workspaceScrollbarClassName
               : hiddenScrollbarClassName
@@ -417,7 +420,7 @@ export function SessionRail({ onNavigate }: SessionRailProps) {
         </ScrollShadow>
       </div>
 
-      <div className="shrink-0 px-2 py-2 font-medium">
+      <div className="shrink-0 px-2 py-2">
         <ul>
           <li>{settingsRow}</li>
         </ul>
@@ -502,7 +505,7 @@ function RecentSessionsDirectory({
                     <span className="truncate">
                       {session.title || t("rail.untitledSession")}
                     </span>
-                    <span className="truncate text-xs leading-4 text-muted/70">
+                    <span className="truncate text-sm leading-4 text-muted/70">
                       {session.project?.name || t("rail.unassigned")}
                     </span>
                   </span>

@@ -21,6 +21,11 @@ import {
   useUpdateConfig,
   type ComposerSendShortcutPreference,
 } from "@/features/config/use-config"
+import type {
+  BackendRateLimitWindow,
+  BackendStatus,
+} from "@/gen/proto/hopter/v1/host_pb"
+import { timestampToDate } from "@/lib/format/proto"
 import { useLocale } from "@/lib/i18n/provider"
 import { cn } from "@/lib/utils"
 
@@ -86,7 +91,7 @@ function SettingsSection({
 }) {
   return (
     <section id={id} className="scroll-mt-16">
-      <h2 className="mb-3 text-base leading-tight text-foreground">{title}</h2>
+      <h2 className="mb-3 leading-tight text-foreground">{title}</h2>
       {children}
     </section>
   )
@@ -134,6 +139,85 @@ function backendQuotaLabel(
     : t("app.settings.quotaUnavailable")
 }
 
+function formatRateLimitDuration(minutes: number, locale: string) {
+  const isChinese = locale === "zh-CN"
+  if (minutes >= 10080 && minutes % 10080 === 0) {
+    const weeks = minutes / 10080
+    return isChinese ? `${weeks} 周` : `${weeks} wk`
+  }
+  if (minutes >= 1440 && minutes % 1440 === 0) {
+    const days = minutes / 1440
+    return isChinese ? `${days} 天` : `${days} d`
+  }
+  if (minutes >= 60 && minutes % 60 === 0) {
+    const hours = minutes / 60
+    return isChinese ? `${hours} 小时` : `${hours} h`
+  }
+  return isChinese ? `${minutes} 分钟` : `${minutes} min`
+}
+
+function formatRateLimitResetAt(
+  window: BackendRateLimitWindow,
+  locale: string
+) {
+  const date = timestampToDate(window.resetsAt)
+  if (!date) {
+    return ""
+  }
+  const now = new Date()
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  if (sameDay) {
+    return new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date)
+  }
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+  }).format(date)
+}
+
+function formatRemainingPercent(usedPercent: number) {
+  return `${Math.max(0, Math.min(100, 100 - usedPercent))}%`
+}
+
+function BackendQuotaDisplay({
+  backend,
+  locale,
+  t,
+}: {
+  backend: BackendStatus
+  locale: string
+  t: TFunction
+}) {
+  const windows = backend.rateLimitWindows
+  if (windows.length === 0) {
+    return (
+      <div className="mt-1 text-muted">
+        {t("app.settings.remainingQuota")}:{" "}
+        <span className="text-muted">{backendQuotaLabel(backend, t)}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-0.5 grid gap-1 text-muted">
+      {windows.slice(0, 2).map((window) => (
+        <div key={`${window.label}-${window.windowDurationMins}`}>
+          {formatRateLimitDuration(window.windowDurationMins, locale)} |{" "}
+          {t("app.settings.remaining")}{" "}
+          {formatRemainingPercent(window.usedPercent)} |{" "}
+          {t("app.settings.resets")} {formatRateLimitResetAt(window, locale)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SettingsSelect({
   ariaLabel,
   isDisabled = false,
@@ -167,7 +251,7 @@ function SettingsSelect({
           <ChevronDown className="size-4 text-muted" />
         </Select.Indicator>
       </Select.Trigger>
-      <Select.Popover className="min-w-40 rounded-2xl border border-border bg-overlay p-1 shadow-2xl">
+      <Select.Popover className="min-w-40 rounded-lg border border-border bg-overlay p-1 shadow-2xl">
         <ListBox>
           {options.map((option) => (
             <ListBox.Item
@@ -195,7 +279,7 @@ export function SettingsRoute() {
   const { t } = useTranslation()
   const location = useLocation()
   const { resolvedTheme, theme, setTheme } = useTheme()
-  const { locale, setLocale } = useLocale()
+  const { locale, resolvedLocale, setLocale } = useLocale()
   const configQuery = useConfig()
   const updateConfig = useUpdateConfig()
   const { data: hostStatus, isLoading: hostStatusLoading } = useHostStatus()
@@ -375,19 +459,18 @@ export function SettingsRoute() {
               >
                 {backends.map((backend) => (
                   <div key={backend.backendKey} className="px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm text-foreground">
+                        <div className="truncate text-foreground">
                           {backend.backendKey}
                         </div>
-                        <div className="mt-1 text-xs text-muted">
-                          {t("app.settings.planQuota")}:{" "}
-                          <span className="text-muted">
-                            {backendQuotaLabel(backend, t)}
-                          </span>
-                        </div>
+                        <BackendQuotaDisplay
+                          backend={backend}
+                          locale={resolvedLocale}
+                          t={t}
+                        />
                       </div>
-                      <div className="flex shrink-0 items-center gap-2 text-sm">
+                      <div className="flex shrink-0 items-center gap-2 pt-0.5">
                         <span
                           className={cn(
                             "size-2 rounded-full",

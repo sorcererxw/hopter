@@ -69,7 +69,7 @@ export function SessionArtifactWorkspace({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-medium text-foreground">
+          <div className="text-sm text-foreground">
             {t("artifact.artifacts")}
           </div>
           <div className="text-sm text-muted">{t("artifact.description")}</div>
@@ -98,7 +98,7 @@ export function SessionArtifactWorkspace({
               <Chip
                 size="sm"
                 variant="secondary"
-                className="shrink-0 border-border text-[11px] text-muted"
+                className="shrink-0 border-border text-sm text-muted"
               >
                 {formatArtifactKind(artifact.kind, t)}
               </Chip>
@@ -167,9 +167,7 @@ function ArtifactPreviewPanel({
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
-          <div className="truncate text-base font-medium text-foreground">
-            {artifact.label}
-          </div>
+          <div className="truncate text-foreground">{artifact.label}</div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             <span>{formatArtifactKind(artifact.kind, t)}</span>
             {artifact.createdAt ? (
@@ -212,13 +210,13 @@ function ArtifactPreviewPanel({
         </div>
       </div>
 
-      <div className="min-h-[220px] px-4 py-4">
+      <div className="min-h-56 px-4 py-4">
         {artifact.kind === ArtifactKind.SCREENSHOT ? (
           canUseDownloadUrl && !imageFailed ? (
             <SessionImage
               src={resolvedDownloadImage.src}
               alt={artifact.label}
-              className="max-h-[480px] w-full rounded-md border border-border object-contain"
+              className="max-h-[min(30rem,50dvh)] w-full rounded-md border border-border object-contain"
               onError={() => setImageFailed(true)}
             />
           ) : (
@@ -269,10 +267,7 @@ function renderTextArtifactPreview(
   switch (artifact.kind) {
     case ArtifactKind.SUMMARY:
       return (
-        <SessionRichText
-          text={text.trim() || t("artifact.summaryFallback")}
-          className="text-base"
-        />
+        <SessionRichText text={text.trim() || t("artifact.summaryFallback")} />
       )
     case ArtifactKind.CHANGED_FILES:
       return changedFiles.length > 0 ? (
@@ -306,7 +301,7 @@ function renderTextArtifactPreview(
           {onOpenReview ? (
             <div className="text-sm text-muted">
               {t("artifact.needDiffDetail")}{" "}
-              <span className="font-medium text-foreground">
+              <span className="text-foreground">
                 {t("artifact.openReview")}
               </span>
             </div>
@@ -345,7 +340,7 @@ function renderTextArtifactPreview(
 
 function ArtifactPreviewLoading({ label }: { label: string }) {
   return (
-    <div className="flex min-h-[180px] items-center justify-center gap-2 text-sm text-muted">
+    <div className="flex min-h-44 items-center justify-center gap-2 text-sm text-muted">
       <LoaderCircle className="size-4 animate-spin" />
       <span>{label}</span>
     </div>
@@ -360,9 +355,9 @@ function ArtifactPreviewEmpty({
   title: string
 }) {
   return (
-    <div className="flex min-h-[180px] flex-col items-center justify-center text-center">
-      <div className="text-base font-medium text-foreground">{title}</div>
-      <div className="mt-2 max-w-[480px] text-sm text-muted">{body}</div>
+    <div className="flex min-h-44 flex-col items-center justify-center text-center">
+      <div className="text-foreground">{title}</div>
+      <div className="mt-2 max-w-lg text-sm text-muted">{body}</div>
     </div>
   )
 }

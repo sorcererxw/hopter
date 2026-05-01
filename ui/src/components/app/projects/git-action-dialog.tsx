@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { GitBranch, LoaderCircle, RotateCcw, X } from "@/components/icons/hugeicons"
+import {
+  GitBranch,
+  LoaderCircle,
+  RotateCcw,
+  X,
+} from "@/components/icons/hugeicons"
 import { toast } from "sonner"
 import { Button, Chip, Description, Modal } from "@heroui/react"
 
@@ -118,11 +123,11 @@ export function ProjectGitActionDialog({
       <Modal.Backdrop variant="opaque">
         <Modal.Container size="cover">
           <Modal.Dialog
-            className="relative grid max-h-[min(720px,calc(100vh-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-hidden rounded-3xl bg-overlay p-6 text-sm text-overlay-foreground ring-1 ring-foreground/5 outline-none sm:max-w-2xl"
+            className="relative grid max-h-dvh w-full max-w-[calc(100%-2rem)] gap-4 overflow-hidden rounded-lg bg-overlay p-6 text-sm text-overlay-foreground ring-1 ring-foreground/5 outline-none sm:max-w-2xl"
             data-testid="project-git-action-dialog"
           >
             <Modal.Header className="flex flex-col gap-2">
-              <Modal.Heading className="font-heading text-base leading-none">
+              <Modal.Heading className="font-heading leading-none">
                 {t("git.commitRepositoryChanges")}
               </Modal.Heading>
               <Description className="text-sm text-muted">
@@ -131,7 +136,7 @@ export function ProjectGitActionDialog({
             </Modal.Header>
             <Modal.CloseTrigger
               aria-label="Close"
-              className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-surface-tertiary hover:text-foreground"
+              className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg bg-surface-tertiary/0 text-muted transition hover:bg-surface-tertiary hover:text-foreground"
             >
               <X className="size-4" />
             </Modal.CloseTrigger>
@@ -256,13 +261,13 @@ function RepositorySummary({ status }: { status: ProjectGitStatus }) {
           </span>
         ) : null}
         {status.headShortSha ? (
-          <span className="font-mono text-xs text-muted">
+          <span className="font-mono text-sm text-muted">
             {status.headShortSha}
           </span>
         ) : null}
       </div>
-      <div className="mt-2 text-xs text-muted">{status.rootPath}</div>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted">
+      <div className="mt-2 text-sm text-muted">{status.rootPath}</div>
+      <div className="mt-2 flex flex-wrap gap-2 text-sm text-muted">
         <span>{t("git.dirtyFiles", { count: status.files.length })}</span>
         {status.upstream ? (
           <span>{t("git.upstream", { name: status.upstream })}</span>
@@ -320,7 +325,7 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
         >
           <span
             className={cn(
-              "w-20 shrink-0 text-xs",
+              "w-20 shrink-0 text-sm",
               file.status === GitFileStatus.CONFLICTED
                 ? "text-danger"
                 : "text-muted"
@@ -328,7 +333,7 @@ function FileList({ files }: { files: ProjectGitStatus["files"] }) {
           >
             {formatFileStatus(file.status, t)}
           </span>
-          <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+          <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">
             {file.oldPath ? `${file.oldPath} -> ${file.path}` : file.path}
           </span>
           {file.partiallyStaged ? (

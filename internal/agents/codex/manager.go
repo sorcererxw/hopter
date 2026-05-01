@@ -98,6 +98,7 @@ type codexClient interface {
 	Close() error
 	InterruptTurn(threadID, turnID string) error
 	ReadAccountRateLimits() (string, error)
+	ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error)
 	ListModels(includeHidden bool) (*ModelListResult, error)
 	ListThreads(cwd string, limit uint32) (*ThreadListResult, error)
 	ReadThread(threadID string) (*ReadThreadResult, error)
@@ -175,6 +176,16 @@ func (m *Manager) ReadAccountRateLimits() (string, error) {
 	defer client.Close()
 
 	return client.ReadAccountRateLimits()
+}
+
+func (m *Manager) ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error) {
+	client, _, err := m.startEphemeralClient()
+	if err != nil {
+		return core.AgentAccountRateLimits{}, err
+	}
+	defer client.Close()
+
+	return client.ReadAccountRateLimitStatus()
 }
 
 func modelRecordToCore(item ModelRecord) core.AgentModel {

@@ -21,31 +21,21 @@ export function SessionConnectionBlock({
   return (
     <section
       className={cn(
-        "rounded-2xl border px-4 py-3 shadow-sm",
+        "rounded-lg border px-4 py-3 shadow-sm",
         display.containerClassName
       )}
       data-testid="session-connection-block"
       aria-label={display.title}
     >
       <div
-        className={cn(
-          "text-xs font-semibold uppercase",
-          display.titleClassName
-        )}
+        className={cn("text-sm font-bold uppercase", display.titleClassName)}
       >
         {display.title}
       </div>
-      <p
-        className={cn(
-          "mt-2 text-sm leading-6 font-medium",
-          display.bodyClassName
-        )}
-      >
+      <p className={cn("mt-2 text-sm leading-6", display.bodyClassName)}>
         {display.body}
       </p>
-      <p className="mt-2 text-sm leading-6 text-muted">
-        {display.detail}
-      </p>
+      <p className="mt-2 text-sm leading-6 text-muted">{display.detail}</p>
     </section>
   )
 }
@@ -116,7 +106,7 @@ export function SessionAttentionBlock({
   return (
     <section
       className={cn(
-        "rounded-2xl border px-4 py-3 shadow-sm",
+        "rounded-lg border px-4 py-3 shadow-sm",
         attention.containerClassName
       )}
       data-testid="session-attention-block"
@@ -124,27 +114,23 @@ export function SessionAttentionBlock({
     >
       <div
         className={cn(
-          "mb-1 text-xs font-semibold uppercase",
+          "mb-1 text-sm font-bold uppercase",
           attention.titleClassName
         )}
       >
         {attention.title}
       </div>
-      <p
-        className={cn("text-sm leading-6 font-medium", attention.bodyClassName)}
-      >
+      <p className={cn("text-sm leading-6", attention.bodyClassName)}>
         {attention.body}
       </p>
       {attention.detail ? (
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {attention.detail}
-        </p>
+        <p className="mt-2 text-sm leading-6 text-muted">{attention.detail}</p>
       ) : null}
       {session.pendingApprovalId ? (
         <div className="mt-3 flex gap-2">
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 text-sm font-medium text-emerald-700 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-100"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 text-sm text-emerald-700 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50 dark:text-emerald-100"
             disabled={responding}
             onClick={onApprove}
           >
@@ -152,7 +138,7 @@ export function SessionAttentionBlock({
           </button>
           <button
             type="button"
-            className="inline-flex h-8 items-center justify-center rounded-full border border-border bg-surface px-3 text-sm font-medium text-foreground transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-border bg-surface px-3 text-sm text-foreground transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-50"
             disabled={responding}
             onClick={onReject}
           >

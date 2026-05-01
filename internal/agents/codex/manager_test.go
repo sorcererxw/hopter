@@ -73,6 +73,10 @@ func (f *fakeCodexClient) ReadAccountRateLimits() (string, error) {
 	return "", nil
 }
 
+func (f *fakeCodexClient) ReadAccountRateLimitStatus() (core.AgentAccountRateLimits, error) {
+	return core.AgentAccountRateLimits{}, nil
+}
+
 func (f *fakeCodexClient) ListThreads(_ string, _ uint32) (*ThreadListResult, error) {
 	f.listThreadsCalls++
 	if f.listResult != nil {

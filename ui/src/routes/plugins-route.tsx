@@ -77,14 +77,14 @@ export function PluginsRoute() {
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           <div className="flex flex-wrap gap-4">
             <div className="flex items-baseline gap-2">
-              <span className="text-lg text-foreground">{totalSkills}</span>
-              <span className="text-sm font-normal text-muted">
+              <span className="text-foreground">{totalSkills}</span>
+              <span className="text-sm text-muted">
                 {t("plugins.skillCount", { count: totalSkills })}
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-lg text-foreground">{totalMCP}</span>
-              <span className="text-sm font-normal text-muted">
+              <span className="text-foreground">{totalMCP}</span>
+              <span className="text-sm text-muted">
                 {t("plugins.serverCount", { count: totalMCP })}
               </span>
             </div>
@@ -104,17 +104,17 @@ export function PluginsRoute() {
           </div>
 
           {pluginsLoading ? (
-            <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted">
+            <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
               {t("plugins.loading")}
             </div>
           ) : !hasPluginResults && isSearching ? (
-            <div className="rounded-lg border border-border py-8 text-center text-sm font-normal text-muted">
+            <div className="rounded-lg border border-border py-8 text-center text-sm text-muted">
               {t("plugins.noResults", { query: search })}
             </div>
           ) : (
             <>
               <section id="skills" className="scroll-mt-16">
-                <h2 className="mb-3 text-xs tracking-wider text-muted uppercase">
+                <h2 className="mb-3 text-sm tracking-wider text-muted uppercase">
                   {t("plugins.skills")}
                 </h2>
                 {filteredSkills.length > 0 ? (
@@ -128,7 +128,7 @@ export function PluginsRoute() {
                           {skill.name}
                         </div>
                         {skill.description ? (
-                          <div className="mt-0.5 text-sm font-normal text-muted">
+                          <div className="mt-0.5 text-sm text-muted">
                             {skill.description}
                           </div>
                         ) : null}
@@ -136,14 +136,14 @@ export function PluginsRoute() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-border py-6 text-center text-sm font-normal text-muted">
+                  <div className="rounded-lg border border-border py-6 text-center text-sm text-muted">
                     {t("plugins.noSkills")}
                   </div>
                 )}
               </section>
 
               <section id="mcp" className="scroll-mt-16">
-                <h2 className="mb-3 text-xs tracking-wider text-muted uppercase">
+                <h2 className="mb-3 text-sm tracking-wider text-muted uppercase">
                   {t("plugins.mcpServers")}
                 </h2>
                 {filteredMCP.length > 0 ? (
@@ -170,7 +170,7 @@ export function PluginsRoute() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-border py-6 text-center text-sm font-normal text-muted">
+                  <div className="rounded-lg border border-border py-6 text-center text-sm text-muted">
                     {t("plugins.noMcpServers")}
                   </div>
                 )}

@@ -41,8 +41,8 @@ export function RelayCallbackRoute() {
         </Card.Header>
         <Card.Content className="space-y-5 text-sm">
           {workspaceURL ? (
-            <div className="rounded-(--radius) border border-border bg-surface-secondary p-3">
-              <div className="mb-1 text-xs text-muted">
+            <div className="rounded-lg border border-border bg-surface-secondary p-3">
+              <div className="mb-1 text-sm text-muted">
                 {t("relayCallback.workspace")}
               </div>
               <div className="break-all text-foreground">{workspaceURL}</div>

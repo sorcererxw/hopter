@@ -28,6 +28,15 @@ message BackendStatus {
   bool available = 2;
   string version = 3;
   string reason = 4;
+  repeated BackendRateLimitWindow rate_limit_windows = 5;
+  string plan_type = 6;
+}
+
+message BackendRateLimitWindow {
+  string label = 1;
+  uint32 used_percent = 2;
+  uint32 window_duration_mins = 3;
+  google.protobuf.Timestamp resets_at = 4;
 }
 
 message HostStatus {

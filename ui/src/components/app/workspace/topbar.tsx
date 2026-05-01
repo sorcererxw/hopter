@@ -185,7 +185,7 @@ export function WorkspaceTopbar({
           <div className="flex min-w-0 items-center gap-2">
             {leadingButton}
             <div className="min-w-0">
-              <p className="truncate text-base text-foreground">{title}</p>
+              <p className="truncate text-foreground">{title}</p>
               {projectName ? (
                 <p className="truncate text-muted">{projectName}</p>
               ) : null}
@@ -281,7 +281,7 @@ export function WorkspaceTopbar({
         <>
           <div className="flex min-w-0 items-center gap-2">
             {leadingButton}
-            <h1 className="truncate text-base text-foreground">{title}</h1>
+            <h1 className="truncate text-foreground">{title}</h1>
             {projectName ? (
               <span className="truncate text-muted">{projectName}</span>
             ) : null}
@@ -341,7 +341,7 @@ export function WorkspaceTopbar({
                       className="fixed inset-0 z-40"
                       onClick={() => setCommitOpen(false)}
                     />
-                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-xl border border-border bg-surface py-1 shadow-lg shadow-black/5">
+                    <div className="absolute top-full right-0 z-50 mt-1 w-44 rounded-lg border border-border bg-surface py-1 shadow-lg shadow-black/5">
                       <CommitMenuItem
                         onClick={() => {
                           setCommitOpen(false)
@@ -369,9 +369,7 @@ export function WorkspaceTopbar({
                 type="button"
                 variant={showCommit ? "ghost" : "secondary"}
                 onPress={onOpenReview}
-                className={cn(
-                  showCommit ? "text-muted" : "text-foreground"
-                )}
+                className={cn(showCommit ? "text-muted" : "text-foreground")}
               >
                 {t("topbar.review")}
               </Button>
@@ -395,9 +393,7 @@ export function WorkspaceTopbar({
                 isIconOnly
                 onPress={onToggleInspector}
                 aria-label={sidebarLabel}
-                className={cn(
-                  inspectorOpen ? "text-foreground" : "text-muted"
-                )}
+                className={cn(inspectorOpen ? "text-foreground" : "text-muted")}
               >
                 <PanelRight className="size-3.5" />
               </Button>

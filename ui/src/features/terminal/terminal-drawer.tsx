@@ -233,7 +233,7 @@ export function SessionTerminalDrawer({
           data-testid="session-terminal-header"
         >
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs text-muted">
+            <div className="flex items-center gap-2 text-sm text-muted">
               <span className="font-mono text-foreground">
                 {header?.shell || "shell"}
               </span>
@@ -241,7 +241,7 @@ export function SessionTerminalDrawer({
               <span>{header?.status || t("terminal.starting")}</span>
             </div>
             {showRunningSummary ? (
-              <div className="truncate pt-1 text-xs text-muted">
+              <div className="truncate pt-1 text-sm text-muted">
                 {t("terminal.running", { command: header?.commandSummary })}
               </div>
             ) : null}
@@ -378,7 +378,7 @@ function StatePanel({
       <div className="rounded-lg border border-border bg-surface px-6 py-4 text-center">
         <div className="text-foreground">{label}</div>
         {description ? (
-          <div className="pt-1 font-normal text-muted">{description}</div>
+          <div className="pt-1 text-muted">{description}</div>
         ) : null}
         {actionLabel && onAction ? (
           <Button
@@ -412,9 +412,7 @@ function InlineBanner({
       <div className="min-w-0">
         <div className="text-foreground">{label}</div>
         {description ? (
-          <div className="truncate text-xs font-normal text-muted">
-            {description}
-          </div>
+          <div className="truncate text-sm text-muted">{description}</div>
         ) : null}
       </div>
       {actionLabel && onAction ? (

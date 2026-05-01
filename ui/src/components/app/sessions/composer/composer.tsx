@@ -39,7 +39,6 @@ import {
   Header,
   Label,
   Separator,
-  Switch,
   Tooltip,
 } from "@heroui/react"
 
@@ -96,7 +95,7 @@ const SkillMention = Node.create({
         "data-testid": "composer-skill-highlight",
         "data-skill-reference": reference,
         class:
-          "inline-flex items-center rounded-md bg-accent px-1 py-0.5 font-semibold whitespace-nowrap text-accent-foreground",
+          "inline-flex items-center rounded-md bg-accent px-1 py-0.5 font-bold whitespace-nowrap text-accent-foreground",
       }),
       name || reference || "skill",
     ]
@@ -299,7 +298,7 @@ export function SessionComposer({
           "aria-label": placeholder,
           "data-testid": inputTestId ?? "",
           class:
-            "min-h-14 w-full outline-none text-base leading-relaxed text-foreground [&_.is-empty::before]:pointer-events-none [&_.is-empty::before]:float-left [&_.is-empty::before]:h-0 [&_.is-empty::before]:text-field-placeholder [&_.is-empty::before]:content-[attr(data-placeholder)] [&_p]:m-0",
+            "min-h-14 w-full outline-none leading-relaxed text-foreground [&_.is-empty::before]:pointer-events-none [&_.is-empty::before]:float-left [&_.is-empty::before]:h-0 [&_.is-empty::before]:text-field-placeholder [&_.is-empty::before]:content-[attr(data-placeholder)] [&_p]:m-0",
         },
       },
       extensions: [
@@ -662,7 +661,8 @@ export function SessionComposer({
             <Card
               className={cn(
                 "w-full max-w-full min-w-0 overflow-hidden",
-                workspaceCardClassName
+                workspaceCardClassName,
+                "rounded-lg"
               )}
             >
               <Card.Content>
@@ -684,14 +684,14 @@ export function SessionComposer({
                         {attachments.map((attachment) => (
                           <div
                             key={attachment.id}
-                            className="flex max-w-full items-center gap-2 rounded-xl border border-border bg-background px-2 py-1 text-xs text-foreground"
+                            className="flex max-w-full items-center gap-2 rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground"
                           >
                             <SessionImage
                               src={attachment.url}
                               alt=""
                               className="size-6 rounded-md object-cover"
                               fallback={
-                                <span className="inline-flex size-6 items-center justify-center rounded-md border border-border bg-surface-secondary text-xs font-medium text-muted">
+                                <span className="inline-flex size-6 items-center justify-center rounded-md border border-border bg-surface-secondary text-sm text-muted">
                                   +
                                 </span>
                               }
@@ -713,7 +713,7 @@ export function SessionComposer({
                       </div>
                     ) : null}
                     {attachmentError ? (
-                      <div className="mt-2 text-xs text-amber-400">
+                      <div className="mt-2 text-sm text-amber-400">
                         {attachmentError}
                       </div>
                     ) : null}
@@ -863,7 +863,7 @@ function SubmissionModeControl({
   return (
     <div
       aria-label={t("composer.submissionMode")}
-      className="inline-flex items-center rounded-full border border-border bg-surface-secondary p-0.5 text-xs font-medium"
+      className="inline-flex items-center rounded-full border border-border bg-surface-secondary p-0.5 text-sm"
       role="group"
     >
       <button
@@ -954,9 +954,7 @@ function ContextWindowIndicator({
         showArrow
       >
         <div className="space-y-3 text-center">
-          <div className="text-sm">
-            {t("composer.contextWindow")}
-          </div>
+          <div className="text-sm">{t("composer.contextWindow")}</div>
           <div className="text-sm leading-snug">
             {t("composer.contextWindowSummary", {
               usedPercent,
@@ -996,8 +994,8 @@ function SkillSuggestionPopover({
       className="absolute inset-x-0 bottom-full z-50 mb-2"
       data-testid="skill-suggestion-popover"
     >
-      <div className="overflow-hidden rounded-lg border border-border bg-overlay text-sm font-medium text-foreground shadow-lg">
-        <div className="border-b border-border px-4 py-2 text-xs tracking-wider text-muted uppercase">
+      <div className="overflow-hidden rounded-lg border border-border bg-overlay text-sm text-foreground shadow-lg">
+        <div className="border-b border-border px-4 py-2 text-sm tracking-wider text-muted uppercase">
           {loading
             ? t("composer.loadingSkills")
             : query
@@ -1037,16 +1035,16 @@ function SkillSuggestionPopover({
                     : "text-foreground"
                 )}
               >
-                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-secondary font-mono text-xs text-foreground">
+                <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface-secondary font-mono text-sm text-foreground">
                   $
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate">{skill.name}</span>
-                    <span className="font-mono text-xs text-muted">
+                    <span className="font-mono text-sm text-muted">
                       ${skill.reference}
                     </span>
-                    <span className="shrink-0 text-xs tracking-wider text-muted uppercase">
+                    <span className="shrink-0 text-sm tracking-wider text-muted uppercase">
                       {formatSkillSource(skill.source, t)}
                     </span>
                   </div>
@@ -1337,6 +1335,9 @@ function AgentSelectionDropdown({
   const selectedModelLabel =
     modelOptions.find((option) => option.value === modelValue)?.label ??
     modelValue
+  const selectedSpeedLabel = codexFastMode
+    ? t("composer.fastMode")
+    : t("composer.standardMode")
 
   useEffect(() => {
     return () => {
@@ -1408,7 +1409,7 @@ function AgentSelectionDropdown({
         <Dropdown.Menu onAction={handleAction} selectionMode="none">
           {reasoningOptions.length > 0 ? (
             <Dropdown.Section>
-              <Header className="px-2 py-1 text-xs text-muted">
+              <Header className="px-2 py-1 text-sm text-muted">
                 {t("composer.intelligence")}
               </Header>
               {reasoningOptions.map((option) => (
@@ -1418,7 +1419,7 @@ function AgentSelectionDropdown({
                   textValue={option.label}
                 >
                   <Label>{option.label}</Label>
-                  <span className="flex size-3.5 items-center justify-center">
+                  <span className="ml-auto flex size-3.5 items-center justify-center">
                     {option.value === reasoningValue ? (
                       <Tick02 className="size-3.5" />
                     ) : null}
@@ -1455,7 +1456,7 @@ function AgentSelectionDropdown({
                     textValue={option.label}
                   >
                     <Label>{option.label}</Label>
-                    <span className="flex size-3.5 items-center justify-center">
+                    <span className="ml-auto flex size-3.5 items-center justify-center">
                       {option.value === modelValue ? (
                         <Tick02 className="size-3.5" />
                       ) : null}
@@ -1465,27 +1466,60 @@ function AgentSelectionDropdown({
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown.SubmenuTrigger>
+          {showCodexFastModeToggle ? (
+            <Dropdown.SubmenuTrigger>
+              <Dropdown.Item id="speed-submenu" textValue={t("composer.speed")}>
+                <Label>{t("composer.speed")}</Label>
+                <span className="ml-auto flex min-w-0 items-center gap-2">
+                  <span className="max-w-36 truncate text-muted">
+                    {selectedSpeedLabel}
+                  </span>
+                  <Dropdown.SubmenuIndicator />
+                </span>
+              </Dropdown.Item>
+              <Dropdown.Popover
+                className={cn(stableDropdownPopoverClassName, "w-72")}
+                placement="start top"
+              >
+                <Dropdown.Menu
+                  onAction={(key) => {
+                    onCodexFastModeChange?.(String(key) === "speed:fast")
+                  }}
+                  selectionMode="none"
+                >
+                  <Dropdown.Item
+                    id="speed:standard"
+                    textValue={t("composer.standardMode")}
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <Label>{t("composer.standardMode")}</Label>
+                      <span className="text-sm text-muted">
+                        {t("composer.standardModeDescription")}
+                      </span>
+                    </span>
+                    <span className="ml-auto flex size-3.5 items-center justify-center">
+                      {!codexFastMode ? <Tick02 className="size-3.5" /> : null}
+                    </span>
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    id="speed:fast"
+                    textValue={t("composer.fastMode")}
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <Label>{t("composer.fastMode")}</Label>
+                      <span className="text-sm text-muted">
+                        {t("composer.fastModeDescription")}
+                      </span>
+                    </span>
+                    <span className="ml-auto flex size-3.5 items-center justify-center">
+                      {codexFastMode ? <Tick02 className="size-3.5" /> : null}
+                    </span>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown.Popover>
+            </Dropdown.SubmenuTrigger>
+          ) : null}
         </Dropdown.Menu>
-        {showCodexFastModeToggle ? (
-          <div className="flex items-center justify-between gap-4 px-3 py-2">
-            <div className="min-w-0">
-              <div className="text-sm font-medium">
-                {t("composer.fastMode")}
-              </div>
-            </div>
-            <Switch
-              aria-label={t("composer.codexFastMode")}
-              isSelected={codexFastMode}
-              onChange={(checked) => {
-                onCodexFastModeChange?.(checked)
-              }}
-            >
-              <Switch.Control>
-                <Switch.Thumb />
-              </Switch.Control>
-            </Switch>
-          </div>
-        ) : null}
       </Dropdown.Popover>
     </Dropdown>
   )

@@ -592,11 +592,8 @@ async function main() {
     await modelMenuButton.waitFor();
     await modelMenuButton.getByText("gpt-5.4").waitFor();
     await modelMenuButton.click();
-    const fastModeSwitch = page.getByRole("switch", {
-      name: "Codex fast mode",
-    });
-    await fastModeSwitch.waitFor();
-    await fastModeSwitch.click();
+    await page.getByRole("menuitem", { name: /^Speed/ }).click();
+    await page.getByRole("menuitem", { name: /^Fast mode/ }).click();
     await page.getByTestId("composer-fast-mode-icon").waitFor();
     await page.getByRole("menuitemradio", { name: "gpt-5.3-codex" }).click();
     await modelMenuButton.getByText("gpt-5.3-codex").waitFor();

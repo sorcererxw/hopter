@@ -113,6 +113,56 @@ func TestListThreadsIncludesExecSource(t *testing.T) {
 	}
 }
 
+func TestReadAccountRateLimitsPrefersPlanWindowsOverZeroBalance(t *testing.T) {
+	transport := newFakeRPCTransport()
+	client := &Client{
+		ctx: context.Background(),
+		rpc: rpc.NewClient(transport, rpc.ClientOptions{}),
+	}
+	defer client.rpc.Close()
+	transport.queueResponse(1, `{
+		"rateLimits": {
+			"limitId": "codex",
+			"limitName": null,
+			"primary": {"usedPercent": 30, "windowDurationMins": 300, "resetsAt": 1777607498},
+			"secondary": {"usedPercent": 19, "windowDurationMins": 10080, "resetsAt": 1777962033},
+			"credits": {"hasCredits": false, "unlimited": false, "balance": "0"},
+			"planType": "pro"
+		},
+		"rateLimitsByLimitId": {
+			"codex": {
+				"limitId": "codex",
+				"limitName": null,
+				"primary": {"usedPercent": 30, "windowDurationMins": 300, "resetsAt": 1777607498},
+				"secondary": {"usedPercent": 19, "windowDurationMins": 10080, "resetsAt": 1777962033},
+				"credits": {"hasCredits": false, "unlimited": false, "balance": "0"},
+				"planType": "pro"
+			},
+			"codex_bengalfox": {
+				"limitId": "codex_bengalfox",
+				"limitName": "GPT-5.3-Codex-Spark",
+				"primary": {"usedPercent": 24, "windowDurationMins": 300, "resetsAt": 1777621266},
+				"secondary": {"usedPercent": 7, "windowDurationMins": 10080, "resetsAt": 1778208066},
+				"credits": null,
+				"planType": "pro"
+			}
+		}
+	}`)
+
+	summary, err := client.ReadAccountRateLimits()
+	if err != nil {
+		t.Fatalf("ReadAccountRateLimits: %v", err)
+	}
+
+	if strings.Contains(summary, "Balance 0") || strings.Contains(summary, "credits 0") {
+		t.Fatalf("summary included zero balance: %q", summary)
+	}
+	want := "Pro · 5h 30% used · 7d 19% used · GPT-5.3-Codex-Spark · 5h 24% used · 7d 7% used"
+	if summary != want {
+		t.Fatalf("summary = %q, want %q", summary, want)
+	}
+}
+
 func TestApplyServiceTierLeavesDefaultWhenFastModeDisabled(t *testing.T) {
 	var serviceTier interface{}
 

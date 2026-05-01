@@ -140,7 +140,7 @@ export function SessionWorkspacePane({ sessionId }: { sessionId: string }) {
         <CenteredTranscriptLoader />
       ) : sessionMetaQuery.isError || !session ? (
         <div className="flex flex-1 items-center justify-center px-6">
-          <div className="rounded-2xl border border-border bg-surface px-6 py-4 text-foreground shadow-sm">
+          <div className="rounded-lg border border-border bg-surface px-6 py-4 text-foreground shadow-sm">
             {t("session.unavailable")}
           </div>
         </div>
@@ -357,25 +357,25 @@ function SessionTaskQueue({
   return (
     <section
       aria-label={t("session.taskQueue")}
-      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground shadow-sm"
+      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <ListChecks className="size-4 shrink-0 text-muted" />
           <span className="truncate">{t("session.taskQueue")}</span>
-          <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-xs text-muted">
+          <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-sm text-muted">
             {items.length}
           </span>
         </div>
         {isLoading ? (
-          <span className="shrink-0 text-xs text-muted">
+          <span className="shrink-0 text-sm text-muted">
             {t("tasks.loading")}
           </span>
         ) : null}
       </div>
 
       {isError ? (
-        <p className="mt-2 text-xs text-muted">
+        <p className="mt-2 text-sm text-muted">
           {t("session.taskQueueUnavailable")}
         </p>
       ) : (
@@ -386,13 +386,13 @@ function SessionTaskQueue({
               className="flex min-w-0 items-center gap-2 rounded-md bg-surface-tertiary/70 px-2 py-1"
             >
               <Circle className="size-3.5 shrink-0 text-muted" />
-              <span className="min-w-0 flex-1 truncate text-xs">
+              <span className="min-w-0 flex-1 truncate text-sm">
                 {item.preview || t("session.taskQueueUntitled")}
               </span>
-              <span className="shrink-0 text-xs text-muted">
+              <span className="shrink-0 text-sm text-muted">
                 {t("session.taskQueueWaiting", { position: item.position })}
               </span>
-              <span className="hidden shrink-0 text-xs text-muted sm:inline">
+              <span className="hidden shrink-0 text-sm text-muted sm:inline">
                 {formatUpdatedAt(item.createdAt, locale)}
               </span>
             </div>
@@ -413,14 +413,14 @@ function SessionEditingMessageBanner({
   return (
     <section
       aria-label={t("session.editingMessage")}
-      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground shadow-sm"
+      className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm"
     >
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate">{t("session.editingMessage")}</span>
         <button
           type="button"
           aria-label={t("session.cancelEditingMessage")}
-          className="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-surface-tertiary hover:text-foreground"
+          className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-tertiary/0 text-muted transition hover:bg-surface-tertiary hover:text-foreground"
           onClick={onCancel}
         >
           <X className="size-4" />

@@ -42,7 +42,7 @@ export function BottomSheet({
     <div className="fixed inset-0 z-50 md:hidden">
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={onClose}
       />
       <div
@@ -84,8 +84,10 @@ export function BottomSheetItem({
       onPress={onClick}
       variant="ghost"
       className={cn(
-        "flex w-full items-center px-4 py-3 text-base text-foreground",
-        active ? "bg-surface-tertiary" : "hover:bg-surface-tertiary"
+        "flex w-full items-center px-4 py-3 text-foreground",
+        active
+          ? "bg-surface-tertiary"
+          : "bg-surface-tertiary/0 hover:bg-surface-tertiary"
       )}
     >
       {children}

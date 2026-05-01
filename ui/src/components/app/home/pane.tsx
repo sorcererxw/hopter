@@ -174,7 +174,7 @@ export function HomeWorkspacePane() {
                                   <p className="truncate text-sm text-foreground">
                                     {project.name}
                                   </p>
-                                  <p className="truncate text-xs text-muted">
+                                  <p className="truncate text-sm text-muted">
                                     {project.rootPath}
                                   </p>
                                 </div>

@@ -143,6 +143,18 @@ type Backend struct {
 	Reason    string
 }
 
+type AgentAccountRateLimits struct {
+	PlanType string
+	Windows  []AgentRateLimitWindow
+}
+
+type AgentRateLimitWindow struct {
+	Label              string
+	UsedPercent        uint32
+	WindowDurationMins uint32
+	ResetsAt           time.Time
+}
+
 const BackendKeyCodex = "codex"
 
 type ModelReasoningEffort struct {
