@@ -182,7 +182,14 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 
 	project, ok := w.projects[input.ProjectID]
 	if !ok {
-		return Session{}, fmt.Errorf("project %q not found", input.ProjectID)
+		if synthetic, syntheticOK := syntheticProjectForCWDID(input.ProjectID, input.BackendKey); syntheticOK {
+			project = synthetic
+			w.projects[project.ID] = project
+			w.projectIDs = append(w.projectIDs, project.ID)
+			w.publish(Event{Kind: EventProjectsChanged, ProjectID: project.ID})
+		} else {
+			return Session{}, fmt.Errorf("project %q not found", input.ProjectID)
+		}
 	}
 
 	now := time.Now().UTC()
@@ -226,6 +233,47 @@ func (w *InMemoryWorkspace) CreateSession(input CreateSessionInput) (Session, er
 	w.publish(Event{Kind: EventSessionsChanged, ProjectID: project.ID, SessionID: session.ID})
 	w.publish(Event{Kind: EventSessionChanged, ProjectID: project.ID, SessionID: session.ID})
 	return session, nil
+}
+
+func syntheticProjectForCWDID(projectID, backendKey string) (Project, bool) {
+	trimmedProjectID := strings.TrimSpace(projectID)
+	if !strings.HasPrefix(trimmedProjectID, "cwd:") {
+		return Project{}, false
+	}
+
+	rootPath := strings.TrimSpace(strings.TrimPrefix(trimmedProjectID, "cwd:"))
+	if rootPath == "" {
+		return Project{}, false
+	}
+
+	metadata, err := getPathMetadata(rootPath)
+	if err != nil || !metadata.IsAllowed || !metadata.IsDirectory {
+		return Project{}, false
+	}
+
+	defaultBackend := strings.TrimSpace(backendKey)
+	if defaultBackend == "" {
+		defaultBackend = BackendKeyCodex
+	}
+	defaultBackend, err = normalizeSupportedBackendKey(defaultBackend)
+	if err != nil {
+		return Project{}, false
+	}
+
+	name := filepath.Base(metadata.CanonicalPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = metadata.CanonicalPath
+	}
+
+	now := time.Now().UTC()
+	return Project{
+		ID:             trimmedProjectID,
+		Name:           name,
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: defaultBackend,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}, true
 }
 
 func normalizeSupportedBackendKey(value string) (string, error) {

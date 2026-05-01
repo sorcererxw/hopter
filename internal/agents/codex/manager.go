@@ -377,7 +377,11 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 	}
 	project, ok := m.workspace.GetProject(input.ProjectID)
 	if !ok {
-		return core.Session{}, fmt.Errorf("project %q not found", input.ProjectID)
+		if synthetic, syntheticOK := syntheticProjectForCreate(m.workspace, input.ProjectID, input.BackendKey); syntheticOK {
+			project = synthetic
+		} else {
+			return core.Session{}, fmt.Errorf("project %q not found", input.ProjectID)
+		}
 	}
 
 	options := core.SessionTurnOptions{
@@ -430,6 +434,42 @@ func (m *Manager) CreateSession(input core.CreateSessionInput) (core.Session, er
 
 	go m.dispatchInput(project, session.ID, threadID, input.Prompt, options)
 	return session, nil
+}
+
+func syntheticProjectForCreate(workspace core.WorkspaceService, projectID, backendKey string) (core.Project, bool) {
+	trimmedProjectID := strings.TrimSpace(projectID)
+	if !strings.HasPrefix(trimmedProjectID, "cwd:") {
+		return core.Project{}, false
+	}
+
+	rootPath := strings.TrimSpace(strings.TrimPrefix(trimmedProjectID, "cwd:"))
+	if rootPath == "" {
+		return core.Project{}, false
+	}
+
+	metadata, err := workspace.GetPathMetadata(rootPath)
+	if err != nil || !metadata.IsAllowed || !metadata.IsDirectory {
+		return core.Project{}, false
+	}
+
+	defaultBackend := strings.TrimSpace(backendKey)
+	if defaultBackend == "" {
+		defaultBackend = core.BackendKeyCodex
+	}
+
+	name := filepath.Base(metadata.CanonicalPath)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		name = metadata.CanonicalPath
+	}
+
+	return core.Project{
+		ID:             trimmedProjectID,
+		Name:           name,
+		RootPath:       metadata.CanonicalPath,
+		DefaultBackend: defaultBackend,
+		CreatedAt:      time.Now().UTC(),
+		UpdatedAt:      time.Now().UTC(),
+	}, true
 }
 
 func (m *Manager) SendSessionInput(sessionID, input string, options ...core.SessionTurnOptions) (core.Session, error) {

@@ -340,6 +340,37 @@ func TestCreateSessionAcceptsExplicitSessionID(t *testing.T) {
 	}
 }
 
+func TestCreateSessionMaterializesVisibleCWDProject(t *testing.T) {
+	root := t.TempDir()
+	workspace := NewInMemoryWorkspace("test-host", nil)
+	projectID := "cwd:" + root
+
+	session, err := workspace.CreateSession(CreateSessionInput{
+		ProjectID:  projectID,
+		BackendKey: BackendKeyCodex,
+		Title:      "probe",
+		Prompt:     "first",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if session.ProjectID != projectID {
+		t.Fatalf("session project id = %q, want %q", session.ProjectID, projectID)
+	}
+
+	project, ok := workspace.GetProject(projectID)
+	if !ok {
+		t.Fatalf("materialized project %q not found", projectID)
+	}
+	metadata, err := workspace.GetPathMetadata(root)
+	if err != nil {
+		t.Fatalf("GetPathMetadata: %v", err)
+	}
+	if project.RootPath != metadata.CanonicalPath {
+		t.Fatalf("project root path = %q, want %q", project.RootPath, metadata.CanonicalPath)
+	}
+}
+
 func TestUpdateSessionAppendsTranscriptItems(t *testing.T) {
 	root := t.TempDir()
 	repoDir := filepath.Join(root, "hopter")

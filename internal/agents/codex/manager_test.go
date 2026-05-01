@@ -35,6 +35,7 @@ type fakeCodexClient struct {
 	resumeResult         *ResumeThreadResult
 	readErr              error
 	respondApprovalCalls []string
+	startThreadCwds      []string
 	startThreadOptions   []core.SessionTurnOptions
 	startTurnOptions     []core.SessionTurnOptions
 	startTurnInputs      []string
@@ -153,6 +154,7 @@ func (f *fakeCodexClient) RespondToApproval(rawID json.RawMessage, result any) e
 
 func (f *fakeCodexClient) StartThread(cwd string, options core.SessionTurnOptions) (*StartThreadResult, error) {
 	f.startThreadCalls++
+	f.startThreadCwds = append(f.startThreadCwds, cwd)
 	f.startThreadOptions = append(f.startThreadOptions, options)
 	out := &StartThreadResult{}
 	out.Thread.ID = "thread-started"
@@ -395,6 +397,50 @@ func TestListModelsReturnsAppServerModels(t *testing.T) {
 	}
 	if models[0].SupportedReasoningEfforts[1].ReasoningEffort != "xhigh" {
 		t.Fatalf("second reasoning effort = %q, want xhigh", models[0].SupportedReasoningEfforts[1].ReasoningEffort)
+	}
+}
+
+func TestCreateSessionAcceptsVisibleNonGitCWDProject(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	root := t.TempDir()
+	metadata, err := workspace.GetPathMetadata(root)
+	if err != nil {
+		t.Fatalf("GetPathMetadata: %v", err)
+	}
+	projectID := "cwd:" + root
+	client := &fakeCodexClient{
+		readResult: readThreadResultWithTurns(agentMessageTurn("turn-started", "done")),
+	}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+
+	session, err := manager.CreateSession(core.CreateSessionInput{
+		ProjectID:  projectID,
+		BackendKey: "codex",
+		Title:      "probe",
+		Prompt:     "build something",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession: %v", err)
+	}
+	if session.ProjectID != projectID {
+		t.Fatalf("created project id = %q, want %q", session.ProjectID, projectID)
+	}
+	if len(client.startThreadCwds) != 1 || client.startThreadCwds[0] != metadata.CanonicalPath {
+		t.Fatalf("start thread cwd = %v, want [%q]", client.startThreadCwds, metadata.CanonicalPath)
+	}
+	if _, ok := workspace.GetProject(projectID); !ok {
+		t.Fatalf("materialized project %q not found", projectID)
 	}
 }
 
