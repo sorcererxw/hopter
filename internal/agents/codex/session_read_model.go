@@ -22,6 +22,7 @@ const (
 	defaultTranscriptPageSize = 50
 	maxSessionCacheBytes      = 32 << 20
 	maxCacheEntryBytes        = 1 << 20
+	sessionMetaCacheTTL       = 5 * time.Second
 	lazyCursorPrefix          = "lazy:"
 	codexTurnsCursorKind      = "codex-turns-page"
 )
@@ -47,6 +48,11 @@ type transcriptCursor struct {
 	CodexNextCursor   string `json:"codexNextCursor,omitempty"`
 }
 
+type cachedSessionMeta struct {
+	expiresAt time.Time
+	meta      core.SessionMeta
+}
+
 func NewSessionReadModel(
 	workspace core.WorkspaceService,
 	manager *Manager,
@@ -62,6 +68,10 @@ func NewSessionReadModel(
 }
 
 func (m *SessionReadModel) GetSessionMeta(sessionID string) (core.SessionMeta, error) {
+	if meta, ok := m.getCachedMeta(sessionID); ok {
+		return meta, nil
+	}
+
 	session, project, err := m.readSessionMeta(sessionID)
 	if err != nil {
 		return core.SessionMeta{}, err
@@ -77,7 +87,7 @@ func (m *SessionReadModel) GetSessionMeta(sessionID string) (core.SessionMeta, e
 		meta.LatestPageSizeHint = uint32(len(page.Items))
 	}
 
-	m.metaCache.Set(metaCacheKey(session.ID), meta, estimateSessionMetaSize(meta))
+	m.cacheSessionMeta(meta)
 	return meta, nil
 }
 
@@ -764,6 +774,29 @@ func metaCacheKey(sessionID string) string {
 	return "meta:" + strings.TrimSpace(sessionID)
 }
 
+func (m *SessionReadModel) getCachedMeta(sessionID string) (core.SessionMeta, bool) {
+	key := metaCacheKey(sessionID)
+	value, ok := m.metaCache.Get(key)
+	if !ok {
+		return core.SessionMeta{}, false
+	}
+
+	cached, ok := value.(cachedSessionMeta)
+	if !ok || time.Now().After(cached.expiresAt) {
+		m.metaCache.Delete(key)
+		return core.SessionMeta{}, false
+	}
+
+	return cloneSessionMeta(cached.meta), true
+}
+
+func (m *SessionReadModel) cacheSessionMeta(meta core.SessionMeta) {
+	m.metaCache.Set(metaCacheKey(meta.Session.ID), cachedSessionMeta{
+		expiresAt: time.Now().Add(sessionMetaCacheTTL),
+		meta:      cloneSessionMeta(meta),
+	}, estimateSessionMetaSize(meta)+64)
+}
+
 func pageCacheKey(sessionID string, snapshot time.Time, beforeCursor string, limit uint32) string {
 	return strings.Join([]string{
 		"page",
@@ -858,6 +891,12 @@ func cloneSessionForMeta(session core.Session) core.Session {
 	cloned := session
 	cloned.TranscriptItems = nil
 	cloned.Artifacts = append([]core.Artifact(nil), session.Artifacts...)
+	return cloned
+}
+
+func cloneSessionMeta(meta core.SessionMeta) core.SessionMeta {
+	cloned := meta
+	cloned.Session = cloneSessionForMeta(meta.Session)
 	return cloned
 }
 

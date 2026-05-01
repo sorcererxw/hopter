@@ -2301,6 +2301,47 @@ func TestGetSessionMetaHydratesRunningStatusFromLocalCodexJsonl(t *testing.T) {
 	}
 }
 
+func TestGetSessionMetaUsesShortCache(t *testing.T) {
+	workspace := core.NewInMemoryWorkspace("host", nil)
+	project := mustCreateProject(t, workspace)
+	client := &fakeCodexClient{
+		readResult: &ReadThreadResult{},
+	}
+	client.readResult.Thread.ID = "thread-meta-cache"
+	client.readResult.Thread.Cwd = project.RootPath
+	client.readResult.Thread.UpdatedAt = time.Now().UTC().Unix()
+	client.readResult.Thread.Status = ThreadStatus{Type: "idle"}
+
+	manager := NewManager(workspace)
+	manager.start = func(
+		_ context.Context,
+		_ string,
+		_ func(Notification),
+		_ func(ServerRequest),
+		_ func(TraceEntry),
+		_ func(),
+	) (codexClient, error) {
+		return client, nil
+	}
+	reader := NewSessionReadModel(workspace, manager, manager)
+
+	first, err := reader.GetSessionMeta("thread-meta-cache")
+	if err != nil {
+		t.Fatalf("GetSessionMeta first: %v", err)
+	}
+	second, err := reader.GetSessionMeta("thread-meta-cache")
+	if err != nil {
+		t.Fatalf("GetSessionMeta second: %v", err)
+	}
+
+	if first.Session.ID != "thread-meta-cache" || second.Session.ID != "thread-meta-cache" {
+		t.Fatalf("cached meta ids = %q, %q; want thread-meta-cache", first.Session.ID, second.Session.ID)
+	}
+	if client.readCalls != 1 {
+		t.Fatalf("ReadThreadMeta calls = %d, want 1", client.readCalls)
+	}
+}
+
 func TestLocalCodexSessionRunningTracksOpenFunctionCall(t *testing.T) {
 	codexHome := t.TempDir()
 	t.Setenv("CODEX_HOME", codexHome)

@@ -85,11 +85,11 @@ const watchTurnPollAttempts = 180
 
 var (
 	watchTurnPollInterval = 2 * time.Second
-	threadListCacheTTL    = 750 * time.Millisecond
+	threadListCacheTTL    = 5 * time.Second
 )
 
 const (
-	threadListHydrateReadLimit     = 20
+	threadListHydrateReadLimit     = 2
 	threadListHydrateRecentWindow  = 24 * time.Hour
 	threadListHydrateRunningWindow = 7 * 24 * time.Hour
 )

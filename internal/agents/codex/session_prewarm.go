@@ -3,16 +3,14 @@ package codex
 import (
 	"context"
 	"sync"
-
-	"github.com/sorcererxw/hopter/internal/core"
 )
 
 const (
-	defaultPrewarmRecentSessions    = 10
-	defaultPrewarmTranscriptWorkers = 2
+	defaultPrewarmRecentSessions = 3
+	defaultPrewarmWorkers        = 1
 )
 
-func (m *SessionReadModel) PrewarmRecent(ctx context.Context, count int, pageSize uint32) {
+func (m *SessionReadModel) PrewarmRecent(ctx context.Context, count int, _ uint32) {
 	if m == nil || m.manager == nil {
 		return
 	}
@@ -25,7 +23,7 @@ func (m *SessionReadModel) PrewarmRecent(ctx context.Context, count int, pageSiz
 		return
 	}
 
-	sem := make(chan struct{}, defaultPrewarmTranscriptWorkers)
+	sem := make(chan struct{}, defaultPrewarmWorkers)
 	var wg sync.WaitGroup
 
 	for _, resolvedSession := range resolved {
@@ -41,7 +39,7 @@ func (m *SessionReadModel) PrewarmRecent(ctx context.Context, count int, pageSiz
 		}
 
 		wg.Add(1)
-		go func(sessionID string, status core.SessionState) {
+		go func(sessionID string) {
 			defer wg.Done()
 
 			select {
@@ -51,19 +49,8 @@ func (m *SessionReadModel) PrewarmRecent(ctx context.Context, count int, pageSiz
 			}
 			defer func() { <-sem }()
 
-			meta, err := m.GetSessionMeta(sessionID)
-			if err != nil {
-				return
-			}
-			if status == core.SessionStateRunning || status == core.SessionStatePending {
-				_ = meta
-				return
-			}
-			_, _ = m.ListSessionTranscript(core.ListSessionTranscriptInput{
-				SessionID: sessionID,
-				Limit:     pageSize,
-			})
-		}(sessionID, resolvedSession.Session.Status)
+			_, _ = m.GetSessionMeta(sessionID)
+		}(sessionID)
 	}
 
 	wg.Wait()
