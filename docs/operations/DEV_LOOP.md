@@ -9,7 +9,7 @@ Use it when you need to answer one of four questions:
 3. where AI should read machine state and logs
 4. how to validate the current live loop without rebuilding everything
 
-If you only need the shortest path, start with [`README.md`](../../README.md).
+If you only need the shortest path, start with the repository `README.md`.
 If you need the full contributor workflow, read [`docs/operations/CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## One-screen summary
@@ -106,7 +106,7 @@ Configured exclusions include:
 - `tmp/`
 - `node_modules/`
 
-The config lives in [`.air.toml`](../../.air.toml).
+The config lives in `.air.toml`.
 
 ## Machine-readable dev state
 

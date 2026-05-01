@@ -24,8 +24,6 @@ const appServerPathPatterns = [
   /^scripts\/lib\/app-server-docs-guard\.ts$/,
   /^docs\/operations\/CODEX_APP_SERVER_DEVELOPMENT_CONSTRAINTS\.md$/,
   /^docs\/planning\/.*APP_SERVER.*\.md$/,
-  /^docs\/planning\/CODEX_GO_CLIENT_PARITY_PLAN\.md$/,
-  /^docs\/planning\/SESSION_DETAIL_CHAT_MODE_PLAN\.md$/,
 ];
 
 const appServerContentTokens = [

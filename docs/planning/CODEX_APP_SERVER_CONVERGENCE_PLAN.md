@@ -60,9 +60,9 @@ That split is serviceable as a transition, but it creates structural problems:
 - `internal/agents/codex/manager.go` still routes turn execution through the Go SDK `exec` wrapper.
 - `internal/agents/codex/transcript.go` and `internal/agents/codex/transcript_sdk.go` already normalize two different item/event shapes.
 - `AGENTS.md` and `docs/product/PRODUCT_MEMO.md` declare `codex app-server`
-  the primary integration target. The older Bun-first communication spec is
-  archived under `docs/archive/bun-first-v1/specs/`.
-- `docs/planning/SESSION_DETAIL_CHAT_MODE_PLAN.md` already assumes `model/list`, `turn/start`, `turn/steer`, structured input, and live notifications on the app-server path.
+  the primary integration target.
+- Current session UI work assumes `model/list`, `turn/start`, `turn/steer`,
+  structured input, and live notifications on the app-server path.
 
 ### Live probe results on this machine
 

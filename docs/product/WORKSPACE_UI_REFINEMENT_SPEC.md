@@ -473,12 +473,12 @@ The following files are the expected touch points for implementation.
 
 ### Core
 
-- [`ui/src/index.css`](../../ui/src/index.css)
-- [`ui/src/components/app/workspace-topbar.tsx`](../../ui/src/components/app/workspace-topbar.tsx)
-- [`ui/src/components/app/session-composer.tsx`](../../ui/src/components/app/session-composer.tsx)
-- [`ui/src/components/app/session-rail.tsx`](../../ui/src/components/app/session-rail.tsx)
-- [`ui/src/components/app/session-detail-pane.tsx`](../../ui/src/components/app/session-detail-pane.tsx)
-- [`ui/src/components/app/session-rich-text.tsx`](../../ui/src/components/app/session-rich-text.tsx)
+- `ui/src/index.css`
+- `ui/src/components/app/workspace/topbar.tsx`
+- `ui/src/components/app/sessions/composer/composer.tsx`
+- `ui/src/components/app/sessions/rail/rail.tsx`
+- `ui/src/components/app/sessions/detail/pane.tsx`
+- `ui/src/components/app/sessions/transcript/rich-text.tsx`
 
 ### Principles for implementation
 

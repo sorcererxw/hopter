@@ -16,13 +16,13 @@ The old Bun-first runtime and `src/server` / `src/web` structure are obsolete.
 
 Use the docs progressively:
 
-- repo/doc map: [`docs/README.md`](../README.md)
-- master plan: [`docs/planning/GO_REBUILD_MASTER_PLAN.md`](../planning/GO_REBUILD_MASTER_PLAN.md)
-- detailed task list: [`docs/planning/GO_REBUILD_TASK_LIST.md`](../planning/GO_REBUILD_TASK_LIST.md)
-- backend plan: [`docs/planning/BACKEND_EXECUTION_PLAN.md`](../planning/BACKEND_EXECUTION_PLAN.md)
-- frontend plan: [`docs/planning/FRONTEND_EXECUTION_PLAN.md`](../planning/FRONTEND_EXECUTION_PLAN.md)
-- IDL plan: [`docs/planning/IDL_EXECUTION_PLAN.md`](../planning/IDL_EXECUTION_PLAN.md)
-- validation/evidence guide: [`docs/VALIDATION_HARNESS.md`](../VALIDATION_HARNESS.md)
+- repo/doc map: `docs/README.md`
+- master plan: `docs/planning/GO_REBUILD_MASTER_PLAN.md`
+- detailed task list: `docs/planning/GO_REBUILD_TASK_LIST.md`
+- backend plan: `docs/planning/BACKEND_EXECUTION_PLAN.md`
+- frontend plan: `docs/planning/FRONTEND_EXECUTION_PLAN.md`
+- IDL plan: `docs/planning/IDL_EXECUTION_PLAN.md`
+- validation/evidence guide: `docs/VALIDATION_HARNESS.md`
 - local dev loop, watch behavior, and file-based logs: [`docs/operations/DEV_LOOP.md`](DEV_LOOP.md)
 - UI rules: [`docs/operations/UI_SYSTEM_RULES.md`](UI_SYSTEM_RULES.md)
 

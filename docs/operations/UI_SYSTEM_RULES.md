@@ -22,6 +22,9 @@ ui/src/index.css                                 # shared theme/tokens
 5. The main product surface remains the workspace shell:
    - left session rail
    - right workspace pane
+6. Use Tailwind/HeroUI semantic tokens before arbitrary values.
+7. Do not use hard-coded hex colors, `bg-ws-*`, `text-ws-*`, `border-ws-*`, or
+   CSS-var arbitrary color utilities when a semantic utility exists.
 
 ## Allowed customization
 
@@ -39,6 +42,23 @@ For the selected session pane, keep this order visible:
 4. input/composer
 5. artifacts
 6. timeline/history
+
+## Typography
+
+- Default UI and reading font is `Geist`.
+- Use mono only for code semantics: inline code, code blocks, command output,
+  logs, terminal output, and generated diagnostics.
+- Do not switch normal labels, paths, or links to mono only because they look
+  technical.
+- Prefer text size and weight on the nearest meaningful container instead of
+  repeating the same classes on children.
+- Use the standard scale unless a local semantic reason exists:
+  - `text-2xl`: page-level titles
+  - `text-base`: reading surfaces, primary input text, main body copy
+  - `text-sm`: standard controls, rows, dialogs, secondary panes
+  - `text-xs`: metadata, timestamps, compact labels, uppercase section markers
+- Rich-text inline code should reuse the dedicated inline-code treatment:
+  mono, `text-sm`, and muted chip background.
 
 ## Workflow
 
