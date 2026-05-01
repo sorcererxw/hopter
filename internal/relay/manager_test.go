@@ -32,10 +32,16 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 				r.Header.Get(relaycontract.RelayRequestContextSignatureHeader) == "" {
 				t.Fatalf("missing signed provenance headers on HTTP request")
 			}
+			if got := r.Header.Get("Accept-Encoding"); got != relayOriginAcceptEncoding {
+				t.Fatalf("origin Accept-Encoding = %q, want %q", got, relayOriginAcceptEncoding)
+			}
 			select {
 			case originSawSignedHTTP <- struct{}{}:
 			default:
 			}
+			w.Header().Set("Accept-Encoding", "gzip")
+			w.Header().Set("Connection", "keep-alive")
+			w.Header().Set("X-Test-Relay", "ok")
 			_, _ = w.Write([]byte("hello over relay"))
 		case "/terminals/term-1/stream":
 			if r.Header.Get(relaycontract.RelayRequestContextPayloadHeader) == "" ||
@@ -140,6 +146,7 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 				Path:     "/hello",
 				Query:    "",
 				Headers: map[string]string{
+					"Accept-Encoding": "gzip, deflate, br, zstd",
 					relaycontract.RelayRequestContextPayloadHeader:   signedPayload(t),
 					relaycontract.RelayRequestContextSignatureHeader: signedSignature(t),
 				},
@@ -160,6 +167,15 @@ func TestSessionManagerBridgesHTTPAndTerminalWebSocketAndReconnects(t *testing.T
 			}
 			if responseStart.Status != http.StatusOK {
 				t.Fatalf("response status = %d, want 200", responseStart.Status)
+			}
+			if got := responseStart.Headers["Accept-Encoding"]; got != "" {
+				t.Fatalf("relay response forwarded Accept-Encoding = %q, want empty", got)
+			}
+			if got := responseStart.Headers["Connection"]; got != "" {
+				t.Fatalf("relay response forwarded Connection = %q, want empty", got)
+			}
+			if got := responseStart.Headers["X-Test-Relay"]; got != "ok" {
+				t.Fatalf("relay response forwarded X-Test-Relay = %q, want ok", got)
 			}
 			var responseBody relaycontract.ResponseBodyMessage
 			if err := conn.ReadJSON(&responseBody); err != nil {

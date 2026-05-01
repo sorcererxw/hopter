@@ -66,6 +66,8 @@ type relayEnvelope struct {
 	Type string `json:"type"`
 }
 
+const relayOriginAcceptEncoding = "identity"
+
 type activeControlConnection struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -562,6 +564,7 @@ func (c *activeControlConnection) serveHTTPStream(message relaycontract.RequestS
 	for key, value := range message.Headers {
 		request.Header.Set(key, value)
 	}
+	request.Header.Set("Accept-Encoding", relayOriginAcceptEncoding)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
@@ -574,7 +577,7 @@ func (c *activeControlConnection) serveHTTPStream(message relaycontract.RequestS
 		Type:     relaycontract.RelayMessageTypeResponseStart,
 		StreamID: message.StreamID,
 		Status:   response.StatusCode,
-		Headers:  copyHeaders(response.Header),
+		Headers:  copyResponseHeaders(response),
 	}); err != nil {
 		return
 	}
@@ -879,15 +882,38 @@ func decodeRelaySessionResponse(response *http.Response, err error) (relaySessio
 	return decoded, nil
 }
 
-func copyHeaders(headers http.Header) map[string]string {
-	out := make(map[string]string, len(headers))
-	for key, values := range headers {
+func copyResponseHeaders(response *http.Response) map[string]string {
+	out := make(map[string]string, len(response.Header))
+	for key, values := range response.Header {
 		if len(values) == 0 {
+			continue
+		}
+		if shouldStripRelayResponseHeader(key, response.Uncompressed) {
 			continue
 		}
 		out[key] = values[0]
 	}
 	return out
+}
+
+func shouldStripRelayResponseHeader(key string, uncompressed bool) bool {
+	switch http.CanonicalHeaderKey(key) {
+	case "Accept-Encoding",
+		"Connection",
+		"Content-Length",
+		"Keep-Alive",
+		"Proxy-Authenticate",
+		"Proxy-Authorization",
+		"Te",
+		"Trailer",
+		"Transfer-Encoding",
+		"Upgrade":
+		return true
+	case "Content-Encoding":
+		return uncompressed
+	default:
+		return false
+	}
 }
 
 func clearLeaseIfStale(credential serverhttp.RelayCredential, err error) serverhttp.RelayCredential {
